@@ -31,8 +31,7 @@
                     </div>
                     <div class="folder-card__meta">
                       <span class="folder-card__time">
-                        <clock-circle-outlined />
-                        {{ item.add_time }}
+                        {{ formatDateTime(item.add_time) }}
                       </span>
                       <a-tag
                         :color="item.sync_enabled ? 'green' : 'default'"
@@ -82,9 +81,6 @@
                   <folder-outlined class="sub-folder-icon" />
                   <span>{{ record.name }}</span>
                 </template>
-                <template v-else-if="column.dataIndex === 'size'">
-                  {{ formatFileSize(record.size) }}
-                </template>
               </template>
             </a-table>
           </div>
@@ -93,7 +89,7 @@
 
       <!-- 右侧：文件信息表格 -->
       <a-col :span="17" class="file-right">
-        <div class="panel">
+        <div class="panel" ref="filePanelRef">
           <div class="panel__header">
             <span class="panel__title">文件详情</span>
             <a-space v-if="selectedSubFolder">
@@ -101,13 +97,17 @@
                 <template #title>{{ selectedSubFolder.relative_path }}</template>
                 <span class="panel__subtitle">{{ selectedSubFolder.name }}</span>
               </a-tooltip>
+              <a-tag v-if="ragProcessing || ragQueueSize > 0" color="processing" class="rag-queue-tag">
+                <a-spin v-if="ragProcessing" size="small" style="margin-right: 4px" />
+                {{ ragProcessing ? `向量化中... 剩余${ragQueueSize}` : `队列 ${ragQueueSize}` }}
+              </a-tag>
               <a-button size="small" @click="onRefreshFiles">
                 <template #icon><reload-outlined /></template>
                 刷新
               </a-button>
             </a-space>
           </div>
-          <div class="panel__body">
+          <div class="panel__body panel__body--table" ref="filePanelBodyRef">
             <div v-if="!selectedSubFolder" class="file-empty">
               <a-empty :description="fileEmptyText" />
             </div>
@@ -117,8 +117,10 @@
               :data-source="fileList"
               :loading="fileLoading"
               :pagination="{ pageSize: 10, showSizeChanger: true }"
+              :scroll="{ x: 980, y: fileScrollY }"
               row-key="name"
               size="middle"
+              class="file-table"
             >
               <template #bodyCell="{ column, record }">
                 <template v-if="column.dataIndex === 'size'">
@@ -127,10 +129,28 @@
                 <template v-else-if="column.dataIndex === 'type'">
                   <a-tag>{{ record.type }}</a-tag>
                 </template>
+                <template v-else-if="column.dataIndex === 'status'">
+                  <a-tooltip :title="getStatusTag(record.status, record.name).title">
+                    <a-tag :color="getStatusTag(record.status, record.name).color">
+                      {{ getStatusTag(record.status, record.name).text }}
+                    </a-tag>
+                  </a-tooltip>
+                </template>
+                <template v-else-if="column.dataIndex === 'mtime'">
+                  {{ formatDateTime(record.mtime) }}
+                </template>
                 <template v-else-if="column.dataIndex === 'action'">
                   <a-space>
+                    <a-button
+                      v-if="isFileSupported(record.name) && (record.status === 'FAILED' || record.status === 'PENDING')"
+                      type="link"
+                      size="small"
+                      :loading="reingestingId === record.id"
+                      @click="onReingestFile(record)"
+                    >
+                      处理
+                    </a-button>
                     <a-button type="link" size="small" @click="onFileAction('view', record)">查看</a-button>
-                    <a-button type="link" size="small" danger @click="onFileAction('delete', record)">删除</a-button>
                   </a-space>
                 </template>
               </template>
@@ -143,7 +163,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
 import { message } from 'ant-design-vue';
 import { ipcApiRoute } from '@/api';
 import { ipc } from '@/utils/ipcRenderer';
@@ -163,7 +183,6 @@ const selectedSubFolder = ref(null);
 const subFolderColumns = [
   { title: '文件夹名称', dataIndex: 'name', ellipsis: true },
   { title: '文件数', dataIndex: 'fileCount', width: 70, align: 'center' },
-  { title: '大小', dataIndex: 'size', width: 90 },
 ];
 
 // ========== 右侧：文件表格 ==========
@@ -171,12 +190,68 @@ const fileList = ref([]);
 const fileLoading = ref(false);
 
 const fileColumns = [
-  { title: '文件名称', dataIndex: 'name', ellipsis: true },
-  { title: '文件大小', dataIndex: 'size', width: 120 },
-  { title: '文件类型', dataIndex: 'type', width: 100 },
-  { title: '修改时间', dataIndex: 'mtime', width: 180 },
-  { title: '操作', dataIndex: 'action', width: 160, fixed: 'right' },
+  { title: '文件名称', dataIndex: 'name', width: 300, fixed: 'left', ellipsis: true },
+  { title: '大小', dataIndex: 'size', width: 80, align: 'center' },
+  { title: '类型', dataIndex: 'type', width: 80, align: 'center' },
+  { title: '状态', dataIndex: 'status', width: 100, align: 'center' },
+  { title: '修改时间', dataIndex: 'mtime', width: 160 },
+  { title: '操作', dataIndex: 'action', width: 100, fixed: 'right' },
 ];
+
+// 支持向量化的文件扩展名列表（基于 @kreuzberg/node 支持的 91+ 文件格式）
+const SUPPORTED_EXTENSIONS = [
+// Office Documents
+'.pdf', '.docx', '.docm', '.dotx', '.dotm', '.dot', '.odt',
+'.xlsx', '.xlsm', '.xlsb', '.xls', '.xla', '.xlam', '.xltm', '.xltx', '.xlt', '.ods',
+'.pptx', '.pptm', '.ppsx', '.potx', '.potm', '.pot', '.ppt',
+'.epub', '.fb2', '.dbf', '.hwp', '.hwpx',
+// Images (OCR)
+'.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.tiff', '.tif', '.svg',
+// Web & Data
+'.html', '.htm', '.xhtml', '.xml', '.json', '.yaml', '.yml', '.toml', '.csv', '.tsv',
+// Text & Markdown
+'.txt', '.md', '.markdown', '.djot', '.rst', '.org', '.rtf',
+// Email & Archives
+'.eml', '.msg', '.zip', '.tar', '.tgz', '.gz', '.7z',
+// Academic & Scientific
+'.bib', '.biblatex', '.ris', '.nbib', '.enw', '.csl',
+'.tex', '.latex', '.typst', '.jats', '.ipynb', '.docbook',
+// Documentation
+'.opml', '.pod', '.mdoc', '.troff',
+// Common Code (tree-sitter)
+'.js', '.jsx', '.ts', '.tsx', '.mjs', '.cjs',
+'.py', '.pyw', '.go', '.java', '.c', '.h', '.cpp', '.hpp', '.cc', '.cxx',
+'.rs', '.rb', '.php', '.sh', '.bash', '.zsh', '.sql',
+'.kt', '.swift', '.scala', '.clj', '.cljs', '.ex', '.exs',
+'.lua', '.r', '.dart', '.vue', '.svelte',
+];
+
+// 不需要向量化的系统/临时文件名
+const IGNORE_FILENAMES = ['.ds_store', 'thumbs.db'];
+
+// 判断文件是否支持向量化
+function isFileSupported(fileName) {
+const lower = fileName.toLowerCase();
+const baseName = lower.split('/').pop() || lower;
+if (IGNORE_FILENAMES.includes(baseName)) return false;
+const ext = '.' + (fileName.split('.').pop() || '').toLowerCase();
+return SUPPORTED_EXTENSIONS.includes(ext);
+}
+
+// 状态标签配置
+function getStatusTag(status, fileName) {
+  // 不支持的格式显示“不支持”
+  if (!isFileSupported(fileName)) {
+    return { color: 'default', text: '不支持', title: '不支持的文件格式' };
+  }
+  const map = {
+    PENDING: { color: 'orange', text: '待处理', title: '文件等待向量化处理' },
+    PROCESSING: { color: 'blue', text: '处理中', title: '正在向量化...' },
+    READY: { color: 'green', text: '就绪', title: '向量化完成' },
+    FAILED: { color: 'red', text: '失败', title: '向量化失败' },
+  };
+  return map[status] || { color: 'default', text: status || '未知', title: '' };
+}
 
 const fileEmptyText = computed(() => {
   if (!selectedFolder.value) return '请从上方选择授权文件夹';
@@ -184,15 +259,80 @@ const fileEmptyText = computed(() => {
 });
 
 // ========== 页面初始化 ==========
+// 右侧文件表格：动态计算滚动高度，使表格填充页面、分页固定底部
+const filePanelBodyRef = ref(null);
+const filePanelRef = ref(null); // 右侧 .panel 容器（监听其大小变化更可靠）
+const fileScrollY = ref(300);
+let fileResizeObserver = null;
+let calcRafId = null;
+
+function calcFileScrollY() {
+  // 使用 requestAnimationFrame 确保在 DOM 重排后计算
+  if (calcRafId) cancelAnimationFrame(calcRafId);
+  calcRafId = requestAnimationFrame(() => {
+    calcRafId = null;
+    const el = filePanelBodyRef.value;
+    if (!el) return;
+    const header = el.querySelector('.ant-table-header') || el.querySelector('.ant-table-thead');
+    const pagination = el.querySelector('.ant-pagination');
+    let used = 0;
+    if (header) {
+      used += header.offsetHeight;
+    } else {
+      used += 55;
+    }
+    if (pagination) {
+      used += pagination.offsetHeight;
+      const cs = getComputedStyle(pagination);
+      used += parseFloat(cs.marginTop || '0') + parseFloat(cs.marginBottom || '0');
+    } else {
+      used += 56;
+    }
+    const h = el.clientHeight - used - 2;
+    fileScrollY.value = Math.max(h, 200);
+  });
+}
+
+// 选中子文件夹后表格出现，重新计算高度
+watch(selectedSubFolder, () => {
+  nextTick(calcFileScrollY);
+});
+
+// 文件列表变化时重新计算（分页可能出现/消失）
+watch(fileList, () => {
+  nextTick(calcFileScrollY);
+});
+
 onMounted(() => {
   loadFolderList();
   // 注册文件变化监听
   registerSyncChange();
+  // 注册 RAG 向量化进度监听
+  registerRagProgressListener();
+  // 计算表格高度
+  nextTick(() => {
+    calcFileScrollY();
+    // 监听右侧面板容器（.panel）的大小变化，比监听 .panel__body--table 更可靠
+    const observeTarget = filePanelRef.value || filePanelBodyRef.value;
+    if (observeTarget && typeof ResizeObserver !== 'undefined') {
+      fileResizeObserver = new ResizeObserver(calcFileScrollY);
+      fileResizeObserver.observe(observeTarget);
+    }
+  });
+  window.addEventListener('resize', calcFileScrollY);
 });
 
 onUnmounted(() => {
   // 移除文件变化监听
   ipc.removeAllListeners(ipcApiRoute.file.onSyncChange);
+  // 移除 RAG 进度监听
+  ipc.removeAllListeners(ipcApiRoute.file.onRagProgress);
+  window.removeEventListener('resize', calcFileScrollY);
+  if (calcRafId) cancelAnimationFrame(calcRafId);
+  if (fileResizeObserver) {
+    fileResizeObserver.disconnect();
+    fileResizeObserver = null;
+  }
 });
 
 // 注册文件变化监听
@@ -328,10 +468,86 @@ function onRefreshFiles() {
 // 文件操作
 function onFileAction(action, record) {
   if (action === 'view') {
-    message.info(`查看文件: ${record.name}`);
+    onViewFile(record);
   } else if (action === 'delete') {
     message.info(`删除文件: ${record.name}`);
   }
+}
+
+// 查看文件：在新窗口中打开文件查看器
+function onViewFile(record) {
+  const windowName = `file-viewer-${record.id}`;
+  const content = `#/special/file-viewer?fileItemId=${record.id}`;
+  ipc.invoke(ipcApiRoute.os.createWindow, {
+    type: 'vue',
+    content,
+    windowName,
+    windowTitle: `文件查看 - ${record.name}`,
+    width: 1200,
+    height: 800,
+    center: true,
+  }).catch((err) => {
+    console.error('[file] 打开文件查看窗口失败:', err);
+    message.error('打开文件查看窗口失败');
+  });
+}
+
+// ========== RAG 向量化相关 ==========
+const reingestingId = ref(null);
+
+// 重新向量化单个文件（入队）
+async function onReingestFile(record) {
+  reingestingId.value = record.id;
+  try {
+    const result = await ipc.invoke(ipcApiRoute.file.reingestFile, { fileItemId: record.id });
+    if (result.success) {
+      message.success(`已加入向量化队列: ${record.name}`);
+    } else {
+      message.error(`入队失败: ${result.message || '未知错误'}`);
+    }
+    // 刷新文件列表以更新状态（PENDING）
+    await loadFileList();
+  } catch (err) {
+    console.error('[file] 重新向量化失败:', err);
+    message.error('重新向量化失败');
+  } finally {
+    reingestingId.value = null;
+  }
+}
+
+// RAG 队列状态
+const ragQueueSize = ref(0);
+const ragProcessing = ref(false);
+
+// 监听 RAG 队列进度（队列串行处理，一次 1 个文件）
+function registerRagProgressListener() {
+  ipc.on(ipcApiRoute.file.onRagProgress, (_event, data) => {
+    const { type, fileItemId, fileName, queueSize, status } = data;
+    // 更新队列状态
+    ragQueueSize.value = queueSize || 0;
+    ragProcessing.value = type !== 'idle';
+
+    console.log(`[rag] 队列进度: type=${type}, file=${fileName || fileItemId}, status=${status}, 剩余=${queueSize}`);
+
+    // 文件状态变化时刷新文件列表
+    if (type === 'ingest' && (status === 'READY' || status === 'FAILED' || status === 'PROCESSING')) {
+      loadFileList();
+    } else if (type === 'delete') {
+      loadFileList();
+    } else if (type === 'idle') {
+      // 队列空闲，最终刷新
+      loadFileList();
+    }
+  });
+}
+
+// 格式化时间：年月日 时分秒
+function formatDateTime(isoStr) {
+  if (!isoStr) return '-';
+  const d = new Date(isoStr);
+  if (isNaN(d.getTime())) return isoStr;
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 }
 
 // 格式化文件大小
@@ -350,6 +566,9 @@ function formatFileSize(bytes) {
 
 <style lang="less" scoped>
 #file-index {
+  // 覆盖 .page-container 的 overflow-y: auto，防止页面滚动干扰 flex 高度传递
+  overflow: hidden;
+
   .file-row {
     height: 100%;
     margin: 0 !important;
@@ -412,11 +631,26 @@ function formatFileSize(bytes) {
       white-space: nowrap;
     }
 
+    .rag-queue-tag {
+      display: inline-flex;
+      align-items: center;
+      font-size: 12px;
+      margin: 0;
+    }
+
     &__body {
       flex: 1;
       overflow-y: auto;
       padding: 8px;
       min-height: 0;
+    }
+
+    // 右侧文件表格专用：表格填充高度、分页固定底部
+    &__body--table {
+      padding: 0;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
     }
   }
 
@@ -466,9 +700,13 @@ function formatFileSize(bytes) {
       font-size: 13px;
       font-weight: 500;
       color: #2c3e50;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
       overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      word-break: break-all;
+      line-height: 1.4;
     }
 
     &__meta {
@@ -545,6 +783,15 @@ function formatFileSize(bytes) {
     justify-content: center;
     height: 100%;
     min-height: 300px;
+  }
+
+  // 右侧文件表格：分页固定底部、留出内边距
+  .file-table {
+    :deep(.ant-pagination) {
+      padding: 8px 16px;
+      margin: 0 !important;
+      flex-shrink: 0;
+    }
   }
 }
 </style>

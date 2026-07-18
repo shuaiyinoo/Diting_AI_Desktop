@@ -16,6 +16,12 @@ interface CreateWindowArgs {
   content: string;
   windowName: string;
   windowTitle: string;
+  /** 窗口宽度，默认 980 */
+  width?: number;
+  /** 窗口高度，默认 650 */
+  height?: number;
+  /** 是否居中显示，默认 false */
+  center?: boolean;
 }
 
 class WindowService {
@@ -39,7 +45,7 @@ class WindowService {
    * Create a new window
    */
   createWindow(args: CreateWindowArgs): number {
-    const { type, content, windowName, windowTitle } = args;
+    const { type, content, windowName, windowTitle, width, height, center } = args;
     let contentUrl: string | null = null;
     if (type == 'html') {
       contentUrl = path.join('file://', getBaseDir(), content)
@@ -64,14 +70,18 @@ class WindowService {
     logger.info('[createWindow] url: ', contentUrl);
     const opt: BrowserWindowConstructorOptions = {
       title: windowTitle,
-      x: 10,
-      y: 10,
-      width: 980, 
-      height: 650,
+      width: width ?? 980, 
+      height: height ?? 650,
+      center: center ?? false,
       webPreferences: {
         contextIsolation: false,
         nodeIntegration: true,
       },
+    }
+    // 未指定居中时保持原有的左上角定位
+    if (!center) {
+      opt.x = 10;
+      opt.y = 10;
     }
     const win = new BrowserWindow(opt);
     const winContentsId = win.webContents.id;

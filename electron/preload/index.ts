@@ -11,6 +11,7 @@ import { sqlitedbService } from '../service/database/sqlitedb';
 import { filedbService } from '../service/database/filedb';
 import { windowService } from '../service/os/window';
 import SyncService from '../components/file/SyncService';
+import { ragService } from '../components/rag';
 
 export async function preload(): Promise<void> {
   // 示例功能模块，可选择性使用和修改
@@ -39,8 +40,24 @@ export async function preload(): Promise<void> {
   // 启动文件监听（实时同步）
   SyncService.startWatchAll();
 
+  // ★ 延迟 10 秒后启动 RAG 向量化
+  //   等待程序完全启动（窗口加载、前端初始化等）后再开始处理，
+  //   避免向量化与启动过程竞争资源导致卡顿。
+  //   1. 恢复上次未完成的任务（PROCESSING → PENDING）
+  //   2. 自动入队所有 PENDING 和 FAILED 的支持文件
+  //   3. 创建 Worker 线程在后台执行（不阻塞主进程）
+  setTimeout(async () => {
+    try {
+      logger.info('[preload] 10 秒延迟已到，开始启动 RAG 向量化...');
+      const result = await ragService.restoreAndAutoStart(
+        folders.map(f => ({ id: f.id, path: f.path }))
+      );
+      logger.info(`[preload] RAG 自动启动: 恢复 ${result.restored} 个未完成任务, 入队 ${result.queued} 个待处理任务`);
+    } catch (err) {
+      logger.error('[preload] RAG 自动启动失败:', err);
+    }
+  }, 10000);
+
   // go server
   //crossService.createGoServer();
 }
-
-

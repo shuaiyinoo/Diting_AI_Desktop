@@ -13,6 +13,9 @@ export interface AuthorizedFolder {
   sync_enabled: number;
 }
 
+/** 文件状态：待处理/处理中/就绪/失败 */
+export type FileStatus = 'PENDING' | 'PROCESSING' | 'READY' | 'FAILED';
+
 export interface FileItem {
   id: number;
   folder_id: number;
@@ -23,6 +26,14 @@ export interface FileItem {
   mtime: string;
   relative_path: string;
   is_dir: number;
+  /** RAG 处理状态 */
+  status: FileStatus;
+  /** 失败原因（status=FAILED 时有值） */
+  failure_reason: string | null;
+  /** RAG 处理完成时间 */
+  processed_at: string | null;
+  /** 文件 SHA-256 哈希（用于秒传判断） */
+  file_hash: string | null;
 }
 
 export interface FileItemTreeNode extends FileItem {
@@ -72,12 +83,41 @@ class FiledbService extends BasedbService {
           size INTEGER DEFAULT 0,
           mtime TEXT,
           relative_path TEXT,
-          is_dir INTEGER DEFAULT 0
+          is_dir INTEGER DEFAULT 0,
+          status TEXT DEFAULT 'PENDING',
+          failure_reason TEXT,
+          processed_at TEXT,
+          file_hash TEXT
         );
       `);
       // 索引加速查询
       this.db.exec(`CREATE INDEX idx_file_item_folder ON ${this.itemTableName} (folder_id);`);
       this.db.exec(`CREATE INDEX idx_file_item_parent ON ${this.itemTableName} (folder_id, parent_id);`);
+      this.db.exec(`CREATE INDEX idx_file_item_status ON ${this.itemTableName} (status);`);
+    }
+
+    // 表结构迁移：为旧表补充新字段（ALTER TABLE 幂等检测）
+    this._migrateFileItemTable();
+  }
+
+  /**
+   * 迁移 file_item 表：补充 status / failure_reason / processed_at / file_hash 字段
+   */
+  private _migrateFileItemTable(): void {
+    const columns = this.db.prepare(`PRAGMA table_info(${this.itemTableName})`).all() as { name: string }[];
+    const colNames = new Set(columns.map(c => c.name));
+
+    if (!colNames.has('status')) {
+      this.db.exec(`ALTER TABLE ${this.itemTableName} ADD COLUMN status TEXT DEFAULT 'PENDING';`);
+    }
+    if (!colNames.has('failure_reason')) {
+      this.db.exec(`ALTER TABLE ${this.itemTableName} ADD COLUMN failure_reason TEXT;`);
+    }
+    if (!colNames.has('processed_at')) {
+      this.db.exec(`ALTER TABLE ${this.itemTableName} ADD COLUMN processed_at TEXT;`);
+    }
+    if (!colNames.has('file_hash')) {
+      this.db.exec(`ALTER TABLE ${this.itemTableName} ADD COLUMN file_hash TEXT;`);
     }
   }
 
@@ -116,8 +156,8 @@ class FiledbService extends BasedbService {
     if (!items.length) return;
 
     const insertStmt = this.db.prepare(
-      `INSERT INTO ${this.itemTableName} (folder_id, parent_id, name, type, size, mtime, relative_path, is_dir)
-       VALUES (@folderId, @parentId, @name, @type, @size, @mtime, @relativePath, @isDir)`
+      `INSERT INTO ${this.itemTableName} (folder_id, parent_id, name, type, size, mtime, relative_path, is_dir, status)
+       VALUES (@folderId, @parentId, @name, @type, @size, @mtime, @relativePath, @isDir, 'PENDING')`
     );
 
     // relativePath -> dbId 映射
@@ -196,6 +236,10 @@ class FiledbService extends BasedbService {
       mtime: folder.add_time,
       relative_path: '',
       is_dir: 1,
+      status: 'PENDING',
+      failure_reason: null,
+      processed_at: null,
+      file_hash: null,
       fileCount: rootFileCount,
       isRoot: true,
       fullPath: folder.path,
@@ -216,6 +260,51 @@ class FiledbService extends BasedbService {
   }
 
   /**
+   * 根据 id 获取单个文件记录
+   */
+  getFileItemById(id: number): FileItem | null {
+    return this.db.prepare(
+      `SELECT * FROM ${this.itemTableName} WHERE id = ?`
+    ).get(id) as FileItem | null;
+  }
+
+  /**
+   * 更新文件状态
+   */
+  updateFileStatus(id: number, status: FileStatus, failureReason: string | null = null): void {
+    this.db.prepare(
+      `UPDATE ${this.itemTableName} SET status = ?, failure_reason = ?, processed_at = datetime('now') WHERE id = ?`
+    ).run(status, failureReason, id);
+  }
+
+  /**
+   * 更新文件哈希
+   */
+  updateFileHash(id: number, fileHash: string): void {
+    this.db.prepare(
+      `UPDATE ${this.itemTableName} SET file_hash = ? WHERE id = ?`
+    ).run(fileHash, id);
+  }
+
+  /**
+   * 查询同 folder 下指定状态的文件
+   */
+  getFilesByStatus(folderId: number, status: FileStatus): FileItem[] {
+    return this.db.prepare(
+      `SELECT * FROM ${this.itemTableName} WHERE folder_id = ? AND status = ? AND is_dir = 0 ORDER BY name`
+    ).all(folderId, status) as FileItem[];
+  }
+
+  /**
+   * 重置某授权文件夹下所有文件的状态为 PENDING（用于重新扫描后重新向量化）
+   */
+  resetFileStatusByFolder(folderId: number): void {
+    this.db.prepare(
+      `UPDATE ${this.itemTableName} SET status = 'PENDING', failure_reason = NULL, processed_at = NULL WHERE folder_id = ? AND is_dir = 0`
+    ).run(folderId);
+  }
+
+  /**
    * 清空某授权文件夹的所有文件记录（用于重新扫描前清理）
    */
   clearFileItems(folderId: number): void {
@@ -223,22 +312,152 @@ class FiledbService extends BasedbService {
   }
 
   /**
-   * 重新扫描并更新某授权文件夹的数据
+   * 智能同步扫描：对比磁盘与数据库，保留未变化文件的 hash/status
+   *
+   * 与旧的 rescanFolder（全清全插）不同，此方法：
+   *   - 保留未变化文件的 file_hash、status（避免重复向量化）
+   *   - 检测被删除的文件（返回 deleted 列表，用于清理 RAG 数据）
+   *   - 检测内容变化的文件（mtime/size 不同 → 重置为 PENDING，用于重新向量化）
+   *
+   * @returns 同步结果（added / deleted / changed / unchanged）
    */
-  async rescanFolder(folderId: number): Promise<void> {
+  async syncScanFolder(folderId: number): Promise<{
+    added: FileItem[];
+    deleted: FileItem[];
+    changed: FileItem[];
+    unchanged: FileItem[];
+  }> {
     const folder = this.getFolderById(folderId);
-    if (!folder) return;
+    if (!folder) return { added: [], deleted: [], changed: [], unchanged: [] };
 
     // 引入 FolderScanner（延迟导入避免循环依赖）
     const FolderScanner = (await import('../../components/file/FolderScanner')).default;
     const scanItems = await FolderScanner.scanWithFolders(folder.path);
 
-    this.db.transaction(() => {
-      this.clearFileItems(folderId);
-      this.batchAddFileItems(folderId, scanItems);
-    })();
+    // 获取数据库中现有的所有文件/文件夹记录
+    const existingItems = this.db.prepare(
+      `SELECT * FROM ${this.itemTableName} WHERE folder_id = ?`
+    ).all(folderId) as FileItem[];
 
-    logger.info(`[FiledbService] 重新扫描完成 folderId=${folderId}, items=${scanItems.length}`);
+    // 构建 relative_path -> existingItem 映射
+    const existingMap = new Map<string, FileItem>();
+    for (const item of existingItems) {
+      existingMap.set(item.relative_path, item);
+    }
+
+    // 构建 scanItems 的 relative_path 集合
+    const scanPathSet = new Set(scanItems.map(s => s.relativePath));
+
+    const added: FileItem[] = [];
+    const deleted: FileItem[] = [];
+    const changed: FileItem[] = [];
+    const unchanged: FileItem[] = [];
+
+    // ── 检测删除和变化 ──
+    const deleteStmt = this.db.prepare(`DELETE FROM ${this.itemTableName} WHERE id = ?`);
+    const updateFileStmt = this.db.prepare(
+      `UPDATE ${this.itemTableName} SET size = ?, mtime = ?, status = 'PENDING', failure_reason = NULL WHERE id = ?`
+    );
+    const updateDirStmt = this.db.prepare(
+      `UPDATE ${this.itemTableName} SET size = ?, mtime = ? WHERE id = ?`
+    );
+
+    const syncTx = this.db.transaction(() => {
+      for (const existing of existingItems) {
+        if (!scanPathSet.has(existing.relative_path)) {
+          // 文件/文件夹被删除
+          deleted.push(existing);
+          deleteStmt.run(existing.id);
+        }
+      }
+
+      // ── 插入新增项 + 更新已有项 ──
+      const pathMap = new Map<string, number>();
+      // 先填充已有项的 relative_path -> id 映射
+      for (const existing of existingItems) {
+        if (scanPathSet.has(existing.relative_path)) {
+          pathMap.set(existing.relative_path, existing.id);
+        }
+      }
+
+      const insertStmt = this.db.prepare(
+        `INSERT INTO ${this.itemTableName} (folder_id, parent_id, name, type, size, mtime, relative_path, is_dir, status)
+         VALUES (@folderId, @parentId, @name, @type, @size, @mtime, @relativePath, @isDir, 'PENDING')`
+      );
+
+      for (const item of scanItems) {
+        const parentId = item.parentPath ? (pathMap.get(item.parentPath) || 0) : 0;
+        const existing = existingMap.get(item.relativePath);
+
+        if (existing) {
+          // 已有记录，检查是否变化
+          if (existing.is_dir) {
+            // 文件夹：更新 mtime
+            updateDirStmt.run(item.size, item.mtime, existing.id);
+            pathMap.set(item.relativePath, existing.id);
+          } else {
+            // 文件：对比 mtime 和 size
+            if (existing.mtime !== item.mtime || existing.size !== item.size) {
+              // 内容变化：重置状态为 PENDING，保留 file_hash（向量化时会重新计算并对比）
+              updateFileStmt.run(item.size, item.mtime, existing.id);
+              changed.push({ ...existing, size: item.size, mtime: item.mtime, status: 'PENDING' });
+            } else {
+              // 未变化：保留 hash 和 status
+              unchanged.push(existing);
+            }
+            pathMap.set(item.relativePath, existing.id);
+          }
+        } else {
+          // 新增项
+          const info = insertStmt.run({
+            folderId,
+            parentId,
+            name: item.name,
+            type: item.type,
+            size: item.size,
+            mtime: item.mtime,
+            relativePath: item.relativePath,
+            isDir: item.isDir ? 1 : 0,
+          });
+          pathMap.set(item.relativePath, Number(info.lastInsertRowid));
+
+          // 新增的文件加入 added 列表
+          if (!item.isDir) {
+            added.push({
+              id: Number(info.lastInsertRowid),
+              folder_id: folderId,
+              parent_id: parentId,
+              name: item.name,
+              type: item.type,
+              size: item.size,
+              mtime: item.mtime,
+              relative_path: item.relativePath,
+              is_dir: 0,
+              status: 'PENDING',
+              failure_reason: null,
+              processed_at: null,
+              file_hash: null,
+            });
+          }
+        }
+      }
+    });
+
+    syncTx();
+
+    logger.info(
+      `[FiledbService] 同步扫描完成 folderId=${folderId}: added=${added.length}, deleted=${deleted.length}, changed=${changed.length}, unchanged=${unchanged.length}`
+    );
+
+    return { added, deleted, changed, unchanged };
+  }
+
+  /**
+   * 重新扫描并更新某授权文件夹的数据（保留 hash/status 的智能同步）
+   * @deprecated 请使用 syncScanFolder 获取详细同步结果
+   */
+  async rescanFolder(folderId: number): Promise<void> {
+    await this.syncScanFolder(folderId);
   }
 
   /**
@@ -267,15 +486,6 @@ class FiledbService extends BasedbService {
    */
   getFolderById(folderId: number): AuthorizedFolder | null {
     return this.db.prepare(`SELECT * FROM ${this.folderTableName} WHERE id = ?`).get(folderId) as AuthorizedFolder | null;
-  }
-
-  /**
-   * 根据 file_item id 获取记录
-   */
-  getFileItemById(folderId: number, itemId: number): FileItem | null {
-    return this.db.prepare(
-      `SELECT * FROM ${this.itemTableName} WHERE folder_id = ? AND id = ?`
-    ).get(folderId, itemId) as FileItem | null;
   }
 }
 

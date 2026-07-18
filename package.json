@@ -54,6 +54,7 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
+    "@kreuzberg/node": "^4.9.9",
     "@zvec/zvec": "^0.5.0",
     "axios": "^1.7.9",
     "better-sqlite3": "^12.5.0",
@@ -62,7 +63,10 @@
     "dayjs": "^1.11.13",
     "ee-core": "^5.0.1",
     "electron-updater": "^6.7.3",
+    "hf-embedder": "^0.2.1",
     "mammoth": "^1.12.0",
+    "minisearch": "^7.2.0",
+    "pdf-efficient-loader": "^1.0.0",
     "pdf-parse": "^2.4.5",
     "qwen-embedder": "^0.1.5"
   }

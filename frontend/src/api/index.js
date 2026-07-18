@@ -79,6 +79,15 @@ const ipcApiRoute = {
     toggleSync: 'controller/file/toggleSync',
     registerSyncCallback: 'controller/file/registerSyncCallback',
     onSyncChange: 'controller/file/onSyncChange',
+    // RAG 向量化
+    startIngestion: 'controller/file/startIngestion',
+    reingestFile: 'controller/file/reingestFile',
+    getRagStats: 'controller/file/getRagStats',
+    checkFileSupported: 'controller/file/checkFileSupported',
+    onRagProgress: 'controller/file/onRagProgress',
+    // 文件查看
+    getFileInfo: 'controller/file/getFileInfo',
+    getFileData: 'controller/file/getFileData',
   }
 }
 

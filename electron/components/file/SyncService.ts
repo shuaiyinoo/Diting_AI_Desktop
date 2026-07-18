@@ -3,16 +3,24 @@ import chokidar from 'chokidar';
 import { logger } from 'ee-core/log';
 import { filedbService } from '../../service/database/filedb';
 import FolderScanner from './FolderScanner';
-import type { AuthorizedFolder } from '../../service/database/filedb';
-import type { IpcMainEvent } from 'electron';
+import type { AuthorizedFolder, FileItem } from '../../service/database/filedb';
 
-type ChangeCallback = (folderId: number) => void;
+/** 同步扫描结果 */
+export interface SyncScanResult {
+  folderId: number;
+  added: FileItem[];
+  deleted: FileItem[];
+  changed: FileItem[];
+  unchanged: FileItem[];
+}
+
+type ChangeCallback = (result: SyncScanResult) => void;
 
 /**
  * 文件同步监听服务
  * - 支持同时监听多个授权文件夹
- * - 文件变化时自动重新扫描并更新数据库
- * - 通过回调通知前端刷新
+ * - 文件变化时自动重新扫描并更新数据库（智能同步：保留 hash/status）
+ * - 通过回调通知前端刷新 + 触发 RAG 队列任务
  */
 class SyncService {
     private watchers: Map<number, ReturnType<typeof chokidar.watch>> = new Map();
@@ -94,6 +102,7 @@ class SyncService {
 
     /**
      * 文件变化处理（带防抖）
+     * 使用智能同步扫描，保留未变化文件的 hash/status
      */
     private onFolderChange(folderId: number): void {
         // 清除之前的防抖定时器
@@ -105,17 +114,20 @@ class SyncService {
         // 设置新的防抖定时器（500ms 后执行）
         const timer = setTimeout(async () => {
             this.debounceTimers.delete(folderId);
-            logger.info(`[SyncService] 检测到变化，重新扫描 folderId=${folderId}`);
+            logger.info(`[SyncService] 检测到变化，智能同步扫描 folderId=${folderId}`);
 
             try {
-                // 重新扫描并更新数据库
-                await filedbService.rescanFolder(folderId);
-                // 通知前端刷新
+                // 智能同步扫描：保留 hash/status，检测删除和变化
+                const result = await filedbService.syncScanFolder(folderId);
+                logger.info(
+                    `[SyncService] 同步结果 folderId=${folderId}: added=${result.added.length}, deleted=${result.deleted.length}, changed=${result.changed.length}, unchanged=${result.unchanged.length}`
+                );
+                // 通知回调（包含同步结果，用于触发 RAG 队列 + 前端刷新）
                 if (this.changeCallback) {
-                    this.changeCallback(folderId);
+                    this.changeCallback({ folderId, ...result });
                 }
             } catch (err) {
-                logger.error(`[SyncService] 重新扫描失败 folderId=${folderId}:`, err);
+                logger.error(`[SyncService] 同步扫描失败 folderId=${folderId}:`, err);
             }
         }, 500);
 

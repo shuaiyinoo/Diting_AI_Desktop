@@ -171,6 +171,11 @@ const constantRouterMap = [
         name: 'SpecialLoginWindow',
         component: () => import('@/views/effect/login/Window.vue')
       },
+      {
+        path: 'file-viewer',
+        name: 'SpecialFileViewer',
+        component: () => import('@/views/file/Viewer.vue')
+      },
     ]
   },
 ]

@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@ant-design/icons-vue": "^7.0.1",
+    "@file-viewer/vue3-full": "^2.2.2",
     "ant-design-vue": "^4.2.6",
     "axios": "^1.9.0",
     "pinia": "^2.3.1",
@@ -20,6 +21,7 @@
     "vuex": "^4.1.0"
   },
   "devDependencies": {
+    "@file-viewer/vite-plugin": "^2.2.2",
     "@vitejs/plugin-vue": "^6.0.7",
     "@vue/compiler-sfc": "^3.5.34",
     "less": "^4.6.4",
