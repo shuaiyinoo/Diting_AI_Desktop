@@ -174,7 +174,7 @@ class FrameworkController {
   async ipcInvokeMsg(args: string): Promise<string> {
     let timeNow = dayjs().format('YYYY-MM-DD HH:mm:ss');
     const data = args + ' - ' + timeNow;
-    
+
     return data;
   }  
 

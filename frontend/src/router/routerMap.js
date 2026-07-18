@@ -9,6 +9,12 @@ const constantRouterMap = [
     component: () => import('@/layouts/AppSider.vue'),
     children: [
       {
+        path: '/debug',
+        name: 'Debug',
+        component: () => import('@/layouts/Menu.vue'),
+        props: { id: 'debug', autoNavigate: false },
+      },
+      {
         path: '/framework',
         name: 'Framework',
         component: () => import('@/layouts/Menu.vue'),
@@ -119,6 +125,36 @@ const constantRouterMap = [
             component: () => import('@/views/cross/python/Index.vue')
           },
         ]  
+      },
+      {
+        path: '/file',
+        name: 'File',
+        component: () => import('@/views/file/Index.vue'),
+        props: { title: '文件' },
+      },
+      {
+        path: '/qa',
+        name: 'Qa',
+        component: () => import('@/views/Placeholder.vue'),
+        props: { title: 'QA' },
+      },
+      {
+        path: '/rag',
+        name: 'Rag',
+        component: () => import('@/views/Placeholder.vue'),
+        props: { title: 'RAG' },
+      },
+      {
+        path: '/setting',
+        name: 'Setting',
+        component: () => import('@/views/Placeholder.vue'),
+        props: { title: '设置' },
+      },
+      {
+        path: '/adjust',
+        name: 'Adjust',
+        component: () => import('@/views/Placeholder.vue'),
+        props: { title: '调整' },
       },
     ]
   },

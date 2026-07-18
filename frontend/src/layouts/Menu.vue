@@ -32,6 +32,10 @@ const props = defineProps({
   id: {
     type: String,
     default: ''
+  },
+  autoNavigate: {
+    type: Boolean,
+    default: true
   }
 });
 
@@ -50,6 +54,9 @@ onMounted(() => {
 
 function menuHandle() {
   menu.value = subMenu[props.id];
+  if (!props.autoNavigate) {
+    return;
+  }
   const linkInfo = menu.value[current.value];
   router.push({ name: linkInfo.pageName, params: linkInfo.params });
 }
@@ -101,7 +108,7 @@ function changeMenu(e) {
   }
 
   .layout-content {
-    background-color: #f0f2f5;
+    background-color: #ffffff;
     height: 100%;
     overflow: hidden;
   }

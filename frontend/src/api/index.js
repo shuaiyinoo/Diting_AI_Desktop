@@ -67,6 +67,18 @@ const ipcApiRoute = {
     killCrossServer: 'controller/cross/killServer',
     createCrossServer: 'controller/cross/createServer',
     requestApi: 'controller/cross/requestApi',
+  },
+
+  // 文件管理
+  file: {
+    addFolder: 'controller/file/addFolder',
+    getFolderList: 'controller/file/getFolderList',
+    getSubFolders: 'controller/file/getSubFolders',
+    getFiles: 'controller/file/getFiles',
+    deleteFolder: 'controller/file/deleteFolder',
+    toggleSync: 'controller/file/toggleSync',
+    registerSyncCallback: 'controller/file/registerSyncCallback',
+    onSyncChange: 'controller/file/onSyncChange',
   }
 }
 

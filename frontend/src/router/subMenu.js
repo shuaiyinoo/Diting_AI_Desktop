@@ -1,5 +1,31 @@
 // 子菜单
 export default {
+	debug: {
+		'menu_100' : {
+			icon: 'icon-fengche',
+			title: '框架',
+			pageName: 'Framework',
+			params: {}
+		},
+		'menu_101' : {
+			icon: 'icon-niudan',
+			title: '系统',
+			pageName: 'Os',
+			params: {}
+		},
+		'menu_102' : {
+			icon: 'icon-liuxing',
+			title: '特效',
+			pageName: 'Effect',
+			params: {}
+		},
+		'menu_103' : {
+			icon: 'icon-gouwu',
+			title: 'cross',
+			pageName: 'Cross',
+			params: {}
+		},
+	},
 	framework: {
 		'menu_100' : {
 			icon: 'profile',
