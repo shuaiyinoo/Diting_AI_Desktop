@@ -153,8 +153,8 @@ const constantRouterMap = [
       {
         path: '/adjust',
         name: 'Adjust',
-        component: () => import('@/views/Placeholder.vue'),
-        props: { title: '调整' },
+        component: () => import('@/views/adjust/Index.vue'),
+        props: { title: '模型' },
       },
     ]
   },

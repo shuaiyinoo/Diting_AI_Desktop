@@ -66,8 +66,8 @@ const menu = ref({
     params: {}
   },
   'menu_adjust': {
-    icon: 'SlidersFilled',
-    title: '调整',
+    icon: 'RobotFilled',
+    title: '模型',
     pageName: 'Adjust',
     params: {}
   },

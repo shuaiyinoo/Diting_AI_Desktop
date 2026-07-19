@@ -88,6 +88,11 @@ const ipcApiRoute = {
     // 文件查看
     getFileInfo: 'controller/file/getFileInfo',
     getFileData: 'controller/file/getFileData',
+  },
+
+  // LLM 模型管理
+  llm: {
+    modelOperation: 'controller/llm/modelOperation',
   }
 }
 

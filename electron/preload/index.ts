@@ -9,6 +9,7 @@ import { autoUpdaterService } from '../service/os/auto_updater';
 import { crossService } from '../service/cross';
 import { sqlitedbService } from '../service/database/sqlitedb';
 import { filedbService } from '../service/database/filedb';
+import { llmdbService } from '../service/database/llmdb';
 import { windowService } from '../service/os/window';
 import SyncService from '../components/file/SyncService';
 import { ragService } from '../components/rag';
@@ -23,6 +24,7 @@ export async function preload(): Promise<void> {
   // init sqlite db (lazy loads better-sqlite3 on first use)
   await sqlitedbService.init();
   await filedbService.init();
+  await llmdbService.init();
 
   // 重新扫描所有授权文件夹，更新文件数据
   const folders = filedbService.getFolderList();
