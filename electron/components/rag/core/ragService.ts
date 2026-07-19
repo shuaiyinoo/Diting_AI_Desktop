@@ -533,6 +533,39 @@ class RagService {
   }
 
   /**
+   * 确保资源初始化完成（对外公开，供 QA 检索等模块在调用前确保资源就绪）
+   */
+  async ensureReady(): Promise<void> {
+    await this.initialize();
+  }
+
+  /**
+   * 获取检索上下文资源（供 QA 模块的混合检索使用）
+   *
+   * 返回已初始化的 RAG 资源句柄：
+   *   - ragDb：SQLite 切片数据库
+   *   - collection：zvec 向量库
+   *   - kwService：MiniSearch 关键词索引
+   *   - embedder：嵌入模型提供者
+   *
+   * 调用此方法会自动触发惰性初始化（首次调用时加载模型、打开数据库等）。
+   */
+  async getRetrievalContext(): Promise<{
+    ragDb: RagDatabase;
+    collection: ReturnType<typeof initVectorStore>;
+    kwService: KeywordSearchService;
+    embedder: QwenEmbedderProvider;
+  }> {
+    await this.initialize();
+    return {
+      ragDb: this.ragDb!,
+      collection: this.collection!,
+      kwService: this.kwService!,
+      embedder: this.embedder!,
+    };
+  }
+
+  /**
    * 获取向量统计信息
    */
   getStats(): { vectorizedFiles: number; keywordDocs: number; queueSize: number; processing: boolean } {

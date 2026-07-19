@@ -39,6 +39,26 @@ export type {
   KeywordHit,
 } from './types';
 
+export {
+  EvidenceLevel,
+} from './types';
+export type {
+  RetrievalSource,
+  RetrievalCandidate,
+  EvidenceDocument,
+  EvidenceMetadata,
+  RetrievedEvidenceBundle,
+  LlmUsageInfo,
+  KnowledgeAnswerOutput,
+  Citation,
+  AskQuestionResponse,
+  EvidenceOverview,
+  DocumentEvidenceGroup,
+  EvidenceSnippet,
+  LlmModule,
+  LlmEndpoint,
+} from './types';
+
 // ═══════════════════════════════════════════
 // 数据库层（按需导入）
 // ═══════════════════════════════════════════
@@ -78,3 +98,90 @@ export { cleanText } from './processor/text-cleanup';
 
 export { QwenEmbedderProvider } from './embedding/embedding';
 export type { QwenEmbedderConfig } from './embedding/embedding';
+
+// ═══════════════════════════════════════════
+// 混合检索层（QA 用）
+// ═══════════════════════════════════════════
+
+export { hybridRetrievalService } from './retrieval/hybridRetrieval';
+
+// ═══════════════════════════════════════════
+// LLM 对话层
+// ═══════════════════════════════════════════
+
+export { chat, chatStream } from './llm/llmClient';
+export type { ChatMessage, ChatResult, StreamCallbacks } from './llm/llmClient';
+export {
+  buildSystemPrompt,
+  buildStreamSystemPrompt,
+  buildUserPrompt,
+  buildChatMessages,
+  buildStreamChatMessages,
+  parseAnswer,
+  formatEvidenceContext,
+  INSUFFICIENT_EVIDENCE_CODE,
+  INSUFFICIENT_EVIDENCE_MESSAGE,
+  ANSWER_FORMAT_ERROR_CODE,
+  ANSWER_FORMAT_ERROR_MESSAGE,
+} from './llm/promptBuilder';
+
+// ═══════════════════════════════════════════
+// QA 编排层
+// ═══════════════════════════════════════════
+
+export { qaService } from './qa/qaService';
+export type { AskResult, StreamContext } from './qa/qaService';
+export { assembleCitations, assembleEvidenceOverview } from './qa/citationAssembler';
+
+// ═══════════════════════════════════════════
+// Metrics 统计层
+// ═══════════════════════════════════════════
+
+export { metricsDbService } from './metrics/metricsDb';
+export type {
+  LlmUsageRecordEntity,
+  RecordUsageParams,
+  UsageStatsRow,
+  DailyStatsRow,
+  ModuleDistRow,
+} from './metrics/metricsDb';
+export { calculateCost } from './metrics/costCalculator';
+export { recordUsage } from './metrics/usageCollector';
+export type { UsageRecordParams } from './metrics/usageCollector';
+
+// ═══════════════════════════════════════════
+// Assistant 助手层
+// ═══════════════════════════════════════════
+
+export { assistantService } from './assistant/assistantService';
+export type { StreamCallbacks as AssistantStreamCallbacks } from './assistant/assistantService';
+export {
+  promptContextBuilder,
+} from './assistant/promptContextBuilder';
+export {
+  shortTermMemoryHook,
+} from './assistant/memory/shortTermMemoryHook';
+export {
+  shortTermMemoryMaintenanceService,
+} from './assistant/memory/shortTermMemoryMaintenanceService';
+export {
+  sessionSummaryService,
+} from './assistant/memory/sessionSummaryService';
+export {
+  memorySummarizer,
+} from './assistant/memory/memorySummarizer';
+export type {
+  AssistantToolMode,
+  AssistantMessageRole,
+  AssistantMessageVO,
+  AssistantSessionListItemVO,
+  AssistantSessionDetailVO,
+  AssistantConversationContext,
+  AssistantConversationContextVO,
+  AssistantChatRequest,
+  AssistantAgentResult,
+  AssistantChatStreamEvent,
+  AssistantStreamEventType,
+} from './assistant/types';
+export { statisticsService } from './metrics/statisticsService';
+export type { StatsPeriod, MetricsOverviewVO } from './metrics/statisticsService';

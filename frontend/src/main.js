@@ -4,6 +4,8 @@ import { createApp } from 'vue';
 import App from './App.vue';
 import './assets/global.less';
 import './assets/theme.less';
+// markstream-vue 流式 Markdown 渲染器样式（全局导入一次）
+import 'markstream-vue/index.css';
 import components from './components/global';
 import Router from './router/index';
 

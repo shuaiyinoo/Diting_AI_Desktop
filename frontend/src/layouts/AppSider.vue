@@ -39,7 +39,7 @@ import { useRouter } from 'vue-router';
 const router = useRouter();
 
 const collapsed = ref(true);
-const current = ref('menu_debug');
+const current = ref('menu_file');
 const menu = ref({
   'menu_file': {
     icon: 'FileFilled',
@@ -59,16 +59,16 @@ const menu = ref({
     pageName: 'Rag',
     params: {}
   },
-  'menu_debug': {
-    icon: 'BugFilled',
-    title: '调试',
-    pageName: 'Debug',
-    params: {}
-  },
   'menu_adjust': {
     icon: 'RobotFilled',
     title: '模型',
     pageName: 'Adjust',
+    params: {}
+  },
+  'menu_metrics': {
+    icon: 'BarChartOutlined',
+    title: '统计',
+    pageName: 'Metrics',
     params: {}
   },
   'menu_setting': {

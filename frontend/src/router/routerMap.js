@@ -135,14 +135,17 @@ const constantRouterMap = [
       {
         path: '/qa',
         name: 'Qa',
-        component: () => import('@/views/Placeholder.vue'),
-        props: { title: 'QA' },
+        component: () => import('@/views/qa/Index.vue'),
       },
       {
         path: '/rag',
         name: 'Rag',
-        component: () => import('@/views/Placeholder.vue'),
-        props: { title: 'RAG' },
+        component: () => import('@/views/rag/Index.vue'),
+      },
+      {
+        path: '/metrics',
+        name: 'Metrics',
+        component: () => import('@/views/metrics/Index.vue'),
       },
       {
         path: '/setting',

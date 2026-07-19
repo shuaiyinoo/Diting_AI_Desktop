@@ -93,6 +93,28 @@ const ipcApiRoute = {
   // LLM 模型管理
   llm: {
     modelOperation: 'controller/llm/modelOperation',
+  },
+
+  // QA 知识问答
+  qa: {
+    // 同步问答（IPC）
+    ask: 'controller/qa/ask',
+    // 流式问答：通过 HTTP SSE 调用（不再使用 IPC）
+    streamAsk: 'controller/qa/streamAsk',
+    // 历史记录管理
+    recordOperation: 'controller/qa/recordOperation',
+    // LLM 用量统计
+    metricsOperation: 'controller/qa/metricsOperation',
+  },
+
+  // Assistant 助手
+  assistant: {
+    // 会话管理（创建/列表/重命名/删除/详情）
+    sessionOperation: 'controller/assistant/sessionOperation',
+    // 获取会话对话上下文（恢复历史）
+    getConversationContext: 'controller/assistant/getConversationContext',
+    // 流式聊天：通过 HTTP SSE 调用（不再使用 IPC）
+    streamChat: 'controller/assistant/streamChat',
   }
 }
 

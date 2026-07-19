@@ -10,6 +10,9 @@ import { crossService } from '../service/cross';
 import { sqlitedbService } from '../service/database/sqlitedb';
 import { filedbService } from '../service/database/filedb';
 import { llmdbService } from '../service/database/llmdb';
+import { qadbService } from '../service/database/qadb';
+import { assistantdbService } from '../service/database/assistantdb';
+import { metricsDbService } from '../components/rag/metrics/metricsDb';
 import { windowService } from '../service/os/window';
 import SyncService from '../components/file/SyncService';
 import { ragService } from '../components/rag';
@@ -25,6 +28,11 @@ export async function preload(): Promise<void> {
   await sqlitedbService.init();
   await filedbService.init();
   await llmdbService.init();
+  // 初始化 QA 问答记录表和 LLM 用量统计表
+  await qadbService.init();
+  await metricsDbService.init();
+  // 初始化 Assistant 助手会话/消息/记忆上下文表
+  await assistantdbService.init();
 
   // 重新扫描所有授权文件夹，更新文件数据
   const folders = filedbService.getFolderList();
