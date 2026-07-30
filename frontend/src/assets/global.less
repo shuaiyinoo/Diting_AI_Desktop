@@ -1,16 +1,46 @@
-/* === Light Theme Variables === */
-@light-bg-deep: #f0f2f5;
-@light-bg-base: #fafafa;
-@light-bg-card: #ffffff;
-@light-bg-elevated: #ffffff;
-@light-border: #e8e8e8;
-@light-border-light: #f0f0f0;
-@light-text-primary: #2c3e50;
-@light-text-secondary: #666666;
-@light-text-muted: #999999;
-@accent-green: #07C160;
-@accent-green-hover: #0ad672;
-@accent-green-subtle: rgba(7, 193, 96, 0.08);
+/* === CSS 变量：亮色主题 === */
+:root {
+  --bg-layout: #f0f2f5;
+  --bg-panel: #ffffff;
+  --bg-sidebar: #f0f2f5;
+  --bg-statusbar: #f0f2f5;
+  --bg-hover: rgba(22, 119, 255, 0.06);
+  --bg-active: rgba(22, 119, 255, 0.10);
+  --bg-divider: #e8e8e8;
+  --bg-divider-hover: #1677ff;
+  --border-color: #e8e8e8;
+  --border-color-light: #f0f0f0;
+  --text-primary: #2c3e50;
+  --text-secondary: #666666;
+  --text-muted: #999999;
+  --accent: #1677ff;
+  --accent-hover: #4096ff;
+  --shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.06);
+  --scrollbar-thumb: #c1c1c1;
+  --scrollbar-track: transparent;
+}
+
+/* === CSS 变量：暗色主题 === */
+[data-theme='dark'] {
+  --bg-layout: #141414;
+  --bg-panel: #1f1f1f;
+  --bg-sidebar: #1a1a1a;
+  --bg-statusbar: #1a1a1a;
+  --bg-hover: rgba(22, 119, 255, 0.15);
+  --bg-active: rgba(22, 119, 255, 0.25);
+  --bg-divider: #303030;
+  --bg-divider-hover: #1677ff;
+  --border-color: #303030;
+  --border-color-light: #262626;
+  --text-primary: #e0e0e0;
+  --text-secondary: #a0a0a0;
+  --text-muted: #707070;
+  --accent: #1677ff;
+  --accent-hover: #4096ff;
+  --shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.3);
+  --scrollbar-thumb: #505050;
+  --scrollbar-track: transparent;
+}
 
 /* === App Root === */
 html, body {
@@ -24,18 +54,19 @@ html, body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  color: @light-text-primary;
+  color: var(--text-primary);
   height: 100%;
-  background-color: @light-bg-deep;
+  background-color: var(--bg-layout);
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
 /* === Scrollbar === */
 ::-webkit-scrollbar { width: 6px; height: 4px; }
 ::-webkit-scrollbar-button { width: 0; height: 0; }
-::-webkit-scrollbar-track { background: @light-bg-deep; }
-::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 3px; transition: .3s; }
-::-webkit-scrollbar-thumb:hover { background-color: @accent-green; }
-::-webkit-scrollbar-thumb:active { background-color: @accent-green; }
+::-webkit-scrollbar-track { background: var(--scrollbar-track); }
+::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; transition: .3s; }
+::-webkit-scrollbar-thumb:hover { background-color: var(--accent); }
+::-webkit-scrollbar-thumb:active { background-color: var(--accent); }
 
 /* === Page Container === */
 .page-container {
@@ -68,37 +99,37 @@ html, body {
 
 /* === Feature Card === */
 .feature-card {
-  background-color: @light-bg-card;
-  border: 1px solid @light-border;
+  background-color: var(--bg-panel);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 20px;
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-sm);
 
   &:hover {
-    border-color: @accent-green;
-    box-shadow: 0 4px 16px rgba(7, 193, 96, 0.1);
+    border-color: var(--accent);
+    box-shadow: 0 4px 16px rgba(22, 119, 255, 0.1);
   }
 }
 
 .feature-card__title {
   font-size: 15px;
   font-weight: 600;
-  color: @light-text-primary;
+  color: var(--text-primary);
   margin-bottom: 16px;
   padding-bottom: 12px;
-  border-bottom: 1px solid @light-border;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .feature-card__body {
-  color: @light-text-secondary;
+  color: var(--text-secondary);
   font-size: 14px;
   line-height: 1.6;
 }
 
 .feature-card__subtitle {
   font-size: 13px;
-  color: @light-text-muted;
+  color: var(--text-muted);
   margin-top: 4px;
 }
 
@@ -106,14 +137,8 @@ html, body {
   grid-column: 1 / -1;
 }
 
-/* === markstream-vue 字号与间距覆盖 ===
- * markstream-vue 默认字号基于 1rem(16px)，标题最大 2.25rem(36px)，
- * 且段落/标题间距偏大（--ms-flow-paragraph-y: 1.5em 等），
- * 对桌面 AI 聊天场景过大。此处缩小到与项目整体协调的紧凑尺寸。
- * 作用域限定在 .message__text--answer 内的 .markstream-vue 容器。
- */
+/* === markstream-vue 字号与间距覆盖 === */
 .message__text--answer .markstream-vue {
-  /* 字号 */
   --ms-text-body: 14px;
   --ms-text-h1: 20px;
   --ms-text-h2: 18px;
@@ -126,7 +151,6 @@ html, body {
   --ms-leading-h2: 1.4;
   --ms-leading-h3: 1.5;
 
-  /* 段落与块级元素间距（收紧） */
   --ms-flow-paragraph-y: 0.6em;
   --ms-flow-heading-1-mt: 1em;
   --ms-flow-heading-1-mb: 0.4em;
@@ -156,27 +180,21 @@ html, body {
   font-size: 14px;
   line-height: 1.6;
 
-  /* 段落兜底间距 */
   p { margin: 0.5em 0; }
   p:first-child { margin-top: 0; }
   p:last-child { margin-bottom: 0; }
 
-  /* 列表紧凑 */
   ul, ol { margin: 0.4em 0; padding-left: 1.4em; }
   li { margin: 0.15em 0; }
 
-  /* 代码块紧凑 */
   pre { margin: 0.5em 0; padding: 0.6em 0.8em; }
   pre:first-child { margin-top: 0; }
   pre:last-child { margin-bottom: 0; }
 
-  /* 引用块紧凑 */
   blockquote { margin: 0.5em 0; padding: 0.3em 0.8em; }
 
-  /* 表格紧凑 */
   table { margin: 0.6em 0; }
 
-  /* 标题首尾无多余间距 */
   h1:first-child, h2:first-child, h3:first-child { margin-top: 0; }
   h1:last-child, h2:last-child, h3:last-child { margin-bottom: 0; }
 }

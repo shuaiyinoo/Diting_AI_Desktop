@@ -10,6 +10,13 @@ import SyncService from '../components/file/SyncService';
 import type { SyncScanResult } from '../components/file/SyncService';
 import { ragService, isVectorSupported } from '../components/rag';
 
+// 新建文件的空白模板（基于 OnlyofficePersonal/blank）
+const BLANK_TEMPLATES: Record<string, string> = {
+  docx: 'blank.docx',
+  xlsx: 'blank.xlsx',
+  pptx: 'blank.pptx',
+};
+
 // 文件变化通知通道
 const SYNC_CHANGE_CHANNEL = 'controller/file/onSyncChange';
 // RAG 向量化进度通知通道
@@ -464,6 +471,202 @@ return { success: false, message: `不支持的文件类型: ${fileItem.name}` }
       const msg = err instanceof Error ? err.message : String(err);
       logger.error(`[FileController] 读取文件失败: ${filePath}:`, err);
       return { success: false, message: `读取文件失败: ${msg}` };
+    }
+  }
+
+  // ═══════════════════════════════════════════
+  // 新建文件
+  // ═══════════════════════════════════════════
+
+  /**
+   * 新建空白文件
+   * @param args.folderId 授权文件夹 ID
+   * @param args.parentId 父目录 ID（0=根目录）
+   * @param args.fileName 文件名（含后缀）
+   * @returns 新建的文件项
+   */
+  async createFile(args: { folderId: number; parentId: number; fileName: string }): Promise<{
+    success: boolean;
+    fileItem?: FileItem;
+    message?: string;
+  }> {
+    const { folderId, parentId, fileName } = args;
+
+    const folder = filedbService.getFolderById(folderId);
+    if (!folder) {
+      return { success: false, message: '授权文件夹不存在' };
+    }
+
+    // 确定父目录路径
+    let parentPath = folder.path;
+    if (parentId > 0) {
+      const parentItem = filedbService.getFileItemById(parentId);
+      if (parentItem && parentItem.is_dir) {
+        parentPath = path.join(folder.path, parentItem.relative_path);
+      }
+    }
+
+    const filePath = path.join(parentPath, fileName);
+
+    // 文件已存在
+    if (fs.existsSync(filePath)) {
+      return { success: false, message: '文件已存在' };
+    }
+
+    const ext = path.extname(fileName).toLowerCase().replace('.', '');
+
+    try {
+      // 确保目录存在
+      fs.mkdirSync(parentPath, { recursive: true });
+
+      if (BLANK_TEMPLATES[ext]) {
+        // docx/xlsx/pptx: 使用空白模板
+        const templatePath = path.join(process.cwd(), 'public', 'onlyoffice', 'blank', BLANK_TEMPLATES[ext]);
+        if (fs.existsSync(templatePath)) {
+          fs.copyFileSync(templatePath, filePath);
+        } else {
+          // 模板不存在则创建空文件
+          fs.writeFileSync(filePath, Buffer.alloc(0));
+          logger.warn(`[FileController] 空白模板不存在: ${templatePath}，创建空文件`);
+        }
+      } else if (ext === 'pdf') {
+        // PDF: 使用空白 PDF 模板
+        const templatePath = path.join(process.cwd(), 'public', 'onlyoffice', 'assets', 'empty.pdf');
+        if (fs.existsSync(templatePath)) {
+          fs.copyFileSync(templatePath, filePath);
+        } else {
+          // 最小 PDF
+          fs.writeFileSync(filePath, Buffer.from('%PDF-1.4\n%%EOF'));
+        }
+      } else if (ext === 'md') {
+        // Markdown: 创建空文本
+        fs.writeFileSync(filePath, '', 'utf-8');
+      } else {
+        fs.writeFileSync(filePath, Buffer.alloc(0));
+      }
+
+      // 计算相对路径
+      const relativePath = path.relative(folder.path, filePath);
+      const stat = fs.statSync(filePath);
+
+      // 插入数据库记录
+      const db = (filedbService as any).db;
+      const tableName = (filedbService as any).itemTableName;
+      const insertStmt = db.prepare(
+        `INSERT INTO ${tableName} (folder_id, parent_id, name, type, size, mtime, relative_path, is_dir, status)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 0, 'PENDING')`
+      );
+      const info = insertStmt.run(folderId, parentId, fileName, ext, stat.size, stat.mtime.toISOString(), relativePath);
+      const fileItem = filedbService.getFileItemById(Number(info.lastInsertRowid));
+
+      logger.info(`[FileController] 新建文件成功: ${fileName}, path=${filePath}`);
+
+      return { success: true, fileItem: fileItem || undefined };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      logger.error(`[FileController] 新建文件失败: ${fileName}:`, err);
+      return { success: false, message: `新建文件失败: ${msg}` };
+    }
+  }
+
+  /**
+   * 保存文件数据到磁盘
+   * OnlyOffice 编辑器自动保存或手动保存时调用
+   * @param args.fileItemId 文件项 ID
+   * @param args.buffer 文件二进制数据（IPC 传输为 Uint8Array）
+   */
+  saveFileData(args: { fileItemId: number; buffer: Uint8Array }): {
+    success: boolean;
+    message?: string;
+  } {
+    const { fileItemId, buffer } = args;
+    const fileItem = filedbService.getFileItemById(fileItemId);
+    if (!fileItem) {
+      return { success: false, message: '文件记录不存在' };
+    }
+
+    const filePath = this.resolveFilePath(fileItemId);
+    if (!filePath) {
+      return { success: false, message: '文件所在授权文件夹不存在' };
+    }
+
+    try {
+      const buf = Buffer.from(buffer);
+      fs.writeFileSync(filePath, buf);
+
+      // 更新数据库中的文件大小和修改时间
+      const stat = fs.statSync(filePath);
+      const db = (filedbService as any).db;
+      const tableName = (filedbService as any).itemTableName;
+      db.prepare(
+        `UPDATE ${tableName} SET size = ?, mtime = ? WHERE id = ?`
+      ).run(stat.size, stat.mtime.toISOString(), fileItemId);
+
+      logger.info(`[FileController] 保存文件成功: ${fileItem.name}, size=${buf.length}`);
+      return { success: true };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      logger.error(`[FileController] 保存文件失败: ${filePath}:`, err);
+      return { success: false, message: `保存文件失败: ${msg}` };
+    }
+  }
+
+  /**
+   * 重命名文件
+   * @param args.fileItemId 文件项 ID
+   * @param args.newName 新文件名（含后缀）
+   */
+  renameFile(args: { fileItemId: number; newName: string }): {
+    success: boolean;
+    fileItem?: any;
+    message?: string;
+  } {
+    const { fileItemId, newName } = args;
+    const fileItem = filedbService.getFileItemById(fileItemId);
+    if (!fileItem) {
+      return { success: false, message: '文件记录不存在' };
+    }
+
+    const oldFilePath = this.resolveFilePath(fileItemId);
+    if (!oldFilePath) {
+      return { success: false, message: '文件所在授权文件夹不存在' };
+    }
+
+    const folder = filedbService.getFolderById(fileItem.folder_id);
+    if (!folder) {
+      return { success: false, message: '授权文件夹不存在' };
+    }
+
+    const dir = path.dirname(oldFilePath);
+    const newFilePath = path.join(dir, newName);
+    const newRelativePath = path.relative(folder.path, newFilePath);
+
+    // 文件名相同，无需重命名
+    if (oldFilePath === newFilePath) {
+      return { success: true, fileItem };
+    }
+
+    try {
+      if (fs.existsSync(newFilePath)) {
+        return { success: false, message: '目标文件名已存在' };
+      }
+      fs.renameSync(oldFilePath, newFilePath);
+
+      // 更新数据库
+      const ext = path.extname(newName).toLowerCase().replace('.', '');
+      const db = (filedbService as any).db;
+      const tableName = (filedbService as any).itemTableName;
+      db.prepare(
+        `UPDATE ${tableName} SET name = ?, type = ?, relative_path = ? WHERE id = ?`
+      ).run(newName, ext, newRelativePath, fileItemId);
+
+      const updatedItem = filedbService.getFileItemById(fileItemId);
+      logger.info(`[FileController] 重命名成功: ${fileItem.name} -> ${newName}`);
+      return { success: true, fileItem: updatedItem };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      logger.error(`[FileController] 重命名失败: ${oldFilePath} -> ${newFilePath}:`, err);
+      return { success: false, message: `重命名失败: ${msg}` };
     }
   }
 }

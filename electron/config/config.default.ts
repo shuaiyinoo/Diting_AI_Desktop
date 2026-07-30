@@ -21,7 +21,7 @@ export default (): Partial<Config> => {
         nodeIntegration: true,
         //preload: path.join(getElectronDir(), 'preload', 'bridge.js'),
       },
-      frame: true,
+      titleBarStyle: 'hidden',
       show: true,
       icon: path.join(getBaseDir(), 'public', 'images', 'logo-32.png'),
     },

@@ -6,7 +6,8 @@
 const constantRouterMap = [
   {
     path: '/',
-    component: () => import('@/layouts/AppSider.vue'),
+    component: () => import('@/layouts/MainLayout.vue'),
+    redirect: '/file',
     children: [
       {
         path: '/debug',

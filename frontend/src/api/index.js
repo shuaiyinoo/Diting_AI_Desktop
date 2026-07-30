@@ -88,6 +88,12 @@ const ipcApiRoute = {
     // 文件查看
     getFileInfo: 'controller/file/getFileInfo',
     getFileData: 'controller/file/getFileData',
+    // 新建文件
+    createFile: 'controller/file/createFile',
+    // 保存文件数据
+    saveFileData: 'controller/file/saveFileData',
+    // 重命名文件
+    renameFile: 'controller/file/renameFile',
   },
 
   // LLM 模型管理
