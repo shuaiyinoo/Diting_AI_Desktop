@@ -10,7 +10,7 @@ export default (): Partial<Config> => {
     openDevTools: false,
     singleLock: true,
     windowsOption: {
-      title: 'electron-egg',
+      title: 'Diting AI',
       width: 980,
       height: 850,
       minWidth: 400,

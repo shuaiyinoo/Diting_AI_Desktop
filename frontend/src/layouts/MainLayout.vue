@@ -25,7 +25,7 @@ import TopBar from '@/components/layout/TopBar.vue';
   background-color: var(--bg-layout);
 
   &__dragbar {
-    height: 48px;
+    height: 40px;
     flex-shrink: 0;
     -webkit-app-region: drag;
     background-color: var(--bg-panel);

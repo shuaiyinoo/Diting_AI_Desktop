@@ -85,14 +85,6 @@
                   <file-excel-outlined class="create-menu__icon create-menu__icon--excel" />
                   <span>表格</span>
                 </div>
-                <div class="create-menu__item" @click="onCreateFile('pptx')">
-                  <file-ppt-outlined class="create-menu__icon create-menu__icon--ppt" />
-                  <span>演示文稿</span>
-                </div>
-                <div class="create-menu__item" @click="onCreateFile('pdf')">
-                  <file-pdf-outlined class="create-menu__icon create-menu__icon--pdf" />
-                  <span>PDF</span>
-                </div>
                 <div class="create-menu__item" @click="onCreateFile('md')">
                   <file-text-outlined class="create-menu__icon create-menu__icon--md" />
                   <span>MD</span>
@@ -139,8 +131,16 @@
 
     <!-- ========== Panel 3: 文件预览区 ========== -->
     <div class="panel panel--preview">
+      <MdEditor
+        v-if="editorMode && selectedFile && isMdFile(selectedFile.name)"
+        :key="'md-editor-' + selectedFile.id"
+        :file-item-id="selectedFile.id"
+        :file-name="selectedFile.name"
+        :panel4-collapsed="panel4Collapsed"
+        @toggle-panel4="togglePanel4"
+      />
       <OnlyOfficeEditor
-        v-if="editorMode && selectedFile && isEditableFile(selectedFile.name)"
+        v-else-if="editorMode && selectedFile && isEditableFile(selectedFile.name)"
         :key="'editor-' + selectedFile.id"
         :file-item-id="selectedFile.id"
         :file-name="selectedFile.name"
@@ -180,10 +180,11 @@ import { ipc } from '@/utils/ipcRenderer';
 import FilePreviewPanel from '@/components/file/FilePreviewPanel.vue';
 import FileInfoPanel from '@/components/file/FileInfoPanel.vue';
 import OnlyOfficeEditor from '@/components/file/OnlyOfficeEditor.vue';
+import MdEditor from '@/components/file/MdEditor.vue';
 
 // ========== 面板宽度 & 折叠状态 ==========
 const workspaceRef = ref(null);
-const panel1Width = ref(160);
+const panel1Width = ref(200);
 const panel2Width = ref(280);
 const panel4Width = ref(300);
 const panel1Collapsed = ref(true);
@@ -336,11 +337,17 @@ const editorMode = ref(false);
 const creatingFile = ref(false);
 const editorRef = shallowRef(null);
 
-const EDITABLE_EXTENSIONS = ['docx', 'xlsx', 'pptx', 'pdf'];
+const EDITABLE_EXTENSIONS = ['docx', 'xlsx', 'pptx', 'md'];
+const MD_EXTENSIONS = ['md', 'markdown'];
 
 function isEditableFile(fileName) {
   const ext = (fileName || '').split('.').pop()?.toLowerCase() || '';
   return EDITABLE_EXTENSIONS.includes(ext);
+}
+
+function isMdFile(fileName) {
+  const ext = (fileName || '').split('.').pop()?.toLowerCase() || '';
+  return MD_EXTENSIONS.includes(ext);
 }
 
 const FILE_TYPE_LABELS = {
@@ -374,7 +381,7 @@ async function onCreateFile(ext) {
       message.success(`已创建: ${fileName}`);
       // 刷新文件列表
       await loadFileList();
-      // 选中新文件（默认预览模式）
+      // 选中新文件，watch(selectedFile) 会自动根据文件类型设置 editorMode
       onSelectFile(result.fileItem);
     } else {
       message.error(result.message || '创建文件失败');
@@ -404,17 +411,22 @@ function onEditorStateChange(modified) {
 
 async function onEditorRename(newName) {
   if (!selectedFile.value || !newName) return;
+  // 保留原始文件后缀：OnlyOffice 重命名时返回的标题可能不含后缀
+  const oldName = selectedFile.value.name || '';
+  const oldExt = oldName.includes('.') ? oldName.split('.').pop().toLowerCase() : '';
+  const newNameExt = newName.includes('.') ? newName.split('.').pop().toLowerCase() : '';
+  const finalName = (oldExt && newNameExt !== oldExt) ? `${newName}.${oldExt}` : newName;
   try {
     const result = await ipc.invoke(ipcApiRoute.file.renameFile, {
       fileItemId: selectedFile.value.id,
-      newName,
+      newName: finalName,
     });
     if (result.success) {
       // 更新选中的文件对象
-      selectedFile.value = result.fileItem || { ...selectedFile.value, name: newName };
+      selectedFile.value = result.fileItem || { ...selectedFile.value, name: finalName };
       // 刷新文件列表
       loadFileList();
-      message.success(`已重命名为: ${newName}`);
+      message.success(`已重命名为: ${finalName}`);
     } else {
       message.error(result.message || '重命名失败');
     }
@@ -428,9 +440,12 @@ function enterEditMode() {
   editorMode.value = true;
 }
 
-// 当切换文件时，默认回到预览模式
-watch(selectedFile, (file) => {
-  editorMode.value = false;
+// 切换文件时：可编辑文件直接用编辑器打开，不可编辑的用预览面板
+// 同一文件刷新不重置（避免保存后闪烁）
+watch(selectedFile, (file, oldFile) => {
+  if (file?.id !== oldFile?.id) {
+    editorMode.value = isEditableFile(file?.name || '');
+  }
 });
 
 // ========== 页面初始化 ==========
@@ -512,7 +527,11 @@ async function loadSubFolderTree(folderId) {
     const data = await ipc.invoke(ipcApiRoute.file.getSubFolders, { folderId });
     subFolderTree.value = data || [];
     if (subFolderTree.value.length > 0) {
-      onSelectSubFolder(subFolderTree.value[0]);
+      // 保持当前选中的子文件夹，避免同步刷新时重置选中导致编辑器闪烁
+      const current = subFolderTree.value.find(f => f.id === selectedSubFolder.value?.id);
+      if (!selectedSubFolder.value || !current) {
+        onSelectSubFolder(subFolderTree.value[0]);
+      }
     }
   } catch (err) {
     console.error('[file] 加载子文件夹树失败:', err);
@@ -550,9 +569,16 @@ async function loadFileList() {
       itemId: selectedSubFolder.value.id,
     });
     fileList.value = (data || []).slice().sort((a, b) => b.id - a.id);
-    // 默认选中第一个文件
+    // 保持当前选中的文件，避免同步刷新时重置选中导致编辑器闪烁
     if (fileList.value.length > 0) {
-      onSelectFile(fileList.value[0]);
+      const current = fileList.value.find(f => f.id === selectedFileId.value);
+      if (!selectedFileId.value || !current) {
+        // 当前没有选中或选中的文件已不存在，选择第一个
+        onSelectFile(fileList.value[0]);
+      } else {
+        // 更新选中的文件对象（属性可能已变化），但不触发编辑器重载
+        selectedFile.value = current;
+      }
     }
   } catch (err) {
     console.error('[file] 加载文件列表失败:', err);
@@ -754,6 +780,7 @@ function formatFileSize(bytes) {
   flex-shrink: 0;
   position: relative;
   z-index: 5;
+  background-color: var(--bg-panel);
 
   &__line {
     width: 1px;

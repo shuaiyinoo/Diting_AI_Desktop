@@ -1,0 +1,22 @@
+<svg width="256" height="256" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          
+          <clipPath id="background-clip">
+            <rect width="256" height="256" rx="22"/>
+          </clipPath>
+        </defs>
+        <rect width="256" height="256" fill="#164E96" rx="22"/>
+        <g clip-path="url(#background-clip)">
+          <text
+            x="128"
+            y="128"
+            font-family="Arial, &quot;Noto Sans&quot;, &quot;PingFang SC&quot;, &quot;Microsoft YaHei&quot;, &quot;Hiragino Sans GB&quot;, sans-serif"
+            font-size="200"
+            font-weight="700"
+            fill="#28D19C"
+            text-anchor="middle"
+            dominant-baseline="central"
+            transform="rotate(10 128 128)"
+          >Dt</text>
+        </g>
+      </svg>

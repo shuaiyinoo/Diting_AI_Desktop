@@ -58,7 +58,9 @@ const wrapHeight = computed(() =>
   typeof props.height === 'number' ? `${props.height}px` : props.height
 );
 
-const frameSrc = computed(() => '/onlyoffice/onlyoffice.html');
+// 使用响应式 reloadKey 控制 iframe 重载，确保 Vue 控制 src 属性变化
+const reloadKey = ref(Date.now());
+const frameSrc = computed(() => `/onlyoffice/onlyoffice.html?k=${reloadKey.value}`);
 
 // 推断文件类型
 function inferFileType(name) {
@@ -77,6 +79,8 @@ function inferDocumentType(fileType) {
   return 'word';
 }
 
+// 注意：此版本 OnlyOffice（离线 WASM 9.3.0.134）的 api.js 不处理 customization.features.documentDarkMode
+// 文档内容深色模式通过 localStorage 的 content-theme 键控制，在 pushConfig 中设置
 function buildConfig(blobUrl, fileName) {
   const fileType = inferFileType(fileName);
   const documentType = inferDocumentType(fileType);
@@ -97,10 +101,7 @@ function buildConfig(blobUrl, fileName) {
       mode: props.mode === 'view' ? 'view' : 'edit',
       lang: 'zh-CN',
       customization: {
-        uiTheme: isDark.value ? 'theme-dark' : 'theme-light',
-        features: {
-          documentDarkMode: isDark.value,
-        },
+        uiTheme: isDark.value ? 'theme-night' : 'theme-white',
       },
     },
     height: '100%',
@@ -112,6 +113,11 @@ function pushConfig() {
   if (!frameReady.value || !props.fileItemId) return;
   const frame = frameRef.value;
   if (!frame?.contentWindow) return;
+
+  // 设置文档内容深色模式：此版本 OnlyOffice 通过 localStorage 的 content-theme 控制
+  // 编辑器 index.html 的 init_themes() 会读取此值，当 UI 主题为 dark 且 content-theme=dark 时
+  // 添加 content-theme-dark CSS 类，使文档内容区域也呈深色
+  localStorage.setItem('content-theme', isDark.value ? 'dark' : 'light');
 
   // 先获取文件数据
   ipc.invoke(ipcApiRoute.file.getFileData, { fileItemId: Number(props.fileItemId) }).then((result) => {
@@ -326,14 +332,13 @@ watch(
 );
 
 // 主题切换时重新加载 iframe（OnlyOffice WASM 版销毁重建不可靠，必须整页刷新）
-// 加时间戳使 URL 变化，浏览器才会真正重新加载
+// 通过更新响应式 reloadKey 让 Vue 改变 :src 绑定值，确保 iframe 真正重新加载
 watch(isDark, () => {
   frameReady.value = false;
   documentReady.value = false;
-  const frame = frameRef.value;
-  if (frame) {
-    frame.src = '/onlyoffice/onlyoffice.html?t=' + Date.now();
-  }
+  // 设置文档内容深色模式（在 iframe 重载前设置，确保编辑器 init_themes 能读到）
+  localStorage.setItem('content-theme', isDark.value ? 'dark' : 'light');
+  reloadKey.value = Date.now();
   // iframe 重新加载后，init() 会 postMessage('onlyoffice-ready')，
   // onMessage 收到后设 frameReady=true 并调用 pushConfig()，
   // pushConfig 读取最新的 isDark.value 构建带新主题的配置

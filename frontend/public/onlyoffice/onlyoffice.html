@@ -329,6 +329,19 @@
             return
         }
         const params = getUrlParams()
+        // 如果是主题切换重载（有 k 参数），清除 OnlyOffice 缓存的 UI 主题偏好
+        // 确保 customization.uiTheme 配置不被 localStorage 中的缓存覆盖
+        // 注意：保留 content-theme 键，它由宿主应用设置控制文档内容深色模式
+        if (params.k) {
+            try {
+                var keys = Object.keys(localStorage)
+                for (var i = 0; i < keys.length; i++) {
+                    if (keys[i].toLowerCase().indexOf('theme') !== -1 && keys[i] !== 'content-theme') {
+                        localStorage.removeItem(keys[i])
+                    }
+                }
+            } catch (e) {}
+        }
         if (params.docConfig) {
             loadOnlyoffice(JSON.parse(params.docConfig))
             return

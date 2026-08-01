@@ -1,6 +1,6 @@
 {
-  "productName": "ee-dev",
-  "appId": "com.electron.ee-dev",
+  "productName": "Diting AI",
+  "appId": "com.diting.ai",
   "copyright": "© 2025 duola Technology Co., Ltd.",
   "directories": {  
     "output": "out" 
