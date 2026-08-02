@@ -120,29 +120,29 @@ export function createWorkspace(input: {
     updatedAt: now,
   }
 
-  // 创建工作区目录结构
-  const wsPath = getAgentWorkspacePath(slug)
+  // 创建工作区目录结构（以 id 命名，与 name/slug 解耦）
+  const wsPath = getAgentWorkspacePath(id)
   mkdirSync(wsPath, { recursive: true })
-  mkdirSync(getWorkspaceSkillsDir(slug), { recursive: true })
-  mkdirSync(getInactiveSkillsDir(slug), { recursive: true })
+  mkdirSync(getWorkspaceSkillsDir(id), { recursive: true })
+  mkdirSync(getInactiveSkillsDir(id), { recursive: true })
 
   // 空白项目创建 workspace-files 目录
   if (workspace.isBlank) {
-    mkdirSync(getProjectFilesPath(slug), { recursive: true })
+    mkdirSync(getProjectFilesPath(id), { recursive: true })
   }
 
   // 复制默认 Skills
-  copyDefaultSkillsToWorkspace(slug)
+  copyDefaultSkillsToWorkspace(id)
 
   // 创建空的 MCP 配置
-  if (!existsSync(getWorkspaceMcpPath(slug))) {
-    writeFileSync(getWorkspaceMcpPath(slug), '{}', 'utf-8')
+  if (!existsSync(getWorkspaceMcpPath(id))) {
+    writeFileSync(getWorkspaceMcpPath(id), '{}', 'utf-8')
   }
 
   // 创建 CLAUDE.md
-  if (!existsSync(getWorkspaceClaudeMdPath(slug))) {
+  if (!existsSync(getWorkspaceClaudeMdPath(id))) {
     const claudeMd = `# ${workspace.name}\n\n这是 ${workspace.name} 工作区的项目说明文件。\nAgent 会自动读取此文件获取项目上下文。\n`
-    writeFileSync(getWorkspaceClaudeMdPath(slug), claudeMd, 'utf-8')
+    writeFileSync(getWorkspaceClaudeMdPath(id), claudeMd, 'utf-8')
   }
 
   workspaces.push(workspace)
@@ -177,8 +177,8 @@ export function deleteWorkspace(id: string): boolean {
   const workspace = workspaces.find((ws) => ws.id === id)
   if (!workspace) return false
 
-  // 删除工作区目录
-  const wsPath = getAgentWorkspacePath(workspace.slug)
+  // 删除工作区目录（以 id 命名）
+  const wsPath = getAgentWorkspacePath(workspace.id)
   if (existsSync(wsPath)) {
     rmSync(wsPath, { recursive: true, force: true })
   }
@@ -192,8 +192,8 @@ export function deleteWorkspace(id: string): boolean {
 }
 
 /** 获取工作区 MCP 配置 */
-export function getWorkspaceMcpConfig(slug: string): Record<string, Record<string, unknown>> {
-  const mcpPath = getWorkspaceMcpPath(slug)
+export function getWorkspaceMcpConfig(id: string): Record<string, Record<string, unknown>> {
+  const mcpPath = getWorkspaceMcpPath(id)
   if (!existsSync(mcpPath)) return {}
   try {
     const content = readFileSync(mcpPath, 'utf-8')
@@ -204,16 +204,16 @@ export function getWorkspaceMcpConfig(slug: string): Record<string, Record<strin
 }
 
 /** 保存工作区 MCP 配置 */
-export function saveWorkspaceMcpConfig(slug: string, config: Record<string, Record<string, unknown>>): void {
-  const mcpPath = getWorkspaceMcpPath(slug)
+export function saveWorkspaceMcpConfig(id: string, config: Record<string, Record<string, unknown>>): void {
+  const mcpPath = getWorkspaceMcpPath(id)
   writeFileSync(mcpPath, JSON.stringify(config, null, 2), 'utf-8')
-  logger.info(`[Pi Agent Workspace] 已保存 MCP 配置: ${slug}`)
+  logger.info(`[Pi Agent Workspace] 已保存 MCP 配置: ${id}`)
 }
 
 /** 获取工作区项目根目录 */
 export function getWorkspaceCwd(workspace: WorkspaceMeta): string {
   if (workspace.isBlank) {
-    return getProjectFilesPath(workspace.slug)
+    return getProjectFilesPath(workspace.id)
   }
-  return workspace.projectPath || getProjectFilesPath(workspace.slug)
+  return workspace.projectPath || getProjectFilesPath(workspace.id)
 }

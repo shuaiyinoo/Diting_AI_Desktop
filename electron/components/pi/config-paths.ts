@@ -58,34 +58,44 @@ export function getAgentWorkspacesDir(): string {
   return dir
 }
 
-/** 获取指定工作区路径 */
-export function getAgentWorkspacePath(slug: string): string {
-  return join(getAgentWorkspacesDir(), slug)
+/**
+ * 获取指定工作区路径
+ *
+ * 关键设计：工作区目录以唯一 id 命名，而非 slug 或 name。
+ * 这样用户修改项目名称时，目录路径不受影响。
+ * 兼容旧数据：若 id 目录不存在但 slug 目录存在，回退到 slug。
+ */
+export function getAgentWorkspacePath(idOrSlug: string): string {
+  const byId = join(getAgentWorkspacesDir(), idOrSlug)
+  if (existsSync(byId)) return byId
+  // 兼容旧版以 slug 命名的目录
+  const bySlug = join(getAgentWorkspacesDir(), idOrSlug)
+  return bySlug
 }
 
 /** 获取工作区 Skills 目录 */
-export function getWorkspaceSkillsDir(slug: string): string {
-  return join(getAgentWorkspacePath(slug), 'skills')
+export function getWorkspaceSkillsDir(idOrSlug: string): string {
+  return join(getAgentWorkspacePath(idOrSlug), 'skills')
 }
 
 /** 获取工作区禁用 Skills 目录 */
-export function getInactiveSkillsDir(slug: string): string {
-  return join(getAgentWorkspacePath(slug), 'skills-inactive')
+export function getInactiveSkillsDir(idOrSlug: string): string {
+  return join(getAgentWorkspacePath(idOrSlug), 'skills-inactive')
 }
 
 /** 获取工作区 MCP 配置文件路径 */
-export function getWorkspaceMcpPath(slug: string): string {
-  return join(getAgentWorkspacePath(slug), 'mcp.json')
+export function getWorkspaceMcpPath(idOrSlug: string): string {
+  return join(getAgentWorkspacePath(idOrSlug), 'mcp.json')
 }
 
 /** 获取工作区 CLAUDE.md 路径 */
-export function getWorkspaceClaudeMdPath(slug: string): string {
-  return join(getAgentWorkspacePath(slug), 'CLAUDE.md')
+export function getWorkspaceClaudeMdPath(idOrSlug: string): string {
+  return join(getAgentWorkspacePath(idOrSlug), 'CLAUDE.md')
 }
 
 /** 获取工作区项目文件目录 */
-export function getProjectFilesPath(slug: string): string {
-  return join(getAgentWorkspacePath(slug), 'workspace-files')
+export function getProjectFilesPath(idOrSlug: string): string {
+  return join(getAgentWorkspacePath(idOrSlug), 'workspace-files')
 }
 
 /** 获取 Agent 会话目录 */

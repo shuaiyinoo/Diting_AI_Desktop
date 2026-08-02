@@ -14,6 +14,7 @@ import type {
   AgentSessionEventListener,
   Skill,
   ToolDefinition,
+  ResourceLoader,
 } from '@earendil-works/pi-coding-agent'
 import type { AgentToolResult } from '@earendil-works/pi-agent-core'
 import type { TSchema } from 'typebox'
@@ -25,6 +26,7 @@ export type {
   AgentSessionEventListener,
   Skill,
   ToolDefinition,
+  ResourceLoader,
 }
 export type { AgentToolResult, TSchema }
 
@@ -32,6 +34,20 @@ export type { AgentToolResult, TSchema }
 interface PiCodingAgentModule {
   createAgentSession: typeof import('@earendil-works/pi-coding-agent')['createAgentSession']
   loadSkills: typeof import('@earendil-works/pi-coding-agent')['loadSkills']
+  ModelRuntime: typeof import('@earendil-works/pi-coding-agent')['ModelRuntime']
+  DefaultResourceLoader: typeof import('@earendil-works/pi-coding-agent')['DefaultResourceLoader']
+  SessionManager: typeof import('@earendil-works/pi-coding-agent')['SessionManager']
+  SettingsManager: typeof import('@earendil-works/pi-coding-agent')['SettingsManager']
+  getAgentDir: typeof import('@earendil-works/pi-coding-agent')['getAgentDir']
+  defineTool: typeof import('@earendil-works/pi-coding-agent')['defineTool']
+  // 内置工具定义创建函数（SDK 逐个导出，无批量函数）
+  createBashToolDefinition: typeof import('@earendil-works/pi-coding-agent')['createBashToolDefinition']
+  createEditToolDefinition: typeof import('@earendil-works/pi-coding-agent')['createEditToolDefinition']
+  createWriteToolDefinition: typeof import('@earendil-works/pi-coding-agent')['createWriteToolDefinition']
+  createReadToolDefinition: typeof import('@earendil-works/pi-coding-agent')['createReadToolDefinition']
+  createGrepToolDefinition: typeof import('@earendil-works/pi-coding-agent')['createGrepToolDefinition']
+  createFindToolDefinition: typeof import('@earendil-works/pi-coding-agent')['createFindToolDefinition']
+  createLsToolDefinition: typeof import('@earendil-works/pi-coding-agent')['createLsToolDefinition']
 }
 
 /** typebox 模块类型 */

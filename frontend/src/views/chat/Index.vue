@@ -263,7 +263,7 @@ async function loadEnabledModel() {
     const res = await ipc.invoke(ipcApiRoute.llm.modelOperation, { action: 'getEnabled' })
     if (res.code === 0 && res.data) {
       const m = res.data
-      availableModels.value = [{ id: m.model_name, name: `${m.name} (${m.model_name})` }]
+      availableModels.value = [{ id: m.model_name, name: m.name || m.model_name }]
       selectedModel.value = m.model_name
     }
   } catch (err) {
@@ -712,19 +712,19 @@ function formatTime(date) {
   }
 }
 
-// ===== 用户消息气泡（蓝色实心） =====
+// ===== 用户消息气泡（灰色） =====
 .msg-user-bubble {
   display: inline-block;
   max-width: 85%;
   padding: 10px 14px;
   font-size: 14px;
   line-height: 1.6;
-  color: #fff;
-  background: var(--accent);
+  color: var(--text-primary);
+  background: var(--bg-hover, #f0f0f0);
   border-radius: 12px;
   word-break: break-word;
   white-space: pre-wrap;
-  box-shadow: 0 1px 4px rgba(22, 119, 255, 0.2);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
 // ===== 助手 Markdown 内容 =====

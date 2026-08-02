@@ -222,6 +222,32 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     return null
   }
 
+  /** 删除 Agent 项目 */
+  async function deleteAgentProject(projectId) {
+    try {
+      const res = await ipc.invoke(ipcApiRoute.piAgent.workspaceOperation, {
+        action: 'delete',
+        id: projectId,
+      })
+      if (res.code === 0) {
+        // 从列表中移除该项目
+        agentProjects.value = agentProjects.value.filter((p) => p.id !== projectId)
+        // 如果删除的是当前选中的项目，选中最新的项目（列表第一个）
+        if (currentAgentProjectId.value === projectId) {
+          if (agentProjects.value.length > 0) {
+            selectAgentProject(agentProjects.value[0].id)
+          } else {
+            currentAgentProjectId.value = null
+          }
+        }
+      }
+      return res
+    } catch (err) {
+      console.error('[workspace] 删除 Agent 项目失败:', err)
+      return null
+    }
+  }
+
   return {
     // 菜单栏状态
     menuCollapsed,
@@ -259,5 +285,6 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     loadAgentProjects,
     selectAgentProject,
     createAgentProject,
+    deleteAgentProject,
   }
 })

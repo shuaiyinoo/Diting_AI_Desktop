@@ -104,6 +104,10 @@
             >
               <MessageOutlined class="mb-item-icon" />
               <span class="mb-item-text">{{ session.title || '新会话' }}</span>
+              <!-- 对话右侧删除按钮 -->
+              <button class="mb-delete-btn" @click.stop="onDeleteChatSession(session)">
+                <DeleteOutlined />
+              </button>
             </div>
             <div v-if="!ws.chatSessionLoading && ws.chatSessions.length === 0" class="mb-empty">暂无对话</div>
           </div>
@@ -122,13 +126,31 @@
             <!-- 每个项目及其会话列表 -->
             <template v-for="project in ws.agentProjects" :key="project.id">
               <div
-                class="mb-item"
+                class="mb-item mb-item--project"
                 :class="{ 'mb-item--active': ws.currentAgentProjectId === project.id }"
                 @click="onSelectProject(project)"
               >
                 <ProjectOutlined class="mb-item-icon" />
-                <span class="mb-item-text">{{ project.name }}</span>
-                <!-- 项目右侧 + 按钮：为当前项目创建会话 -->
+                <!-- 双击编辑项目名称 -->
+                <input
+                  v-if="editingType === 'project' && editingId === project.id"
+                  ref="editInputRef"
+                  v-model="editingText"
+                  class="mb-edit-input"
+                  @click.stop
+                  @keydown.enter="saveProjectName(project)"
+                  @keydown.escape="cancelEdit"
+                  @blur="saveProjectName(project)"
+                />
+                <span
+                  v-else
+                  class="mb-item-text"
+                  @dblclick.stop="startEditProject(project)"
+                >{{ project.name }}</span>
+                <!-- 项目右侧：删除按钮 + 添加会话按钮 -->
+                <button class="mb-delete-btn" @click.stop="onDeleteProject(project)">
+                  <DeleteOutlined />
+                </button>
                 <button class="mb-add-btn" @click.stop="onCreateAgentSession(project)">
                   <PlusOutlined />
                 </button>
@@ -142,7 +164,26 @@
                 @click="onSelectAgentSession(sess, project)"
               >
                 <MessageOutlined class="mb-item-icon" />
-                <span class="mb-item-text">{{ sess.title || '未命名' }}</span>
+                <!-- 双击编辑会话名称 -->
+                <input
+                  v-if="editingType === 'session' && editingId === sess.id"
+                  ref="editInputRef"
+                  v-model="editingText"
+                  class="mb-edit-input"
+                  @click.stop
+                  @keydown.enter="saveSessionName(sess)"
+                  @keydown.escape="cancelEdit"
+                  @blur="saveSessionName(sess)"
+                />
+                <span
+                  v-else
+                  class="mb-item-text"
+                  @dblclick.stop="startEditSession(sess)"
+                >{{ sess.title || '未命名' }}</span>
+                <!-- 会话右侧删除按钮 -->
+                <button class="mb-delete-btn" @click.stop="onDeleteAgentSession(sess, project)">
+                  <DeleteOutlined />
+                </button>
               </div>
             </template>
             <div v-if="!ws.agentProjectLoading && ws.agentProjects.length === 0" class="mb-empty">暂无项目</div>
@@ -244,10 +285,10 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
-import { message } from 'ant-design-vue'
+import { message, Modal } from 'ant-design-vue'
 import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
@@ -259,6 +300,7 @@ import {
   PlusOutlined,
   FolderOutlined,
   ProjectOutlined,
+  DeleteOutlined,
 } from '@ant-design/icons-vue'
 import { ipc } from '@/utils/ipcRenderer'
 import { ipcApiRoute } from '@/api'
@@ -413,9 +455,138 @@ async function onCreateChat() {
   navigate('chat')
 }
 
+/** 删除 Chat 会话（带确认弹窗） */
+function onDeleteChatSession(session) {
+  Modal.confirm({
+    title: '删除对话',
+    content: `确定要删除对话「${session.title || '新会话'}」吗？`,
+    okText: '确认删除',
+    cancelText: '取消',
+    okType: 'danger',
+    async onOk() {
+      try {
+        const res = await ipc.invoke('controller/assistant/sessionOperation', {
+          action: 'delete',
+          sessionId: session.id,
+        })
+        if (res.code === 0) {
+          // 从列表中移除该会话
+          ws.chatSessions = ws.chatSessions.filter((s) => s.id !== session.id)
+          // 如果删除的是当前选中的会话，选中最新的会话
+          if (ws.currentChatSessionId === session.id) {
+            if (ws.chatSessions.length > 0) {
+              ws.selectChatSession(ws.chatSessions[0].id)
+            } else {
+              ws.currentChatSessionId = null
+            }
+          }
+          message.success('对话已删除')
+        } else {
+          message.error(res?.message || '删除对话失败')
+        }
+      } catch (err) {
+        console.error('[MenuBar] 删除对话失败:', err)
+        message.error('删除对话失败')
+      }
+    },
+  })
+}
+
 async function onCreateProject() {
   await ws.createAgentProject()
   navigate('agent')
+}
+
+// ===== 双击编辑名称 =====
+const editingType = ref(null) // 'project' | 'session' | null
+const editingId = ref(null)
+const editingText = ref('')
+const editInputRef = ref(null)
+
+/** 双击项目名称进入编辑 */
+function startEditProject(project) {
+  editingType.value = 'project'
+  editingId.value = project.id
+  editingText.value = project.name
+  nextTick(() => {
+    editInputRef.value?.focus()
+    editInputRef.value?.select()
+  })
+}
+
+/** 双击会话名称进入编辑 */
+function startEditSession(sess) {
+  editingType.value = 'session'
+  editingId.value = sess.id
+  editingText.value = sess.title || ''
+  nextTick(() => {
+    editInputRef.value?.focus()
+    editInputRef.value?.select()
+  })
+}
+
+/** 取消编辑 */
+function cancelEdit() {
+  editingType.value = null
+  editingId.value = null
+  editingText.value = ''
+}
+
+/** 保存项目名称 */
+async function saveProjectName(project) {
+  const newName = editingText.value.trim()
+  cancelEdit()
+  if (!newName || newName === project.name) return
+  try {
+    const res = await ipc.invoke(ipcApiRoute.piAgent.workspaceOperation, {
+      action: 'update',
+      id: project.id,
+      name: newName,
+    })
+    if (res.code === 0 && res.data) {
+      // 更新本地列表中的项目名称
+      const idx = ws.agentProjects.findIndex((p) => p.id === project.id)
+      if (idx !== -1) {
+        ws.agentProjects[idx] = { ...ws.agentProjects[idx], name: newName }
+      }
+      message.success('项目名称已更新')
+    } else {
+      message.error(res?.message || '更新项目名称失败')
+    }
+  } catch (err) {
+    console.error('[MenuBar] 更新项目名称失败:', err)
+    message.error('更新项目名称失败')
+  }
+}
+
+/** 保存会话名称 */
+async function saveSessionName(sess) {
+  const newTitle = editingText.value.trim()
+  cancelEdit()
+  if (!newTitle || newTitle === sess.title) return
+  try {
+    const res = await ipc.invoke(ipcApiRoute.piAgent.sessionOperation, {
+      action: 'update',
+      sessionId: sess.id,
+      title: newTitle,
+      // 传递 workspaceId 和 channelId，防止后端更新时覆盖为 undefined 导致关联丢失
+      workspaceId: sess.workspaceId || '',
+      channelId: sess.channelId || '',
+    })
+    if (res.code === 0 && res.data) {
+      // 更新 agent store 中的会话名称
+      const idx = agent.sessions.findIndex((s) => s.id === sess.id)
+      if (idx !== -1) {
+        agent.sessions[idx] = { ...agent.sessions[idx], title: newTitle }
+      }
+      message.success('会话名称已更新')
+    } else {
+      message.error(res?.message || '更新会话名称失败')
+    }
+  } catch (err) {
+    console.error('[MenuBar] 更新会话名称失败:', err)
+    message.error('更新会话名称失败')
+  }
 }
 
 /** 选中 Agent 项目 */
@@ -436,6 +607,87 @@ function onSelectAgentSession(sess, project) {
   ws.selectAgentProject(project.id)
   // 选中会话（更新 agent store，Agent 视图会 watch 到）
   agent.selectSession(sess.id)
+  navigate('agent')
+}
+
+/** 删除项目（带确认弹窗） */
+function onDeleteProject(project) {
+  Modal.confirm({
+    title: '删除项目',
+    content: `确定要删除项目「${project.name}」吗？该项目下的所有会话将被一并删除。`,
+    okText: '确认删除',
+    cancelText: '取消',
+    okType: 'danger',
+    async onOk() {
+      try {
+        const res = await ws.deleteAgentProject(project.id)
+        if (res && res.code === 0) {
+          // 从 agent store 中移除该项目下的所有会话
+          agent.sessions = agent.sessions.filter((s) => {
+            const wid = s.workspaceId || s.workspace_id || s.projectId || ''
+            return String(wid) !== String(project.id)
+          })
+          message.success('项目已删除')
+          // 删除后选中最新的项目中的会话
+          await selectNewestSession()
+        } else {
+          message.error(res?.message || '删除项目失败')
+        }
+      } catch (err) {
+        console.error('[MenuBar] 删除项目失败:', err)
+        message.error('删除项目失败')
+      }
+    },
+  })
+}
+
+/** 删除会话（带确认弹窗） */
+function onDeleteAgentSession(sess, project) {
+  Modal.confirm({
+    title: '删除会话',
+    content: `确定要删除会话「${sess.title || '未命名'}」吗？`,
+    okText: '确认删除',
+    cancelText: '取消',
+    okType: 'danger',
+    async onOk() {
+      try {
+        const res = await ipc.invoke(ipcApiRoute.piAgent.sessionOperation, {
+          action: 'delete',
+          sessionId: sess.id,
+        })
+        if (res.code === 0) {
+          // 从 agent store 中移除该会话
+          agent.sessions = agent.sessions.filter((s) => s.id !== sess.id)
+          // 如果删除的是当前选中的会话，选中最新的会话
+          if (agent.currentSessionId === sess.id) {
+            agent.currentSessionId = null
+            await selectNewestSession()
+          }
+          message.success('会话已删除')
+        } else {
+          message.error(res?.message || '删除会话失败')
+        }
+      } catch (err) {
+        console.error('[MenuBar] 删除会话失败:', err)
+        message.error('删除会话失败')
+      }
+    },
+  })
+}
+
+/** 删除后选中最新的项目中的会话 */
+async function selectNewestSession() {
+  // 确保项目列表是最新的
+  if (ws.agentProjects.length === 0) return
+  // 选中最新的项目（列表第一个，因为新创建的项目 unshift 到头部）
+  const newestProject = ws.agentProjects[0]
+  ws.selectAgentProject(newestProject.id)
+  // 获取该项目下的会话列表
+  const projectSessions = getProjectSessions(newestProject.id)
+  if (projectSessions.length > 0) {
+    // 选中最新的会话（列表第一个）
+    agent.selectSession(projectSessions[0].id)
+  }
   navigate('agent')
 }
 
@@ -681,6 +933,15 @@ onMounted(() => {
     }
   }
 
+  // 项目名称项：选中时只保留左侧竖线，去除蓝色底色
+  &.mb-item--project.mb-item--active {
+    background: transparent;
+
+    &:hover {
+      background: var(--bg-hover);
+    }
+  }
+
   &.mb-item--sub {
     padding-left: 28px;
     font-size: 13px;
@@ -722,6 +983,44 @@ onMounted(() => {
   font-size: 12px;
   color: var(--text-muted);
   text-align: center;
+}
+
+// 删除按钮（项目左侧 / 会话右侧）
+.mb-delete-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 12px;
+  flex-shrink: 0;
+  transition: all 0.15s;
+  -webkit-appearance: none;
+
+  &:hover {
+    background: rgba(255, 77, 79, 0.1);
+    color: #ff4d4f;
+  }
+}
+
+// 双击编辑名称输入框
+.mb-edit-input {
+  flex: 1;
+  min-width: 0;
+  height: 24px;
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  padding: 0 6px;
+  font-size: 13px;
+  color: var(--text-primary);
+  background: #fff;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.15);
 }
 
 // ===================== 收起模式 =====================

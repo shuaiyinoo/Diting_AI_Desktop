@@ -139,7 +139,13 @@ const ipcApiRoute = {
     workspaceOperation: 'controller/piAgent/workspaceOperation',
     // 记忆文件管理（CLAUDE.md / Memory 等）
     memoryOperation: 'controller/piAgent/memoryOperation',
-  },
+    // 响应权限请求（前端 HTTP POST）
+    respondPermission: 'controller/piAgent/respondPermission',
+// 响应 AskUser 请求（前端 HTTP POST）
+respondAskUser: 'controller/piAgent/respondAskUser',
+// 文件面板管理（列文件/添加文件）
+fileOperation: 'controller/piAgent/fileOperation',
+},
 }
 
 /**

@@ -7,7 +7,7 @@ const constantRouterMap = [
   {
     path: '/',
     component: () => import('@/layouts/MainLayout.vue'),
-    redirect: '/file',
+    redirect: '/chat',
     children: [
       {
         path: '/debug',

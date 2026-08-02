@@ -1,8 +1,10 @@
 import type { ServerResponse } from 'http'
 import type { Context } from 'koa'
-import { readFileSync, writeFileSync, readdirSync, statSync, existsSync, mkdirSync } from 'fs'
+import { dialog } from 'electron'
+import { readFileSync, writeFileSync, readdirSync, statSync, existsSync, mkdirSync, copyFileSync } from 'fs'
 import { join, basename } from 'path'
 import { logger } from 'ee-core/log'
+import { llmdbService } from '../service/database/llmdb'
 import {
   seedDefaultSkills,
   upgradeDefaultSkillsInWorkspaces,
@@ -23,10 +25,13 @@ import {
   updateSession,
   deleteSession,
   getSessionMessages,
+  respondPermission,
+  respondAskUser,
 } from '../components/pi/adapters/pi-agent-service'
 import {
   listWorkspaces,
   getWorkspace,
+  getWorkspaceBySlug,
   createWorkspace,
   updateWorkspace,
   deleteWorkspace,
@@ -34,6 +39,7 @@ import {
 import {
   getAgentWorkspacePath,
   getWorkspaceClaudeMdPath,
+  getProjectFilesPath,
 } from '../components/pi/config-paths'
 import type { AgentChannel } from '../components/pi/types'
 
@@ -205,19 +211,31 @@ class PiAgentController {
     }
     res.on('close', onClose)
 
-    // 构建渠道信息（从 channelId 或使用默认）
+    // 从数据库加载已启用的 LLM 模型，构建渠道信息
+    const enabledModel = llmdbService.getEnabledModel()
+    if (!enabledModel) {
+      if (!res.writableEnded) {
+        this.writeSseEvent(res, 'error', {
+          sessionId: args.sessionId,
+          error: '未启用任何 LLM 模型，请先在设置中启用模型',
+        })
+        res.end()
+      }
+      return { code: -1, message: '未启用任何 LLM 模型' }
+    }
+
     const channel: AgentChannel = {
       id: args.channelId || 'default',
-      name: 'Agent Channel',
-      provider: 'openai',
-      modelId: args.modelId || 'gpt-4o',
-      apiKey: process.env.OPENAI_API_KEY || '',
-      baseUrl: process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1',
+      name: enabledModel.name || 'Agent Channel',
+      provider: enabledModel.provider || 'openai',
+      modelId: args.modelId || enabledModel.model_name,
+      apiKey: enabledModel.api_key || '',
+      baseUrl: enabledModel.base_url || '',
       enabled: true,
     }
 
-    // 获取工作区
-    const workspace = args.workspaceSlug ? getWorkspace(args.workspaceSlug) : undefined
+    // 获取工作区（前端传递的是 slug）
+    const workspace = args.workspaceSlug ? getWorkspaceBySlug(args.workspaceSlug) : undefined
 
     try {
       await sendAgentMessage(
@@ -263,6 +281,60 @@ class PiAgentController {
   }
 
   /**
+   * 响应权限请求（前端 HTTP POST 调用）。
+   *
+   * 用户在 PermissionBanner 中点击允许/拒绝后，前端通过 HTTP POST 调用此端点，
+   * 后端将结果传递给 permissionService，resolve 对应的 Promise，工具继续执行。
+   */
+  async respondPermission(args: {
+    requestId: string
+    behavior: 'allow' | 'deny'
+    alwaysAllow?: boolean
+  }): Promise<{ code: number; message?: string }> {
+    try {
+      const sessionId = respondPermission({
+        requestId: args.requestId,
+        behavior: args.behavior,
+        alwaysAllow: args.alwaysAllow ?? false,
+      })
+      if (!sessionId) {
+        return { code: -1, message: '权限请求不存在或已过期' }
+      }
+      return { code: 0, message: '权限请求已响应' }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      logger.error('[PiAgentController] respondPermission 异常:', err)
+      return { code: -1, message: msg }
+    }
+  }
+
+  /**
+   * 响应 AskUser 请求（前端 HTTP POST 调用）。
+   *
+   * 用户在 AskUserBanner 中提交答案后，前端通过 HTTP POST 调用此端点，
+   * 后端将答案传递给 permissionService，resolve 对应的 Promise，工具返回结果。
+   */
+  async respondAskUser(args: {
+    requestId: string
+    answers: Record<string, string>
+  }): Promise<{ code: number; message?: string }> {
+    try {
+      const sessionId = respondAskUser({
+        requestId: args.requestId,
+        answers: args.answers,
+      })
+      if (!sessionId) {
+        return { code: -1, message: 'AskUser 请求不存在或已过期' }
+      }
+      return { code: 0, message: 'AskUser 请求已响应' }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      logger.error('[PiAgentController] respondAskUser 异常:', err)
+      return { code: -1, message: msg }
+    }
+  }
+
+  /**
    * Agent 会话管理（创建/列表/删除/更新）。
    */
   async sessionOperation(args: {
@@ -288,11 +360,12 @@ class PiAgentController {
         }
         case 'update': {
           if (!args.sessionId) return { code: -1, message: '缺少 sessionId' }
-          const session = updateSession(args.sessionId, {
-            title: args.title,
-            channelId: args.channelId,
-            workspaceId: args.workspaceId,
-          })
+          // 只传递显式提供的字段，避免 undefined 覆盖已有值
+          const updateInput: Partial<{ title: string; channelId: string; workspaceId: string }> = {}
+          if (args.title !== undefined) updateInput.title = args.title
+          if (args.channelId !== undefined) updateInput.channelId = args.channelId
+          if (args.workspaceId !== undefined) updateInput.workspaceId = args.workspaceId
+          const session = updateSession(args.sessionId, updateInput)
           if (!session) return { code: -1, message: '会话不存在' }
           return { code: 0, data: session }
         }
@@ -419,6 +492,126 @@ class PiAgentController {
       logger.error('[PiAgentController] memoryOperation 异常:', err)
       return { code: -1, message: msg }
     }
+  }
+
+  /**
+   * 文件面板管理（列文件/添加文件）。
+   *
+   * - list：列出项目文件或会话文件
+   * - add：弹窗选择文件并复制到项目文件目录
+   */
+  async fileOperation(args: {
+    action: 'list' | 'add'
+    workspaceId?: string
+    sessionId?: string
+    mode?: 'project' | 'session'
+  }): Promise<{ code: number; message?: string; data?: unknown }> {
+    try {
+      const mode = args.mode || 'project'
+
+      switch (args.action) {
+        case 'list': {
+          if (mode === 'project') {
+            if (!args.workspaceId) return { code: -1, message: '缺少 workspaceId' }
+            const workspace = getWorkspace(args.workspaceId)
+            if (!workspace) return { code: -1, message: '工作区不存在' }
+
+            // 本地项目：列出 projectPath 下的文件
+            // 空白项目：列出 workspace-files 目录下的文件
+            const targetDir = workspace.isBlank
+              ? getProjectFilesPath(workspace.id)
+              : (workspace.projectPath || getProjectFilesPath(workspace.id))
+
+            const files = this.listFilesRecursive(targetDir, '')
+            return { code: 0, data: files }
+          } else {
+            // 会话文件模式：列出会话工作目录下的文件
+            if (!args.sessionId) return { code: -1, message: '缺少 sessionId' }
+            const sessionDir = join(getAgentWorkspacePath(args.workspaceId || ''), args.sessionId)
+            if (!existsSync(sessionDir)) return { code: 0, data: [] }
+            const files = this.listFilesRecursive(sessionDir, '')
+            return { code: 0, data: files }
+          }
+        }
+
+        case 'add': {
+          if (!args.workspaceId) return { code: -1, message: '缺少 workspaceId' }
+          const workspace = getWorkspace(args.workspaceId)
+          if (!workspace) return { code: -1, message: '工作区不存在' }
+
+          // 弹窗选择文件
+          const filePaths = dialog.showOpenDialogSync({
+            title: '选择要添加的文件',
+            properties: ['openFile', 'multiSelections'],
+          })
+
+          if (!filePaths || !filePaths.length) {
+            return { code: 0, message: '用户取消选择', data: [] }
+          }
+
+          // 复制到 workspace-files 目录
+          const targetDir = getProjectFilesPath(workspace.id)
+          if (!existsSync(targetDir)) {
+            mkdirSync(targetDir, { recursive: true })
+          }
+
+          const addedFiles: string[] = []
+          for (const srcPath of filePaths) {
+            const fileName = basename(srcPath)
+            const destPath = join(targetDir, fileName)
+            copyFileSync(srcPath, destPath)
+            addedFiles.push(fileName)
+            logger.info(`[PiAgentController] 已添加文件: ${fileName} → ${destPath}`)
+          }
+
+          // 返回更新后的文件列表
+          const files = this.listFilesRecursive(targetDir, '')
+          return { code: 0, data: files, message: `已添加 ${addedFiles.length} 个文件` }
+        }
+
+        default:
+          return { code: -1, message: `未知操作: ${args.action}` }
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      logger.error('[PiAgentController] fileOperation 异常:', err)
+      return { code: -1, message: msg }
+    }
+  }
+
+  /** 递归列出目录下的文件（最多两层深度） */
+  private listFilesRecursive(basePath: string, relativeDir: string, depth = 0): Array<{
+    name: string
+    path: string
+    isDir: boolean
+    size: number
+  }> {
+    const result: Array<{ name: string; path: string; isDir: boolean; size: number }> = []
+    const currentPath = join(basePath, relativeDir)
+
+    if (!existsSync(currentPath)) return result
+    if (depth > 2) return result // 限制递归深度
+
+    const entries = readdirSync(currentPath, { withFileTypes: true })
+    for (const entry of entries) {
+      // 跳过隐藏文件和常见无关目录
+      if (entry.name.startsWith('.')) continue
+      if (['node_modules', 'skills', 'skills-inactive', '__pycache__'].includes(entry.name)) continue
+
+      const fullPath = join(currentPath, entry.name)
+      const relativePath = relativeDir ? `${relativeDir}/${entry.name}` : entry.name
+
+      if (entry.isDirectory()) {
+        const stat = statSync(fullPath)
+        result.push({ name: entry.name, path: relativePath, isDir: true, size: stat.size })
+        result.push(...this.listFilesRecursive(basePath, relativePath, depth + 1))
+      } else {
+        const stat = statSync(fullPath)
+        result.push({ name: entry.name, path: relativePath, isDir: false, size: stat.size })
+      }
+    }
+
+    return result
   }
 
   /** 递归扫描工作区记忆文件 */
