@@ -1,5 +1,5 @@
 import path from 'path';
-import { BrowserWindow, BrowserWindowConstructorOptions, Notification, NotificationConstructorOptions, IpcMainEvent, Event } from 'electron';
+import { BrowserWindow, BrowserWindowConstructorOptions, Notification, NotificationConstructorOptions, IpcMainEvent, Event, ipcMain } from 'electron';
 import { getMainWindow } from 'ee-core/electron';
 import { isDev, isProd, getBaseDir } from 'ee-core/ps';
 import { getConfig } from 'ee-core/config';
@@ -39,6 +39,25 @@ class WindowService {
   init() {
     const mainWin = getMainWindow();
     mainWin.setMenuBarVisibility(false);
+
+    // 注册窗口控制 IPC（Windows 平台自定义标题栏按钮）
+    ipcMain.on('window-minimize', () => {
+      const win = getMainWindow();
+      if (win) win.minimize();
+    });
+    ipcMain.on('window-maximize', () => {
+      const win = getMainWindow();
+      if (!win) return;
+      if (win.isMaximized()) {
+        win.unmaximize();
+      } else {
+        win.maximize();
+      }
+    });
+    ipcMain.on('window-close', () => {
+      const win = getMainWindow();
+      if (win) win.close();
+    });
   }
 
   /**

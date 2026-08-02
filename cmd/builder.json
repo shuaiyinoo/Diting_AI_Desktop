@@ -12,10 +12,16 @@
     "package.json",
     "node_modules/**/*"
   ],
-  "extraResources": {
-    "from": "build/extraResources/",
-    "to": "extraResources"
-  },
+  "extraResources": [
+    {
+      "from": "build/extraResources/",
+      "to": "extraResources"
+    },
+    {
+      "from": "electron/resources/default-skills/",
+      "to": "default-skills"
+    }
+  ],
   "nsis": {
     "oneClick": false,
     "allowElevation": true,

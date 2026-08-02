@@ -121,7 +121,25 @@ const ipcApiRoute = {
     getConversationContext: 'controller/assistant/getConversationContext',
     // 流式聊天：通过 HTTP SSE 调用（不再使用 IPC）
     streamChat: 'controller/assistant/streamChat',
-  }
+  },
+
+  // Pi Agent 模式
+  piAgent: {
+    // Skills 管理
+    skillsOperation: 'controller/piAgent/skillsOperation',
+    // 内置 MCP 管理
+    mcpOperation: 'controller/piAgent/mcpOperation',
+    // 初始化 Skills（应用启动时调用）
+    initSkills: 'controller/piAgent/initSkills',
+    // Agent 会话管理
+    sessionOperation: 'controller/piAgent/sessionOperation',
+    // Agent 流式对话（通过 HTTP SSE）
+    streamAgent: 'controller/piAgent/streamAgent',
+    // 工作区管理
+    workspaceOperation: 'controller/piAgent/workspaceOperation',
+    // 记忆文件管理（CLAUDE.md / Memory 等）
+    memoryOperation: 'controller/piAgent/memoryOperation',
+  },
 }
 
 /**

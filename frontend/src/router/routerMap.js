@@ -134,6 +134,24 @@ const constantRouterMap = [
         props: { title: '文件' },
       },
       {
+        path: '/skills',
+        name: 'Skills',
+        component: () => import('@/views/skills/Index.vue'),
+        props: { title: '技能' },
+      },
+      {
+        path: '/chat',
+        name: 'Chat',
+        component: () => import('@/views/chat/Index.vue'),
+        props: { title: 'Chat' },
+      },
+      {
+        path: '/agent',
+        name: 'Agent',
+        component: () => import('@/views/agent/Index.vue'),
+        props: { title: 'Agent' },
+      },
+      {
         path: '/qa',
         name: 'Qa',
         component: () => import('@/views/qa/Index.vue'),
@@ -151,7 +169,7 @@ const constantRouterMap = [
       {
         path: '/setting',
         name: 'Setting',
-        component: () => import('@/views/Placeholder.vue'),
+        component: () => import('@/views/setting/Index.vue'),
         props: { title: '设置' },
       },
       {

@@ -1,199 +1,284 @@
 <template>
-  <a-layout id="app-layout-sider">
-    <a-layout-sider
-      v-model="collapsed"
-      theme="light"
-      class="layout-sider"
-      width="80"
-      :collapsedWidth="80"
-    >
-      <div class="logo">
-        <img class="pic-logo" src="~@/assets/logo.png">
-      </div>
-      <a-menu
-        class="menu-item"
-        theme="light"
-        mode="inline"
-        :selectedKeys="[current]"
-        @click="menuHandle"
+  <div class="pi-sidebar" :class="{ 'pi-sidebar--collapsed': isCollapsed }">
+    <!-- 顶部 Logo 区域 -->
+    <div class="pi-sidebar__logo" @click="toggleCollapse">
+      <img class="pi-sidebar__logo-img" src="~@/assets/logo.png" alt="logo" />
+      <span v-if="!isCollapsed" class="pi-sidebar__logo-text">Diting AI</span>
+    </div>
+
+    <!-- 主菜单区域 -->
+    <nav class="pi-sidebar__nav">
+      <button
+        v-for="item in menuItems"
+        :key="item.key"
+        class="pi-sidebar__item"
+        :class="{ 'pi-sidebar__item--active': current === item.key }"
+        :title="item.title"
+        @click="menuHandle(item.key)"
       >
-        <a-menu-item v-for="(menuInfo, index) in menu" :key="index">
-          <div class="menu-item-box">
-            <component :is="menuInfo.icon" class="menu-icon" />
-            <span class="menu-title">{{ menuInfo.title }}</span>
-          </div>
-        </a-menu-item>
-      </a-menu>
-    </a-layout-sider>
-    <a-layout>
-      <a-layout-content class="layout-content">
-        <router-view />
-      </a-layout-content>
-    </a-layout>
-  </a-layout>
+        <component :is="item.icon" class="pi-sidebar__icon" />
+        <span v-if="!isCollapsed" class="pi-sidebar__label">{{ item.title }}</span>
+        <span v-if="isCollapsed" class="pi-sidebar__tooltip">{{ item.title }}</span>
+      </button>
+    </nav>
+
+    <!-- 底部设置 -->
+    <div class="pi-sidebar__footer">
+      <button
+        class="pi-sidebar__item"
+        :class="{ 'pi-sidebar__item--active': current === 'menu_setting' }"
+        :title="'设置'"
+        @click="menuHandle('menu_setting')"
+      >
+        <SettingOutlined class="pi-sidebar__icon" />
+        <span v-if="!isCollapsed" class="pi-sidebar__label">设置</span>
+        <span v-if="isCollapsed" class="pi-sidebar__tooltip">设置</span>
+      </button>
+    </div>
+  </div>
 </template>
+
 <script setup>
-import { ref, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import {
+  FileFilled,
+  MessageOutlined,
+  RobotOutlined,
+  SettingOutlined,
+} from '@ant-design/icons-vue'
 
-const router = useRouter();
+const router = useRouter()
 
-const collapsed = ref(true);
-const current = ref('menu_file');
-const menu = ref({
-  'menu_file': {
-    icon: 'FileFilled',
+// 侧边栏折叠状态
+const isCollapsed = ref(true)
+const current = ref('menu_file')
+
+// 菜单项（仅保留：文件 + Chat + Agent，设置在底部）
+const menuItems = ref([
+  {
+    key: 'menu_file',
+    icon: FileFilled,
     title: '文件',
     pageName: 'File',
-    params: {}
+    params: {},
   },
-  'menu_qa': {
-    icon: 'QuestionCircleFilled',
-    title: 'QA',
-    pageName: 'Qa',
-    params: {}
+  {
+    key: 'menu_chat',
+    icon: MessageOutlined,
+    title: 'Chat',
+    pageName: 'Chat',
+    params: {},
   },
-  'menu_rag': {
-    icon: 'DatabaseFilled',
-    title: 'RAG',
-    pageName: 'Rag',
-    params: {}
+  {
+    key: 'menu_agent',
+    icon: RobotOutlined,
+    title: 'Agent',
+    pageName: 'Agent',
+    params: {},
   },
-  'menu_adjust': {
-    icon: 'RobotFilled',
-    title: '模型',
-    pageName: 'Adjust',
-    params: {}
-  },
-  'menu_metrics': {
-    icon: 'BarChartOutlined',
-    title: '统计',
-    pageName: 'Metrics',
-    params: {}
-  },
-  'menu_setting': {
-    icon: 'SettingFilled',
-    title: '设置',
-    pageName: 'Setting',
-    params: {}
-  },
-});
+])
+
+// 设置菜单项（独立放在底部）
+const settingItem = {
+  key: 'menu_setting',
+  icon: SettingOutlined,
+  title: '设置',
+  pageName: 'Setting',
+  params: {},
+}
+
+// 合并菜单映射（用于路由跳转）
+const menuMap = ref({
+  menu_file: menuItems.value[0],
+  menu_chat: menuItems.value[1],
+  menu_agent: menuItems.value[2],
+  menu_setting: settingItem,
+})
 
 onMounted(() => {
-  menuHandle();
-});
+  menuHandle('menu_file')
+})
 
-function menuHandle(e) {
-  if (e) {
-    current.value = e.key;
+function toggleCollapse() {
+  isCollapsed.value = !isCollapsed.value
+}
+
+function menuHandle(key) {
+  current.value = key
+  const linkInfo = menuMap.value[key]
+  if (linkInfo) {
+    router.push({ name: linkInfo.pageName, params: linkInfo.params })
   }
-  const linkInfo = menu.value[current.value];
-  router.push({ name: linkInfo.pageName, params: linkInfo.params });
 }
 </script>
+
 <style lang="less" scoped>
-#app-layout-sider {
-  height: 100vh;
+// ===== Proma 风格侧边栏 =====
+// 设计要点：
+// 1. 可折叠：展开 240px / 折叠 60px
+// 2. 底部放置设置按钮
+// 3. 活跃状态用饱满色彩 + 圆角
+// 4. 悬停状态用半透明背景
+// 5. 折叠时显示 tooltip
+// 6. 背景使用渐变，为未来主题留下空间
 
-  .logo {
-    display: flex;
-    align-items: center;
+.pi-sidebar {
+  display: flex;
+  flex-direction: column;
+  width: 240px;
+  height: 100vh;
+  background: linear-gradient(180deg, #fafbfc 0%, #f0f2f5 100%);
+  border-right: 1px solid rgba(0, 0, 0, 0.04);
+  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  flex-shrink: 0;
+  user-select: none;
+
+  &--collapsed {
+    width: 60px;
+  }
+}
+
+// ===== Logo 区域 =====
+.pi-sidebar__logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  cursor: pointer;
+  min-height: 56px;
+  transition: padding 0.25s ease;
+
+  .pi-sidebar--collapsed & {
     justify-content: center;
-    padding: 12px 0;
-  }
-
-  .pic-logo {
-    height: 36px;
-    margin: 0;
-  }
-
-  .layout-content {
-    background-color: #ffffff;
-    height: 100%;
-    overflow: hidden;
+    padding: 14px 0;
   }
 }
 
-// 使用 :deep() 穿透 scoped 边界，覆盖 Ant Design 组件内部样式
-.layout-sider {
-  background-color: #f0f2f5 !important;
-  height: 100vh;
+.pi-sidebar__logo-img {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: 6px;
 }
 
-.menu-item {
-  // 菜单容器样式
-  background-color: transparent !important;
-  border: none !important;
+.pi-sidebar__logo-text {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1a1a2e;
+  white-space: nowrap;
+  letter-spacing: -0.3px;
 }
 
-// 关键：使用 :deep() 覆盖 Ant Design Menu 默认的高度样式
-:deep(.ant-menu-item) {
-  // 覆盖默认的 line-height: 46px 和 height
-  line-height: 1 !important;
-  height: 64px !important;
-  min-height: 64px !important;
+// ===== 主菜单区域 =====
+.pi-sidebar__nav {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  overflow-y: auto;
+  overflow-x: hidden;
 
-  // 覆盖默认的 padding 和 margin
-  padding: 0 !important;
-  margin: 6px 8px !important;
+  // 隐藏滚动条
+  &::-webkit-scrollbar {
+    width: 0;
+    display: none;
+  }
+}
 
-  // 覆盖默认的宽度
-  width: 64px !important;
+// ===== 菜单项 =====
+.pi-sidebar__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 14px;
+  height: 42px;
+  border: none;
+  background: transparent;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #595959;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  position: relative;
+  width: 100%;
+  text-align: left;
 
-  // 圆角和过渡效果
-  border-radius: 10px !important;
-  border: none !important;
-  background: transparent !important;
-  transition: all 0.3s ease;
+  // 折叠时居中
+  .pi-sidebar--collapsed & {
+    justify-content: center;
+    padding: 0;
+  }
 
   // 悬停状态
   &:hover {
-    background-color: rgba(22, 119, 255, 0.1) !important;
+    background: rgba(22, 119, 255, 0.08);
+    color: #1677ff;
+
+    .pi-sidebar__tooltip {
+      opacity: 1;
+      transform: translateX(0);
+    }
   }
 
-  // 选中状态
-  &.ant-menu-item-selected {
-    background-color: #1677ff !important;
+  // 活跃状态：饱满色彩
+  &--active {
+    background: linear-gradient(135deg, #1677ff 0%, #4096ff 100%);
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(22, 119, 255, 0.3);
 
-    .menu-icon {
-      // TwoTone 图标为双色，使用滤镜将其变为纯白色
-      filter: brightness(0) invert(1);
-    }
-
-    .menu-title {
+    &:hover {
+      background: linear-gradient(135deg, #1677ff 0%, #4096ff 100%);
       color: #ffffff;
     }
   }
 }
 
-// 图标和文字容器：纵向布局
-.menu-item-box {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
-}
-
-// 图标样式（Ant Design 图标组件，需 :deep 穿透）
-:deep(.menu-icon) {
-  font-size: 30px;
+// ===== 图标 =====
+.pi-sidebar__icon {
+  font-size: 20px;
+  flex-shrink: 0;
   line-height: 1;
-  margin-bottom: 6px;
-  color: #1677ff;
 }
 
-:deep(.anticon) {
-  font-size: 18px !important;
+// ===== 文字标签 =====
+.pi-sidebar__label {
+  font-weight: 500;
+  letter-spacing: -0.1px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-// 文字样式
-.menu-title {
-  font-size: 14px;
-  line-height: 1;
-  color: #1677ff;
-  font-weight: 600;
-  margin-left: -0px !important;
+// ===== 折叠时的 tooltip =====
+.pi-sidebar__tooltip {
+  position: absolute;
+  left: calc(100% + 8px);
+  top: 50%;
+  transform: translateY(-50%) translateX(-4px);
+  background: #1a1a2e;
+  color: #ffffff;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.2s ease;
+  z-index: 1000;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+
+  // 只有折叠时显示 tooltip
+  .pi-sidebar:not(.pi-sidebar--collapsed) & {
+    display: none;
+  }
+}
+
+// ===== 底部设置区域 =====
+.pi-sidebar__footer {
+  padding: 8px 10px 12px;
+  border-top: 1px solid rgba(0, 0, 0, 0.04);
 }
 </style>

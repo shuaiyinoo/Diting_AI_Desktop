@@ -2,6 +2,7 @@ import { app as electronApp, screen } from 'electron';
 import { logger } from 'ee-core/log';
 import { getConfig } from 'ee-core/config';
 import { getMainWindow } from 'ee-core/electron';
+import { initPiAgent } from '../components/pi';
 
 class Lifecycle {
   /**
@@ -16,6 +17,13 @@ class Lifecycle {
    */
   async electronAppReady(): Promise<void> {
     logger.info('[lifecycle] electron-app-ready');
+
+    // 初始化 Pi Agent 环境（同步默认 Skills、升级工作区 Skills）
+    try {
+      initPiAgent();
+    } catch (err) {
+      logger.error('[lifecycle] Pi Agent 初始化失败:', err);
+    }
 
     // When double clicking the icon, display the opened window
     electronApp.on('second-instance', () => {

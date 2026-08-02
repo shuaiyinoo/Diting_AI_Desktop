@@ -1,6 +1,7 @@
 import * as AntIcon from '@ant-design/icons-vue';
 import Antd from 'ant-design-vue';
 import { createApp } from 'vue';
+import { createPinia } from 'pinia';
 import App from './App.vue';
 import './assets/global.less';
 import './assets/theme.less';
@@ -25,4 +26,4 @@ for (const i in AntIcon) {
   }
 }
 
-app.use(Antd).use(Router).mount('#app')
+app.use(Antd).use(createPinia()).use(Router).mount('#app')
