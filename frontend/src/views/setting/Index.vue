@@ -183,14 +183,40 @@
         <!-- 外观 -->
         <div v-if="activeTab === 'appearance'" class="setting-section">
           <h3 class="setting-section__title">外观</h3>
-          <div class="setting-form">
-            <div class="setting-form__row">
-              <label class="setting-form__label">主题</label>
-              <a-radio-group v-model:value="theme" @change="onThemeChange">
-                <a-radio value="light">浅色</a-radio>
-                <a-radio value="dark">深色</a-radio>
-                <a-radio value="system">跟随系统</a-radio>
-              </a-radio-group>
+          <p class="setting-section__desc">自定义应用的视觉风格与 Markdown 渲染字号</p>
+          <div class="appearance-card">
+            <!-- Markdown 字号 -->
+            <div class="appearance-row">
+              <div class="appearance-row__info">
+                <div class="appearance-row__label">Markdown 字号</div>
+                <div class="appearance-row__desc">调整 AI 回复与 Markdown 内容的正文字号</div>
+              </div>
+              <div class="seg-control">
+                <button
+                  v-for="opt in fontSizeOptions"
+                  :key="opt.value"
+                  class="seg-control__btn"
+                  :class="{ 'seg-control__btn--active': markdownFontSize === opt.value }"
+                  @click="onFontSizeChange(opt.value)"
+                >{{ opt.label }}</button>
+              </div>
+            </div>
+
+            <!-- 主题 -->
+            <div class="appearance-row">
+              <div class="appearance-row__info">
+                <div class="appearance-row__label">主题</div>
+                <div class="appearance-row__desc">选择应用的配色方案</div>
+              </div>
+              <div class="seg-control">
+                <button
+                  v-for="opt in themeOptions"
+                  :key="opt.value"
+                  class="seg-control__btn"
+                  :class="{ 'seg-control__btn--active': theme === opt.value }"
+                  @click="theme = opt.value; onThemeChange()"
+                >{{ opt.label }}</button>
+              </div>
             </div>
           </div>
         </div>
@@ -308,12 +334,28 @@ import {
 import { ipcApiRoute } from '@/api'
 import { ipc } from '@/utils/ipcRenderer'
 import PanelDivider from '@/components/layout/PanelDivider.vue'
+import {
+  FONT_SIZE_OPTIONS,
+  getMarkdownFontSize,
+  setMarkdownFontSize,
+} from '@/utils/markdown-font-size'
 
 // ========== 面板布局 ==========
 const workspaceRef = ref(null)
 const panel2Width = ref(200)
 const activeTab = ref('model')
 const theme = ref('light')
+const markdownFontSize = ref('medium')
+
+/** 主题选项 */
+const themeOptions = [
+  { value: 'light', label: '浅色' },
+  { value: 'dark', label: '深色' },
+  { value: 'system', label: '跟随系统' },
+]
+
+/** Markdown 字号选项 */
+const fontSizeOptions = FONT_SIZE_OPTIONS
 
 const settingTabs = [
   { key: 'model', label: '模型管理', icon: RobotOutlined },
@@ -341,6 +383,8 @@ const skills = ref([])
 const mcpServers = ref([])
 
 onMounted(async () => {
+  // 初始化 Markdown 字号
+  markdownFontSize.value = getMarkdownFontSize()
   await loadMcpServers()
   await fetchModels()
 })
@@ -391,6 +435,12 @@ async function toggleSkill(slug, enabled) {
 
 function onThemeChange() {
   document.documentElement.setAttribute('data-theme', theme.value)
+}
+
+/** 切换 Markdown 字号 */
+function onFontSizeChange(size) {
+  markdownFontSize.value = size
+  setMarkdownFontSize(size)
 }
 
 // ========== 模型管理（移植自 adjust/Index.vue） ==========
@@ -942,6 +992,82 @@ async function handleTest(record) {
   &__value {
     font-size: 12px;
     color: var(--text-primary);
+  }
+}
+
+// ===== 外观设置卡片 =====
+.appearance-card {
+  background: var(--bg-panel);
+  border-radius: 10px;
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.appearance-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-color-light);
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &__info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+
+  &__desc {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 2px;
+    line-height: 1.4;
+  }
+}
+
+// 分段选择器（参考 Proma SettingsSegmentedControl 设计）
+.seg-control {
+  display: inline-flex;
+  align-items: center;
+  background: var(--bg-hover);
+  border-radius: 8px;
+  padding: 2px;
+  gap: 0;
+  flex-shrink: 0;
+
+  &__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 26px;
+    padding: 0 14px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+
+    &:hover {
+      color: var(--text-primary);
+    }
+
+    &--active {
+      background: var(--bg-panel);
+      color: var(--text-primary);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
   }
 }
 </style>

@@ -137,64 +137,143 @@ html, body {
   grid-column: 1 / -1;
 }
 
-/* === markstream-vue 字号与间距覆盖 === */
-.message__text--answer .markstream-vue {
-  --ms-text-body: 14px;
-  --ms-text-h1: 20px;
-  --ms-text-h2: 18px;
-  --ms-text-h3: 16px;
-  --ms-text-h4: 15px;
-  --ms-text-h5: 14px;
-  --ms-text-h6: 14px;
-  --ms-leading-body: 1.6;
-  --ms-leading-h1: 1.3;
-  --ms-leading-h2: 1.4;
-  --ms-leading-h3: 1.5;
+/* === Markdown 字号控制（驱动 markstream-vue CSS 变量） === */
+/* markstream-vue 默认 --ms-text-body: 1rem (16px)，此处按档位覆盖字号+间距+行高 */
 
-  --ms-flow-paragraph-y: 0.6em;
-  --ms-flow-heading-1-mt: 1em;
-  --ms-flow-heading-1-mb: 0.4em;
-  --ms-flow-heading-2-mt: 1em;
-  --ms-flow-heading-2-mb: 0.3em;
-  --ms-flow-heading-3-mt: 0.8em;
-  --ms-flow-heading-3-mb: 0.3em;
-  --ms-flow-heading-4-mt: 0.6em;
-  --ms-flow-heading-4-mb: 0.2em;
-  --ms-flow-heading-5-mt: 0.5em;
+/* --- 小字号：紧凑排版 --- */
+[data-md-font-size='small'] .markstream-vue {
+  /* 字号 */
+  --ms-text-body: 13px;
+  --ms-text-h1: 1.5rem;
+  --ms-text-h2: 1.25rem;
+  --ms-text-h3: 1.0625rem;
+  --ms-text-h4: 0.9375rem;
+  --ms-text-h5: 0.875rem;
+  --ms-text-h6: 0.8125rem;
+  /* 行高 */
+  --ms-leading-body: 1.55;
+  --ms-leading-h1: 1.25;
+  --ms-leading-h2: 1.35;
+  --ms-leading-h3: 1.45;
+  /* 段落间距 */
+  --ms-flow-paragraph-y: 0.8em;
+  /* 标题间距 */
+  --ms-flow-heading-1-mt: 0;
+  --ms-flow-heading-1-mb: 0.6em;
+  --ms-flow-heading-2-mt: 1.2em;
+  --ms-flow-heading-2-mb: 0.5em;
+  --ms-flow-heading-3-mt: 1em;
+  --ms-flow-heading-3-mb: 0.4em;
+  --ms-flow-heading-4-mt: 0.8em;
+  --ms-flow-heading-4-mb: 0.3em;
+  --ms-flow-heading-5-mt: 0.6em;
   --ms-flow-heading-5-mb: 0.2em;
-  --ms-flow-heading-6-mt: 0.5em;
+  --ms-flow-heading-6-mt: 0.6em;
   --ms-flow-heading-6-mb: 0.2em;
-  --ms-flow-list-y: 0.5em;
+  /* 列表间距 */
+  --ms-flow-list-y: 0.6em;
   --ms-flow-list-item-y: 0.15em;
   --ms-flow-list-indent: 1.4em;
-  --ms-flow-blockquote-y: 0.6em;
+  /* 其他元素间距 */
+  --ms-flow-blockquote-y: 0.8em;
   --ms-flow-blockquote-indent: 1em;
-  --ms-flow-codeblock-y: 0.6em;
-  --ms-flow-table-y: 0.8em;
-  --ms-flow-table-cell: 0.35em 0.6em;
-  --ms-flow-hr-y: 1em;
+  --ms-flow-codeblock-y: 0.8em;
+  --ms-flow-table-y: 1em;
+  --ms-flow-table-cell: 0.3em 0.5em;
+  --ms-flow-hr-y: 1.5em;
   --ms-flow-diagram-y: 0.8em;
   --ms-flow-footnote-y: 0.3em;
-  --ms-flow-admonition-y: 0.6em;
+  --ms-flow-admonition-y: 0.8em;
+}
 
-  font-size: 14px;
-  line-height: 1.6;
+/* --- 中字号：默认排版 --- */
+[data-md-font-size='medium'] .markstream-vue {
+  /* 字号 */
+  --ms-text-body: 15px;
+  --ms-text-h1: 2rem;
+  --ms-text-h2: 1.5rem;
+  --ms-text-h3: 1.25rem;
+  --ms-text-h4: 1rem;
+  --ms-text-h5: 0.9375rem;
+  --ms-text-h6: 0.875rem;
+  /* 行高 */
+  --ms-leading-body: 1.7;
+  --ms-leading-h1: 1.2;
+  --ms-leading-h2: 1.35;
+  --ms-leading-h3: 1.5;
+  /* 段落间距 */
+  --ms-flow-paragraph-y: 1.2em;
+  /* 标题间距 */
+  --ms-flow-heading-1-mt: 0;
+  --ms-flow-heading-1-mb: 0.8em;
+  --ms-flow-heading-2-mt: 1.6em;
+  --ms-flow-heading-2-mb: 0.6em;
+  --ms-flow-heading-3-mt: 1.2em;
+  --ms-flow-heading-3-mb: 0.5em;
+  --ms-flow-heading-4-mt: 1em;
+  --ms-flow-heading-4-mb: 0.35em;
+  --ms-flow-heading-5-mt: 0.8em;
+  --ms-flow-heading-5-mb: 0.25em;
+  --ms-flow-heading-6-mt: 0.8em;
+  --ms-flow-heading-6-mb: 0.25em;
+  /* 列表间距 */
+  --ms-flow-list-y: 0.8em;
+  --ms-flow-list-item-y: 0.2em;
+  --ms-flow-list-indent: 1.5em;
+  /* 其他元素间距 */
+  --ms-flow-blockquote-y: 1em;
+  --ms-flow-blockquote-indent: 1.2em;
+  --ms-flow-codeblock-y: 1.2em;
+  --ms-flow-table-y: 1.5em;
+  --ms-flow-table-cell: 0.4em 0.65em;
+  --ms-flow-hr-y: 2em;
+  --ms-flow-diagram-y: 1.2em;
+  --ms-flow-footnote-y: 0.4em;
+  --ms-flow-admonition-y: 1em;
+}
 
-  p { margin: 0.5em 0; }
-  p:first-child { margin-top: 0; }
-  p:last-child { margin-bottom: 0; }
-
-  ul, ol { margin: 0.4em 0; padding-left: 1.4em; }
-  li { margin: 0.15em 0; }
-
-  pre { margin: 0.5em 0; padding: 0.6em 0.8em; }
-  pre:first-child { margin-top: 0; }
-  pre:last-child { margin-bottom: 0; }
-
-  blockquote { margin: 0.5em 0; padding: 0.3em 0.8em; }
-
-  table { margin: 0.6em 0; }
-
-  h1:first-child, h2:first-child, h3:first-child { margin-top: 0; }
-  h1:last-child, h2:last-child, h3:last-child { margin-bottom: 0; }
+/* --- 大字号：宽松排版 --- */
+[data-md-font-size='large'] .markstream-vue {
+  /* 字号 */
+  --ms-text-body: 17px;
+  --ms-text-h1: 2.25rem;
+  --ms-text-h2: 1.75rem;
+  --ms-text-h3: 1.375rem;
+  --ms-text-h4: 1.125rem;
+  --ms-text-h5: 1rem;
+  --ms-text-h6: 0.9375rem;
+  /* 行高 */
+  --ms-leading-body: 1.8;
+  --ms-leading-h1: 1.2;
+  --ms-leading-h2: 1.35;
+  --ms-leading-h3: 1.5;
+  /* 段落间距 */
+  --ms-flow-paragraph-y: 1.6em;
+  /* 标题间距 */
+  --ms-flow-heading-1-mt: 0;
+  --ms-flow-heading-1-mb: 1em;
+  --ms-flow-heading-2-mt: 2em;
+  --ms-flow-heading-2-mb: 0.75em;
+  --ms-flow-heading-3-mt: 1.5em;
+  --ms-flow-heading-3-mb: 0.6em;
+  --ms-flow-heading-4-mt: 1.25em;
+  --ms-flow-heading-4-mb: 0.4em;
+  --ms-flow-heading-5-mt: 1em;
+  --ms-flow-heading-5-mb: 0.3em;
+  --ms-flow-heading-6-mt: 1em;
+  --ms-flow-heading-6-mb: 0.3em;
+  /* 列表间距 */
+  --ms-flow-list-y: 1em;
+  --ms-flow-list-item-y: 0.25em;
+  --ms-flow-list-indent: 1.625em;
+  /* 其他元素间距 */
+  --ms-flow-blockquote-y: 1.25em;
+  --ms-flow-blockquote-indent: 1.25em;
+  --ms-flow-codeblock-y: 1.5em;
+  --ms-flow-table-y: 2em;
+  --ms-flow-table-cell: 0.5em 0.75em;
+  --ms-flow-hr-y: 2.5em;
+  --ms-flow-diagram-y: 1.5em;
+  --ms-flow-footnote-y: 0.5em;
+  --ms-flow-admonition-y: 1.25em;
 }
