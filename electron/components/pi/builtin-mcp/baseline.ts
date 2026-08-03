@@ -2,10 +2,25 @@
  * 内置 MCP 基础定义加载层
  *
  * 移植自 Proma 的 baseline.ts，从 default-mcp.json 读取内置 MCP 定义。
+ * 支持外部进程型 MCP（chrome-devtools、web-search）的 stdio 运行时配置。
  */
 
 import type { BuiltinMcpCategory, McpToolSummary } from '../types'
 import manifest from './default-mcp.json'
+
+/** MCP 运行时配置（stdio / http / sse） */
+export interface BuiltinMcpRuntimeConfig {
+  type: 'stdio' | 'http' | 'sse'
+  command?: string
+  args?: string[]
+  env?: Record<string, string>
+  url?: string
+  headers?: Record<string, string>
+  envNotes?: string
+}
+
+/** 内置 MCP 实现状态 */
+export type BuiltinMcpStatus = 'active' | 'pending'
 
 export interface BuiltinMcpDefinition {
   id: string
@@ -17,6 +32,10 @@ export interface BuiltinMcpDefinition {
   deletable: boolean
   defaultEnabled: boolean
   toggleable: boolean
+  /** 实现状态：active=可用，pending=待实现 */
+  status?: BuiltinMcpStatus
+  /** 运行时启动配置（仅 status=active 的外部进程型 MCP 有） */
+  runtime?: BuiltinMcpRuntimeConfig
   tools: McpToolSummary[]
 }
 

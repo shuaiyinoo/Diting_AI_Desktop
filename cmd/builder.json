@@ -20,6 +20,11 @@
     {
       "from": "electron/resources/default-skills/",
       "to": "default-skills"
+    },
+    {
+      "from": "build/extraResources/python-runtime/",
+      "to": "python-runtime",
+      "filter": ["**/*"]
     }
   ],
   "nsis": {

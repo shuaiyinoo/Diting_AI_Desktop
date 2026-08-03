@@ -17,6 +17,7 @@ import {
 } from '../components/pi/skills/skills-manager'
 import { listBuiltinMcpServers } from '../components/pi/builtin-mcp/catalog'
 import { setBuiltinMcpUserEnabled } from '../components/pi/builtin-mcp/settings'
+import { getBuiltinTools } from '../components/pi/builtin-tools/catalog'
 import {
   sendAgentMessage,
   abortSession,
@@ -157,6 +158,28 @@ class PiAgentController {
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
       logger.error('[PiAgentController] initSkills 异常:', err)
+      return { code: -1, message: msg }
+    }
+  }
+
+  /**
+   * 内置 Tools 管理（列表）。
+   */
+  async toolsOperation(args: {
+    action: 'list'
+  }): Promise<{ code: number; data?: unknown; message?: string }> {
+    try {
+      switch (args.action) {
+        case 'list': {
+          const tools = getBuiltinTools()
+          return { code: 0, data: tools }
+        }
+        default:
+          return { code: -1, message: `未知操作: ${args.action}` }
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      logger.error('[PiAgentController] toolsOperation 异常:', err)
       return { code: -1, message: msg }
     }
   }

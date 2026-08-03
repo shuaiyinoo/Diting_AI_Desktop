@@ -16,6 +16,11 @@
     {
       "from": "build/extraResources",
       "to": "extraResources"
+    },
+    {
+      "from": "build/extraResources/python-runtime/",
+      "to": "python-runtime",
+      "filter": ["**/*"]
     }
   ],
   "publish": [

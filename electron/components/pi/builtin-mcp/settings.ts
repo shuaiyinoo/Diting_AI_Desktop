@@ -1,17 +1,23 @@
 /**
  * 内置 MCP 开关设置
  *
- * 移植自 Proma 的 settings.ts。
- * 使用 Diting 的 SQLite settings 表替代 Proma 的 JSON 文件。
+ * 管理内置 MCP 的启用/禁用状态。
+ * 使用 default-mcp.json 中的 defaultEnabled 字段作为默认值。
+ * 用户切换后持久化到内存缓存（后续对接 SQLite）。
  */
 
 import { logger } from 'ee-core/log'
+import { getBuiltinMcpDefinitions } from './baseline'
 
 /**
- * 默认关闭的内置 MCP ID。
- * 需要用户额外配置才有意义，默认不向 Agent 注入。
+ * 默认关闭的内置 MCP ID 集合。
+ * 从 default-mcp.json 的 defaultEnabled=false 的条目自动构建。
  */
-const DEFAULT_DISABLED_IDS = new Set<string>([])
+const DEFAULT_DISABLED_IDS: Set<string> = new Set(
+  getBuiltinMcpDefinitions()
+    .filter((d) => d.defaultEnabled === false)
+    .map((d) => d.id),
+)
 
 /** 运行时缓存（避免频繁读数据库） */
 let disabledIdsCache: Set<string> | null = null
@@ -46,9 +52,11 @@ export function isBuiltinMcpUserEnabled(id: string): boolean {
   loadFromStorage()
 
   if (DEFAULT_DISABLED_IDS.has(id)) {
+    // 默认关闭的：需要用户显式启用
     return enabledIdsCache!.has(id)
   }
 
+  // 默认开启的：未被用户手动关闭即为启用
   return !disabledIdsCache!.has(id)
 }
 

@@ -20,11 +20,22 @@ import {
 } from '../config-paths'
 import { buildPiMcpTools, disposePiMcpConnections } from './pi-mcp-tools'
 import { getWorkspaceMcpConfig, getWorkspaceCwd } from './workspace-manager'
+import { mergeMcpConfigs } from '../builtin-mcp/registry'
 import type { WorkspaceMeta } from './workspace-manager'
 import type { AgentChannel, AgentMessage, AgentSessionMeta } from '../types'
 import { channelToPiProvider } from './pi-model-registry'
 import { permissionService } from './agent-permission-service'
 import type { PermissionRequest, AskUserRequest, CanUseToolOptions, PermissionResult } from './agent-permission-service'
+import {
+  resolvePythonRuntime,
+  resolveNodeRuntime,
+  resolveGitRuntime,
+  buildPythonEnv,
+  buildNodeEnv,
+  buildGitEnv,
+  getRuntimeSummary,
+} from '../runtime/runtime-manager'
+import { getRuntimeSettings } from '../runtime/runtime-settings'
 
 /** Agent 发送输入 */
 export interface AgentSendInput {
@@ -206,6 +217,39 @@ function buildSystemPrompt(workspace?: WorkspaceMeta): string {
     }
   }
 
+  // 运行时环境信息
+  const runtimeSummary = getRuntimeSummary()
+  const pythonInfo = runtimeSummary.python.available
+    ? `${runtimeSummary.python.source === 'bundled' ? '内嵌' : '宿主机'} (${runtimeSummary.python.path})`
+    : '不可用'
+  const nodeInfo = runtimeSummary.node.available
+    ? `${runtimeSummary.node.source === 'bundled' ? '内嵌' : '宿主机'} (${runtimeSummary.node.path})`
+    : '不可用'
+  const gitInfo = runtimeSummary.git.available
+    ? `${runtimeSummary.git.source === 'bundled' ? '内嵌' : '宿主机'} (${runtimeSummary.git.path})`
+    : '不可用'
+  parts.push(`
+## 运行时环境
+Diting 已集成 Python、Node.js 和 Git 运行时，优先使用内嵌环境执行脚本，无需依赖宿主机安装。
+- **Python**: ${pythonInfo}
+- **Node.js**: ${nodeInfo}
+- **Git**: ${gitInfo}
+
+### 工具使用指南
+- 执行 Python 代码或脚本：使用 **RunPythonScript** 工具（提供 code 或 scriptPath 参数）
+- 执行 Node.js 代码或脚本：使用 **RunNodeScript** 工具（提供 code 或 scriptPath 参数）
+- 执行 Git 命令：使用 **RunGitCommand** 工具（提供 command 和可选 args 参数）
+- 安装额外依赖包：使用 **InstallPackage** 工具（指定 manager: pip/npm 和 packages 列表）
+- 当内嵌运行时不可用时，上述工具会自动回退到宿主机环境
+- 如果工具执行失败且提示运行时不可用，可提示用户在设置中检查运行时配置
+
+### 优先级规则
+1. 优先使用 RunPythonScript / RunNodeScript 工具（内嵌运行时）
+2. Git 操作使用 RunGitCommand 工具，不要通过 Bash 调用 git 命令
+3. 仅当需要执行非 Python/Node.js/Git 的系统命令时，才使用 Bash 工具
+4. 安装新依赖时使用 InstallPackage 工具，不要直接调用 pip/npm 命令
+`)
+
   // 注意：Skills 列表由 Pi SDK 通过 formatSkillsForPrompt() 自动注入系统提示词，
   // 不需要在此手动列出。SDK 会从 ResourceLoader.getSkills() 获取并通过 XML 格式注入。
 
@@ -339,15 +383,20 @@ export async function sendAgentMessage(
   const { createAgentSession, ModelRuntime, DefaultResourceLoader, SessionManager, SettingsManager } = await loadPiSdk()
 
   // 构建 MCP 工具
+  // 关键：合并内置 MCP 配置（chrome-devtools、web-search 等）和工作区用户 MCP 配置
   let mcpTools: ToolDefinition[] = []
   if (workspace) {
-    const mcpConfig = getWorkspaceMcpConfig(workspace.slug)
-    if (Object.keys(mcpConfig).length > 0) {
+    const userMcpConfig = getWorkspaceMcpConfig(workspace.slug)
+    const mergedConfig = mergeMcpConfigs(userMcpConfig)
+    if (Object.keys(mergedConfig).length > 0) {
       try {
-        mcpTools = await buildPiMcpTools(mcpConfig)
+        mcpTools = await buildPiMcpTools(mergedConfig)
+        logger.info(`[Pi Agent] MCP 工具构建完成: ${mcpTools.length} 个 (用户 ${Object.keys(userMcpConfig).length} + 内置注入)`)
       } catch (err) {
         logger.warn('[Pi Agent] 构建 MCP 工具失败:', err)
       }
+    } else {
+      logger.info('[Pi Agent] 无 MCP 配置可用')
     }
   }
 
@@ -500,6 +549,7 @@ export async function sendAgentMessage(
       tasks.set(taskId, { id: taskId, subject, status: 'pending', activeForm: p.activeForm })
       return {
         content: [{ type: 'text' as const, text: JSON.stringify({ task: { id: taskId, subject } }) }],
+        details: { taskId, subject },
       }
     },
   })
@@ -530,6 +580,7 @@ export async function sendAgentMessage(
       if (p.activeForm) task.activeForm = p.activeForm
       return {
         content: [{ type: 'text' as const, text: JSON.stringify({ task }) }],
+        details: { task },
       }
     },
   })
@@ -549,7 +600,268 @@ export async function sendAgentMessage(
     wrapToolWithPermission(def, canUseTool),
   )
 
-  // 合并：内置工具（已包裹权限）+ AskUserQuestion（也需包裹权限，触发 ask_user 流程）+ MCP 工具
+  // ========== 运行时脚本执行工具 ==========
+  // RunPythonScript / RunNodeScript 优先使用 Diting 内嵌的运行时执行代码，
+  // 如果内嵌不可用则回退到宿主机环境。
+  // InstallPackage 用于安装额外 Python/npm 包，支持国内外镜像源切换。
+  const runPythonScriptTool = sdkModule.defineTool({
+    name: 'RunPythonScript',
+    label: '执行 Python 脚本',
+    description: '使用 Diting 内嵌的 Python 运行时执行 Python 代码或脚本文件。优先使用内嵌运行时，不可用时回退到宿主机 Python。',
+    promptSnippet: '执行 Python 脚本并返回标准输出和错误输出。',
+    parameters: Type.Object({
+      code: Type.Optional(Type.String({ description: '要直接执行的 Python 代码字符串。与 scriptPath 二选一。' })),
+      scriptPath: Type.Optional(Type.String({ description: '要执行的 .py 脚本文件路径。与 code 二选一。' })),
+      args: Type.Optional(Type.Array(Type.String(), { description: '传递给脚本的命令行参数。' })),
+      cwd: Type.Optional(Type.String({ description: '工作目录，默认为当前工作区根目录。' })),
+    }),
+    async execute(_toolCallId: string, params: Record<string, unknown>) {
+      const p = params as { code?: string; scriptPath?: string; args?: string[]; cwd?: string }
+      if (!p.code && !p.scriptPath) {
+        throw new Error('必须提供 code 或 scriptPath 参数')
+      }
+
+      const runtime = resolvePythonRuntime()
+      if (!runtime.available) {
+        throw new Error('Python 运行时不可用：内嵌缺失且宿主机未安装 Python')
+      }
+
+      const { execSync } = await import('node:child_process')
+      const env = buildPythonEnv()
+      const workDir = p.cwd || cwd
+
+      try {
+        let output: string
+        if (p.code) {
+          // 直接执行代码字符串
+          const args = ['-c', p.code]
+          if (p.args) args.push(...p.args)
+          output = execSync(`"${runtime.path}" ${args.map(a => JSON.stringify(a)).join(' ')}`, {
+            encoding: 'utf-8',
+            cwd: workDir,
+            env,
+            timeout: 120_000,
+            maxBuffer: 10 * 1024 * 1024,
+          })
+        } else {
+          // 执行脚本文件
+          const args = [p.scriptPath!]
+          if (p.args) args.push(...p.args)
+          output = execSync(`"${runtime.path}" ${args.map(a => JSON.stringify(a)).join(' ')}`, {
+            encoding: 'utf-8',
+            cwd: workDir,
+            env,
+            timeout: 120_000,
+            maxBuffer: 10 * 1024 * 1024,
+          })
+        }
+        return {
+          content: [{ type: 'text' as const, text: output || '(无输出)' }],
+          details: { source: runtime.source, runtime: runtime.path, error: false },
+        }
+      } catch (err: unknown) {
+        const error = err as { stderr?: string; stdout?: string; message: string }
+        const output = [error.stdout, error.stderr].filter(Boolean).join('\n') || error.message
+        return {
+          content: [{ type: 'text' as const, text: `执行失败 (${runtime.source}):
+${output}` }],
+          details: { source: runtime.source, runtime: runtime.path, error: true },
+        }
+      }
+    },
+  })
+
+  const runNodeScriptTool = sdkModule.defineTool({
+    name: 'RunNodeScript',
+    label: '执行 Node.js 脚本',
+    description: '使用 Diting 内嵌的 Node.js 运行时（Electron 自身）执行 JavaScript 代码或脚本文件。',
+    promptSnippet: '执行 Node.js 脚本并返回标准输出和错误输出。',
+    parameters: Type.Object({
+      code: Type.Optional(Type.String({ description: '要直接执行的 JavaScript 代码字符串（通过 node -e）。与 scriptPath 二选一。' })),
+      scriptPath: Type.Optional(Type.String({ description: '要执行的 .js/.mjs 脚本文件路径。与 code 二选一。' })),
+      args: Type.Optional(Type.Array(Type.String(), { description: '传递给脚本的命令行参数。' })),
+      cwd: Type.Optional(Type.String({ description: '工作目录，默认为当前工作区根目录。' })),
+    }),
+    async execute(_toolCallId: string, params: Record<string, unknown>) {
+      const p = params as { code?: string; scriptPath?: string; args?: string[]; cwd?: string }
+      if (!p.code && !p.scriptPath) {
+        throw new Error('必须提供 code 或 scriptPath 参数')
+      }
+
+      const runtime = resolveNodeRuntime()
+      if (!runtime.available) {
+        throw new Error('Node.js 运行时不可用')
+      }
+
+      const { execSync } = await import('node:child_process')
+      const env = buildNodeEnv()
+      const workDir = p.cwd || cwd
+
+      try {
+        let output: string
+        if (p.code) {
+          const args = ['-e', p.code]
+          if (p.args) args.push(...p.args)
+          output = execSync(`"${runtime.path}" ${args.map(a => JSON.stringify(a)).join(' ')}`, {
+            encoding: 'utf-8',
+            cwd: workDir,
+            env,
+            timeout: 120_000,
+            maxBuffer: 10 * 1024 * 1024,
+          })
+        } else {
+          const args = [p.scriptPath!]
+          if (p.args) args.push(...p.args)
+          output = execSync(`"${runtime.path}" ${args.map(a => JSON.stringify(a)).join(' ')}`, {
+            encoding: 'utf-8',
+            cwd: workDir,
+            env,
+            timeout: 120_000,
+            maxBuffer: 10 * 1024 * 1024,
+          })
+        }
+        return {
+          content: [{ type: 'text' as const, text: output || '(无输出)' }],
+          details: { source: runtime.source, runtime: runtime.path, error: false },
+        }
+      } catch (err: unknown) {
+        const error = err as { stderr?: string; stdout?: string; message: string }
+        const output = [error.stdout, error.stderr].filter(Boolean).join('\n') || error.message
+        return {
+          content: [{ type: 'text' as const, text: `执行失败 (${runtime.source}):
+${output}` }],
+          details: { source: runtime.source, runtime: runtime.path, error: true },
+        }
+      }
+    },
+  })
+
+  const installPackageTool = sdkModule.defineTool({
+    name: 'InstallPackage',
+    label: '安装依赖包',
+    description: '安装 Python（pip）或 Node.js（npm）第三方包，自动使用配置的镜像源。',
+    promptSnippet: '安装额外依赖包到内嵌运行时环境。',
+    parameters: Type.Object({
+      manager: Type.Union([
+        Type.Literal('pip'),
+        Type.Literal('npm'),
+      ], { description: '包管理器：pip（Python）或 npm（Node.js）。' }),
+      packages: Type.Array(Type.String(), { description: '要安装的包名列表，可含版本号如 "pypdf>=4.0"。' }),
+      global: Type.Optional(Type.Boolean({ description: '是否全局安装（npm -g / pip --user），默认 false。' })),
+    }),
+    async execute(_toolCallId: string, params: Record<string, unknown>) {
+      const p = params as { manager: 'pip' | 'npm'; packages: string[]; global?: boolean }
+      if (!p.packages || p.packages.length === 0) {
+        throw new Error('packages 不能为空')
+      }
+
+      const settings = getRuntimeSettings()
+      const { execSync } = await import('node:child_process')
+
+      try {
+        let output: string
+
+        if (p.manager === 'pip') {
+          const runtime = resolvePythonRuntime()
+          if (!runtime.available) {
+            throw new Error('Python 运行时不可用')
+          }
+          const args = ['-m', 'pip', 'install', ...p.packages, '-i', settings.pypiMirror, '--trusted-host', new URL(settings.pypiMirror).host]
+          if (p.global) args.push('--user')
+          output = execSync(`"${runtime.path}" ${args.map(a => JSON.stringify(a)).join(' ')}`, {
+            encoding: 'utf-8',
+            env: buildPythonEnv(),
+            timeout: 300_000,
+            maxBuffer: 10 * 1024 * 1024,
+          })
+        } else {
+          const runtime = resolveNodeRuntime()
+          if (!runtime.available) {
+            throw new Error('Node.js 运行时不可用')
+          }
+          const globalFlag = p.global ? ['-g'] : []
+          const args = ['install', ...globalFlag, '--registry', settings.npmRegistry, ...p.packages]
+          output = execSync(`npm ${args.map(a => JSON.stringify(a)).join(' ')}`, {
+            encoding: 'utf-8',
+            env: buildNodeEnv(),
+            timeout: 300_000,
+            maxBuffer: 10 * 1024 * 1024,
+          })
+        }
+
+        const mirror = p.manager === 'pip' ? settings.pypiMirror : settings.npmRegistry
+        return {
+          content: [{ type: 'text' as const, text: output || '安装完成' }],
+          details: { manager: p.manager, packages: p.packages, mirror, error: false },
+        }
+      } catch (err: unknown) {
+        const error = err as { stderr?: string; stdout?: string; message: string }
+        const output = [error.stdout, error.stderr].filter(Boolean).join('\n') || error.message
+        const mirror = p.manager === 'pip' ? settings.pypiMirror : settings.npmRegistry
+        return {
+          content: [{ type: 'text' as const, text: `安装失败:
+${output}` }],
+          details: { manager: p.manager, packages: p.packages, mirror, error: true },
+        }
+      }
+    },
+  })
+
+  // ========== Git 命令执行工具 ==========
+  // RunGitCommand 使用检测到的 Git 可执行文件路径执行 Git 命令。
+  // Git 没有内嵌版本，始终从宿主机检测。
+  const runGitCommandTool = sdkModule.defineTool({
+    name: 'RunGitCommand',
+    label: '执行 Git 命令',
+    description: '使用检测到的 Git 可执行文件执行 Git 命令（如 status、log、add、commit 等）。自动使用正确的工作目录。',
+    promptSnippet: '执行 Git 命令并返回输出。',
+    parameters: Type.Object({
+      command: Type.String({ description: 'Git 子命令，如 status、log、diff、add、commit、push、pull 等。' }),
+      args: Type.Optional(Type.Array(Type.String(), { description: '额外的命令行参数，如 ["--oneline", "-5"] 或 ["-m", "提交信息"]。' })),
+      cwd: Type.Optional(Type.String({ description: '工作目录，默认为当前工作区根目录。' })),
+    }),
+    async execute(_toolCallId: string, params: Record<string, unknown>) {
+      const p = params as { command: string; args?: string[]; cwd?: string }
+      if (!p.command) {
+        throw new Error('必须提供 command 参数')
+      }
+
+      const runtime = resolveGitRuntime()
+      if (!runtime.available) {
+        throw new Error('Git 不可用：宿主机未安装 Git，请提示用户安装 Git')
+      }
+
+      const { execSync } = await import('node:child_process')
+      const env = buildGitEnv()
+      const workDir = p.cwd || cwd
+
+      try {
+        const args = [p.command]
+        if (p.args) args.push(...p.args)
+        const output = execSync(`"${runtime.path}" ${args.map(a => JSON.stringify(a)).join(' ')}`, {
+          encoding: 'utf-8',
+          cwd: workDir,
+          env,
+          timeout: 60_000,
+          maxBuffer: 10 * 1024 * 1024,
+        })
+        return {
+          content: [{ type: 'text' as const, text: output || '(无输出)' }],
+          details: { source: runtime.source, runtime: runtime.path, error: false },
+        }
+      } catch (err: unknown) {
+        const error = err as { stderr?: string; stdout?: string; message: string }
+        const output = [error.stdout, error.stderr].filter(Boolean).join('\n') || error.message
+        return {
+          content: [{ type: 'text' as const, text: `执行失败 (${runtime.source}):
+${output}` }],
+          details: { source: runtime.source, runtime: runtime.path, error: true },
+        }
+      }
+    },
+  })
+
+  // 合并：内置工具（已包裹权限）+ AskUserQuestion（也需包裹权限，触发 ask_user 流程）+ 运行时工具 + MCP 工具
   // 关键：AskUserQuestion 必须经过 wrapToolWithPermission，
   // 这样 canUseTool 回调才能拦截它，发送 ask_user SSE 事件到前端，
   // 等待用户回答后注入 answers 字段到 updatedInput，再执行工具的 execute
@@ -558,6 +870,10 @@ export async function sendAgentMessage(
     wrapToolWithPermission(askUserQuestionTool as unknown as ToolDefinition, canUseTool),
     taskCreateTool as unknown as ToolDefinition,
     taskUpdateTool as unknown as ToolDefinition,
+    wrapToolWithPermission(runPythonScriptTool as unknown as ToolDefinition, canUseTool),
+    wrapToolWithPermission(runNodeScriptTool as unknown as ToolDefinition, canUseTool),
+    wrapToolWithPermission(installPackageTool as unknown as ToolDefinition, canUseTool),
+    wrapToolWithPermission(runGitCommandTool as unknown as ToolDefinition, canUseTool),
     ...mcpTools,
   ]
 

@@ -165,6 +165,196 @@
           </div>
         </div>
 
+        <!-- Tools 管理 -->
+        <div v-if="activeTab === 'tools'" class="setting-section">
+          <h3 class="setting-section__title">内置 Tools</h3>
+          <p class="setting-section__desc">Agent 可直接调用的内置工具（非 MCP）。包括 SDK 自带的文件操作、命令执行工具，以及 Diting 自定义的运行时和任务管理工具。</p>
+          <div class="tool-list">
+            <div v-for="tool in builtinTools" :key="tool.name" class="tool-card">
+              <div class="tool-card__header">
+                <span class="tool-card__name">{{ tool.label || tool.name }}</span>
+                <div class="tool-card__tags">
+                  <span class="tool-card__tag tool-card__tag--source" :class="`tool-card__tag--${tool.source}`">
+                    {{ toolSourceLabels[tool.source] || tool.source }}
+                  </span>
+                  <span v-if="tool.readOnly" class="tool-card__tag tool-card__tag--readonly">只读</span>
+                </div>
+              </div>
+              <p class="tool-card__desc">{{ tool.description || '无描述' }}</p>
+              <div class="tool-card__meta">
+                <span class="tool-card__tag tool-card__tag--category">{{ toolCategoryLabels[tool.category] || tool.category }}</span>
+                <span class="tool-card__tag tool-card__tag--name">{{ tool.name }}</span>
+              </div>
+            </div>
+            <div v-if="builtinTools.length === 0" class="setting-empty">暂无 Tools 数据</div>
+          </div>
+        </div>
+
+        <!-- 环境检测 -->
+        <div v-if="activeTab === 'runtime'" class="setting-section">
+          <h3 class="setting-section__title">
+            <DesktopOutlined class="runtime-header__icon" />
+            运行时环境
+          </h3>
+          <p class="setting-section__desc">Agent 执行脚本时使用的 Python / Node.js 运行时状态和镜像源配置。优先使用内嵌运行时，不可用时自动回退到宿主机环境。</p>
+
+          <a-spin :spinning="runtimeLoading">
+            <div v-if="runtimeStatus" class="runtime-list">
+              <!-- Python 运行时 -->
+              <div class="runtime-card">
+                <div class="runtime-card__header">
+                  <div class="runtime-card__title-group">
+                    <CodeOutlined class="runtime-card__icon runtime-card__icon--python" />
+                    <div>
+                      <div class="runtime-card__name">Python</div>
+                      <div class="runtime-card__desc">用于执行 Python 脚本和 pip 包安装</div>
+                    </div>
+                  </div>
+                  <a-tag :color="runtimeStatus.python.available ? 'success' : 'error'">
+                    <CheckCircleFilled v-if="runtimeStatus.python.available" />
+                    <ExclamationCircleFilled v-else />
+                    {{ runtimeStatus.python.available ? '可用' : '不可用' }}
+                  </a-tag>
+                </div>
+                <div class="runtime-card__info">
+                  <div class="runtime-info-row">
+                    <span class="runtime-info-label">来源</span>
+                    <span class="runtime-info-value">
+                      <a-tag :color="runtimeStatus.python.source === 'bundled' ? 'blue' : 'default'" size="small">
+                        {{ sourceLabel(runtimeStatus.python.source) }}
+                      </a-tag>
+                    </span>
+                  </div>
+                  <div class="runtime-info-row">
+                    <span class="runtime-info-label">路径</span>
+                    <span class="runtime-info-value runtime-info-value--mono">{{ runtimeStatus.python.path || '(不可用)' }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Node.js 运行时 -->
+              <div class="runtime-card">
+                <div class="runtime-card__header">
+                  <div class="runtime-card__title-group">
+                    <CodeOutlined class="runtime-card__icon runtime-card__icon--node" />
+                    <div>
+                      <div class="runtime-card__name">Node.js</div>
+                      <div class="runtime-card__desc">用于执行 JavaScript 脚本和 npm 包安装（基于 Electron 内嵌运行时）</div>
+                    </div>
+                  </div>
+                  <a-tag :color="runtimeStatus.node.available ? 'success' : 'error'">
+                    <CheckCircleFilled v-if="runtimeStatus.node.available" />
+                    <ExclamationCircleFilled v-else />
+                    {{ runtimeStatus.node.available ? '可用' : '不可用' }}
+                  </a-tag>
+                </div>
+                <div class="runtime-card__info">
+                  <div class="runtime-info-row">
+                    <span class="runtime-info-label">来源</span>
+                    <span class="runtime-info-value">
+                      <a-tag :color="runtimeStatus.node.source === 'bundled' ? 'blue' : 'default'" size="small">
+                        {{ sourceLabel(runtimeStatus.node.source) }}
+                      </a-tag>
+                    </span>
+                  </div>
+                  <div class="runtime-info-row">
+                    <span class="runtime-info-label">路径</span>
+                    <span class="runtime-info-value runtime-info-value--mono">{{ runtimeStatus.node.path || '(不可用)' }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Git 运行时 -->
+              <div class="runtime-card">
+                <div class="runtime-card__header">
+                  <div class="runtime-card__title-group">
+                    <CodeOutlined class="runtime-card__icon runtime-card__icon--git" />
+                    <div>
+                      <div class="runtime-card__name">Git</div>
+                      <div class="runtime-card__desc">用于执行 Git 命令（status、log、commit 等），从宿主机检测</div>
+                    </div>
+                  </div>
+                  <a-tag :color="runtimeStatus.git.available ? 'success' : 'error'">
+                    <CheckCircleFilled v-if="runtimeStatus.git.available" />
+                    <ExclamationCircleFilled v-else />
+                    {{ runtimeStatus.git.available ? '可用' : '不可用' }}
+                  </a-tag>
+                </div>
+                <div class="runtime-card__info">
+                  <div class="runtime-info-row">
+                    <span class="runtime-info-label">来源</span>
+                    <span class="runtime-info-value">
+                      <a-tag :color="runtimeStatus.git.source === 'bundled' ? 'blue' : 'default'" size="small">
+                        {{ sourceLabel(runtimeStatus.git.source) }}
+                      </a-tag>
+                    </span>
+                  </div>
+                  <div class="runtime-info-row">
+                    <span class="runtime-info-label">路径</span>
+                    <span class="runtime-info-value runtime-info-value--mono">{{ runtimeStatus.git.path || '(不可用)' }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 镜像源配置 -->
+              <div class="runtime-card">
+                <div class="runtime-card__header">
+                  <div class="runtime-card__title-group">
+                    <SettingOutlined class="runtime-card__icon" />
+                    <div>
+                      <div class="runtime-card__name">镜像源</div>
+                      <div class="runtime-card__desc">安装依赖包时使用的镜像源，影响 pip 和 npm 下载速度</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="runtime-card__info">
+                  <div class="runtime-info-row">
+                    <span class="runtime-info-label">pip 镜像</span>
+                    <div class="runtime-info-control">
+                      <div class="seg-control">
+                        <button
+                          v-for="opt in mirrorOptions"
+                          :key="opt.value"
+                          class="seg-control__btn"
+                          :class="{ 'seg-control__btn--active': runtimeStatus.mirrors.pipMirrorMode === opt.value }"
+                          @click="setMirrorMode('pip', opt.value)"
+                        >{{ opt.label }}</button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="runtime-info-row">
+                    <span class="runtime-info-label">当前地址</span>
+                    <span class="runtime-info-value runtime-info-value--mono">{{ runtimeStatus.mirrors.pypiMirror }}</span>
+                  </div>
+                  <div class="runtime-info-divider"></div>
+                  <div class="runtime-info-row">
+                    <span class="runtime-info-label">npm 镜像</span>
+                    <div class="runtime-info-control">
+                      <div class="seg-control">
+                        <button
+                          v-for="opt in mirrorOptions"
+                          :key="opt.value"
+                          class="seg-control__btn"
+                          :class="{ 'seg-control__btn--active': runtimeStatus.mirrors.npmMirrorMode === opt.value }"
+                          @click="setMirrorMode('npm', opt.value)"
+                        >{{ opt.label }}</button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="runtime-info-row">
+                    <span class="runtime-info-label">当前地址</span>
+                    <span class="runtime-info-value runtime-info-value--mono">{{ runtimeStatus.mirrors.npmRegistry }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </a-spin>
+
+          <a-button type="link" size="small" @click="loadRuntimeStatus" style="padding: 0; margin-top: 8px;">
+            刷新状态
+          </a-button>
+        </div>
+
         <!-- 常规 -->
         <div v-if="activeTab === 'general'" class="setting-section">
           <h3 class="setting-section__title">常规</h3>
@@ -330,6 +520,9 @@ import {
   PlusOutlined,
   CheckCircleFilled,
   ExclamationCircleFilled,
+  CodeOutlined,
+  DesktopOutlined,
+  ToolOutlined,
 } from '@ant-design/icons-vue'
 import { ipcApiRoute } from '@/api'
 import { ipc } from '@/utils/ipcRenderer'
@@ -361,6 +554,8 @@ const settingTabs = [
   { key: 'model', label: '模型管理', icon: RobotOutlined },
   { key: 'skills', label: 'Skills', icon: ThunderboltOutlined },
   { key: 'mcp', label: 'MCP 工具', icon: ApiOutlined },
+  { key: 'tools', label: 'Tools', icon: ToolOutlined },
+  { key: 'runtime', label: '环境检测', icon: DesktopOutlined },
   { key: 'general', label: '常规', icon: SettingOutlined },
   { key: 'appearance', label: '外观', icon: BgColorsOutlined },
 ]
@@ -376,11 +571,32 @@ function onTabChange(key) {
   if (key === 'skills' && skills.value.length === 0) {
     loadSkills()
   }
+  if (key === 'tools' && builtinTools.value.length === 0) {
+    loadBuiltinTools()
+  }
+  if (key === 'runtime' && runtimeStatus.value === null) {
+    loadRuntimeStatus()
+  }
 }
 
-// ========== Skills / MCP 数据 ==========
+// ========== Skills / MCP / Tools 数据 ==========
 const skills = ref([])
 const mcpServers = ref([])
+const builtinTools = ref([])
+
+// 工具分类和来源标签映射
+const toolCategoryLabels = {
+  file: '文件操作',
+  system: '系统命令',
+  search: '搜索查找',
+  interaction: '用户交互',
+  task: '任务跟踪',
+  runtime: '运行时',
+}
+const toolSourceLabels = {
+  sdk: 'SDK 内置',
+  custom: 'Diting 自定义',
+}
 
 onMounted(async () => {
   // 初始化 Markdown 字号
@@ -407,6 +623,15 @@ async function loadSkills() {
     if (res.code === 0 && res.data) skills.value = res.data
   } catch (err) {
     console.error('加载 Skills 失败:', err)
+  }
+}
+
+async function loadBuiltinTools() {
+  try {
+    const res = await ipc.invoke('controller/piAgent/toolsOperation', { action: 'list' })
+    if (res.code === 0 && res.data) builtinTools.value = res.data
+  } catch (err) {
+    console.error('加载 Tools 失败:', err)
   }
 }
 
@@ -442,6 +667,48 @@ function onFontSizeChange(size) {
   markdownFontSize.value = size
   setMarkdownFontSize(size)
 }
+
+// ========== 运行时环境检测 ==========
+const runtimeStatus = ref(null)
+const runtimeLoading = ref(false)
+
+async function loadRuntimeStatus() {
+  runtimeLoading.value = true
+  try {
+    const res = await ipc.invoke('controller/runtime/getStatus')
+    if (res.code === 0 && res.data) {
+      runtimeStatus.value = res.data
+    } else {
+      message.error(res.message || '获取运行时状态失败')
+    }
+  } catch (err) {
+    message.error('获取运行时状态异常: ' + (err?.message || err))
+  } finally {
+    runtimeLoading.value = false
+  }
+}
+
+async function setMirrorMode(type, mode) {
+  try {
+    const res = await ipc.invoke('controller/runtime/setMirror', { type, mode })
+    if (res.code === 0) {
+      message.success(res.message || '镜像源已切换')
+      await loadRuntimeStatus()
+    } else {
+      message.error(res.message || '切换失败')
+    }
+  } catch (err) {
+    message.error('切换镜像源异常: ' + (err?.message || err))
+  }
+}
+
+const mirrorOptions = [
+  { value: 'auto', label: '自动检测' },
+  { value: 'china', label: '国内镜像' },
+  { value: 'international', label: '国际源' },
+]
+
+const sourceLabel = (source) => source === 'bundled' ? '内嵌' : '宿主机'
 
 // ========== 模型管理（移植自 adjust/Index.vue） ==========
 const modelLoading = ref(false)
@@ -971,6 +1238,193 @@ async function handleTest(record) {
     font-size: 11px;
     color: #faad14;
   }
+}
+
+// ===== Tools =====
+.tool-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tool-card {
+  background: var(--bg-panel);
+  border-radius: 10px;
+  padding: 12px;
+  box-shadow: var(--shadow-sm);
+
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+    gap: 8px;
+  }
+
+  &__name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  &__tags {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  &__desc {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin: 0 0 6px;
+    line-height: 1.4;
+  }
+
+  &__meta {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  &__tag {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+
+    &--source {
+      color: var(--text-muted);
+      background: rgba(0, 0, 0, 0.04);
+    }
+
+    &--sdk {
+      color: #722ed1;
+      background: rgba(114, 46, 209, 0.06);
+    }
+
+    &--custom {
+      color: #1677ff;
+      background: rgba(22, 119, 255, 0.06);
+    }
+
+    &--readonly {
+      color: #52c41a;
+      background: rgba(82, 196, 26, 0.06);
+    }
+
+    &--category {
+      color: var(--text-muted);
+      background: rgba(0, 0, 0, 0.04);
+    }
+
+    &--name {
+      color: var(--text-muted);
+      background: rgba(0, 0, 0, 0.04);
+      font-family: 'SF Mono', Monaco, monospace;
+    }
+  }
+}
+
+// ===== 运行时环境检测 =====
+.runtime-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.runtime-card {
+  background: var(--bg-panel);
+  border-radius: 10px;
+  padding: 14px 16px;
+  box-shadow: var(--shadow-sm);
+
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+
+  &__title-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  &__icon {
+    font-size: 20px;
+    color: var(--text-secondary);
+
+    &--python {
+      color: #3776ab;
+    }
+
+    &--node {
+      color: #339933;
+    }
+
+    &--git {
+      color: #f05033;
+    }
+  }
+
+  &__name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  &__desc {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 2px;
+    line-height: 1.4;
+  }
+
+  &__info {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+}
+
+.runtime-info-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 0;
+}
+
+.runtime-info-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  width: 72px;
+  flex-shrink: 0;
+}
+
+.runtime-info-value {
+  font-size: 12px;
+  color: var(--text-primary);
+  min-width: 0;
+
+  &--mono {
+    font-family: 'SF Mono', Monaco, monospace;
+    word-break: break-all;
+    overflow-wrap: break-word;
+  }
+}
+
+.runtime-info-control {
+  flex-shrink: 0;
+}
+
+.runtime-info-divider {
+  height: 1px;
+  background: var(--border-color-light);
+  margin: 4px 0;
+}
+
+.runtime-header__icon {
+  color: #1677ff;
 }
 
 // ===== 常规 / 外观 =====

@@ -1,0 +1,118 @@
+{
+  "comment": "Diting 内置 Tools 清单。定义 Agent 可使用的所有内置工具的元数据。",
+  "version": 1,
+  "tools": [
+    {
+      "name": "Read",
+      "label": "读取文件",
+      "description": "读取指定文件内容，支持分页和偏移。",
+      "category": "file",
+      "source": "sdk",
+      "readOnly": true
+    },
+    {
+      "name": "Bash",
+      "label": "执行命令",
+      "description": "在工作目录执行 Shell 命令，用于运行非 Python/Node.js/Git 的系统命令。",
+      "category": "system",
+      "source": "sdk",
+      "readOnly": false
+    },
+    {
+      "name": "Edit",
+      "label": "编辑文件",
+      "description": "对文件进行精确的文本替换，支持多处修改。",
+      "category": "file",
+      "source": "sdk",
+      "readOnly": false
+    },
+    {
+      "name": "Write",
+      "label": "写入文件",
+      "description": "创建或覆盖文件内容。",
+      "category": "file",
+      "source": "sdk",
+      "readOnly": false
+    },
+    {
+      "name": "Grep",
+      "label": "搜索内容",
+      "description": "在文件中搜索匹配的文本模式，支持正则表达式和上下文行。",
+      "category": "search",
+      "source": "sdk",
+      "readOnly": true
+    },
+    {
+      "name": "Find",
+      "label": "查找文件",
+      "description": "按名称模式查找文件。",
+      "category": "search",
+      "source": "sdk",
+      "readOnly": true
+    },
+    {
+      "name": "Ls",
+      "label": "列目录",
+      "description": "列出指定目录下的文件和子目录。",
+      "category": "file",
+      "source": "sdk",
+      "readOnly": true
+    },
+    {
+      "name": "AskUserQuestion",
+      "label": "询问用户",
+      "description": "当需要用户选择、补充信息或确认偏好时调用，会展示可交互问答横幅。",
+      "category": "interaction",
+      "source": "custom",
+      "readOnly": false
+    },
+    {
+      "name": "TaskCreate",
+      "label": "创建任务",
+      "description": "创建一个新的任务条目，用于跟踪工作进度。在开始多步骤工作时调用。",
+      "category": "task",
+      "source": "custom",
+      "readOnly": false
+    },
+    {
+      "name": "TaskUpdate",
+      "label": "更新任务",
+      "description": "更新指定任务的状态、标题或进行时短语。开始执行时标记为 in_progress，完成后标记为 completed。",
+      "category": "task",
+      "source": "custom",
+      "readOnly": false
+    },
+    {
+      "name": "RunPythonScript",
+      "label": "执行 Python 脚本",
+      "description": "使用 Diting 内嵌的 Python 运行时执行 Python 代码或脚本文件。优先使用内嵌运行时，不可用时回退到宿主机 Python。",
+      "category": "runtime",
+      "source": "custom",
+      "readOnly": false
+    },
+    {
+      "name": "RunNodeScript",
+      "label": "执行 Node.js 脚本",
+      "description": "使用 Diting 内嵌的 Node.js 运行时（Electron 自身）执行 JavaScript 代码或脚本文件。",
+      "category": "runtime",
+      "source": "custom",
+      "readOnly": false
+    },
+    {
+      "name": "InstallPackage",
+      "label": "安装依赖包",
+      "description": "安装 Python（pip）或 Node.js（npm）第三方包，自动使用配置的镜像源。",
+      "category": "runtime",
+      "source": "custom",
+      "readOnly": false
+    },
+    {
+      "name": "RunGitCommand",
+      "label": "执行 Git 命令",
+      "description": "使用检测到的 Git 可执行文件执行 Git 命令（如 status、log、add、commit 等）。自动使用正确的工作目录。",
+      "category": "runtime",
+      "source": "custom",
+      "readOnly": false
+    }
+  ]
+}
