@@ -55,7 +55,7 @@
       "deletable": false,
       "defaultEnabled": true,
       "toggleable": true,
-      "status": "pending",
+      "status": "active",
       "tools": [
         { "name": "list_available_agent_models", "description": "列出当前渠道下可用于协作子 Agent 的模型。", "readOnly": true },
         { "name": "delegate_agent", "description": "创建单个协作子 Agent 会话。" },

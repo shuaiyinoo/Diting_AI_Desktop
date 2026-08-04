@@ -22,6 +22,37 @@ export const useAgentStore = defineStore('agent', () => {
   // 流式控制（非响应式，不触发渲染）
   let abortController = null
 
+  // ===== Blocks 持久化（按 sessionId 索引，使用 localStorage） =====
+  const savedBlocks = ref({})
+
+  /** 从 localStorage 加载 savedBlocks */
+  function loadSavedBlocks() {
+    try {
+      const raw = localStorage.getItem('agent:savedBlocks')
+      if (raw) savedBlocks.value = JSON.parse(raw)
+    } catch { /* 忽略 */ }
+  }
+
+  /** 保存 savedBlocks 到 localStorage */
+  function persistSavedBlocks() {
+    try {
+      // 只保存最近 20 条消息的 blocks，避免 localStorage 膨胀
+      const entries = Object.entries(savedBlocks.value)
+      const recent = entries.slice(-20)
+      localStorage.setItem('agent:savedBlocks', JSON.stringify(Object.fromEntries(recent)))
+    } catch { /* 忽略 */ }
+  }
+
+  // 初始化时加载
+  loadSavedBlocks()
+
+  // ===== 协作子 Agent 状态（按 sessionId 分组） =====
+  const allDelegations = ref({})
+
+  // ===== Token / 时间统计（每条助手消息独立） =====
+  const messageStats = ref({})  // key: messageId → { startTime, elapsed, inputTokens, outputTokens, cacheReadTokens, cacheWriteTokens }
+  let statsTimer = null
+
   // ===== Getters =====
   const currentSession = computed(() =>
     sessions.value.find((s) => s.id === currentSessionId.value),
@@ -80,14 +111,25 @@ export const useAgentStore = defineStore('agent', () => {
         sessionId,
       })
       if (res.code === 0 && res.data) {
-        messages.value = res.data.map((m) => ({
-          id: m.id ?? m.messageId ?? `msg-${Date.now()}-${Math.random()}`,
-          role: String(m.role).toLowerCase(),
-          content: typeof m.content === 'string' ? m.content : extractTextFromContent(m.content),
-          blocks: [],
-          pending: false,
-          time: m.timestamp ? formatTime(new Date(m.timestamp)) : (m.time || ''),
-        }))
+        let assistantCount = 0
+        messages.value = res.data.map((m) => {
+          const role = String(m.role).toLowerCase()
+          // 恢复持久化的 blocks（使用 sessionId + assistant 索引匹配）
+          let blocks = []
+          if (role === 'assistant') {
+            const blockKey = `${sessionId}:assistant:${assistantCount}`
+            blocks = savedBlocks.value[blockKey] || []
+            assistantCount++
+          }
+          return {
+            id: m.id ?? m.messageId ?? `msg-${Date.now()}-${Math.random()}`,
+            role,
+            content: typeof m.content === 'string' ? m.content : extractTextFromContent(m.content),
+            blocks,
+            pending: false,
+            time: m.timestamp ? formatTime(new Date(m.timestamp)) : (m.time || ''),
+          }
+        })
       }
     } catch (err) {
       console.error('[AgentStore] 加载会话消息失败:', err)
@@ -164,6 +206,24 @@ export const useAgentStore = defineStore('agent', () => {
     messages.value.push(assistantMsg)
     onScroll?.()
 
+    // 为当前助手消息初始化统计（必须在 assistantMsg 定义之后）
+    const statsKey = assistantMsg.id
+    messageStats.value[statsKey] = {
+      startTime: Date.now(),
+      elapsed: 0,
+      inputTokens: 0,
+      outputTokens: 0,
+      cacheReadTokens: 0,
+      cacheWriteTokens: 0,
+    }
+    if (statsTimer) clearInterval(statsTimer)
+    statsTimer = setInterval(() => {
+      const s = messageStats.value[statsKey]
+      if (s) {
+        s.elapsed = Math.floor((Date.now() - s.startTime) / 1000)
+      }
+    }, 1000)
+
     // SSE 请求
     const url = `${httpServerUrl}/${ipcApiRoute.piAgent.streamAgent}`
     abortController = new AbortController()
@@ -209,9 +269,28 @@ export const useAgentStore = defineStore('agent', () => {
       }
 
       assistantMsg.pending = false
+      // 持久化 blocks 到 savedBlocks（不丢失执行过程）
+      // 使用 sessionId + 消息在数组中的位置作为 key，避免前后端 ID 不匹配
+      const msgIndex = messages.value.filter((m) => m.role === 'assistant').length - 1
+      const blockKey = `${sessionId}:assistant:${msgIndex}`
+      if (assistantMsg.blocks.length > 0) {
+        savedBlocks.value[blockKey] = JSON.parse(JSON.stringify(assistantMsg.blocks))
+        persistSavedBlocks()
+      }
+      // 清理统计定时器
+      if (statsTimer) { clearInterval(statsTimer); statsTimer = null }
+      const s = messageStats.value[assistantMsg.id]
+      if (s) s.elapsed = Math.floor((Date.now() - s.startTime) / 1000)
     } catch (err) {
       if (err?.name === 'AbortError') {
         assistantMsg.pending = false
+        // 持久化 blocks 即使是中止的情况
+        const msgIndex = messages.value.filter((m) => m.role === 'assistant').length - 1
+        const blockKey = `${sessionId}:assistant:${msgIndex}`
+        if (assistantMsg.blocks.length > 0) {
+          savedBlocks.value[blockKey] = JSON.parse(JSON.stringify(assistantMsg.blocks))
+          persistSavedBlocks()
+        }
         if (!assistantMsg.content && assistantMsg.blocks.length === 0) {
           assistantMsg.content = '已停止生成'
         }
@@ -219,6 +298,10 @@ export const useAgentStore = defineStore('agent', () => {
         console.error('[AgentStore] sendMessage 异常:', err)
         assistantMsg.content = `发送失败: ${err?.message || String(err)}`
       }
+      // 清理统计定时器
+      if (statsTimer) { clearInterval(statsTimer); statsTimer = null }
+      const s = messageStats.value[assistantMsg.id]
+      if (s) s.elapsed = Math.floor((Date.now() - s.startTime) / 1000)
     } finally {
       isStreaming.value = false
       abortController = null
@@ -230,6 +313,11 @@ export const useAgentStore = defineStore('agent', () => {
   function stopGeneration() {
     if (abortController) {
       abortController.abort()
+    }
+    // 通知后端停止所有协作子 Agent
+    const sid = currentSessionId.value
+    if (sid) {
+      ipc.invoke('controller/piAgent/stopAllDelegations', { sessionId: sid }).catch(() => {})
     }
   }
 
@@ -339,6 +427,22 @@ export const useAgentStore = defineStore('agent', () => {
         break
       }
 
+      // ===== Token 使用统计（更新到当前消息） =====
+      case 'usage': {
+        // 找到当前正在流式的助手消息
+        const curMsg = messages.value.find((m) => m.role === 'assistant' && m.pending)
+        if (curMsg) {
+          const s = messageStats.value[curMsg.id]
+          if (s) {
+            if (data.inputTokens) s.inputTokens += data.inputTokens
+            if (data.outputTokens) s.outputTokens += data.outputTokens
+            if (data.cacheReadTokens) s.cacheReadTokens += data.cacheReadTokens
+            if (data.cacheWriteTokens) s.cacheWriteTokens += data.cacheWriteTokens
+          }
+        }
+        break
+      }
+
       case 'complete':
         assistantMsg.pending = false
         break
@@ -348,9 +452,31 @@ export const useAgentStore = defineStore('agent', () => {
         assistantMsg.content += `\n\n[错误] ${data.message || '未知错误'}`
         break
 
-      // ===== 权限请求 / AskUser 请求（交给组件处理） =====
+      // ===== 权限请求 / AskUser 请求 / 协作子 Agent 事件（交给组件处理） =====
       case 'permission_request':
       case 'ask_user':
+        onEvent?.(eventName, data)
+        break
+
+      case 'delegation_update': {
+        // 按父会话 ID 分组存储
+        const sid = data.sessionId
+        if (!allDelegations.value[sid]) allDelegations.value[sid] = []
+        const delegation = data.delegation
+        if (delegation) {
+          const arr = allDelegations.value[sid]
+          const idx = arr.findIndex((d) => d.delegationId === delegation.delegationId)
+          if (idx >= 0) {
+            arr[idx] = delegation
+          } else {
+            arr.push(delegation)
+          }
+        }
+        onEvent?.(eventName, data)
+        break
+      }
+
+      case 'delegation_event':
         onEvent?.(eventName, data)
         break
     }
@@ -440,6 +566,9 @@ export const useAgentStore = defineStore('agent', () => {
     workspaceSlug,
     skills,
     mcpServers,
+    savedBlocks,
+    allDelegations,
+    messageStats,
     // Getters
     currentSession,
     enabledSkills,

@@ -192,6 +192,24 @@
                     />
                     <span v-if="msg.pending" class="msg-streaming-dot" />
                   </div>
+
+                  <!-- 消息内联统计栏 -->
+                  <div v-if="messageStats[msg.id] && (msg.pending || messageStats[msg.id].elapsed > 0)" class="msg-stats">
+                    <span class="msg-stats-item msg-stats-item--time">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="msg-stats-icon">
+                        <circle cx="12" cy="12" r="10" />
+                        <polyline points="12 6 12 12 16 14" />
+                      </svg>
+                      {{ Math.floor(messageStats[msg.id].elapsed / 60) }}:{{ String(messageStats[msg.id].elapsed % 60).padStart(2, '0') }}
+                    </span>
+                    <template v-if="messageStats[msg.id].inputTokens > 0 || messageStats[msg.id].outputTokens > 0">
+                      <span class="msg-stats-divider">·</span>
+                      <span class="msg-stats-item"><span class="msg-stats-label">输入</span><span class="msg-stats-value">{{ formatTokens(messageStats[msg.id].inputTokens) }}</span></span>
+                      <span class="msg-stats-item"><span class="msg-stats-label">输出</span><span class="msg-stats-value">{{ formatTokens(messageStats[msg.id].outputTokens) }}</span></span>
+                      <span v-if="messageStats[msg.id].cacheReadTokens > 0" class="msg-stats-item"><span class="msg-stats-label">缓存读</span><span class="msg-stats-value">{{ formatTokens(messageStats[msg.id].cacheReadTokens) }}</span></span>
+                      <span v-if="messageStats[msg.id].cacheWriteTokens > 0" class="msg-stats-item"><span class="msg-stats-label">缓存写</span><span class="msg-stats-value">{{ formatTokens(messageStats[msg.id].cacheWriteTokens) }}</span></span>
+                    </template>
+                  </div>
                 </template>
               </template>
             </div>
@@ -222,10 +240,15 @@
 
       <!-- ========== 底部输入区域（卡片式） ========== -->
       <div class="chat-input-wrapper">
-        <!-- 任务进度浮层（absolute 定位，不占用空间） -->
+        <!-- 浮层容器：仅在流式时显示协作子 Agent + 任务进度 -->
         <Transition name="task-progress-slide">
-          <div v-if="currentTaskBlocks.length > 0 && hasTaskBlocks(currentTaskBlocks)" class="task-progress-floating">
+          <div v-if="isStreaming && (delegations.length > 0 || (currentTaskBlocks.length > 0 && hasTaskBlocks(currentTaskBlocks)))" class="task-progress-floating">
+            <DelegationCard
+              v-if="delegations.length > 0"
+              :delegations="delegations"
+            />
             <TaskProgressCard
+              v-if="currentTaskBlocks.length > 0 && hasTaskBlocks(currentTaskBlocks)"
               :blocks="currentTaskBlocks"
               :is-streaming="isStreaming"
             />
@@ -385,6 +408,7 @@ import MarkdownRender from 'markstream-vue'
 import PanelDivider from '@/components/layout/PanelDivider.vue'
 import ProcessBlockGroup from '@/components/agent/ProcessBlockGroup.vue'
 import TaskProgressCard from '@/components/agent/TaskProgressCard.vue'
+import DelegationCard from '@/components/agent/DelegationCard.vue'
 import RichTextInput from '@/components/agent/RichTextInput.vue'
 import { hasTaskBlocks } from '@/utils/task-progress'
 
@@ -539,8 +563,17 @@ function extractTextFromContent(content) {
     .join('\n')
 }
 
+// ========== 协作子 Agent 状态（从 store 按会话过滤） ==========
+const delegations = computed(() => {
+  const sid = agentStore.currentSessionId
+  return sid ? (agentStore.allDelegations[sid] || []) : []
+})
+
+// ========== Token / 时间统计（每条消息独立） ==========
+const messageStats = computed(() => agentStore.messageStats)
+
 /**
- * 从消息 blocks 中筛选"过程块"（thinking + tool_use）
+ * 从消息 blocks 中筛选“过程块”（thinking + tool_use）
  * 这些块会在 ProcessBlockGroup 折叠区中展示
  */
 function getProcessBlocks(blocks) {
@@ -952,6 +985,7 @@ async function sendMessage() {
         askUserRequest.value = data
         askUserAnswers.clear()
       }
+      // delegation_update 已在 store 中处理，无需在此重复
     },
   })
 }
@@ -995,6 +1029,14 @@ function formatTime(date) {
   const mi = String(date.getMinutes()).padStart(2, '0')
   const s = String(date.getSeconds()).padStart(2, '0')
   return `${y}-${mo}-${d} ${h}:${mi}:${s}`
+}
+
+/** 格式化 Token 数量（1k+ 用 k 显示） */
+function formatTokens(n) {
+  if (!n || n <= 0) return '0'
+  if (n < 1000) return String(n)
+  if (n < 10000) return (n / 1000).toFixed(1) + 'k'
+  return Math.round(n / 1000) + 'k'
 }
 </script>
 

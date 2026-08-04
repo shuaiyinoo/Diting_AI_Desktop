@@ -1133,6 +1133,49 @@ transform: translateY(100%);
   overflow: visible;
 }
 
+// ===== 消息内联统计栏 =====
+.msg-stats {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 0 0;
+  font-size: 11px;
+  color: var(--text-muted, #999);
+  user-select: none;
+}
+
+.msg-stats-item {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+
+  &--time {
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+    color: var(--text-secondary, #666);
+  }
+}
+
+.msg-stats-icon {
+  width: 11px;
+  height: 11px;
+  flex-shrink: 0;
+}
+
+.msg-stats-label {
+  color: var(--text-muted, #bbb);
+}
+
+.msg-stats-value {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary, #666);
+  font-weight: 500;
+}
+
+.msg-stats-divider {
+  color: var(--text-muted, #ddd);
+}
+
 // 弹出/收起动画
 .task-progress-slide-enter-active {
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);

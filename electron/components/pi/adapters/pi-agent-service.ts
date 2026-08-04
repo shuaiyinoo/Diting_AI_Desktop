@@ -21,6 +21,19 @@ import {
 import { buildPiMcpTools, disposePiMcpConnections } from './pi-mcp-tools'
 import { getWorkspaceMcpConfig, getWorkspaceCwd } from './workspace-manager'
 import { mergeMcpConfigs } from '../builtin-mcp/registry'
+import {
+  createDelegation,
+  createDelegations,
+  waitForDelegations,
+  listDelegations,
+  getDelegationResult,
+  stopDelegation,
+  stopDelegations,
+  getIdempotentResult,
+  setIdempotentResult,
+  cleanupDelegations,
+  type DelegationRole,
+} from './agent-collaboration-service'
 import type { WorkspaceMeta } from './workspace-manager'
 import type { AgentChannel, AgentMessage, AgentSessionMeta } from '../types'
 import { channelToPiProvider } from './pi-model-registry'
@@ -193,6 +206,14 @@ function buildSystemPrompt(workspace?: WorkspaceMeta): string {
   // 基础身份
   parts.push('You are a helpful AI assistant integrated into Diting AI, a local-first desktop application.')
   parts.push('You can read and write files, execute commands, and use MCP tools.')
+
+  // 回复风格约束
+  parts.push(`
+## 回复风格约束
+- **不要使用 emoji 表情符号**：回复中不要包含任何 emoji（如 🚀、✅、❌、🎯 等），用纯文字表达。标题和列表项也不要带 emoji 前缀。
+- 回复使用中文，代码和技术术语保留英文原文。
+- 保持简洁直接，不要过度解释或重复。
+- **缺少关键信息时先提问**：当用户请求涉及需要明确的关键参数（如城市、日期范围、文件路径、目标语言等）但未提供时，优先调用 AskUserQuestion 工具向用户提问，不要自行假设默认值。例如"帮我查天气"但未说城市时，先用 AskUserQuestion 让用户选择城市。`)
 
   // 工具使用指南（引导 Agent 自主使用任务跟踪工具）
   parts.push(`
@@ -861,7 +882,256 @@ ${output}` }],
     },
   })
 
-  // 合并：内置工具（已包裹权限）+ AskUserQuestion（也需包裹权限，触发 ask_user 流程）+ 运行时工具 + MCP 工具
+  // ========== 协作子 Agent 工具 ==========
+  // collaboration MCP 让 Agent 自主拆分任务、创建并行子会话。
+  // 子会话使用与父会话相同的 channel、model、workspace 和工具集。
+  const collaborationTools: ToolDefinition[] = []
+
+  // 子会话创建工厂：复用父会话的 model、workspace 和工具集
+  const createChildSession = async (task: string, abortController: AbortController, onChildEvent: (event: string, data: unknown) => void): Promise<string> => {
+    // 子会话使用与父会话相同的基础设施，但独立的 SessionManager
+    const { session: childSession } = await createAgentSession({
+      cwd,
+      model,
+      modelRuntime,
+      resourceLoader,
+      noTools: 'builtin',
+      customTools: allCustomTools.filter((t) => !t.name.startsWith('mcp__collaboration__')),
+      sessionManager: SessionManager.inMemory(cwd),
+      settingsManager: SettingsManager.inMemory({
+        compaction: { enabled: false },
+        retry: { enabled: true, maxRetries: 2 },
+      }),
+    })
+
+    // 监听子会话事件并转发
+    const childListener: AgentSessionEventListener = (childEv: AgentSessionEvent) => {
+      const ev = childEv as any
+      // 转发工具调用事件让前端可见
+      if (ev.type === 'tool_execution_start') {
+        onChildEvent('tool_start', { toolName: ev.toolName, args: ev.args })
+      } else if (ev.type === 'tool_execution_end') {
+        onChildEvent('tool_result', { toolName: ev.toolName, result: ev.result, isError: ev.isError })
+      } else if (ev.type === 'message_update') {
+        const ame = ev.assistantMessageEvent
+        if (ame?.type === 'text_delta' && ame.delta) {
+          onChildEvent('text', { delta: ame.delta })
+        }
+      }
+    }
+    childSession.subscribe(childListener)
+
+    // 发送任务给子会话
+    await childSession.prompt(task)
+
+    // 提取结果文本
+    const resultText = childSession.getLastAssistantText() || ''
+    childSession.dispose?.()
+    return resultText
+  }
+
+  const delegationContext = {
+    parentSessionId: sessionId,
+    channelId: channel.id,
+    modelId: model,
+    workspaceSlug: workspace?.slug,
+    createChildSession,
+  }
+
+  // 1. list_available_agent_models
+  collaborationTools.push(sdkModule.defineTool({
+    name: 'mcp__collaboration__list_available_agent_models',
+    label: '列出可用模型',
+    description: '列出当前父会话渠道下可用于协作子 Agent 的模型。',
+    promptSnippet: '查看可用于委派子 Agent 的模型。',
+    parameters: Type.Object({}),
+    async execute() {
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify({ models: [{ id: model, name: model }] }) }],
+        details: { models: [{ id: model }] },
+      }
+    },
+  }) as unknown as ToolDefinition)
+
+  // 2. delegate_agent
+  collaborationTools.push(sdkModule.defineTool({
+    name: 'mcp__collaboration__delegate_agent',
+    label: '委派子 Agent',
+    description: '创建一个真实可见的 Diting 协作子 Agent 会话来并行处理独立子任务。只用于长耗时、可并行、需要追踪的任务；简单搜索由父会话直接使用普通工具完成。',
+    promptSnippet: '创建一个协作子 Agent 会话处理独立子任务。',
+    parameters: Type.Object({
+      title: Type.Optional(Type.String({ description: '子会话标题' })),
+      role: Type.Optional(Type.Union([
+        Type.Literal('explore'),
+        Type.Literal('research'),
+        Type.Literal('implement'),
+        Type.Literal('review'),
+        Type.Literal('custom'),
+      ], { description: '子任务角色' })),
+      task: Type.String({ description: '发送给子 Agent 的完整任务说明，必须自包含必要上下文。' }),
+      expectedOutput: Type.Optional(Type.String({ description: '希望子 Agent 最终返回的格式或要点。' })),
+      modelId: Type.Optional(Type.String({ description: '可选目标模型 ID，不传则继承父会话模型。' })),
+    }),
+    async execute(toolCallId: string, params: Record<string, unknown>) {
+      const p = params as { title?: string; role?: DelegationRole; task: string; expectedOutput?: string; modelId?: string }
+      // 幂等性检查
+      const cached = getIdempotentResult(toolCallId)
+      if (cached) {
+        const result = getDelegationResult(sessionId, cached.delegationId)
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({ delegation: result, note: '子会话已启动（幂等返回）。需要结果时调用 wait_for_delegations。' }) }],
+          details: { delegation: result, idempotent: true } as Record<string, unknown>,
+        }
+      }
+      const result = createDelegation(delegationContext, p, onEvent)
+      setIdempotentResult(toolCallId, { delegationId: result.delegationId, effectiveModelId: p.modelId })
+      const summary = getDelegationResult(sessionId, result.delegationId)
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify({ delegation: summary, note: '子会话已启动。需要结果时调用 wait_for_delegations。' }) }],
+        details: { delegation: summary } as Record<string, unknown>,
+      }
+    },
+  }) as unknown as ToolDefinition)
+
+  // 3. delegate_agents
+  collaborationTools.push(sdkModule.defineTool({
+    name: 'mcp__collaboration__delegate_agents',
+    label: '批量委派子 Agent',
+    description: '批量创建多个协作子 Agent 会话。适合把同一大任务拆成多片并行处理。',
+    promptSnippet: '批量创建子 Agent 会话并行处理。',
+    parameters: Type.Object({
+      sharedContext: Type.Optional(Type.String({ description: '批量子任务共用背景。' })),
+      items: Type.Array(Type.Object({
+        title: Type.Optional(Type.String({ description: '子会话标题' })),
+        role: Type.Optional(Type.Union([
+          Type.Literal('explore'),
+          Type.Literal('research'),
+          Type.Literal('implement'),
+          Type.Literal('review'),
+          Type.Literal('custom'),
+        ], { description: '子任务角色' })),
+        task: Type.String({ description: '发送给子 Agent 的完整任务说明。' }),
+        expectedOutput: Type.Optional(Type.String({ description: '希望子 Agent 最终返回的格式或要点。' })),
+        modelId: Type.Optional(Type.String({ description: '可选目标模型 ID。' })),
+      }), { description: '要创建的子会话列表，最多 50 个' }),
+    }),
+    async execute(_toolCallId: string, params: Record<string, unknown>) {
+      const p = params as { sharedContext?: string; items: Array<{ title?: string; role?: DelegationRole; task: string; expectedOutput?: string; modelId?: string }> }
+      const taskPrefix = p.sharedContext ? `## 共用背景\n${p.sharedContext}\n\n## 子任务\n` : ''
+      const enrichedItems = p.items.map((item) => ({
+        ...item,
+        task: taskPrefix + item.task,
+      }))
+      const result = createDelegations(delegationContext, enrichedItems, onEvent)
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify({ created: result.created.length, failures: result.failures, note: '子会话已启动。需要结果时调用 wait_for_delegations。' }) }],
+        details: result,
+      }
+    },
+  }) as unknown as ToolDefinition)
+
+  // 4. wait_for_delegations
+  collaborationTools.push(sdkModule.defineTool({
+    name: 'mcp__collaboration__wait_for_delegations',
+    label: '等待子会话',
+    description: '等待子会话完成。mode=all 等待全部完成，mode=any 等待部分完成即可返回。',
+    promptSnippet: '等待协作子会话完成并收集结果。',
+    parameters: Type.Object({
+      delegationIds: Type.Optional(Type.Array(Type.String(), { description: '要等待的委派 ID 列表，不传则等待全部运行中的。' })),
+      mode: Type.Optional(Type.Union([Type.Literal('all'), Type.Literal('any')], { description: 'all=等全部，any=等部分' })),
+      minCompleted: Type.Optional(Type.Number({ description: 'mode=any 时至少等待几个完成' })),
+      timeoutSec: Type.Optional(Type.Number({ description: '超时秒数，默认 1800' })),
+    }),
+    async execute(_toolCallId: string, params: Record<string, unknown>) {
+      const p = params as { delegationIds?: string[]; mode?: 'all' | 'any'; minCompleted?: number; timeoutSec?: number }
+      const result = await waitForDelegations(sessionId, p)
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify(result) }],
+        details: result,
+      }
+    },
+  }) as unknown as ToolDefinition)
+
+  // 5. list_delegations
+  collaborationTools.push(sdkModule.defineTool({
+    name: 'mcp__collaboration__list_delegations',
+    label: '列出委派',
+    description: '列出当前父会话创建的所有子会话及其状态。',
+    promptSnippet: '查看当前委派的所有子会话状态。',
+    parameters: Type.Object({}),
+    async execute() {
+      const list = listDelegations(sessionId)
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify({ delegations: list }) }],
+        details: { delegations: list },
+      }
+    },
+  }) as unknown as ToolDefinition)
+
+  // 6. get_delegation_results
+  collaborationTools.push(sdkModule.defineTool({
+    name: 'mcp__collaboration__get_delegation_results',
+    label: '获取委派结果',
+    description: '按委派 ID 读取一个或多个子会话的结果摘要。',
+    promptSnippet: '读取子会话结果摘要。',
+    parameters: Type.Object({
+      delegationIds: Type.Array(Type.String(), { description: '要读取结果的委派 ID 列表。' }),
+    }),
+    async execute(_toolCallId: string, params: Record<string, unknown>) {
+      const p = params as { delegationIds: string[] }
+      const results = p.delegationIds.map((id) => {
+        try {
+          return getDelegationResult(sessionId, id)
+        } catch (err) {
+          return { delegationId: id, error: err instanceof Error ? err.message : String(err) }
+        }
+      })
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify({ results }) }],
+        details: { results },
+      }
+    },
+  }) as unknown as ToolDefinition)
+
+  // 7. stop_delegation
+  collaborationTools.push(sdkModule.defineTool({
+    name: 'mcp__collaboration__stop_delegation',
+    label: '停止子会话',
+    description: '停止单个协作子会话。',
+    promptSnippet: '停止单个子会话。',
+    parameters: Type.Object({
+      delegationId: Type.String({ description: '要停止的委派 ID。' }),
+    }),
+    async execute(_toolCallId: string, params: Record<string, unknown>) {
+      const p = params as { delegationId: string }
+      const stopped = stopDelegation(sessionId, p.delegationId)
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify({ stopped, delegationId: p.delegationId }) }],
+        details: { stopped, delegationId: p.delegationId },
+      }
+    },
+  }) as unknown as ToolDefinition)
+
+  // 8. stop_delegations
+  collaborationTools.push(sdkModule.defineTool({
+    name: 'mcp__collaboration__stop_delegations',
+    label: '批量停止子会话',
+    description: '批量停止协作子会话。不传 delegationIds 则停止全部运行中的。',
+    promptSnippet: '批量停止子会话。',
+    parameters: Type.Object({
+      delegationIds: Type.Optional(Type.Array(Type.String(), { description: '要停止的委派 ID 列表，不传则停止全部运行中的。' })),
+    }),
+    async execute(_toolCallId: string, params: Record<string, unknown>) {
+      const p = params as { delegationIds?: string[] }
+      const result = stopDelegations(sessionId, p.delegationIds)
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify(result) }],
+        details: result,
+      }
+    },
+  }) as unknown as ToolDefinition)
+
+  // 合并：内置工具（已包裹权限）+ AskUserQuestion + 运行时工具 + 协作工具 + MCP 工具
   // 关键：AskUserQuestion 必须经过 wrapToolWithPermission，
   // 这样 canUseTool 回调才能拦截它，发送 ask_user SSE 事件到前端，
   // 等待用户回答后注入 answers 字段到 updatedInput，再执行工具的 execute
@@ -874,6 +1144,7 @@ ${output}` }],
     wrapToolWithPermission(runNodeScriptTool as unknown as ToolDefinition, canUseTool),
     wrapToolWithPermission(installPackageTool as unknown as ToolDefinition, canUseTool),
     wrapToolWithPermission(runGitCommandTool as unknown as ToolDefinition, canUseTool),
+    ...collaborationTools,
     ...mcpTools,
   ]
 
@@ -936,6 +1207,8 @@ ${output}` }],
     activeSessions.delete(sessionId)
     // 清理 MCP 连接
     await disposePiMcpConnections().catch(() => {})
+    // 清理协作子会话记录
+    cleanupDelegations(sessionId)
   }
 }
 

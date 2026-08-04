@@ -304,6 +304,23 @@ class PiAgentController {
   }
 
   /**
+   * 停止指定会话的所有协作子 Agent。
+   */
+  async stopAllDelegations(args: {
+    sessionId: string
+  }): Promise<{ code: number; message?: string }> {
+    try {
+      const { cleanupDelegations } = await import('../components/pi/adapters/agent-collaboration-service')
+      cleanupDelegations(args.sessionId)
+      return { code: 0, message: '已停止所有子 Agent' }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      logger.error('[PiAgentController] stopAllDelegations 异常:', err)
+      return { code: -1, message: msg }
+    }
+  }
+
+  /**
    * 响应权限请求（前端 HTTP POST 调用）。
    *
    * 用户在 PermissionBanner 中点击允许/拒绝后，前端通过 HTTP POST 调用此端点，
@@ -674,12 +691,12 @@ class PiAgentController {
     return result
   }
 
-  /** 向 SSE 响应流写入事件 */
+  /** 向 SSE 响应流写入事件（合并为单次 write 防止并发交叉写入） */
   private writeSseEvent(res: ServerResponse, event: string, data: unknown): void {
     if (res.writableEnded) return
     const payload = typeof data === 'string' ? data : JSON.stringify(data)
-    res.write(`event: ${event}\n`)
-    res.write(`data: ${payload}\n\n`)
+    // 关键：合并为单次 res.write 调用，防止并发事件交叉写入导致 SSE 帧错乱
+    res.write(`event: ${event}\ndata: ${payload}\n\n`)
   }
 }
 

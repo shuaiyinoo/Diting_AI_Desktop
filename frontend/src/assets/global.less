@@ -277,3 +277,284 @@ html, body {
   --ms-flow-footnote-y: 0.5em;
   --ms-flow-admonition-y: 1.25em;
 }
+
+/* ============================================================
+ * Proma 风格 Markdown 渲染覆盖
+ * 对标 Proma 的 react-markdown + Tailwind Typography + Shiki
+ * 代码块 + 自定义组件方案，通过覆盖 markstream-vue 的
+ * CSS 变量和组件样式实现一致的视觉效果。
+ * ============================================================ */
+
+/* --- 1. 基础排版：紧凑间距（对标 Proma prose-p:my-1.5 等） --- */
+.markstream-vue {
+  /* 字体特性：数字等宽 + 现代字形（对标 Proma font-feature-settings） */
+  font-feature-settings: 'cv11', 'ss01', 'ss03', 'tnum';
+
+  /* 段落间距收紧（Proma prose-p:my-1.5 ≈ 0.5em） */
+  --ms-flow-paragraph-y: 0.6em;
+  /* 标题间距收紧（Proma prose-headings:my-2 ≈ 0.5em） */
+  --ms-flow-heading-1-mt: 0;
+  --ms-flow-heading-1-mb: 0.5em;
+  --ms-flow-heading-2-mt: 1em;
+  --ms-flow-heading-2-mb: 0.4em;
+  --ms-flow-heading-3-mt: 0.8em;
+  --ms-flow-heading-3-mb: 0.3em;
+  --ms-flow-heading-4-mt: 0.6em;
+  --ms-flow-heading-4-mb: 0.25em;
+  --ms-flow-heading-5-mt: 0.5em;
+  --ms-flow-heading-5-mb: 0.2em;
+  --ms-flow-heading-6-mt: 0.5em;
+  --ms-flow-heading-6-mb: 0.2em;
+  /* 列表行高（Proma prose-li:leading-[1.6]） */
+  --ms-leading-body: 1.6;
+  /* 代码块间距（Proma prose-pre:my-0 → 由 code-block-wrapper 管控） */
+  --ms-flow-codeblock-y: 0.5em;
+  /* 分割线间距（Proma prose-hr:my-3 ≈ 0.75em） */
+  --ms-flow-hr-y: 0.75em;
+  /* 引用块间距 */
+  --ms-flow-blockquote-y: 0.6em;
+  --ms-flow-blockquote-indent: 1em;
+}
+
+/* 字号档位覆盖时恢复各自的间距值 */
+[data-md-font-size='small'] .markstream-vue {
+  --ms-flow-paragraph-y: 0.5em;
+  --ms-flow-heading-2-mt: 1em;
+  --ms-flow-heading-3-mt: 0.8em;
+}
+[data-md-font-size='medium'] .markstream-vue {
+  --ms-flow-paragraph-y: 0.6em;
+  --ms-flow-heading-2-mt: 1.2em;
+  --ms-flow-heading-3-mt: 1em;
+}
+[data-md-font-size='large'] .markstream-vue {
+  --ms-flow-paragraph-y: 0.75em;
+  --ms-flow-heading-2-mt: 1.6em;
+  --ms-flow-heading-3-mt: 1.2em;
+}
+
+/* --- 2. 文字选区颜色（对标 Proma ::selection） --- */
+::selection {
+  background-color: rgba(22, 119, 255, 0.2);
+  color: inherit;
+}
+::-moz-selection {
+  background-color: rgba(22, 119, 255, 0.2);
+  color: inherit;
+}
+[data-theme='dark'] ::selection,
+[data-theme='dark'] ::-moz-selection {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+/* --- 3. 代码块：始终深色背景（对标 Proma --code-bg: 210 13% 12%） --- */
+.markstream-vue {
+  /* 代码块背景：深海军蓝，亮暗模式统一（Proma 风格核心特征） */
+  --code-bg: #1e2228;
+  --code-fg: #e1e4e8;
+  --code-border: rgba(255, 255, 255, 0.08);
+  --code-header-bg: rgba(255, 255, 255, 0.05);
+  --code-selection-bg: rgba(255, 255, 255, 0.15);
+  --code-line-number: rgba(255, 255, 255, 0.3);
+  /* 代码块操作按钮 */
+  --code-action-fg: rgba(255, 255, 255, 0.5);
+  --code-action-hover-bg: rgba(255, 255, 255, 0.1);
+  --code-action-hover-fg: rgba(255, 255, 255, 0.9);
+  --code-action-active-bg: rgba(255, 255, 255, 0.15);
+  --code-action-active-fg: #ffffff;
+}
+
+/* --- 4. 行内代码：柔和背景 + 中等字重（对标 Proma inline code 样式） --- */
+.markstream-vue {
+  --inline-code-bg: rgba(0, 0, 0, 0.06);
+  --inline-code-fg: var(--text-primary);
+  --inline-code-border: transparent;
+}
+[data-theme='dark'] .markstream-vue {
+  --inline-code-bg: rgba(255, 255, 255, 0.1);
+  --inline-code-fg: var(--text-primary);
+  --inline-code-border: transparent;
+}
+
+/* 行内代码样式微调：圆角 + 缩小字号 + 中等字重 */
+.markstream-vue .inline-code-node,
+.markstream-vue code:not([class*="language-"]) {
+  border-radius: 4px;
+  font-size: 0.875em;
+  font-weight: 500;
+  padding: 0.1em 0.35em;
+}
+
+/* --- 5. 表格渲染：对标 Proma 表格样式 --- */
+/* Proma 表格核心特征：
+ * - 表头无背景色，仅标题文字加粗
+ * - 无斑马纹（纯白/纯黑底）
+ * - 仅每行底部一条简单线条（无列竖线）
+ * - 列宽按内容自适应（非等距均分）
+ * - 外边框仅底部，无圆角包裹
+ */
+
+/* 表格 CSS 变量覆盖 */
+.markstream-vue {
+  /* 行底线颜色：柔和的前景色透明度 */
+  --table-border: rgba(44, 62, 80, 0.12);
+  /* 表头无背景色（透明） */
+  --table-header-bg: transparent;
+  /* 表格外边距收紧 */
+  --ms-flow-table-y: 0.75em;
+  /* 单元格内边距 */
+  --ms-flow-table-cell: 0.4em 0.6em;
+  /* 表格无阴影 */
+  --ms-shadow-subtle: none;
+}
+[data-theme='dark'] .markstream-vue {
+  --table-border: rgba(255, 255, 255, 0.1);
+  --table-header-bg: transparent;
+}
+
+/* 表格本体：去除圆角/外边框/阴影，改为自动列宽 */
+.markstream-vue .table-node,
+.markstream-vue .table-node[data-v-39f87b5d] {
+  table-layout: auto !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  border-collapse: collapse !important;
+  border-spacing: 0 !important;
+}
+
+/* 表头：无背景色，仅加粗文字 + 底部分隔线 */
+.markstream-vue .table-node thead th,
+.markstream-vue .table-node[data-v-39f87b5d] thead th {
+  background-color: transparent !important;
+  font-weight: 600 !important;
+  border-bottom: 2px solid var(--table-border) !important;
+  border-right: none !important;
+  color: var(--text-primary);
+  text-align: left;
+}
+
+/* 单元格：仅保留底部线条，去除列竖线 */
+.markstream-vue .table-node th,
+.markstream-vue .table-node td,
+.markstream-vue .table-node[data-v-39f87b5d] th,
+.markstream-vue .table-node[data-v-39f87b5d] td {
+  border-right: none !important;
+  border-bottom: 1px solid var(--table-border) !important;
+  text-align: left;
+}
+
+/* 末行无底线 */
+.markstream-vue .table-node tbody tr:last-child td,
+.markstream-vue .table-node[data-v-39f87b5d] tbody tr:last-child td {
+  border-bottom: none !important;
+}
+
+/* 去除斑马纹 */
+.markstream-vue .table-node tbody tr:nth-child(2n),
+.markstream-vue .table-node[data-v-39f87b5d] tbody tr:nth-child(2n) {
+  background-color: transparent !important;
+}
+
+/* 行 hover：极柔和高亮 */
+.markstream-vue .table-node tbody tr:hover,
+.markstream-vue .table-node[data-v-39f87b5d] tbody tr:hover {
+  background-color: rgba(22, 119, 255, 0.03) !important;
+}
+[data-theme='dark'] .markstream-vue .table-node tbody tr:hover,
+[data-theme='dark'] .markstream-vue .table-node[data-v-39f87b5d] tbody tr:hover {
+  background-color: rgba(255, 255, 255, 0.03) !important;
+}
+
+/* 表格容器：无圆角 */
+.markstream-vue .table-node-wrapper {
+  border-radius: 0;
+}
+
+/* --- 6. 代码块头部栏样式（对标 Proma CodeBlock 组件） --- */
+/* markstream-vue 代码块头部栏：半透明背景 + 语言标签 + 复制按钮 */
+.markstream-vue .code-block-header,
+.markstream-vue .code-block-header[data-v-a7a1abdd] {
+  background-color: rgba(255, 255, 255, 0.04) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+
+/* 代码块语言标签 */
+.markstream-vue .code-block-header .text-sm,
+.markstream-vue .code-block-header span {
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* 代码块复制按钮 hover */
+.markstream-vue .code-block-header button:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* --- 7. 代码块滚动条（对标 Proma thin scrollbar） --- */
+.markstream-vue .code-block-container pre,
+.markstream-vue .code-block-container pre[data-v-a7a1abdd],
+.markstream-vue .table-node-wrapper {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+.markstream-vue .code-block-container pre::-webkit-scrollbar,
+.markstream-vue .table-node-wrapper::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.markstream-vue .code-block-container pre::-webkit-scrollbar-track,
+.markstream-vue .table-node-wrapper::-webkit-scrollbar-track {
+  background: transparent;
+}
+.markstream-vue .code-block-container pre::-webkit-scrollbar-thumb,
+.markstream-vue .table-node-wrapper::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+}
+.markstream-vue .code-block-container pre::-webkit-scrollbar-thumb:hover,
+.markstream-vue .table-node-wrapper::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.35);
+}
+
+/* --- 8. 首尾元素去间距（对标 Proma [&>*:first-child]:mt-0 [&>*:last-child]:mb-0） --- */
+.markstream-vue > *:first-child {
+  margin-top: 0 !important;
+}
+.markstream-vue > *:last-child {
+  margin-bottom: 0 !important;
+}
+
+/* --- 9. 引用块样式优化（对标 Proma 柔和引用块） --- */
+.markstream-vue .blockquote-node,
+.markstream-vue blockquote {
+  border-left: 3px solid var(--accent);
+  background: var(--bg-hover);
+  border-radius: 0 6px 6px 0;
+  padding: 0.4em 0.8em;
+  color: var(--text-secondary);
+}
+[data-theme='dark'] .markstream-vue .blockquote-node,
+[data-theme='dark'] .markstream-vue blockquote {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+/* --- 10. 链接样式（对标 Proma text-primary underline） --- */
+.markstream-vue a {
+  color: var(--accent);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+.markstream-vue a:hover {
+  color: var(--accent-hover);
+  text-decoration: underline;
+}
+
+/* --- 11. 分割线样式（对标 Proma 柔和分割线） --- */
+.markstream-vue hr,
+.markstream-vue .thematic-break-node {
+  border: none;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--border-color), transparent);
+}
