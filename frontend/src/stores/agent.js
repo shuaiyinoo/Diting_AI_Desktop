@@ -53,6 +53,9 @@ export const useAgentStore = defineStore('agent', () => {
   const messageStats = ref({})  // key: messageId → { startTime, elapsed, inputTokens, outputTokens, cacheReadTokens, cacheWriteTokens }
   let statsTimer = null
 
+  // ===== 待发送提示词（Todo 启动 Agent 时设置，AgentView 加载后消费） =====
+  const pendingPrompt = ref(null) // { sessionId, message, workspaceId }
+
   // ===== Getters =====
   const currentSession = computed(() =>
     sessions.value.find((s) => s.id === currentSessionId.value),
@@ -569,6 +572,7 @@ export const useAgentStore = defineStore('agent', () => {
     savedBlocks,
     allDelegations,
     messageStats,
+    pendingPrompt,
     // Getters
     currentSession,
     enabledSkills,

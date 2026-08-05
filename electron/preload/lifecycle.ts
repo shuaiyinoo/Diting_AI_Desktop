@@ -3,6 +3,10 @@ import { logger } from 'ee-core/log';
 import { getConfig } from 'ee-core/config';
 import { getMainWindow } from 'ee-core/electron';
 import { initPiAgent } from '../components/pi';
+import { startScheduler as startAutomationScheduler } from '../components/planning/automation-scheduler';
+import { startPlanningReminderScheduler } from '../components/planning/reminder-scheduler';
+import { stopScheduler as stopAutomationScheduler } from '../components/planning/automation-scheduler';
+import { stopPlanningReminderScheduler } from '../components/planning/reminder-scheduler';
 
 class Lifecycle {
   /**
@@ -23,6 +27,14 @@ class Lifecycle {
       initPiAgent();
     } catch (err) {
       logger.error('[lifecycle] Pi Agent 初始化失败:', err);
+    }
+
+    // 启动定时任务调度器
+    try {
+      startAutomationScheduler();
+      startPlanningReminderScheduler();
+    } catch (err) {
+      logger.error('[lifecycle] 调度器启动失败:', err);
     }
 
     // When double clicking the icon, display the opened window
@@ -70,6 +82,8 @@ class Lifecycle {
    */  
   async beforeClose(): Promise<void> {
     logger.info('[lifecycle] before-close');
+    stopAutomationScheduler();
+    stopPlanningReminderScheduler();
   }
 }
 export {

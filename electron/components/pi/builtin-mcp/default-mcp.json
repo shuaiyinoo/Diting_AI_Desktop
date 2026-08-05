@@ -12,7 +12,7 @@
       "deletable": false,
       "defaultEnabled": true,
       "toggleable": true,
-      "status": "pending",
+      "status": "active",
       "tools": [
         { "name": "list_automations", "description": "列出定时任务。", "readOnly": true },
         { "name": "get_automation", "description": "读取单个定时任务详情和运行记录。", "readOnly": true },

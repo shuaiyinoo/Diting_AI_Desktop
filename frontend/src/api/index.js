@@ -123,6 +123,42 @@ const ipcApiRoute = {
     streamChat: 'controller/assistant/streamChat',
   },
 
+  // 任务/日程/定时任务（Planning + Automation）
+  planning: {
+    // Todo
+    listTodos: 'controller/planning/listTodos',
+    createTodo: 'controller/planning/createTodo',
+    updateTodo: 'controller/planning/updateTodo',
+    deleteTodo: 'controller/planning/deleteTodo',
+    startTodoAgent: 'controller/planning/startTodoAgent',
+    // 日程
+    listCalendarEvents: 'controller/planning/listCalendarEvents',
+    createCalendarEvent: 'controller/planning/createCalendarEvent',
+    updateCalendarEvent: 'controller/planning/updateCalendarEvent',
+    deleteCalendarEvent: 'controller/planning/deleteCalendarEvent',
+    // 分组
+    listGroups: 'controller/planning/listGroups',
+    createGroup: 'controller/planning/createGroup',
+    updateGroup: 'controller/planning/updateGroup',
+    deleteGroup: 'controller/planning/deleteGroup',
+    // 标签
+    listTags: 'controller/planning/listTags',
+    createTag: 'controller/planning/createTag',
+    updateTag: 'controller/planning/updateTag',
+    deleteTag: 'controller/planning/deleteTag',
+    // 提醒
+    listActiveReminders: 'controller/planning/listActiveReminders',
+    acknowledgeReminder: 'controller/planning/acknowledgeReminder',
+    snoozeReminder: 'controller/planning/snoozeReminder',
+    // 定时任务
+    listAutomations: 'controller/planning/listAutomations',
+    createAutomation: 'controller/planning/createAutomation',
+    updateAutomation: 'controller/planning/updateAutomation',
+    deleteAutomation: 'controller/planning/deleteAutomation',
+    toggleAutomation: 'controller/planning/toggleAutomation',
+    runAutomationNow: 'controller/planning/runAutomationNow',
+  },
+
   // Pi Agent 模式
   piAgent: {
     // Skills 管理

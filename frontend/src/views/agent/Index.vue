@@ -505,8 +505,8 @@ const askUserAnswers = reactive(new Map()) // qIdx → Set<optionIdx>
  */
 function renderMentionChips(text) {
   if (!text) return ''
-  // 正则匹配四种引用标记
-  const re = /(@file:([^\s]+))|(\/skill:([^\s]+))|(#mcp:([^\s]+))|(&session:([^\s:]+)(?:::(.+))?)/g
+  // 正则匹配四种引用标记 + 定时任务标记
+  const re = /(@file:([^\s]+))|(\/skill:([^\s]+))|(#mcp:([^\s]+))|(&session:([^\s:]+)(?:::(.+))?)|(<!--DITING_SCHEDULED_RUN-->)/g
   let result = ''
   let lastIndex = 0
   let m
@@ -530,6 +530,9 @@ function renderMentionChips(text) {
       // &session:id::title
       const title = m[9] ? decodeURIComponent(m[9]) : m[8]
       result += `<span class="session-mention-chip" data-prefix="&">${escapeHtml(title)}</span>`
+    } else if (m[10]) {
+      // <!--DITING_SCHEDULED_RUN--> → 定时任务标记
+      result += `<span class="scheduled-run-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>定时任务</span>`
     }
     lastIndex = m.index + m[0].length
   }
@@ -619,7 +622,36 @@ onMounted(async () => {
   await loadEnabledModel()
   // 使用 store 统一加载会话
   await agentStore.loadSessions()
-  if (agentStore.sessions.length > 0 && !agentStore.currentSessionId) {
+
+  // 检查是否有 Todo 启动 Agent 的待发送提示词
+  const pending = agentStore.pendingPrompt
+  if (pending && pending.sessionId) {
+    // 选中 Todo 创建的会话
+    await agentStore.selectSession(pending.sessionId)
+    // 消费提示词
+    const promptText = pending.message
+    agentStore.pendingPrompt = null
+    // 等待 UI 就绪后自动发送
+    await nextTick()
+    if (promptText && !isStreaming.value) {
+      await agentStore.sendMessage({
+        text: promptText,
+        model: selectedModel.value,
+        workspaceSlug: ws.currentAgentProject?.slug || undefined,
+        workspaceId: pending.workspaceId || ws.currentAgentProject?.id,
+        httpServerUrl: httpServerUrl.value,
+        onScroll: () => scrollToBottom(),
+        onEvent: (eventName, data) => {
+          if (eventName === 'permission_request') {
+            permissionRequest.value = data
+          } else if (eventName === 'ask_user') {
+            askUserRequest.value = data
+            askUserAnswers.clear()
+          }
+        },
+      })
+    }
+  } else if (agentStore.sessions.length > 0 && !agentStore.currentSessionId) {
     // selectSession 会触发 currentSessionId watch → 设置 pendingScrollToBottom → messages 加载后滚动
     await agentStore.selectSession(agentStore.sessions[0].id)
   } else if (messages.value.length > 0) {

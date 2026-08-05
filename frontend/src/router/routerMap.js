@@ -140,6 +140,12 @@ const constantRouterMap = [
         props: { title: '技能' },
       },
       {
+        path: '/planning',
+        name: 'Planning',
+        component: () => import('@/views/planning/Index.vue'),
+        props: { title: '任务/日程' },
+      },
+      {
         path: '/chat',
         name: 'Chat',
         component: () => import('@/views/chat/Index.vue'),

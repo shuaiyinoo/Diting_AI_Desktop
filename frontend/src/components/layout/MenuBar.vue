@@ -51,6 +51,15 @@
           </div>
           <div
             class="mb-item"
+            :class="{ 'mb-item--active': ws.activeModule === 'planning' }"
+            @click="navigate('planning')"
+          >
+            <ScheduleOutlined class="mb-item-icon" />
+            <span class="mb-item-text">任务/日程/Todo</span>
+            <span class="mb-item-count" v-if="planningCount">{{ planningCount }}</span>
+          </div>
+          <div
+            class="mb-item"
             :class="{ 'mb-item--active': ws.activeModule === 'skills' }"
             @click="navigate('skills')"
           >
@@ -221,7 +230,7 @@
 
       <div class="mb-divider"></div>
 
-      <!-- 模块图标（文件/技能） -->
+      <!-- 模块图标（文件/任务日程/技能） -->
       <button
         type="button"
         class="mb-icon-btn"
@@ -229,6 +238,14 @@
         @click="navigate('file')"
       >
         <FileFilled />
+      </button>
+      <button
+        type="button"
+        class="mb-icon-btn"
+        :class="{ 'mb-icon-btn--active': ws.activeModule === 'planning' }"
+        @click="navigate('planning')"
+      >
+        <ScheduleOutlined />
       </button>
       <button
         type="button"
@@ -301,21 +318,27 @@ import {
   FolderOutlined,
   ProjectOutlined,
   DeleteOutlined,
+  ScheduleOutlined,
 } from '@ant-design/icons-vue'
 import { ipc } from '@/utils/ipcRenderer'
 import { ipcApiRoute } from '@/api'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useAgentStore } from '@/stores/agent'
+import { usePlanningStore } from '@/stores/planning'
 
 const router = useRouter()
 const route = useRoute()
 const ws = useWorkspaceStore()
 const agent = useAgentStore()
+const planning = usePlanningStore()
 
 // 使用 storeToRefs 确保 store 的 ref 在 HMR 后仍然保持响应式
 const { activeModule, selectedFolderId, selectedFile, selectedFileId } = storeToRefs(ws)
 
 const addFolderLoading = ref(false)
+
+// ===== 任务/日程 计数 =====
+const planningCount = computed(() => planning.automations.length)
 
 // ===== Skills / MCP 计数 =====
 const skillsCount = ref(0)
@@ -401,6 +424,7 @@ watch(
   () => route.path,
   (path) => {
     if (path.startsWith('/file')) ws.setActiveModule('file')
+    else if (path.startsWith('/planning')) ws.setActiveModule('planning')
     else if (path.startsWith('/skills')) ws.setActiveModule('skills')
     else if (path.startsWith('/chat')) ws.setActiveModule('chat')
     else if (path.startsWith('/agent')) ws.setActiveModule('agent')
@@ -412,7 +436,7 @@ watch(
 function navigate(key) {
   console.log('[MenuBar] navigate:', key)
   ws.setActiveModule(key)
-  const map = { file: '/file', skills: '/skills', chat: '/chat', agent: '/agent', setting: '/setting' }
+  const map = { file: '/file', planning: '/planning', skills: '/skills', chat: '/chat', agent: '/agent', setting: '/setting' }
   if (map[key]) {
     router.push(map[key]).catch(err => console.error('[MenuBar] router.push 失败:', err))
   }
@@ -705,6 +729,7 @@ onMounted(() => {
   agent.loadSessions()
   loadSkillsCount()
   loadTotalFileCount()
+  planning.loadAll().catch(() => { /* 规划数据加载失败不阻塞菜单 */ })
 })
 </script>
 

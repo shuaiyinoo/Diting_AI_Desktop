@@ -32,7 +32,7 @@ function resolveAvailability(
     }
   }
 
-  // 用户已启用，但实现状态为 pending 的（automation、collaboration）
+  // 用户已启用但实现状态为 pending 的（collaboration 仍为 pending）
   if (item.status === 'pending') {
     return {
       enabled: true,

@@ -263,25 +263,43 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 
   // 消息列表中的 mention chip：灰色气泡上用标准颜色
-  .mention-chip {
+  // 注意：这些 chip 通过 v-html 渲染，必须用 :deep() 穿透 scoped 限制
+  :deep(.mention-chip) {
     background: rgba(24, 95, 165, 0.12);
     color: #185FA5;
     &::before { background: #185FA5; color: #fff; }
   }
-  .skill-mention-chip {
+  :deep(.skill-mention-chip) {
     background: rgba(124, 58, 237, 0.12);
     color: #7C3AED;
     &::before { background: #7C3AED; color: #fff; }
   }
-  .mcp-mention-chip {
+  :deep(.mcp-mention-chip) {
     background: rgba(5, 150, 105, 0.12);
     color: #059669;
     &::before { background: #059669; color: #fff; }
   }
-  .session-mention-chip {
+  :deep(.session-mention-chip) {
     background: rgba(234, 88, 12, 0.12);
     color: #EA580C;
     &::before { background: #EA580C; color: #fff; }
+  }
+  :deep(.scheduled-run-chip) {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: rgba(124, 58, 237, 0.12);
+    color: #7C3AED;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+    svg {
+      width: 12px;
+      height: 12px;
+      flex-shrink: 0;
+    }
   }
 }
 

@@ -49,6 +49,43 @@ import {
   getRuntimeSummary,
 } from '../runtime/runtime-manager'
 import { getRuntimeSettings } from '../runtime/runtime-settings'
+import {
+  listAutomations,
+  getAutomation,
+  createAutomation,
+  updateAutomation,
+  deleteAutomation,
+  computeNextRunAt,
+} from '../../planning/automation-manager'
+import type { Automation } from '../../planning/types'
+import {
+  listTodos,
+  getTodo,
+  createTodo,
+  updateTodo,
+  deleteTodo,
+  touchTodoSession,
+  listCalendarEvents,
+  getCalendarEvent,
+  createCalendarEvent,
+  updateCalendarEvent,
+  deleteCalendarEvent,
+  listPlanningGroups,
+  createPlanningGroup,
+  updatePlanningGroup,
+  deletePlanningGroup,
+  listPlanningTags,
+  createPlanningTag,
+  updatePlanningTag,
+  deletePlanningTag,
+  listActivePlanningReminders,
+  createPlanningReminder,
+  updatePlanningReminder,
+  deletePlanningReminder,
+  acknowledgePlanningReminder,
+  snoozePlanningReminder,
+} from '../../planning/planning-manager'
+import { broadcastPlanningChanged, broadcastPlanningAgentOperation, broadcastAutomationsChanged } from '../../planning/planning-events'
 
 /** Agent 发送输入 */
 export interface AgentSendInput {
@@ -1131,7 +1168,590 @@ ${output}` }],
     },
   }) as unknown as ToolDefinition)
 
-  // 合并：内置工具（已包裹权限）+ AskUserQuestion + 运行时工具 + 协作工具 + MCP 工具
+  // ========== Automation MCP 工具 ==========
+  // 让 Agent 在对话中直接创建、查看、更新、删除和立即运行定时任务。
+  const automationTools: ToolDefinition[] = []
+
+  // 1. list_automations
+  automationTools.push(sdkModule.defineTool({
+    name: 'mcp__automation__list_automations',
+    label: '列出定时任务',
+    description: '列出所有定时任务（Automation）。返回每个任务的名称、调度类型、状态和运行记录摘要。',
+    promptSnippet: '查看当前所有定时任务。',
+    parameters: Type.Object({}),
+    async execute() {
+      const list = listAutomations().map((a: Automation) => ({
+        id: a.id,
+        name: a.name,
+        prompt: a.prompt,
+        scheduleType: a.scheduleType,
+        intervalMinutes: a.intervalMinutes,
+        timeOfDay: a.timeOfDay,
+        active: a.active,
+        runCount: a.runCount,
+        lastRunAt: a.lastRunAt,
+        nextRunAt: a.nextRunAt,
+      }))
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify({ automations: list }) }],
+        details: { automations: list },
+      }
+    },
+  }) as unknown as ToolDefinition)
+
+  // 2. get_automation
+  automationTools.push(sdkModule.defineTool({
+    name: 'mcp__automation__get_automation',
+    label: '读取定时任务详情',
+    description: '读取单个定时任务的完整配置和最近运行记录。',
+    promptSnippet: '查看指定定时任务的详情和运行历史。',
+    parameters: Type.Object({
+      id: Type.String({ description: '定时任务 ID' }),
+    }),
+    async execute(_toolCallId: string, params: Record<string, unknown>) {
+      const { id } = params as { id: string }
+      const a = getAutomation(id)
+      if (!a) {
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({ error: `定时任务不存在: ${id}` }) }],
+          details: { error: `定时任务不存在: ${id}` },
+        }
+      }
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify({ automation: a }) }],
+        details: { automation: a },
+      }
+    },
+  }) as unknown as ToolDefinition)
+
+  // 3. create_automation
+  automationTools.push(sdkModule.defineTool({
+    name: 'mcp__automation__create_automation',
+    label: '创建定时任务',
+    description: '创建一个持久化定时任务。调度器会按设定频率在后台自动新建子会话执行任务描述。需要指定模型（channelId）、项目（workspaceId）和自然语言任务描述。',
+    promptSnippet: '创建一个定时任务来自动执行重复性工作。',
+    parameters: Type.Object({
+      name: Type.String({ description: '任务名称' }),
+      prompt: Type.String({ description: '自然语言任务描述，Agent 每次触发时会执行此描述。' }),
+      scheduleType: Type.Union([
+        Type.Literal('interval'),
+        Type.Literal('daily'),
+        Type.Literal('weekly'),
+        Type.Literal('monthly'),
+        Type.Literal('once'),
+      ], { description: '调度类型：interval=每N分钟、daily=每天定点、weekly=每周定点、monthly=每月定点、once=仅一次' }),
+      intervalMinutes: Type.Optional(Type.Number({ description: 'scheduleType=interval 时的间隔分钟数' })),
+      timeOfDay: Type.Optional(Type.String({ description: 'scheduleType=daily/weekly/monthly 时的触发时刻，格式 HH:mm' })),
+      dayOfWeek: Type.Optional(Type.Number({ description: 'scheduleType=weekly 时的星期（0=周日,1=周一...6=周六）' })),
+      dayOfMonth: Type.Optional(Type.Number({ description: 'scheduleType=monthly 时的日期（1-31）' })),
+      scheduledAt: Type.Optional(Type.Number({ description: 'scheduleType=once 时的触发时间戳（毫秒）' })),
+      maxRuns: Type.Optional(Type.Number({ description: '运行次数上限，达到后自动停用。0 或不传表示不限。' })),
+      channelId: Type.String({ description: '渠道 ID（模型配置）' }),
+      workspaceId: Type.String({ description: '工作区/项目 ID' }),
+      sessionMode: Type.Optional(Type.Union([
+        Type.Literal('daily'),
+        Type.Literal('reuse'),
+      ], { description: '会话模式：daily=每日新建子会话（默认），reuse=始终复用同一子会话' })),
+    }),
+    async execute(_toolCallId: string, params: Record<string, unknown>) {
+      const p = params as {
+        name: string; prompt: string; scheduleType: string;
+        intervalMinutes?: number; timeOfDay?: string; dayOfWeek?: number;
+        dayOfMonth?: number; scheduledAt?: number; maxRuns?: number;
+        channelId: string; workspaceId: string; sessionMode?: string;
+      }
+      const automation = createAutomation({
+        name: p.name,
+        prompt: p.prompt,
+        scheduleType: p.scheduleType as any,
+        intervalMinutes: p.intervalMinutes,
+        timeOfDay: p.timeOfDay,
+        dayOfWeek: p.dayOfWeek,
+        dayOfMonth: p.dayOfMonth,
+        scheduledAt: p.scheduledAt,
+        maxRuns: p.maxRuns,
+        channelId: p.channelId,
+        workspaceId: p.workspaceId,
+        sessionMode: p.sessionMode as any,
+        permissionMode: 'bypassPermissions',
+      })
+      broadcastAutomationsChanged()
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify({ automation, message: '定时任务已创建，调度器将按计划自动执行。' }) }],
+        details: { automation },
+      }
+    },
+  }) as unknown as ToolDefinition)
+
+  // 4. update_automation
+  automationTools.push(sdkModule.defineTool({
+    name: 'mcp__automation__update_automation',
+    label: '更新定时任务',
+    description: '更新定时任务的配置（名称、描述、调度、模型等）。',
+    promptSnippet: '修改指定定时任务的配置。',
+    parameters: Type.Object({
+      id: Type.String({ description: '定时任务 ID' }),
+      name: Type.Optional(Type.String({ description: '新名称' })),
+      prompt: Type.Optional(Type.String({ description: '新任务描述' })),
+      active: Type.Optional(Type.Boolean({ description: '启用/暂停' })),
+      scheduleType: Type.Optional(Type.Union([
+        Type.Literal('interval'),
+        Type.Literal('daily'),
+        Type.Literal('weekly'),
+        Type.Literal('monthly'),
+        Type.Literal('once'),
+      ])),
+      intervalMinutes: Type.Optional(Type.Number()),
+      timeOfDay: Type.Optional(Type.String()),
+      dayOfWeek: Type.Optional(Type.Number()),
+      dayOfMonth: Type.Optional(Type.Number()),
+      scheduledAt: Type.Optional(Type.Number()),
+      maxRuns: Type.Optional(Type.Number()),
+      channelId: Type.Optional(Type.String()),
+      workspaceId: Type.Optional(Type.String()),
+    }),
+    async execute(_toolCallId: string, params: Record<string, unknown>) {
+      const p = params as { id: string; [key: string]: unknown }
+      const { id, ...updates } = p
+      const automation = updateAutomation({ id, ...updates } as any)
+      if (!automation) {
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({ error: `定时任务不存在: ${id}` }) }],
+          details: { error: `定时任务不存在: ${id}` },
+        }
+      }
+      broadcastAutomationsChanged()
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify({ automation, message: '定时任务已更新。' }) }],
+        details: { automation },
+      }
+    },
+  }) as unknown as ToolDefinition)
+
+  // 5. delete_automation
+  automationTools.push(sdkModule.defineTool({
+    name: 'mcp__automation__delete_automation',
+    label: '删除定时任务',
+    description: '删除指定定时任务。删除后无法恢复。',
+    promptSnippet: '删除一个定时任务。',
+    parameters: Type.Object({
+      id: Type.String({ description: '定时任务 ID' }),
+    }),
+    async execute(_toolCallId: string, params: Record<string, unknown>) {
+      const { id } = params as { id: string }
+      const ok = deleteAutomation(id)
+      if (ok) broadcastAutomationsChanged()
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify({ success: ok, message: ok ? '定时任务已删除。' : '删除失败，任务可能不存在。' }) }],
+        details: { success: ok },
+      }
+    },
+  }) as unknown as ToolDefinition)
+
+  // 6. run_automation_now
+  automationTools.push(sdkModule.defineTool({
+    name: 'mcp__automation__run_automation_now',
+    label: '立即运行定时任务',
+    description: '立即触发一次定时任务执行，不影响原有调度计划。',
+    promptSnippet: '立即运行一个定时任务。',
+    parameters: Type.Object({
+      id: Type.String({ description: '定时任务 ID' }),
+    }),
+    async execute(_toolCallId: string, params: Record<string, unknown>) {
+      const { id } = params as { id: string }
+      try {
+        // 延迟导入避免循环依赖
+        const { runAutomationNow } = require('../../planning/automation-scheduler')
+        await runAutomationNow(id)
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({ success: true, message: '定时任务已触发执行。' }) }],
+          details: { success: true },
+        }
+      } catch (err) {
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({ success: false, error: err instanceof Error ? err.message : '运行失败' }) }],
+          details: { success: false, error: err instanceof Error ? err.message : '运行失败' },
+        }
+      }
+    },
+  }) as unknown as ToolDefinition)
+
+  // ========== Planning MCP 工具 ==========
+  // 让 Agent 在对话中直接读写本地 Todo、日程、分组、标签和提醒。
+  // 移植自 Proma 的 pi-builtin-tools.ts buildPlanningTools()。
+  const planningCtx = {
+    sessionId,
+    workspaceId: workspace?.id,
+  }
+  const planningTools: ToolDefinition[] = []
+
+  // 辅助函数
+  const jsonResult = (payload: unknown) => ({
+    content: [{ type: 'text' as const, text: JSON.stringify(payload, null, 2) }],
+    details: payload,
+  })
+  const assertNonBlank = (value: string | undefined, field: string): string => {
+    if (!value || value.trim().length === 0) throw new Error(`${field} 不能为空`)
+    return value.trim()
+  }
+  const numOrUndef = (v: unknown): number | undefined =>
+    typeof v === 'number' && Number.isFinite(v) ? v : undefined
+  const defaultTodoDueAt = (): number => {
+    const d = new Date()
+    d.setHours(23, 59, 59, 999)
+    return d.getTime()
+  }
+  const optionalPlanningFields = {
+    notes: Type.Optional(Type.String({ description: '补充说明' })),
+    workspaceId: Type.Optional(Type.String({ description: '所属工作区 ID；不传默认当前工作区' })),
+    groupId: Type.Optional(Type.String({ description: '可选分组 ID' })),
+    tagIds: Type.Optional(Type.Array(Type.String(), { description: '可选标签 ID 列表' })),
+  }
+
+  // 1. list_todos
+  planningTools.push(sdkModule.defineTool({
+    name: 'mcp__planning__list_todos', label: '列出 Todo',
+    description: '列出本地 Todo。适合在安排工作、检查今天待办、维护任务状态前使用。',
+    promptSnippet: '查看当前 Todo 列表。',
+    parameters: Type.Object({
+      status: Type.Optional(Type.Union([Type.Literal('open'), Type.Literal('completed')])),
+      dueBefore: Type.Optional(Type.Number({ description: '仅返回此截止时间之前的 Todo，Unix 毫秒时间戳' })),
+      limit: Type.Optional(Type.Number({ description: '最多返回数量，默认 50' })),
+    }),
+    async execute(_id: string, params: unknown) {
+      const { status, dueBefore, limit } = params as { status?: 'open' | 'completed'; dueBefore?: number; limit?: number }
+      return jsonResult({ todos: listTodos({ status, dueBefore, limit: limit ?? 50 }) })
+    },
+  }) as unknown as ToolDefinition)
+  // 2. get_todo
+  planningTools.push(sdkModule.defineTool({
+    name: 'mcp__planning__get_todo', label: '读取 Todo',
+    description: '按 ID 读取一个 Todo 的完整详情。',
+    promptSnippet: '按 ID 读取 Todo 详情。',
+    parameters: Type.Object({ id: Type.String({ description: 'Todo ID' }) }),
+    async execute(_id: string, params: unknown) {
+      const id = assertNonBlank((params as { id: string }).id, 'id')
+      const todo = getTodo(id)
+      if (!todo) throw new Error('Todo 不存在')
+      return jsonResult({ todo })
+    },
+  }) as unknown as ToolDefinition)
+  // 3. create_todo
+  planningTools.push(sdkModule.defineTool({
+    name: 'mcp__planning__create_todo', label: '创建 Todo',
+    description: '创建本地 Todo。调用前必须先用 list_todos(status=open) 检查重复；用户明确提出待办，或可合理确定下一步时使用。未传 dueAt 时默认当天结束前。',
+    promptSnippet: '创建新的 Todo。',
+    parameters: Type.Object({ title: Type.String(), ...optionalPlanningFields, priority: Type.Optional(Type.Union([Type.Literal('low'), Type.Literal('medium'), Type.Literal('high')])), dueAt: Type.Optional(Type.Number({ description: '截止时间 Unix 毫秒时间戳' })) }),
+    async execute(_id: string, params: unknown) {
+      const args = params as Record<string, unknown>
+      const title = assertNonBlank(args.title as string, 'title')
+      const created = createTodo({ title, notes: args.notes as string | undefined, priority: args.priority as 'low' | 'medium' | 'high' | undefined, dueAt: numOrUndef(args.dueAt) ?? defaultTodoDueAt(), groupId: args.groupId as string | undefined, tagIds: args.tagIds as string[] | undefined, workspaceId: (args.workspaceId as string | undefined) ?? planningCtx.workspaceId })
+      touchTodoSession(created.id, planningCtx.sessionId)
+      const todo = getTodo(created.id)!
+      broadcastPlanningChanged(['todos', 'reminders'])
+      broadcastPlanningAgentOperation({ sessionId: planningCtx.sessionId, target: 'todo', action: 'created', title: todo.title })
+      return jsonResult({ todo })
+    },
+  }) as unknown as ToolDefinition)
+  // 4. update_todo
+  planningTools.push(sdkModule.defineTool({
+    name: 'mcp__planning__update_todo', label: '更新 Todo',
+    description: '更新 Todo 的标题、说明、优先级或截止时间。',
+    promptSnippet: '更新 Todo。',
+    parameters: Type.Object({ id: Type.String(), title: Type.Optional(Type.String()), notes: Type.Optional(Type.String()), priority: Type.Optional(Type.Union([Type.Literal('low'), Type.Literal('medium'), Type.Literal('high')])), dueAt: Type.Optional(Type.Union([Type.Number(), Type.Null()])), groupId: Type.Optional(Type.Union([Type.String(), Type.Null()])), tagIds: Type.Optional(Type.Array(Type.String())), status: Type.Optional(Type.Union([Type.Literal('open'), Type.Literal('completed')])) }),
+    async execute(_id: string, params: unknown) {
+      const args = params as Record<string, unknown>
+      const updated = updateTodo({ id: assertNonBlank(args.id as string, 'id'), title: args.title as string | undefined, notes: args.notes as string | undefined, priority: args.priority as 'low' | 'medium' | 'high' | undefined, dueAt: args.dueAt as number | null | undefined, groupId: args.groupId as string | null | undefined, tagIds: args.tagIds as string[] | undefined, status: args.status as 'open' | 'completed' | undefined })
+      if (!updated) throw new Error('Todo 不存在')
+      touchTodoSession(updated.id, planningCtx.sessionId)
+      const todo = getTodo(updated.id)!
+      broadcastPlanningChanged(['todos', 'reminders'])
+      broadcastPlanningAgentOperation({ sessionId: planningCtx.sessionId, target: 'todo', action: 'updated', title: todo.title })
+      return jsonResult({ todo })
+    },
+  }) as unknown as ToolDefinition)
+  // 5. complete_todo
+  planningTools.push(sdkModule.defineTool({
+    name: 'mcp__planning__complete_todo', label: '完成 Todo',
+    description: '将指定 Todo 标记为已完成。仅在任务确实完成或用户明确要求完成时使用。',
+    promptSnippet: '完成 Todo。',
+    parameters: Type.Object({ id: Type.String() }),
+    async execute(_id: string, params: unknown) {
+      const updated = updateTodo({ id: assertNonBlank((params as { id: string }).id, 'id'), status: 'completed' })
+      if (!updated) throw new Error('Todo 不存在')
+      touchTodoSession(updated.id, planningCtx.sessionId)
+      const todo = getTodo(updated.id)!
+      broadcastPlanningChanged(['todos', 'reminders'])
+      broadcastPlanningAgentOperation({ sessionId: planningCtx.sessionId, target: 'todo', action: 'updated', title: todo.title })
+      return jsonResult({ todo })
+    },
+  }) as unknown as ToolDefinition)
+  // 6. delete_todo
+  planningTools.push(sdkModule.defineTool({
+    name: 'mcp__planning__delete_todo', label: '删除 Todo',
+    description: '删除 Todo。只在用户明确要求删除时使用。',
+    promptSnippet: '删除 Todo。',
+    parameters: Type.Object({ id: Type.String() }),
+    async execute(_id: string, params: unknown) {
+      const id = assertNonBlank((params as { id: string }).id, 'id')
+      const todo = getTodo(id)
+      const deleted = deleteTodo(id)
+      if (deleted) {
+        broadcastPlanningChanged(['todos', 'calendar_events', 'reminders'])
+        broadcastPlanningAgentOperation({ sessionId: planningCtx.sessionId, target: 'todo', action: 'deleted', title: todo?.title ?? 'Todo' })
+      }
+      return jsonResult({ deleted })
+    },
+  }) as unknown as ToolDefinition)
+  // 7. list_calendar_events
+  planningTools.push(sdkModule.defineTool({
+    name: 'mcp__planning__list_calendar_events', label: '列出日程',
+    description: '列出本地日程。用于查看指定时间范围的安排。',
+    promptSnippet: '查看日程列表。',
+    parameters: Type.Object({
+      startAt: Type.Optional(Type.Number({ description: '查询范围起点，Unix 毫秒时间戳' })),
+      endAt: Type.Optional(Type.Number({ description: '查询范围终点，Unix 毫秒时间戳' })),
+      limit: Type.Optional(Type.Number({ description: '最多返回数量，默认 50' })),
+    }),
+    async execute(_id: string, params: unknown) {
+      const { startAt, endAt, limit } = params as { startAt?: number; endAt?: number; limit?: number }
+      return jsonResult({ events: listCalendarEvents({ from: startAt, to: endAt, limit: limit ?? 50 }) })
+    },
+  }) as unknown as ToolDefinition)
+  // 8. get_calendar_event
+  planningTools.push(sdkModule.defineTool({
+    name: 'mcp__planning__get_calendar_event', label: '读取日程',
+    description: '按 ID 读取一个日程的完整详情。',
+    promptSnippet: '按 ID 读取日程详情。',
+    parameters: Type.Object({ id: Type.String({ description: '日程 ID' }) }),
+    async execute(_id: string, params: unknown) {
+      const id = assertNonBlank((params as { id: string }).id, 'id')
+      const event = getCalendarEvent(id)
+      if (!event) throw new Error('日程不存在')
+      return jsonResult({ event })
+    },
+  }) as unknown as ToolDefinition)
+  // 9. create_calendar_event
+  planningTools.push(sdkModule.defineTool({
+    name: 'mcp__planning__create_calendar_event', label: '创建日程',
+    description: '创建本地日程。用户明确提供时间安排时使用。',
+    promptSnippet: '创建日程。',
+    parameters: Type.Object({ title: Type.String(), startAt: Type.Number({ description: '开始时间 Unix 毫秒时间戳' }), endAt: Type.Optional(Type.Number()), allDay: Type.Optional(Type.Boolean()), ...optionalPlanningFields, todoId: Type.Optional(Type.String()) }),
+    async execute(_id: string, params: unknown) {
+      const args = params as Record<string, unknown>
+      const event = createCalendarEvent({ title: assertNonBlank(args.title as string, 'title'), startAt: args.startAt as number, endAt: args.endAt as number | undefined, allDay: args.allDay as boolean | undefined, notes: args.notes as string | undefined, groupId: args.groupId as string | undefined, tagIds: args.tagIds as string[] | undefined, workspaceId: (args.workspaceId as string | undefined) ?? planningCtx.workspaceId, todoId: args.todoId as string | undefined })
+      broadcastPlanningChanged(['calendar_events', 'reminders'])
+      broadcastPlanningAgentOperation({ sessionId: planningCtx.sessionId, target: 'calendar_event', action: 'created', title: event.title })
+      return jsonResult({ event })
+    },
+  }) as unknown as ToolDefinition)
+  // 10. update_calendar_event
+  planningTools.push(sdkModule.defineTool({
+    name: 'mcp__planning__update_calendar_event', label: '更新日程',
+    description: '更新日程时间或内容。',
+    promptSnippet: '更新日程。',
+    parameters: Type.Object({ id: Type.String(), title: Type.Optional(Type.String()), notes: Type.Optional(Type.String()), startAt: Type.Optional(Type.Number()), endAt: Type.Optional(Type.Union([Type.Number(), Type.Null()])), allDay: Type.Optional(Type.Boolean()), groupId: Type.Optional(Type.Union([Type.String(), Type.Null()])), tagIds: Type.Optional(Type.Array(Type.String())), todoId: Type.Optional(Type.Union([Type.String(), Type.Null()])) }),
+    async execute(_id: string, params: unknown) {
+      const args = params as Record<string, unknown>
+      const event = updateCalendarEvent({ id: assertNonBlank(args.id as string, 'id'), title: args.title as string | undefined, notes: args.notes as string | undefined, startAt: args.startAt as number | undefined, endAt: args.endAt as number | null | undefined, allDay: args.allDay as boolean | undefined, groupId: args.groupId as string | null | undefined, tagIds: args.tagIds as string[] | undefined, todoId: args.todoId as string | null | undefined })
+      if (!event) throw new Error('日程不存在')
+      broadcastPlanningChanged(['calendar_events', 'reminders'])
+      broadcastPlanningAgentOperation({ sessionId: planningCtx.sessionId, target: 'calendar_event', action: 'updated', title: event.title })
+      return jsonResult({ event })
+    },
+  }) as unknown as ToolDefinition)
+  // 11. delete_calendar_event
+  planningTools.push(sdkModule.defineTool({
+    name: 'mcp__planning__delete_calendar_event', label: '删除日程',
+    description: '删除本地日程。只在用户明确要求删除时使用。',
+    promptSnippet: '删除日程。',
+    parameters: Type.Object({ id: Type.String() }),
+    async execute(_id: string, params: unknown) {
+      const id = assertNonBlank((params as { id: string }).id, 'id')
+      const event = getCalendarEvent(id)
+      const deleted = deleteCalendarEvent(id)
+      if (deleted) {
+        broadcastPlanningChanged(['calendar_events', 'reminders'])
+        broadcastPlanningAgentOperation({ sessionId: planningCtx.sessionId, target: 'calendar_event', action: 'deleted', title: event?.title ?? '日程' })
+      }
+      return jsonResult({ deleted })
+    },
+  }) as unknown as ToolDefinition)
+  // 12. list_groups
+  planningTools.push(sdkModule.defineTool({
+    name: 'mcp__planning__list_groups', label: '列出分组',
+    description: '列出指定范围的 Todo 或日程分组。创建或归入分组前优先调用，以复用现有分组。',
+    promptSnippet: '列出现有分组。',
+    parameters: Type.Object({ scope: Type.Union([Type.Literal('todo'), Type.Literal('calendar')]) }),
+    async execute(_id: string, params: unknown) {
+      const scope = (params as { scope: 'todo' | 'calendar' }).scope
+      return jsonResult({ groups: listPlanningGroups(scope) })
+    },
+  }) as unknown as ToolDefinition)
+  // 13. create_group
+  planningTools.push(sdkModule.defineTool({
+    name: 'mcp__planning__create_group', label: '创建分组',
+    description: '创建 Todo 或日程范围内的独立分组。只在用户明确提出新分组或现有分组不适用时使用。',
+    promptSnippet: '创建分组。',
+    parameters: Type.Object({ scope: Type.Union([Type.Literal('todo'), Type.Literal('calendar')]), name: Type.String(), color: Type.Optional(Type.String()), sortOrder: Type.Optional(Type.Number()) }),
+    async execute(_id: string, params: unknown) {
+      const args = params as { scope: 'todo' | 'calendar'; name: string; color?: string; sortOrder?: number }
+      const group = createPlanningGroup({ scope: args.scope, name: assertNonBlank(args.name, 'name'), color: args.color, sortOrder: args.sortOrder })
+      broadcastPlanningChanged(args.scope === 'todo' ? ['todo_groups', 'todos', 'reminders'] : ['calendar_groups', 'calendar_events', 'reminders'])
+      return jsonResult({ group })
+    },
+  }) as unknown as ToolDefinition)
+  // 14. update_group
+  planningTools.push(sdkModule.defineTool({
+    name: 'mcp__planning__update_group', label: '更新分组',
+    description: '更新指定范围内的分组，不能借此移动分组范围。',
+    promptSnippet: '更新分组。',
+    parameters: Type.Object({ id: Type.String(), scope: Type.Union([Type.Literal('todo'), Type.Literal('calendar')]), name: Type.Optional(Type.String()), color: Type.Optional(Type.Union([Type.String(), Type.Null()])), sortOrder: Type.Optional(Type.Number()) }),
+    async execute(_id: string, params: unknown) {
+      const args = params as Record<string, unknown>
+      const scope = args.scope as 'todo' | 'calendar'
+      const group = updatePlanningGroup({ id: assertNonBlank(args.id as string, 'id'), scope, name: args.name as string | undefined, color: args.color as string | null | undefined, sortOrder: args.sortOrder as number | undefined })
+      if (!group) throw new Error('分组不存在')
+      broadcastPlanningChanged(scope === 'todo' ? ['todo_groups', 'todos', 'reminders'] : ['calendar_groups', 'calendar_events', 'reminders'])
+      return jsonResult({ group })
+    },
+  }) as unknown as ToolDefinition)
+  // 15. delete_group
+  planningTools.push(sdkModule.defineTool({
+    name: 'mcp__planning__delete_group', label: '删除分组',
+    description: '删除指定范围内的分组，并仅清除该范围关联对象的分组字段。只在用户明确要求删除时使用。',
+    promptSnippet: '删除分组。',
+    parameters: Type.Object({ id: Type.String(), scope: Type.Union([Type.Literal('todo'), Type.Literal('calendar')]) }),
+    async execute(_id: string, params: unknown) {
+      const args = params as { id: string; scope: 'todo' | 'calendar' }
+      const deleted = deletePlanningGroup(args.scope, assertNonBlank(args.id, 'id'))
+      if (deleted) broadcastPlanningChanged(args.scope === 'todo' ? ['todo_groups', 'todos', 'reminders'] : ['calendar_groups', 'calendar_events', 'reminders'])
+      return jsonResult({ deleted })
+    },
+  }) as unknown as ToolDefinition)
+  // 16. list_tags
+  planningTools.push(sdkModule.defineTool({
+    name: 'mcp__planning__list_tags', label: '列出标签',
+    description: '列出可用于 Todo 与日程的标签。创建或归类前优先调用，以复用已有标签。',
+    promptSnippet: '列出现有标签。',
+    parameters: Type.Object({}),
+    async execute() { return jsonResult({ tags: listPlanningTags() }) },
+  }) as unknown as ToolDefinition)
+  // 17. create_tag
+  planningTools.push(sdkModule.defineTool({
+    name: 'mcp__planning__create_tag', label: '创建标签',
+    description: '创建跨 Todo 和日程复用的标签。只在用户明确给出新标签或现有标签不适用时使用。',
+    promptSnippet: '创建标签。',
+    parameters: Type.Object({ name: Type.String(), color: Type.Optional(Type.String()) }),
+    async execute(_id: string, params: unknown) {
+      const args = params as { name: string; color?: string }
+      const tag = createPlanningTag({ name: assertNonBlank(args.name, 'name'), color: args.color })
+      broadcastPlanningChanged(['tags', 'todos', 'calendar_events', 'reminders'])
+      return jsonResult({ tag })
+    },
+  }) as unknown as ToolDefinition)
+  // 18. update_tag
+  planningTools.push(sdkModule.defineTool({
+    name: 'mcp__planning__update_tag', label: '更新标签',
+    description: '更新标签名称或颜色。',
+    promptSnippet: '更新标签。',
+    parameters: Type.Object({ id: Type.String(), name: Type.Optional(Type.String()), color: Type.Optional(Type.Union([Type.String(), Type.Null()])) }),
+    async execute(_id: string, params: unknown) {
+      const args = params as Record<string, unknown>
+      const tag = updatePlanningTag({ id: assertNonBlank(args.id as string, 'id'), name: args.name as string | undefined, color: args.color as string | null | undefined })
+      if (!tag) throw new Error('标签不存在')
+      broadcastPlanningChanged(['tags', 'todos', 'calendar_events', 'reminders'])
+      return jsonResult({ tag })
+    },
+  }) as unknown as ToolDefinition)
+  // 19. delete_tag
+  planningTools.push(sdkModule.defineTool({
+    name: 'mcp__planning__delete_tag', label: '删除标签',
+    description: '删除标签并移除其关联。只在用户明确要求删除时使用。',
+    promptSnippet: '删除标签。',
+    parameters: Type.Object({ id: Type.String() }),
+    async execute(_id: string, params: unknown) {
+      const deleted = deletePlanningTag(assertNonBlank((params as { id: string }).id, 'id'))
+      if (deleted) broadcastPlanningChanged(['tags', 'todos', 'calendar_events', 'reminders'])
+      return jsonResult({ deleted })
+    },
+  }) as unknown as ToolDefinition)
+  // 20. list_active_reminders
+  planningTools.push(sdkModule.defineTool({
+    name: 'mcp__planning__list_active_reminders', label: '列出到期提醒',
+    description: '列出当前已到期且未确认的常驻提醒。用于帮助用户处理提醒。',
+    promptSnippet: '列出到期提醒。',
+    parameters: Type.Object({}),
+    async execute() { return jsonResult({ reminders: listActivePlanningReminders() }) },
+  }) as unknown as ToolDefinition)
+  // 21. create_reminder
+  planningTools.push(sdkModule.defineTool({
+    name: 'mcp__planning__create_reminder', label: '创建提醒',
+    description: '为 Todo 或日程创建指定时点的提醒。仅在用户要求提醒且时点明确时使用。',
+    promptSnippet: '创建提醒。',
+    parameters: Type.Object({ targetType: Type.Union([Type.Literal('todo'), Type.Literal('calendar_event')]), targetId: Type.String(), triggerAt: Type.Number({ description: '提醒触发 Unix 毫秒时间戳' }) }),
+    async execute(_id: string, params: unknown) {
+      const args = params as { targetType: 'todo' | 'calendar_event'; targetId: string; triggerAt: number }
+      const reminder = createPlanningReminder({ targetType: args.targetType, targetId: assertNonBlank(args.targetId, 'targetId'), triggerAt: args.triggerAt })
+      broadcastPlanningChanged(['todos', 'calendar_events', 'reminders'])
+      return jsonResult({ reminder })
+    },
+  }) as unknown as ToolDefinition)
+  // 22. update_reminder
+  planningTools.push(sdkModule.defineTool({
+    name: 'mcp__planning__update_reminder', label: '更新提醒时间',
+    description: '修改未确认提醒的触发时间。',
+    promptSnippet: '更新提醒时间。',
+    parameters: Type.Object({ id: Type.String(), triggerAt: Type.Number({ description: '新的提醒触发 Unix 毫秒时间戳' }) }),
+    async execute(_id: string, params: unknown) {
+      const args = params as { id: string; triggerAt: number }
+      const reminder = updatePlanningReminder(assertNonBlank(args.id, 'id'), args.triggerAt)
+      if (!reminder) throw new Error('提醒不存在或已处理')
+      broadcastPlanningChanged(['todos', 'calendar_events', 'reminders'])
+      return jsonResult({ reminder })
+    },
+  }) as unknown as ToolDefinition)
+  // 23. acknowledge_reminder
+  planningTools.push(sdkModule.defineTool({
+    name: 'mcp__planning__acknowledge_reminder', label: '确认提醒',
+    description: '确认并关闭一个到期提醒，不会删除 Todo 或日程。仅在用户明确要求关闭提醒时使用。',
+    promptSnippet: '确认提醒。',
+    parameters: Type.Object({ id: Type.String() }),
+    async execute(_id: string, params: unknown) {
+      const reminder = acknowledgePlanningReminder(assertNonBlank((params as { id: string }).id, 'id'))
+      if (!reminder) throw new Error('提醒不存在或已处理')
+      broadcastPlanningChanged(['todos', 'calendar_events', 'reminders'])
+      return jsonResult({ reminder })
+    },
+  }) as unknown as ToolDefinition)
+  // 24. snooze_reminder
+  planningTools.push(sdkModule.defineTool({
+    name: 'mcp__planning__snooze_reminder', label: '推迟提醒',
+    description: '将未确认提醒推迟指定分钟数。',
+    promptSnippet: '推迟提醒。',
+    parameters: Type.Object({ id: Type.String(), minutes: Type.Number({ description: '推迟分钟数，1 到 10080' }) }),
+    async execute(_id: string, params: unknown) {
+      const args = params as { id: string; minutes: number }
+      const reminder = snoozePlanningReminder(assertNonBlank(args.id, 'id'), args.minutes)
+      if (!reminder) throw new Error('提醒不存在或已处理')
+      broadcastPlanningChanged(['todos', 'calendar_events', 'reminders'])
+      return jsonResult({ reminder })
+    },
+  }) as unknown as ToolDefinition)
+  // 25. delete_reminder
+  planningTools.push(sdkModule.defineTool({
+    name: 'mcp__planning__delete_reminder', label: '删除提醒',
+    description: '删除提醒记录。只在用户明确要求彻底删除提醒时使用。',
+    promptSnippet: '删除提醒。',
+    parameters: Type.Object({ id: Type.String() }),
+    async execute(_id: string, params: unknown) {
+      const deleted = deletePlanningReminder(assertNonBlank((params as { id: string }).id, 'id'))
+      if (deleted) broadcastPlanningChanged(['todos', 'calendar_events', 'reminders'])
+      return jsonResult({ deleted })
+    },
+  }) as unknown as ToolDefinition)
+
+  // 合并：内置工具（已包裹权限）+ AskUserQuestion + 运行时工具 + 协作工具 + Automation 工具 + Planning 工具 + MCP 工具
   // 关键：AskUserQuestion 必须经过 wrapToolWithPermission，
   // 这样 canUseTool 回调才能拦截它，发送 ask_user SSE 事件到前端，
   // 等待用户回答后注入 answers 字段到 updatedInput，再执行工具的 execute
@@ -1145,6 +1765,8 @@ ${output}` }],
     wrapToolWithPermission(installPackageTool as unknown as ToolDefinition, canUseTool),
     wrapToolWithPermission(runGitCommandTool as unknown as ToolDefinition, canUseTool),
     ...collaborationTools,
+    ...automationTools,
+    ...planningTools,
     ...mcpTools,
   ]
 
