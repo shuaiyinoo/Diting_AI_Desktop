@@ -1,26 +1,42 @@
 /**
  * Agent 模式状态管理
  *
- * 流式状态保存在 store 中，组件卸载不中断。
+ * 改造为支持多会话并行的状态隔离：
+ * - messagesBySession: 按 sessionId 索引的消息 Map
+ * - streamingSessions: 正在流式的 sessionId 集合
+ * - abortControllers: 按 sessionId 索引的 AbortController Map
+ *
+ * currentSessionId 从 tabStore.activeSessionId 派生，
+ * 切换 Tab 时自动切换到对应会话的数据。
  */
 
 import { defineStore } from 'pinia'
-import { ref, computed, reactive } from 'vue'
+import { ref, computed, reactive, watch } from 'vue'
 import { ipc } from '@/utils/ipcRenderer'
 import { ipcApiRoute } from '@/api'
+import { useTabStore } from './tab'
 
 export const useAgentStore = defineStore('agent', () => {
   // ===== State =====
   const sessions = ref([])
-  const currentSessionId = ref(null)
-  const messages = ref([])
-  const isStreaming = ref(false)
   const workspaceSlug = ref(null)
   const skills = ref([])
   const mcpServers = ref([])
 
-  // 流式控制（非响应式，不触发渲染）
-  let abortController = null
+  // 多会话隔离：消息按 sessionId 分组存储
+  const messagesBySession = ref({})
+
+  // 多会话隔离：流式状态按 sessionId 跟踪
+  const streamingSessions = ref(new Set())
+
+  // 多会话隔离：AbortController 按 sessionId 索引（非响应式）
+  const abortControllers = new Map()
+
+  // 多会话隔离：统计定时器按 sessionId 索引（非响应式）
+  const statsTimers = new Map()
+
+  // 消息轮询定时器（定时任务后端 headless 发送消息时使用，非响应式）
+  const pollingTimers = new Map()
 
   // ===== Blocks 持久化（按 sessionId 索引，使用 localStorage） =====
   const savedBlocks = ref({})
@@ -36,7 +52,6 @@ export const useAgentStore = defineStore('agent', () => {
   /** 保存 savedBlocks 到 localStorage */
   function persistSavedBlocks() {
     try {
-      // 只保存最近 20 条消息的 blocks，避免 localStorage 膨胀
       const entries = Object.entries(savedBlocks.value)
       const recent = entries.slice(-20)
       localStorage.setItem('agent:savedBlocks', JSON.stringify(Object.fromEntries(recent)))
@@ -50,15 +65,53 @@ export const useAgentStore = defineStore('agent', () => {
   const allDelegations = ref({})
 
   // ===== Token / 时间统计（每条助手消息独立） =====
-  const messageStats = ref({})  // key: messageId → { startTime, elapsed, inputTokens, outputTokens, cacheReadTokens, cacheWriteTokens }
-  let statsTimer = null
+  const messageStats = ref({})
 
   // ===== 待发送提示词（Todo 启动 Agent 时设置，AgentView 加载后消费） =====
-  const pendingPrompt = ref(null) // { sessionId, message, workspaceId }
+  const pendingPrompt = ref(null)
 
-  // ===== Getters =====
+  // ===== Getters（从 tabStore 派生当前会话） =====
+
+  /** 当前会话 ID：从 tabStore 的活跃标签派生 */
+  const currentSessionId = computed(() => {
+    const tabStore = useTabStore()
+    const tab = tabStore.activeTab
+    if (tab && tab.type === 'agent') return tab.sessionId
+    return null
+  })
+
+  /** 当前会话对象 */
   const currentSession = computed(() =>
     sessions.value.find((s) => s.id === currentSessionId.value),
+  )
+
+  /**
+   * 当前会话的消息列表
+   * 使用 ref 而非 computed：computed 在数组 push 时返回相同引用，
+   * Vue 会跳过下游更新，导致流式内容不实时显示。
+   * ref 在 push 时会触发更新，确保流式内容实时渲染。
+   */
+  const messages = ref([])
+
+  /**
+   * 同步当前会话的消息到 messages ref
+   * 当 currentSessionId 变化时触发，确保 messages ref 指向正确的会话消息数组
+   */
+  function syncMessages() {
+    const sid = currentSessionId.value
+    if (sid && messagesBySession.value[sid]) {
+      messages.value = messagesBySession.value[sid]
+    } else {
+      messages.value = []
+    }
+  }
+
+  // 监听 currentSessionId 变化，同步消息
+  watch(currentSessionId, () => syncMessages(), { immediate: true })
+
+  /** 当前会话是否正在流式输出 */
+  const isStreaming = computed(() =>
+    streamingSessions.value.has(currentSessionId.value),
   )
 
   const enabledSkills = computed(() =>
@@ -104,10 +157,27 @@ export const useAgentStore = defineStore('agent', () => {
     return null
   }
 
-  /** 选择会话 */
+  /**
+   * 选择会话：打开 Tab + 懒加载消息
+   * 切换会话时不清空已有消息，而是从 Map 中取对应会话的数据
+   */
   async function selectSession(sessionId) {
-    currentSessionId.value = sessionId
-    messages.value = []
+    const tabStore = useTabStore()
+    const session = sessions.value.find((s) => s.id === sessionId)
+    const title = session?.title || 'Agent 会话'
+    tabStore.openSessionTab('agent', sessionId, title)
+
+    // 懒加载：如果该会话消息未加载过，则从后端加载
+    if (!messagesBySession.value[sessionId]) {
+      await loadMessages(sessionId)
+    }
+  }
+
+  /**
+   * 加载指定会话的消息（写入 messagesBySession Map）
+   * @param {string} sessionId - 会话 ID
+   */
+  async function loadMessages(sessionId) {
     try {
       const res = await ipc.invoke('controller/piAgent/sessionOperation', {
         action: 'getMessages',
@@ -115,9 +185,8 @@ export const useAgentStore = defineStore('agent', () => {
       })
       if (res.code === 0 && res.data) {
         let assistantCount = 0
-        messages.value = res.data.map((m) => {
+        const loaded = res.data.map((m) => {
           const role = String(m.role).toLowerCase()
-          // 恢复持久化的 blocks（使用 sessionId + assistant 索引匹配）
           let blocks = []
           if (role === 'assistant') {
             const blockKey = `${sessionId}:assistant:${assistantCount}`
@@ -133,6 +202,11 @@ export const useAgentStore = defineStore('agent', () => {
             time: m.timestamp ? formatTime(new Date(m.timestamp)) : (m.time || ''),
           }
         })
+        messagesBySession.value[sessionId] = loaded
+        // 同步到 messages ref
+        if (sessionId === currentSessionId.value) {
+          messages.value = loaded
+        }
       }
     } catch (err) {
       console.error('[AgentStore] 加载会话消息失败:', err)
@@ -148,10 +222,29 @@ export const useAgentStore = defineStore('agent', () => {
       })
       if (res.code === 0) {
         sessions.value = sessions.value.filter((s) => s.id !== sessionId)
-        if (currentSessionId.value === sessionId) {
-          currentSessionId.value = null
+        // 清理该会的消息
+        delete messagesBySession.value[sessionId]
+        // 如果删除的是当前会话，清空 messages ref
+        if (sessionId === currentSessionId.value) {
           messages.value = []
         }
+        // 清理 AbortController
+        if (abortControllers.has(sessionId)) {
+          abortControllers.get(sessionId).abort()
+          abortControllers.delete(sessionId)
+        }
+        // 清理统计定时器
+        if (statsTimers.has(sessionId)) {
+          clearInterval(statsTimers.get(sessionId))
+          statsTimers.delete(sessionId)
+        }
+        // 清理消息轮询定时器
+        stopMessagePolling(sessionId)
+        // 清理流式状态
+        streamingSessions.value.delete(sessionId)
+        // 关闭对应的 Tab
+        const tabStore = useTabStore()
+        tabStore.closeTab(sessionId)
       }
     } catch (err) {
       console.error('[AgentStore] 删除会话失败:', err)
@@ -160,7 +253,7 @@ export const useAgentStore = defineStore('agent', () => {
 
   /**
    * 发送消息（流式 SSE）
-   * 流式状态保存在 store 中，组件卸载不会中断。
+   * 支持多会话并行：每个会话有独立的消息列表和流式状态。
    * @param {Object} params - { text, sessionId, model, workspaceSlug, httpServerUrl, onScroll, onEvent }
    */
   async function sendMessage(params) {
@@ -177,8 +270,10 @@ export const useAgentStore = defineStore('agent', () => {
         })
         if (res.code === 0 && res.data) {
           sessions.value.unshift(res.data)
-          currentSessionId.value = res.data.id
           sessionId = res.data.id
+          // 通过 Tab 打开新创建的会话
+          const tabStore = useTabStore()
+          tabStore.openSessionTab('agent', sessionId, res.data.title || 'Agent 会话')
         }
       } catch (err) {
         console.error('[AgentStore] 创建 Agent 会话失败:', err)
@@ -186,8 +281,18 @@ export const useAgentStore = defineStore('agent', () => {
       }
     }
 
+    // 初始化该会话的消息数组（如果不存在）
+    if (!messagesBySession.value[sessionId]) {
+      messagesBySession.value[sessionId] = []
+    }
+    const sessionMessages = messagesBySession.value[sessionId]
+    // 同步到 messages ref（确保当前会话的消息变更能触发组件渲染）
+    if (sessionId === currentSessionId.value) {
+      messages.value = sessionMessages
+    }
+
     // 添加用户消息
-    messages.value.push({
+    sessionMessages.push({
       id: `msg-${Date.now()}`,
       role: 'user',
       content: text,
@@ -195,7 +300,8 @@ export const useAgentStore = defineStore('agent', () => {
       time: formatTime(new Date()),
     })
 
-    isStreaming.value = true
+    // 标记该会话为流式中
+    streamingSessions.value.add(sessionId)
 
     // 创建助手消息
     const assistantMsg = reactive({
@@ -206,10 +312,10 @@ export const useAgentStore = defineStore('agent', () => {
       pending: true,
       time: formatTime(new Date()),
     })
-    messages.value.push(assistantMsg)
+    sessionMessages.push(assistantMsg)
     onScroll?.()
 
-    // 为当前助手消息初始化统计（必须在 assistantMsg 定义之后）
+    // 为当前助手消息初始化统计
     const statsKey = assistantMsg.id
     messageStats.value[statsKey] = {
       startTime: Date.now(),
@@ -219,17 +325,21 @@ export const useAgentStore = defineStore('agent', () => {
       cacheReadTokens: 0,
       cacheWriteTokens: 0,
     }
-    if (statsTimer) clearInterval(statsTimer)
-    statsTimer = setInterval(() => {
+    // 按 sessionId 管理统计定时器
+    if (statsTimers.has(sessionId)) {
+      clearInterval(statsTimers.get(sessionId))
+    }
+    statsTimers.set(sessionId, setInterval(() => {
       const s = messageStats.value[statsKey]
       if (s) {
         s.elapsed = Math.floor((Date.now() - s.startTime) / 1000)
       }
-    }, 1000)
+    }, 1000))
 
     // SSE 请求
     const url = `${httpServerUrl}/${ipcApiRoute.piAgent.streamAgent}`
-    abortController = new AbortController()
+    const controller = new AbortController()
+    abortControllers.set(sessionId, controller)
 
     try {
       const response = await fetch(url, {
@@ -241,7 +351,7 @@ export const useAgentStore = defineStore('agent', () => {
           model,
           workspaceSlug: wsSlug || undefined,
         }),
-        signal: abortController.signal,
+        signal: controller.signal,
       })
 
       if (!response.ok || !response.body) {
@@ -262,33 +372,33 @@ export const useAgentStore = defineStore('agent', () => {
         while (separatorIndex >= 0) {
           const rawEvent = buffer.slice(0, separatorIndex)
           buffer = buffer.slice(separatorIndex + 2)
-          dispatchSseEvent(rawEvent, assistantMsg, onEvent)
+          dispatchSseEvent(rawEvent, assistantMsg, sessionId, onEvent)
           separatorIndex = buffer.indexOf('\n\n')
         }
-        // 用 requestAnimationFrame 节流滚动，避免阻塞页面
         if (onScroll) {
           requestAnimationFrame(() => onScroll())
         }
       }
 
       assistantMsg.pending = false
-      // 持久化 blocks 到 savedBlocks（不丢失执行过程）
-      // 使用 sessionId + 消息在数组中的位置作为 key，避免前后端 ID 不匹配
-      const msgIndex = messages.value.filter((m) => m.role === 'assistant').length - 1
+      // 持久化 blocks
+      const msgIndex = sessionMessages.filter((m) => m.role === 'assistant').length - 1
       const blockKey = `${sessionId}:assistant:${msgIndex}`
       if (assistantMsg.blocks.length > 0) {
         savedBlocks.value[blockKey] = JSON.parse(JSON.stringify(assistantMsg.blocks))
         persistSavedBlocks()
       }
       // 清理统计定时器
-      if (statsTimer) { clearInterval(statsTimer); statsTimer = null }
+      if (statsTimers.has(sessionId)) {
+        clearInterval(statsTimers.get(sessionId))
+        statsTimers.delete(sessionId)
+      }
       const s = messageStats.value[assistantMsg.id]
       if (s) s.elapsed = Math.floor((Date.now() - s.startTime) / 1000)
     } catch (err) {
       if (err?.name === 'AbortError') {
         assistantMsg.pending = false
-        // 持久化 blocks 即使是中止的情况
-        const msgIndex = messages.value.filter((m) => m.role === 'assistant').length - 1
+        const msgIndex = sessionMessages.filter((m) => m.role === 'assistant').length - 1
         const blockKey = `${sessionId}:assistant:${msgIndex}`
         if (assistantMsg.blocks.length > 0) {
           savedBlocks.value[blockKey] = JSON.parse(JSON.stringify(assistantMsg.blocks))
@@ -302,23 +412,25 @@ export const useAgentStore = defineStore('agent', () => {
         assistantMsg.content = `发送失败: ${err?.message || String(err)}`
       }
       // 清理统计定时器
-      if (statsTimer) { clearInterval(statsTimer); statsTimer = null }
+      if (statsTimers.has(sessionId)) {
+        clearInterval(statsTimers.get(sessionId))
+        statsTimers.delete(sessionId)
+      }
       const s = messageStats.value[assistantMsg.id]
       if (s) s.elapsed = Math.floor((Date.now() - s.startTime) / 1000)
     } finally {
-      isStreaming.value = false
-      abortController = null
+      streamingSessions.value.delete(sessionId)
+      abortControllers.delete(sessionId)
       onScroll?.()
     }
   }
 
-  /** 停止生成 */
+  /** 停止当前会话的生成 */
   function stopGeneration() {
-    if (abortController) {
-      abortController.abort()
-    }
-    // 通知后端停止所有协作子 Agent
     const sid = currentSessionId.value
+    if (sid && abortControllers.has(sid)) {
+      abortControllers.get(sid).abort()
+    }
     if (sid) {
       ipc.invoke('controller/piAgent/stopAllDelegations', { sessionId: sid }).catch(() => {})
     }
@@ -326,8 +438,12 @@ export const useAgentStore = defineStore('agent', () => {
 
   /**
    * 解析并分发单条 SSE 事件
+   * @param {string} rawEvent - 原始 SSE 事件字符串
+   * @param {Object} assistantMsg - 助手消息对象（reactive）
+   * @param {string} sessionId - 当前会话 ID
+   * @param {Function} onEvent - 事件回调
    */
-  function dispatchSseEvent(rawEvent, assistantMsg, onEvent) {
+  function dispatchSseEvent(rawEvent, assistantMsg, sessionId, onEvent) {
     const lines = rawEvent.split(/\r?\n/)
     let eventName = ''
     const dataLines = []
@@ -403,7 +519,6 @@ export const useAgentStore = defineStore('agent', () => {
 
       case 'tool_result': {
         const blocks = assistantMsg.blocks
-        // 优先按 toolCallId 匹配（精确），fallback 到最后一个 running 块
         const targetId = data.toolCallId
         let foundIdx = -1
         if (targetId) {
@@ -430,10 +545,10 @@ export const useAgentStore = defineStore('agent', () => {
         break
       }
 
-      // ===== Token 使用统计（更新到当前消息） =====
       case 'usage': {
-        // 找到当前正在流式的助手消息
-        const curMsg = messages.value.find((m) => m.role === 'assistant' && m.pending)
+        // 在当前会话的消息中查找正在流式的助手消息
+        const sessionMessages = messagesBySession.value[sessionId] || []
+        const curMsg = sessionMessages.find((m) => m.role === 'assistant' && m.pending)
         if (curMsg) {
           const s = messageStats.value[curMsg.id]
           if (s) {
@@ -455,14 +570,12 @@ export const useAgentStore = defineStore('agent', () => {
         assistantMsg.content += `\n\n[错误] ${data.message || '未知错误'}`
         break
 
-      // ===== 权限请求 / AskUser 请求 / 协作子 Agent 事件（交给组件处理） =====
       case 'permission_request':
       case 'ask_user':
         onEvent?.(eventName, data)
         break
 
       case 'delegation_update': {
-        // 按父会话 ID 分组存储
         const sid = data.sessionId
         if (!allDelegations.value[sid]) allDelegations.value[sid] = []
         const delegation = data.delegation
@@ -560,12 +673,92 @@ export const useAgentStore = defineStore('agent', () => {
     }
   }
 
+  // ===== 消息轮询（定时任务后端 headless 发送消息时使用） =====
+
+  /**
+   * 启动消息轮询
+   *
+   * 定时任务后端以 headless 模式发送消息（onEvent 不转发到前端），
+   * 前端无法订阅 SSE 流，只能通过定期 reload 持久化的消息来获取最新内容。
+   *
+   * 停止条件（满足任一）：
+   * - 连续 3 次轮询消息数量无变化，且已有助手回复
+   * - 超过最大持续时间（默认 5 分钟）
+   *
+   * @param {string} sessionId - 要轮询的会话 ID
+   * @param {Object} [options] - 可选参数
+   * @param {number} [options.interval=2000] - 轮询间隔（毫秒）
+   * @param {number} [options.maxDuration=300000] - 最大持续时间（毫秒）
+   */
+  function startMessagePolling(sessionId, options = {}) {
+    // 先停止已有的轮询
+    stopMessagePolling(sessionId)
+
+    const interval = options.interval ?? 2000
+    const maxDuration = options.maxDuration ?? 300_000
+
+    let stableCount = 0
+    let lastCount = 0
+    const startTime = Date.now()
+
+    // 标记为流式中（让 UI 显示「运行中」状态）
+    streamingSessions.value.add(sessionId)
+
+    const timer = setInterval(async () => {
+      // 超时检查
+      if (Date.now() - startTime > maxDuration) {
+        console.log(`[AgentStore] 轮询超时（${maxDuration / 1000}s），停止: ${sessionId}`)
+        stopMessagePolling(sessionId)
+        return
+      }
+
+      // 加载最新消息
+      await loadMessages(sessionId)
+      const currentMessages = messagesBySession.value[sessionId] || []
+      const currentCount = currentMessages.length
+
+      if (currentCount === lastCount) {
+        stableCount++
+        // 连续 3 次无新消息，且已有助手回复 → 认为已完成
+        if (stableCount >= 3 && currentCount > 0) {
+          const hasAssistantReply = currentMessages.some(
+            (m) => m.role === 'assistant' && m.content,
+          )
+          if (hasAssistantReply) {
+            console.log(`[AgentStore] 轮询检测到回复完成，停止: ${sessionId}`)
+            stopMessagePolling(sessionId)
+            return
+          }
+        }
+      } else {
+        // 有新消息，重置稳定计数
+        stableCount = 0
+        lastCount = currentCount
+      }
+    }, interval)
+
+    pollingTimers.set(sessionId, timer)
+    console.log(`[AgentStore] 启动消息轮询: ${sessionId}，间隔 ${interval}ms`)
+  }
+
+  /**
+   * 停止消息轮询
+   * @param {string} sessionId - 会话 ID
+   */
+  function stopMessagePolling(sessionId) {
+    if (pollingTimers.has(sessionId)) {
+      clearInterval(pollingTimers.get(sessionId))
+      pollingTimers.delete(sessionId)
+    }
+    // 移除流式状态
+    streamingSessions.value.delete(sessionId)
+  }
+
   return {
     // State
     sessions,
-    currentSessionId,
-    messages,
-    isStreaming,
+    messagesBySession,
+    streamingSessions,
     workspaceSlug,
     skills,
     mcpServers,
@@ -574,13 +767,17 @@ export const useAgentStore = defineStore('agent', () => {
     messageStats,
     pendingPrompt,
     // Getters
+    currentSessionId,
     currentSession,
+    messages,
+    isStreaming,
     enabledSkills,
     enabledMcpServers,
     // Actions
     loadSessions,
     createSession,
     selectSession,
+    loadMessages,
     deleteSession,
     sendMessage,
     stopGeneration,
@@ -589,6 +786,8 @@ export const useAgentStore = defineStore('agent', () => {
     loadMcpServers,
     toggleMcp,
     initSkills,
+    startMessagePolling,
+    stopMessagePolling,
   }
 })
 

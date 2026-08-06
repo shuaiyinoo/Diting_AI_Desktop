@@ -136,10 +136,14 @@
             <template v-for="project in ws.agentProjects" :key="project.id">
               <div
                 class="mb-item mb-item--project"
-                :class="{ 'mb-item--active': ws.currentAgentProjectId === project.id }"
-                @click="onSelectProject(project)"
+                :class="{ 'mb-item--expanded': expandedProjects.has(project.id) }"
+                @click="toggleProjectExpand(project)"
               >
-                <ProjectOutlined class="mb-item-icon" />
+                <!-- 展开/收缩箭头图标 -->
+                <component
+                  :is="expandedProjects.has(project.id) ? 'DownOutlined' : 'RightOutlined'"
+                  class="mb-item-icon mb-item-icon--toggle"
+                />
                 <!-- 双击编辑项目名称 -->
                 <input
                   v-if="editingType === 'project' && editingId === project.id"
@@ -164,36 +168,47 @@
                   <PlusOutlined />
                 </button>
               </div>
-              <!-- 该项目下的会话列表 -->
-              <div
-                v-for="sess in getProjectSessions(project.id)"
-                :key="sess.id"
-                class="mb-item mb-item--sub"
-                :class="{ 'mb-item--active': agent.currentSessionId === sess.id }"
-                @click="onSelectAgentSession(sess, project)"
-              >
-                <MessageOutlined class="mb-item-icon" />
-                <!-- 双击编辑会话名称 -->
-                <input
-                  v-if="editingType === 'session' && editingId === sess.id"
-                  ref="editInputRef"
-                  v-model="editingText"
-                  class="mb-edit-input"
-                  @click.stop
-                  @keydown.enter="saveSessionName(sess)"
-                  @keydown.escape="cancelEdit"
-                  @blur="saveSessionName(sess)"
-                />
-                <span
-                  v-else
-                  class="mb-item-text"
-                  @dblclick.stop="startEditSession(sess)"
-                >{{ sess.title || '未命名' }}</span>
-                <!-- 会话右侧删除按钮 -->
-                <button class="mb-delete-btn" @click.stop="onDeleteAgentSession(sess, project)">
-                  <DeleteOutlined />
-                </button>
-              </div>
+              <!-- 该项目下的会话列表（仅在展开时显示） -->
+              <template v-if="expandedProjects.has(project.id)">
+                <div
+                  v-for="sess in getVisibleSessions(project.id)"
+                  :key="sess.id"
+                  class="mb-item mb-item--sub"
+                  :class="{ 'mb-item--active': agent.currentSessionId === sess.id }"
+                  @click="onSelectAgentSession(sess, project)"
+                >
+                  <MessageOutlined class="mb-item-icon" />
+                  <!-- 双击编辑会话名称 -->
+                  <input
+                    v-if="editingType === 'session' && editingId === sess.id"
+                    ref="editInputRef"
+                    v-model="editingText"
+                    class="mb-edit-input"
+                    @click.stop
+                    @keydown.enter="saveSessionName(sess)"
+                    @keydown.escape="cancelEdit"
+                    @blur="saveSessionName(sess)"
+                  />
+                  <span
+                    v-else
+                    class="mb-item-text"
+                    @dblclick.stop="startEditSession(sess)"
+                  >{{ sess.title || '未命名' }}</span>
+                  <!-- 会话右侧删除按钮 -->
+                  <button class="mb-delete-btn" @click.stop="onDeleteAgentSession(sess, project)">
+                    <DeleteOutlined />
+                  </button>
+                </div>
+                <div v-if="getProjectSessions(project.id).length === 0" class="mb-empty mb-empty--sub">暂无会话</div>
+                <!-- 会话超过 3 个时显示「显示更多 / 收起」按钮 -->
+                <div
+                  v-if="getProjectSessions(project.id).length > 3"
+                  class="mb-session-toggle"
+                  @click.stop="toggleSessionListExpand(project.id)"
+                >
+                  {{ expandedSessionLists.has(project.id) ? '收起' : `显示更多 (${getProjectSessions(project.id).length - 3})` }}
+                </div>
+              </template>
             </template>
             <div v-if="!ws.agentProjectLoading && ws.agentProjects.length === 0" class="mb-empty">暂无项目</div>
           </div>
@@ -316,7 +331,8 @@ import {
   SettingOutlined,
   PlusOutlined,
   FolderOutlined,
-  ProjectOutlined,
+  DownOutlined,
+  RightOutlined,
   DeleteOutlined,
   ScheduleOutlined,
 } from '@ant-design/icons-vue'
@@ -325,12 +341,14 @@ import { ipcApiRoute } from '@/api'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useAgentStore } from '@/stores/agent'
 import { usePlanningStore } from '@/stores/planning'
+import { useTabStore } from '@/stores/tab'
 
 const router = useRouter()
 const route = useRoute()
 const ws = useWorkspaceStore()
 const agent = useAgentStore()
 const planning = usePlanningStore()
+const tabStore = useTabStore()
 
 // 使用 storeToRefs 确保 store 的 ref 在 HMR 后仍然保持响应式
 const { activeModule, selectedFolderId, selectedFile, selectedFileId } = storeToRefs(ws)
@@ -412,17 +430,18 @@ const recentItems = computed(() => {
       active: agent.currentSessionId === s.id,
       onClick: () => {
         agent.selectSession(s.id)
-        navigate('agent')
+        ws.setActiveModule('agent')
       },
     }))
   }
   return []
 })
 
-// ===== 路由同步 =====
+// ===== 路由同步（Tab 模式下跳过，避免覆盖 Tab 设置的 activeModule） =====
 watch(
   () => route.path,
   (path) => {
+    if (tabStore.tabMode) return
     if (path.startsWith('/file')) ws.setActiveModule('file')
     else if (path.startsWith('/planning')) ws.setActiveModule('planning')
     else if (path.startsWith('/skills')) ws.setActiveModule('skills')
@@ -433,12 +452,49 @@ watch(
   { immediate: true },
 )
 
+/**
+ * 导航函数
+ * - 工具页面（file/planning/skills/setting）：退出 Tab 模式 + 路由跳转
+ * - Chat/Agent：进入 Tab 模式，如果有当前会话则打开 Tab
+ */
 function navigate(key) {
   console.log('[MenuBar] navigate:', key)
+
+  // 工具页面：退出 Tab 模式，走路由
+  if (['file', 'planning', 'skills', 'setting'].includes(key)) {
+    tabStore.exitTabMode()
+    ws.setActiveModule(key)
+    const map = { file: '/file', planning: '/planning', skills: '/skills', setting: '/setting' }
+    if (map[key]) {
+      router.push(map[key]).catch(err => console.error('[MenuBar] router.push 失败:', err))
+    }
+    return
+  }
+
+  // Chat/Agent：进入 Tab 模式
   ws.setActiveModule(key)
-  const map = { file: '/file', planning: '/planning', skills: '/skills', chat: '/chat', agent: '/agent', setting: '/setting' }
-  if (map[key]) {
-    router.push(map[key]).catch(err => console.error('[MenuBar] router.push 失败:', err))
+
+  if (key === 'chat') {
+    // 如果有当前会话，打开 Tab
+    const sessionId = ws.currentChatSessionId
+    if (sessionId) {
+      const session = ws.chatSessions.find(s => s.id === sessionId)
+      tabStore.openSessionTab('chat', sessionId, session?.title || 'Chat')
+    } else {
+      tabStore.enterTabMode()
+    }
+  } else if (key === 'agent') {
+    // Agent 的 selectSession 会自动 openSessionTab
+    const sessionId = agent.currentSessionId
+    if (sessionId) {
+      // Tab 已经存在或会被 selectSession 打开
+      const session = agent.sessions.find(s => s.id === sessionId)
+      if (session) {
+        tabStore.openSessionTab('agent', sessionId, session.title || 'Agent 会话')
+      }
+    } else {
+      tabStore.enterTabMode()
+    }
   }
 }
 
@@ -450,11 +506,13 @@ function onSelectFolder(folderId) {
   selectedFileId.value = null
 }
 
-// 展开模式下点击 Chat 会话
+// 展开模式下点击 Chat 会话：进入 Tab 模式
 function onSelectChatSession(sessionId) {
   console.log('[MenuBar] onSelectChatSession:', sessionId)
   ws.selectChatSession(sessionId)
-  navigate('chat')
+  const session = ws.chatSessions.find(s => s.id === sessionId)
+  tabStore.openSessionTab('chat', sessionId, session?.title || 'Chat')
+  ws.setActiveModule('chat')
 }
 
 async function onAddFolder() {
@@ -476,7 +534,12 @@ async function onAddFolder() {
 
 async function onCreateChat() {
   await ws.createChatSession()
-  navigate('chat')
+  // 创建后自动打开新会话的 Tab
+  if (ws.currentChatSessionId) {
+    const session = ws.chatSessions.find(s => s.id === ws.currentChatSessionId)
+    tabStore.openSessionTab('chat', ws.currentChatSessionId, session?.title || '新会话')
+  }
+  ws.setActiveModule('chat')
 }
 
 /** 删除 Chat 会话（带确认弹窗） */
@@ -496,10 +559,14 @@ function onDeleteChatSession(session) {
         if (res.code === 0) {
           // 从列表中移除该会话
           ws.chatSessions = ws.chatSessions.filter((s) => s.id !== session.id)
+          // 关闭对应的 Tab
+          tabStore.closeTab(session.id)
           // 如果删除的是当前选中的会话，选中最新的会话
           if (ws.currentChatSessionId === session.id) {
             if (ws.chatSessions.length > 0) {
               ws.selectChatSession(ws.chatSessions[0].id)
+              const newSession = ws.chatSessions[0]
+              tabStore.openSessionTab('chat', newSession.id, newSession.title || 'Chat')
             } else {
               ws.currentChatSessionId = null
             }
@@ -518,7 +585,7 @@ function onDeleteChatSession(session) {
 
 async function onCreateProject() {
   await ws.createAgentProject()
-  navigate('agent')
+  ws.setActiveModule('agent')
 }
 
 // ===== 双击编辑名称 =====
@@ -613,25 +680,86 @@ async function saveSessionName(sess) {
   }
 }
 
-/** 选中 Agent 项目 */
-function onSelectProject(project) {
+// ===== 项目展开/收缩状态 =====
+const expandedProjects = ref(new Set())
+
+// ===== 会话列表「显示更多」状态（按 projectId 索引） =====
+const expandedSessionLists = ref(new Set())
+
+/** 单个项目最多默认显示的会话数 */
+const SESSION_PREVIEW_LIMIT = 3
+
+/** 监听项目列表变化，默认展开所有项目 */
+watch(() => ws.agentProjects, (projects) => {
+  if (projects && projects.length > 0) {
+    const allIds = new Set(projects.map((p) => p.id))
+    // 保留已有的展开状态，同时将新项目也默认展开
+    const merged = new Set([...expandedProjects.value, ...allIds])
+    expandedProjects.value = merged
+  }
+}, { immediate: true, deep: true })
+
+/** 单击项目：展开/收缩会话列表，同时选中该项目 */
+function toggleProjectExpand(project) {
+  // 选中该项目
   ws.selectAgentProject(project.id)
-  navigate('agent')
+  ws.setActiveModule('agent')
+  // 切换展开状态
+  if (expandedProjects.value.has(project.id)) {
+    expandedProjects.value.delete(project.id)
+  } else {
+    expandedProjects.value.add(project.id)
+  }
+  // 触发响应式更新
+  expandedProjects.value = new Set(expandedProjects.value)
+}
+
+/** 确保指定项目处于展开状态 */
+function ensureProjectExpanded(projectId) {
+  if (!expandedProjects.value.has(projectId)) {
+    expandedProjects.value.add(projectId)
+    expandedProjects.value = new Set(expandedProjects.value)
+  }
+}
+
+/** 获取项目下可见的会话列表（收缩时只返回前 3 个） */
+function getVisibleSessions(projectId) {
+  const all = getProjectSessions(projectId)
+  if (expandedSessionLists.value.has(projectId)) {
+    return all
+  }
+  return all.slice(0, SESSION_PREVIEW_LIMIT)
+}
+
+/** 切换会话列表的「显示更多 / 收起」状态 */
+function toggleSessionListExpand(projectId) {
+  if (expandedSessionLists.value.has(projectId)) {
+    expandedSessionLists.value.delete(projectId)
+  } else {
+    expandedSessionLists.value.add(projectId)
+  }
+  expandedSessionLists.value = new Set(expandedSessionLists.value)
 }
 
 /** 为指定项目创建 Agent 会话 */
 async function onCreateAgentSession(project) {
+  ws.selectAgentProject(project.id)
+  // 确保项目展开，方便看到新建的会话
+  ensureProjectExpanded(project.id)
   await agent.createSession(undefined, project.id)
-  navigate('agent')
+  // createSession 内部会调用 selectSession，进而 openSessionTab
+  ws.setActiveModule('agent')
 }
 
-/** 点击会话时：选中所属项目 + 选中会话 + 跳转 */
+/** 点击会话时：选中所属项目 + 选中会话 + 打开 Tab */
 function onSelectAgentSession(sess, project) {
   // 选中会话所属的项目
   ws.selectAgentProject(project.id)
-  // 选中会话（更新 agent store，Agent 视图会 watch 到）
+  // 确保项目展开
+  ensureProjectExpanded(project.id)
+  // selectSession 会打开 Tab 并懒加载消息
   agent.selectSession(sess.id)
-  navigate('agent')
+  ws.setActiveModule('agent')
 }
 
 /** 删除项目（带确认弹窗） */
@@ -682,9 +810,11 @@ function onDeleteAgentSession(sess, project) {
         if (res.code === 0) {
           // 从 agent store 中移除该会话
           agent.sessions = agent.sessions.filter((s) => s.id !== sess.id)
+          // 清理该会话的消息和 Tab
+          delete agent.messagesBySession[sess.id]
+          tabStore.closeTab(sess.id)
           // 如果删除的是当前选中的会话，选中最新的会话
           if (agent.currentSessionId === sess.id) {
-            agent.currentSessionId = null
             await selectNewestSession()
           }
           message.success('会话已删除')
@@ -706,13 +836,15 @@ async function selectNewestSession() {
   // 选中最新的项目（列表第一个，因为新创建的项目 unshift 到头部）
   const newestProject = ws.agentProjects[0]
   ws.selectAgentProject(newestProject.id)
+  // 确保项目展开
+  ensureProjectExpanded(newestProject.id)
   // 获取该项目下的会话列表
   const projectSessions = getProjectSessions(newestProject.id)
   if (projectSessions.length > 0) {
-    // 选中最新的会话（列表第一个）
+    // 选中最新的会话（列表第一个），selectSession 会自动 openSessionTab
     agent.selectSession(projectSessions[0].id)
   }
-  navigate('agent')
+  ws.setActiveModule('agent')
 }
 
 function getFolderName(path) {
@@ -958,13 +1090,19 @@ onMounted(() => {
     }
   }
 
-  // 项目名称项：选中时只保留左侧竖线，去除蓝色底色
-  &.mb-item--project.mb-item--active {
-    background: transparent;
-
-    &:hover {
-      background: var(--bg-hover);
+  // 项目名称项：不显示蓝色选中标识，使用展开/收缩图标代替
+  &.mb-item--project {
+    // 展开状态：加粗文字
+    &.mb-item--expanded {
+      color: var(--text-primary);
+      font-weight: 600;
     }
+  }
+
+  // 展开/收缩箭头图标
+  .mb-item-icon--toggle {
+    font-size: 12px;
+    transition: transform 0.2s ease;
   }
 
   &.mb-item--sub {
@@ -1008,6 +1146,25 @@ onMounted(() => {
   font-size: 12px;
   color: var(--text-muted);
   text-align: center;
+
+  &--sub {
+    padding: 6px 8px 6px 28px;
+    text-align: left;
+  }
+}
+
+// 会话「显示更多 / 收起」按钮
+.mb-session-toggle {
+  padding: 4px 8px 4px 28px;
+  font-size: 12px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.15s ease;
+  user-select: none;
+
+  &:hover {
+    color: var(--accent);
+  }
 }
 
 // 删除按钮（项目左侧 / 会话右侧）

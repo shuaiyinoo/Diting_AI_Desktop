@@ -3,11 +3,11 @@
     <div class="chat-panel">
       <!-- ========== 顶部工具栏 ========== -->
       <div class="chat-toolbar">
-        <span class="chat-toolbar__title">{{ ws.currentChatSession?.title || 'Chat' }}</span>
+        <span class="chat-toolbar__title">{{ currentSessionTitle }}</span>
       </div>
 
       <!-- ========== 消息列表区域 ========== -->
-      <div class="chat-messages" ref="messagesRef">
+      <div class="chat-messages" ref="messagesRef" @scroll="onMessagesScroll">
         <!-- 空状态 -->
         <div v-if="messages.length === 0 && !isStreaming" class="chat-empty">
           <div class="chat-empty__icon">
@@ -167,28 +167,51 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
-import { message } from 'ant-design-vue'
+import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { ipc } from '@/utils/ipcRenderer'
 import { ipcApiRoute } from '@/api'
 import { useWorkspaceStore } from '@/stores/workspace'
+import { useChatStore } from '@/stores/chat'
+import { useTabStore } from '@/stores/tab'
 import MarkdownRender from 'markstream-vue'
 
-const ws = useWorkspaceStore()
+const props = defineProps({
+  /** 会话 ID，由 TabContent 传入 */
+  sessionId: { type: String, default: null },
+})
 
-// ========== HTTP 服务器地址（动态加载，与 QA 模块一致） ==========
+const ws = useWorkspaceStore()
+const chatStore = useChatStore()
+const tabStore = useTabStore()
+
+// 当 prop.sessionId 存在时，确保 chat store 选中该会话
+watch(() => props.sessionId, (sid) => {
+  if (sid && chatStore.currentSessionId !== sid) {
+    // 通过 Tab 激活该会话，触发 store 中 currentSessionId 计算属性更新
+    tabStore.activateTab(sid)
+  }
+}, { immediate: false })
+
+// 当前会话 ID：从 chat store 派生（store 又从 tabStore 派生）
+const currentSessionId = computed(() => chatStore.currentSessionId || props.sessionId)
+
+// ========== HTTP 服务器地址（动态加载） ==========
 const httpServerUrl = ref('http://127.0.0.1:7071')
 
 // ========== 模型选择 ==========
 const selectedModel = ref(null)
 const availableModels = ref([])
 
-// ========== 会话消息 ==========
-const messages = ref([])
+// ========== 会话消息（全部使用 chat store） ==========
+const messages = computed(() => chatStore.messages)
+const isStreaming = computed(() => chatStore.isStreaming)
 const inputText = ref('')
-const isStreaming = ref(false)
 const messagesRef = ref(null)
 const inputFocused = ref(false)
+// 滚动追踪：用户是否处于消息列表底部
+const isAtBottom = ref(true)
+// 会话切换标记：切换后等待消息加载完成再滚动到底部
+let pendingScrollToBottom = false
 
 // ========== 浮动指示器：用户消息导航 ==========
 const railHoverIdx = ref(-1)
@@ -201,7 +224,6 @@ const userMessages = computed(() =>
 /** 悬浮预览偏移量：跟随当前 bar 垂直位置 */
 const railPreviewOffset = computed(() => {
   if (railHoverIdx.value < 0) return 0
-  // 横线：高度 3px + gap 6px = 9px 间距，加 padding-top 8px
   const spacing = 9
   const padding = 8
   return padding + railHoverIdx.value * spacing
@@ -218,32 +240,51 @@ function jumpToMessage(msgId) {
   }
 }
 
-// AbortController 用于支持取消请求
-let abortController = null
+// ========== 会话标题 ==========
+const currentSessionTitle = computed(() => {
+  if (currentSessionId.value) {
+    const session = ws.chatSessions.find(s => s.id === currentSessionId.value)
+    return session?.title || 'Chat'
+  }
+  return 'Chat'
+})
 
-// 监听 MenuBar 中会话选中变化
-watch(() => ws.currentChatSessionId, (sessionId) => {
+// 监听会话切换：加载消息 + 设置滚动标记
+watch(() => currentSessionId.value, async (sessionId) => {
   if (sessionId) {
-    loadMessages(sessionId)
-  } else {
-    messages.value = []
+    // 如果 store 中没有该会话的消息，则从后端加载
+    if (!chatStore.messagesBySession[sessionId]) {
+      await chatStore.loadMessages(sessionId)
+    }
+    pendingScrollToBottom = true
+    await nextTick()
+    scrollToBottom(true)
+  }
+}, { immediate: false })
+
+// 监听消息变化：会话切换后消息加载完成时，强制滚动到底部
+watch(() => messages.value.length, async () => {
+  if (pendingScrollToBottom && messages.value.length > 0) {
+    pendingScrollToBottom = false
+    isAtBottom.value = true
+    await nextTick()
+    scrollToBottom(true)
   }
 })
 
 onMounted(async () => {
   await loadHttpServerUrl()
   await loadEnabledModel()
-  if (ws.currentChatSessionId) {
-    await loadMessages(ws.currentChatSessionId)
+  if (currentSessionId.value) {
+    // 如果 store 中没有该会话的消息，则从后端加载
+    if (!chatStore.messagesBySession[currentSessionId.value]) {
+      await chatStore.loadMessages(currentSessionId.value)
+    }
+    await scrollToBottom(true)
   }
 })
 
-onUnmounted(() => {
-  // 组件卸载时取消进行中的请求
-  if (abortController) {
-    abortController.abort()
-  }
-})
+// onUnmounted 不再 abort，流式请求在 store 中继续运行
 
 /** 动态获取 HTTP 服务器地址 */
 async function loadHttpServerUrl() {
@@ -271,214 +312,50 @@ async function loadEnabledModel() {
   }
 }
 
-async function loadMessages(sessionId) {
-  messages.value = []
-  try {
-    const res = await ipc.invoke(ipcApiRoute.assistant.getConversationContext, {
-      sessionId,
-      recentLimit: 50,
-    })
-    if (res.code === 0 && res.data?.recentMessages) {
-      messages.value = res.data.recentMessages.map((m) => ({
-        id: m.messageId ?? m.id,
-        role: String(m.role).toLowerCase(),
-        content: m.content,
-        pending: false,
-        time: m.createdAt ? formatTime(new Date(m.createdAt)) : '',
-      }))
-    }
-  } catch (err) {
-    console.error('[chat] 加载对话上下文失败:', err)
-  }
-  await scrollToBottom()
-}
-
 /** Enter 发送 / Shift+Enter 换行 */
 function onEnterKey(e) {
   if (e.shiftKey) {
-    // Shift+Enter：插入换行，不阻止默认行为
     return
   }
   e.preventDefault()
   sendMessage()
 }
 
+/** 发送消息：委托给 chatStore.sendMessage */
 async function sendMessage() {
   const text = inputText.value.trim()
   if (!text || isStreaming.value) return
-
-  // 获取或创建会话
-  let sessionId = ws.currentChatSessionId
-  if (!sessionId) {
-    const session = await ws.createChatSession()
-    sessionId = session?.id
-    if (!sessionId) {
-      console.error('[chat] 创建会话失败，sessionId 为空')
-      return
-    }
-  }
-
-  // 添加用户消息
-  const now = new Date()
-  messages.value.push({
-    id: `msg-${Date.now()}`,
-    role: 'user',
-    content: text,
-    time: formatTime(now),
-  })
   inputText.value = ''
-  isStreaming.value = true
-
-  // 使用 reactive 包裹助手消息，确保流式更新触发视图重渲染
-  const assistantMsg = reactive({
-    id: `msg-${Date.now()}-ai`,
-    role: 'assistant',
-    content: '',
-    pending: true,
-    time: formatTime(now),
+  await chatStore.sendMessage({
+    text,
+    httpServerUrl: httpServerUrl.value,
+    onScroll: () => scrollToBottom(),
   })
-  messages.value.push(assistantMsg)
-  await scrollToBottom()
-
-  // 通过 HTTP SSE 调用 streamChat
-  const url = `${httpServerUrl.value}/${ipcApiRoute.assistant.streamChat}`
-  abortController = new AbortController()
-
-  try {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sessionId, message: text, toolMode: 'CHAT' }),
-      signal: abortController.signal,
-    })
-
-    if (!response.ok || !response.body) {
-      const errText = await response.text().catch(() => '请求失败')
-      throw new Error(errText || `HTTP ${response.status}`)
-    }
-
-    const reader = response.body.getReader()
-    const decoder = new TextDecoder('utf-8')
-    let buffer = ''
-
-    while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
-
-      buffer += decoder.decode(value, { stream: true })
-      // SSE 事件以 \n\n 分隔
-      let separatorIndex = buffer.indexOf('\n\n')
-      while (separatorIndex >= 0) {
-        const rawEvent = buffer.slice(0, separatorIndex)
-        buffer = buffer.slice(separatorIndex + 2)
-        dispatchSseEvent(rawEvent, assistantMsg)
-        separatorIndex = buffer.indexOf('\n\n')
-      }
-      await scrollToBottom()
-    }
-
-    // 流结束
-    assistantMsg.pending = false
-  } catch (err) {
-    if (err?.name === 'AbortError') {
-      assistantMsg.pending = false
-      // 用户主动取消，不显示错误
-      if (!assistantMsg.content) {
-        assistantMsg.content = '已停止生成'
-      }
-    } else {
-      console.error('[chat] sendMessage 异常:', err)
-      assistantMsg.content = `发送失败: ${err?.message || String(err)}`
-      message.error('发送失败: ' + (err?.message || String(err)))
-    }
-  } finally {
-    isStreaming.value = false
-    abortController = null
-  }
-
-  await scrollToBottom()
 }
 
 /** 停止生成 */
 function stopGeneration() {
-  if (abortController) {
-    abortController.abort()
-  }
+  chatStore.stopGeneration()
 }
 
-/**
- * 解析并分发单条 SSE 事件
- */
-function dispatchSseEvent(rawEvent, assistantMsg) {
-  const lines = rawEvent.split(/\r?\n/)
-  let eventName = ''
-  const dataLines = []
-
-  for (const line of lines) {
-    if (line.startsWith('event:')) {
-      eventName = line.slice(6).trim()
-      continue
+/** 智能滚动：仅在用户已处于底部时自动滚动 */
+let scrollRafId = null
+async function scrollToBottom(force = false) {
+  if (!force && !isAtBottom.value) return
+  if (scrollRafId) return
+  scrollRafId = requestAnimationFrame(() => {
+    scrollRafId = null
+    if (messagesRef.value) {
+      messagesRef.value.scrollTop = messagesRef.value.scrollHeight
     }
-    if (line.startsWith('data:')) {
-      dataLines.push(line.slice(5).trim())
-    }
-  }
-
-  if (dataLines.length === 0) return
-  const rawData = dataLines.join('\n')
-
-  switch (eventName) {
-    case 'start':
-      break
-    case 'token':
-      try {
-        const data = JSON.parse(rawData)
-        if (data.delta) {
-          assistantMsg.content += data.delta
-        }
-      } catch {
-        assistantMsg.content += rawData
-      }
-      break
-    case 'complete':
-      try {
-        const data = JSON.parse(rawData)
-        if (data.reply && !assistantMsg.content) {
-          assistantMsg.content = data.reply
-        }
-      } catch {
-        // 忽略解析失败
-      }
-      break
-    case 'error':
-      try {
-        const data = JSON.parse(rawData)
-        assistantMsg.content = `错误: ${data.error || rawData}`
-      } catch {
-        assistantMsg.content = `错误: ${rawData}`
-      }
-      break
-    default:
-      break
-  }
+  })
 }
 
-async function scrollToBottom() {
-  await nextTick()
-  if (messagesRef.value) {
-    messagesRef.value.scrollTop = messagesRef.value.scrollHeight
-  }
-}
-
-/** 格式化时间为 YYYY-MM-DD HH:mm:ss */
-function formatTime(date) {
-  const y = date.getFullYear()
-  const mo = String(date.getMonth() + 1).padStart(2, '0')
-  const d = String(date.getDate()).padStart(2, '0')
-  const h = String(date.getHours()).padStart(2, '0')
-  const mi = String(date.getMinutes()).padStart(2, '0')
-  const s = String(date.getSeconds()).padStart(2, '0')
-  return `${y}-${mo}-${d} ${h}:${mi}:${s}`
+/** 监听消息列表滚动，更新 isAtBottom */
+function onMessagesScroll() {
+  if (!messagesRef.value) return
+  const el = messagesRef.value
+  isAtBottom.value = el.scrollHeight - el.scrollTop - el.clientHeight < 30
 }
 </script>
 

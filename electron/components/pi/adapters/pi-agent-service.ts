@@ -13,6 +13,7 @@ import type { AgentSessionEvent, AgentSessionEventListener, Skill, ToolDefinitio
 import {
   getAgentSessionsDir,
   getAgentSessionsIndexPath,
+  getAgentWorkspacePath,
   getWorkspaceSkillsDir,
   getWorkspaceClaudeMdPath,
   getSdkConfigDir,
@@ -169,6 +170,15 @@ export function createSession(input: { title?: string; channelId?: string; works
   if (!existsSync(sessionsDir)) mkdirSync(sessionsDir, { recursive: true })
   const sessionFile = join(sessionsDir, `${id}.jsonl`)
   writeFileSync(sessionFile, '', 'utf-8')
+
+  // 创建会话工作目录（用于存放会话级文件）
+  if (input.workspaceId) {
+    const sessionDir = join(getAgentWorkspacePath(input.workspaceId), id)
+    if (!existsSync(sessionDir)) {
+      mkdirSync(sessionDir, { recursive: true })
+      logger.info(`[Pi Agent] 已创建会话工作目录: ${sessionDir}`)
+    }
+  }
 
   logger.info(`[Pi Agent] 已创建会话: ${id}`)
   return session

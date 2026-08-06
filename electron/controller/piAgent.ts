@@ -36,6 +36,8 @@ import {
   createWorkspace,
   updateWorkspace,
   deleteWorkspace,
+  attachDirectoryToWorkspace,
+  detachDirectoryFromWorkspace,
 } from '../components/pi/adapters/workspace-manager'
 import {
   getAgentWorkspacePath,
@@ -450,17 +452,22 @@ class PiAgentController {
             projectPath: args.projectPath,
             isBlank: args.isBlank,
           })
-          return { code: 0, data: workspace }
+          return { code: 0, data: { ...workspace, resolvedPath: workspace.projectPath || getProjectFilesPath(workspace.id) } }
         }
         case 'list': {
           const workspaces = listWorkspaces()
-          return { code: 0, data: workspaces }
+          // 附加解析后的项目路径（空白项目返回 workspace-files 托管路径）
+          const withPath = workspaces.map((ws) => ({
+            ...ws,
+            resolvedPath: ws.projectPath || getProjectFilesPath(ws.id),
+          }))
+          return { code: 0, data: withPath }
         }
         case 'get': {
           if (!args.id) return { code: -1, message: '缺少 id' }
           const workspace = getWorkspace(args.id)
           if (!workspace) return { code: -1, message: '工作区不存在' }
-          return { code: 0, data: workspace }
+          return { code: 0, data: { ...workspace, resolvedPath: workspace.projectPath || getProjectFilesPath(workspace.id) } }
         }
         case 'update': {
           if (!args.id) return { code: -1, message: '缺少 id' }
@@ -470,7 +477,7 @@ class PiAgentController {
             projectPath: args.projectPath,
           })
           if (!workspace) return { code: -1, message: '工作区不存在' }
-          return { code: 0, data: workspace }
+          return { code: 0, data: { ...workspace, resolvedPath: workspace.projectPath || getProjectFilesPath(workspace.id) } }
         }
         case 'delete': {
           if (!args.id) return { code: -1, message: '缺少 id' }
@@ -535,16 +542,20 @@ class PiAgentController {
   }
 
   /**
-   * 文件面板管理（列文件/添加文件）。
+   * 文件面板管理（列文件/添加文件/读取文件）。
    *
    * - list：列出项目文件或会话文件
    * - add：弹窗选择文件并复制到项目文件目录
+   * - read：读取文件内容（文本/二进制），用于文件查看器
    */
   async fileOperation(args: {
-    action: 'list' | 'add'
+    action: 'list' | 'add' | 'read' | 'attachFolder' | 'detachFolder' | 'listAttachedDir' | 'listAllFiles'
     workspaceId?: string
     sessionId?: string
     mode?: 'project' | 'session'
+    filePath?: string
+    /** 附加文件夹路径（attachFolder 时前端传入）或附加目录绝对路径（detachFolder/listAttachedDir 时传入） */
+    folderPath?: string
   }): Promise<{ code: number; message?: string; data?: unknown }> {
     try {
       const mode = args.mode || 'project'
@@ -563,14 +574,18 @@ class PiAgentController {
               : (workspace.projectPath || getProjectFilesPath(workspace.id))
 
             const files = this.listFilesRecursive(targetDir, '')
-            return { code: 0, data: files }
+            // 返回项目文件 + 附加目录列表
+            return { code: 0, data: { files, attachedDirs: workspace.attachedDirectories ?? [] } }
           } else {
             // 会话文件模式：列出会话工作目录下的文件
             if (!args.sessionId) return { code: -1, message: '缺少 sessionId' }
             const sessionDir = join(getAgentWorkspacePath(args.workspaceId || ''), args.sessionId)
-            if (!existsSync(sessionDir)) return { code: 0, data: [] }
+            // 确保会话目录存在
+            if (!existsSync(sessionDir)) {
+              mkdirSync(sessionDir, { recursive: true })
+            }
             const files = this.listFilesRecursive(sessionDir, '')
-            return { code: 0, data: files }
+            return { code: 0, data: { files, attachedDirs: [], resolvedPath: sessionDir } }
           }
         }
 
@@ -579,6 +594,11 @@ class PiAgentController {
           const workspace = getWorkspace(args.workspaceId)
           if (!workspace) return { code: -1, message: '工作区不存在' }
 
+          // 会话模式需要 sessionId
+          if (mode === 'session' && !args.sessionId) {
+            return { code: -1, message: '缺少 sessionId' }
+          }
+
           // 弹窗选择文件
           const filePaths = dialog.showOpenDialogSync({
             title: '选择要添加的文件',
@@ -586,11 +606,15 @@ class PiAgentController {
           })
 
           if (!filePaths || !filePaths.length) {
-            return { code: 0, message: '用户取消选择', data: [] }
+            return { code: 0, message: '用户取消选择', data: { files: [], attachedDirs: workspace.attachedDirectories ?? [] } }
           }
 
-          // 复制到 workspace-files 目录
-          const targetDir = getProjectFilesPath(workspace.id)
+          // 根据模式决定目标目录
+          // 项目模式：复制到 workspace-files 目录
+          // 会话模式：复制到会话工作目录
+          const targetDir = mode === 'session'
+            ? join(getAgentWorkspacePath(args.workspaceId), args.sessionId!)
+            : getProjectFilesPath(workspace.id)
           if (!existsSync(targetDir)) {
             mkdirSync(targetDir, { recursive: true })
           }
@@ -601,12 +625,113 @@ class PiAgentController {
             const destPath = join(targetDir, fileName)
             copyFileSync(srcPath, destPath)
             addedFiles.push(fileName)
-            logger.info(`[PiAgentController] 已添加文件: ${fileName} → ${destPath}`)
+            logger.info(`[PiAgentController] 已添加文件(${mode}): ${fileName} → ${destPath}`)
           }
 
           // 返回更新后的文件列表
           const files = this.listFilesRecursive(targetDir, '')
-          return { code: 0, data: files, message: `已添加 ${addedFiles.length} 个文件` }
+          return { code: 0, data: { files, attachedDirs: workspace.attachedDirectories ?? [] }, message: `已添加 ${addedFiles.length} 个文件` }
+        }
+
+                case 'read': {
+          // 读取文件内容：根据 mode 解析文件路径
+          if (!args.filePath) return { code: -1, message: '缺少 filePath' }
+
+          let baseDir: string
+          if (args.folderPath) {
+            // 附加目录文件：folderPath 为附加目录的绝对路径
+            baseDir = args.folderPath
+          } else if (mode === 'project') {
+            if (!args.workspaceId) return { code: -1, message: '缺少 workspaceId' }
+            const workspace = getWorkspace(args.workspaceId)
+            if (!workspace) return { code: -1, message: '工作区不存在' }
+            baseDir = workspace.isBlank
+              ? getProjectFilesPath(workspace.id)
+              : (workspace.projectPath || getProjectFilesPath(workspace.id))
+          } else {
+            if (!args.sessionId) return { code: -1, message: '缺少 sessionId' }
+            baseDir = join(getAgentWorkspacePath(args.workspaceId || ''), args.sessionId)
+          }
+
+          const fullPath = join(baseDir, args.filePath)
+          if (!existsSync(fullPath)) return { code: -1, message: '文件不存在' }
+
+          const stat = statSync(fullPath)
+          const ext = args.filePath.split('.').pop()?.toLowerCase() || ''
+
+          // 二进制文件类型（图片/PDF/Office）：返回 base64 编码
+          const binaryExts = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'ico', 'bmp', 'pdf']
+          if (binaryExts.includes(ext)) {
+            const buffer = readFileSync(fullPath)
+            const base64 = buffer.toString('base64')
+            const mimeType = this.getMimeType(ext)
+            logger.info(`[PiAgentController] 读取文件(二进制): ${args.filePath}, size=${buffer.length}`)
+            return {
+              code: 0,
+              data: {
+                name: basename(fullPath),
+                path: args.filePath,
+                size: stat.size,
+                ext,
+                isBinary: true,
+                mimeType,
+                base64,
+              },
+            }
+          }
+
+          // 文本文件：返回 UTF-8 字符串
+          const content = readFileSync(fullPath, 'utf-8')
+          logger.info(`[PiAgentController] 读取文件(文本): ${args.filePath}, size=${content.length}`)
+          return {
+            code: 0,
+            data: {
+              name: basename(fullPath),
+              path: args.filePath,
+              size: stat.size,
+              ext,
+              isBinary: false,
+              content,
+            },
+          }
+        }
+
+        case 'attachFolder': {
+          // 附加外部文件夹到工作区（仅添加引用，不复制文件）
+          if (!args.workspaceId) return { code: -1, message: '缺少 workspaceId' }
+          if (!args.folderPath) return { code: -1, message: '缺少 folderPath' }
+          const ws = getWorkspace(args.workspaceId)
+          if (!ws) return { code: -1, message: '工作区不存在' }
+
+          const updated = attachDirectoryToWorkspace(args.workspaceId, args.folderPath)
+          return { code: 0, data: updated, message: `已附加文件夹: ${args.folderPath}` }
+        }
+
+        case 'detachFolder': {
+          // 移除附加文件夹引用（不删除实际文件夹）
+          if (!args.workspaceId) return { code: -1, message: '缺少 workspaceId' }
+          if (!args.folderPath) return { code: -1, message: '缺少 folderPath' }
+
+          const updated = detachDirectoryFromWorkspace(args.workspaceId, args.folderPath)
+          return { code: 0, data: updated, message: '已移除附加文件夹' }
+        }
+
+        case 'listAttachedDir': {
+          // 列出附加文件夹的内容（仅当前层级，懒加载模式）
+          if (!args.folderPath) return { code: -1, message: '缺少 folderPath' }
+          if (!existsSync(args.folderPath)) return { code: 0, data: [] }
+
+          const items = this.listDirFlat(args.folderPath, '')
+          return { code: 0, data: items }
+        }
+
+        case 'listAllFiles': {
+          // 递归列出目录下的所有文件（不限深度，用于 @ 引用文件选择）
+          if (!args.folderPath) return { code: -1, message: '缺少 folderPath' }
+          if (!existsSync(args.folderPath)) return { code: 0, data: [] }
+
+          const items = this.listAllFilesRecursive(args.folderPath, '')
+          return { code: 0, data: items }
         }
 
         default:
@@ -617,6 +742,81 @@ class PiAgentController {
       logger.error('[PiAgentController] fileOperation 异常:', err)
       return { code: -1, message: msg }
     }
+  }
+
+  /** 根据扩展名获取 MIME 类型 */
+  private getMimeType(ext: string): string {
+    const map: Record<string, string> = {
+      png: 'image/png',
+      jpg: 'image/jpeg',
+      jpeg: 'image/jpeg',
+      gif: 'image/gif',
+      webp: 'image/webp',
+      svg: 'image/svg+xml',
+      ico: 'image/x-icon',
+      bmp: 'image/bmp',
+      pdf: 'application/pdf',
+    }
+    return map[ext] || 'application/octet-stream'
+  }
+
+  /** 递归列出目录下的所有文件（不限深度，用于 @ 引用） */
+  private listAllFilesRecursive(basePath: string, relativeDir: string): Array<{
+    name: string
+    path: string
+    isDir: boolean
+    size: number
+  }> {
+    const result: Array<{ name: string; path: string; isDir: boolean; size: number }> = []
+    const currentPath = join(basePath, relativeDir)
+
+    if (!existsSync(currentPath)) return result
+
+    const entries = readdirSync(currentPath, { withFileTypes: true })
+    for (const entry of entries) {
+      if (entry.name.startsWith('.')) continue
+      if (['node_modules', 'skills', 'skills-inactive', '__pycache__'].includes(entry.name)) continue
+
+      const fullPath = join(currentPath, entry.name)
+      const relativePath = relativeDir ? `${relativeDir}/${entry.name}` : entry.name
+      const stat = statSync(fullPath)
+
+      if (entry.isDirectory()) {
+        result.push({ name: entry.name, path: relativePath, isDir: true, size: stat.size })
+        result.push(...this.listAllFilesRecursive(basePath, relativePath))
+      } else {
+        result.push({ name: entry.name, path: relativePath, isDir: false, size: stat.size })
+      }
+    }
+
+    return result
+  }
+
+  /** 列出目录当前层级的内容（不递归，用于懒加载展开） */
+  private listDirFlat(basePath: string, relativeDir: string): Array<{
+    name: string
+    path: string
+    isDir: boolean
+    size: number
+  }> {
+    const result: Array<{ name: string; path: string; isDir: boolean; size: number }> = []
+    const currentPath = join(basePath, relativeDir)
+
+    if (!existsSync(currentPath)) return result
+
+    const entries = readdirSync(currentPath, { withFileTypes: true })
+    for (const entry of entries) {
+      // 跳过隐藏文件和常见无关目录
+      if (entry.name.startsWith('.')) continue
+      if (['node_modules', 'skills', 'skills-inactive', '__pycache__'].includes(entry.name)) continue
+
+      const fullPath = join(currentPath, entry.name)
+      const relativePath = relativeDir ? `${relativeDir}/${entry.name}` : entry.name
+      const stat = statSync(fullPath)
+      result.push({ name: entry.name, path: relativePath, isDir: entry.isDirectory(), size: stat.size })
+    }
+
+    return result
   }
 
   /** 递归列出目录下的文件（最多两层深度） */

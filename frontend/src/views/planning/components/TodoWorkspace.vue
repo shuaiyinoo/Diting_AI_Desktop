@@ -551,9 +551,10 @@ async function startAgent() {
         message: buildTodoAgentPrompt(selectedTodo.value.id),
         workspaceId: selectedTodo.value.workspaceId,
       }
-      // 关闭详情面板并跳转到 Agent 页面
+      // 关闭详情面板并通过 Tab 系统打开 Agent 会话
       selectedId.value = null
-      await router.push('/agent')
+      // 直接通过 selectSession 打开 Tab（避免 router.push 导致的竞态条件）
+      agent.selectSession(result.session.id)
       message.success('已启动 Agent')
     }
   } catch {
@@ -721,13 +722,12 @@ async function openSession(sessionId) {
   if (workspaceId) {
     ws.selectAgentProject(workspaceId)
   }
-  // 选中会话（加载消息）
+  // 选中会话（加载消息，selectSession 会自动打开 Tab）
   await agent.selectSession(sessionId)
-  // 切换到 Agent 页面
+  // 切换到 Agent 模式
   ws.setAppMode('agent')
   ws.setActiveModule('agent')
   selectedId.value = null
-  await router.push('/agent')
 }
 
 // 确保加载 Agent 会话列表（用于过滤已删除的关联会话）

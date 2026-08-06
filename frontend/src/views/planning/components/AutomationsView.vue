@@ -457,16 +457,20 @@ async function runNow(a) {
   try {
     const sessionId = await planning.runAutomationNow(a.id)
     message.success('任务已启动')
-    // 跳转到 Agent 对话页面（参考 Todo 的跳转方式）
+    // 跳转到 Agent 对话页面
     if (sessionId) {
       // 切换到 Agent 模式
       ws.setAppMode('agent')
       ws.setActiveModule('agent')
       // 刷新会话列表，确保新创建的会话在列表中
       await agentStore.loadSessions()
-      // 设置 pendingPrompt 让 Agent 页面自动选中会话（message 为空，不会重复发送）
+      // 后端以 headless 模式发送消息（onEvent 不转发到前端），前端无法订阅 SSE 流。
+      // 设置 pendingPrompt（message 为空，不触发前端重复发送），由 AgentView 选中会话。
       agentStore.pendingPrompt = { sessionId, message: '', workspaceId: a.workspaceId }
-      await router.push('/agent')
+      // 直接通过 selectSession 打开 Tab
+      agentStore.selectSession(sessionId)
+      // 启动消息轮询：定期 reload 持久化的消息，直到检测到 LLM 回复完成
+      agentStore.startMessagePolling(sessionId)
     }
   } catch (err) {
     message.error(err?.message || '运行失败')

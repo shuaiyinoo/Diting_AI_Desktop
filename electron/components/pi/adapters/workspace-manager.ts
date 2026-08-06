@@ -38,6 +38,8 @@ export interface WorkspaceMeta {
   projectPath?: string
   /** 是否为空白项目（使用 Proma 托管项目根） */
   isBlank?: boolean
+  /** 附加的外部目录路径列表（仅引用，不复制文件） */
+  attachedDirectories?: string[]
   createdAt: number
   updatedAt: number
 }
@@ -216,4 +218,43 @@ export function getWorkspaceCwd(workspace: WorkspaceMeta): string {
     return getProjectFilesPath(workspace.id)
   }
   return workspace.projectPath || getProjectFilesPath(workspace.id)
+}
+
+/** 附加外部目录到工作区（仅添加引用，不复制文件） */
+export function attachDirectoryToWorkspace(id: string, dirPath: string): string[] {
+  const workspaces = readWorkspaceIndex()
+  const idx = workspaces.findIndex((ws) => ws.id === id)
+  if (idx === -1) return []
+
+  const workspace = workspaces[idx]
+  const existing = workspace.attachedDirectories ?? []
+  // 去重：已存在则不重复添加
+  if (existing.includes(dirPath)) return existing
+
+  workspace.attachedDirectories = [...existing, dirPath]
+  workspace.updatedAt = Date.now()
+  workspaces[idx] = workspace
+  writeWorkspaceIndex(workspaces)
+
+  logger.info(`[Pi Agent Workspace] 已附加目录到工作区 ${workspace.slug}: ${dirPath}`)
+  return workspace.attachedDirectories
+}
+
+/** 移除工作区的附加目录（仅删除引用，不删除实际文件夹） */
+export function detachDirectoryFromWorkspace(id: string, dirPath: string): string[] {
+  const workspaces = readWorkspaceIndex()
+  const idx = workspaces.findIndex((ws) => ws.id === id)
+  if (idx === -1) return []
+
+  const workspace = workspaces[idx]
+  const existing = workspace.attachedDirectories ?? []
+  const updated = existing.filter((d) => d !== dirPath)
+
+  workspace.attachedDirectories = updated.length > 0 ? updated : undefined
+  workspace.updatedAt = Date.now()
+  workspaces[idx] = workspace
+  writeWorkspaceIndex(workspaces)
+
+  logger.info(`[Pi Agent Workspace] 已移除附加目录: ${dirPath}`)
+  return updated
 }

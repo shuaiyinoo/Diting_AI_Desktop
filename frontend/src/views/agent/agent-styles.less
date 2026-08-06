@@ -1015,11 +1015,64 @@ transform: translateY(100%);
   gap: 4px;
 }
 
-.file-panel-actions {
+// 项目路径显示栏
+.file-panel-path {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 6px;
+  padding: 6px 10px;
+  background: var(--bg-active);
+  border-bottom: 1px solid var(--border-color-light);
   flex-shrink: 0;
+
+  &__icon {
+    font-size: 13px;
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+
+  &__text {
+    font-size: 11px;
+    color: var(--text-secondary);
+    overflow: hidden;
+    white-space: nowrap;
+    min-width: 0;
+    flex: 1;
+
+    // 左侧省略：direction: rtl 让 text-overflow 在左侧截断
+    &--ellipsis {
+      direction: rtl;
+      text-overflow: ellipsis;
+      text-align: left;
+    }
+  }
+
+  &__open {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border: none;
+    border-radius: 5px;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.15s ease;
+    -webkit-appearance: none;
+    appearance: none;
+
+    svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    &:hover {
+      background: var(--bg-hover);
+      color: var(--accent);
+    }
+  }
 }
 
 // 模式切换（与菜单栏 Chat/Agent 风格一致）
@@ -1086,19 +1139,28 @@ transform: translateY(100%);
 }
 
 .file-tree {
+  padding: 4px 4px;
+
   &__item {
     display: flex;
     align-items: center;
     gap: 4px;
-    padding: 4px 8px;
-    border-radius: 4px;
+    padding: 0 8px;
+    height: 26px;
+    border-radius: 7px;
     cursor: pointer;
+    margin-bottom: 1px;
+    transition: background-color 0.15s ease, color 0.15s ease;
+    position: relative;
 
     &:hover {
       background-color: var(--bg-hover);
     }
 
+    // 目录项：高度与菜单项一致
     &--dir {
+      height: 30px;
+
       .file-tree__icon {
         color: var(--accent);
       }
@@ -1107,14 +1169,21 @@ transform: translateY(100%);
         font-weight: 500;
       }
     }
+
+    // 展开状态的目录：加粗
+    &--expanded {
+      color: var(--text-primary);
+      font-weight: 600;
+    }
   }
 
   &__arrow {
-    font-size: 10px;
+    font-size: 12px;
     color: var(--text-muted);
     flex-shrink: 0;
     width: 14px;
     text-align: center;
+    transition: transform 0.2s ease;
   }
 
   &__arrow-spacer {
@@ -1134,6 +1203,104 @@ transform: translateY(100%);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+}
+
+// ===== 附加文件夹区域 =====
+.file-tree--attached {
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border-color-light);
+  margin-bottom: 4px;
+}
+
+.file-tree__item--attached {
+  // 附加目录根行：与普通目录一致的高度，但增加右侧删除按钮
+  .file-tree__detach {
+    margin-left: auto;
+    width: 20px;
+    height: 20px;
+    border-radius: 5px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+    flex-shrink: 0;
+
+    svg {
+      width: 12px;
+      height: 12px;
+    }
+
+    &:hover {
+      background-color: rgba(255, 77, 79, 0.1);
+      color: #ff4d4f;
+    }
+  }
+
+  &:hover .file-tree__detach {
+    opacity: 1;
+  }
+}
+
+// ===== 文件面板底部：添加文件 / 附加文件夹 =====
+.file-panel-footer {
+  display: flex;
+  gap: 6px;
+  padding: 6px;
+  flex-shrink: 0;
+}
+
+.file-drop-zone {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 48px;
+  border-radius: 8px;
+  border: 1px dashed var(--text-muted);
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  -webkit-appearance: none;
+  appearance: none;
+  user-select: none;
+
+  &:hover {
+    border-color: var(--accent);
+    background: rgba(22, 119, 255, 0.08);
+
+    .file-drop-zone__icon {
+      color: var(--accent);
+    }
+
+    .file-drop-zone__label {
+      color: var(--accent);
+    }
+  }
+
+  &:active {
+    transform: scale(0.97);
+  }
+
+  &__icon {
+    width: 18px;
+    height: 18px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    transition: color 0.2s ease;
+  }
+
+  &__label {
+    font-size: 11px;
+    color: var(--text-muted);
+    transition: color 0.2s ease;
   }
 }
 

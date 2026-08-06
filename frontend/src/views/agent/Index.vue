@@ -318,18 +318,9 @@
     <template v-if="!panel4Collapsed">
       <PanelDivider @resize="onPanel4Resize" />
       <div class="panel panel--files" :style="{ width: panel4Width + 'px', flexShrink: 0 }">
-        <!-- 顶部：文件模式切换 + 操作按钮 -->
+        <!-- 顶部：文件模式切换 -->
         <div class="file-panel-header">
           <div class="file-mode-switch">
-            <button
-              type="button"
-              class="file-mode-btn"
-              :class="{ 'file-mode-btn--active': filePanelMode === 'project' }"
-              @click="switchFileMode('project')"
-            >
-              <FolderOutlined />
-              <span>项目文件</span>
-            </button>
             <button
               type="button"
               class="file-mode-btn"
@@ -339,34 +330,115 @@
               <FileOutlined />
               <span>会话文件</span>
             </button>
-          </div>
-          <div class="file-panel-actions">
-            <a-tooltip title="添加文件">
-              <button class="panel-toggle-btn" @click="addFileToProject">
-                <PlusOutlined />
-              </button>
-            </a-tooltip>
-            <a-tooltip title="刷新">
-              <button class="panel-toggle-btn" @click="loadFileTree">
-                <ReloadOutlined />
-              </button>
-            </a-tooltip>
+            <button
+              type="button"
+              class="file-mode-btn"
+              :class="{ 'file-mode-btn--active': filePanelMode === 'project' }"
+              @click="switchFileMode('project')"
+            >
+              <FolderOutlined />
+              <span>项目文件</span>
+            </button>
           </div>
         </div>
 
         <!-- 文件列表 -->
         <div class="panel__body">
-          <div v-if="fileTree.length === 0" class="files-empty">
+          <!-- 会话文件模式：显示当前会话路径 -->
+          <div v-if="filePanelMode === 'session' && sessionPathDisplay" class="file-panel-path" :title="sessionPathDisplay">
+            <FolderOutlined class="file-panel-path__icon" />
+            <span class="file-panel-path__text" :class="{ 'file-panel-path__text--ellipsis': sessionPathNeedsEllipsis }">{{ sessionPathDisplay }}</span>
+            <button class="file-panel-path__open" title="在系统文件管理器中打开" @click="openSessionFolder">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M15 17h5a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-7l-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h5" />
+                <path d="M15 17l-3 3 3 3" />
+                <path d="M12 20H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6l2 2h7a2 2 0 0 1 2 2" />
+              </svg>
+            </button>
+          </div>
+
+          <!-- 项目文件模式：显示当前项目路径 -->
+          <div v-if="filePanelMode === 'project' && projectPathDisplay" class="file-panel-path" :title="projectPathDisplay">
+            <FolderOutlined class="file-panel-path__icon" />
+            <span class="file-panel-path__text" :class="{ 'file-panel-path__text--ellipsis': projectPathNeedsEllipsis }">{{ projectPathDisplay }}</span>
+            <button class="file-panel-path__open" title="在系统文件管理器中打开" @click="openProjectFolder">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M15 17h5a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-7l-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h5" />
+                <path d="M15 17l-3 3 3 3" />
+                <path d="M12 20H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6l2 2h7a2 2 0 0 1 2 2" />
+              </svg>
+            </button>
+          </div>
+
+          <!-- 附加文件夹列表（项目文件模式下显示） -->
+          <div v-if="filePanelMode === 'project' && attachedDirs.length > 0" class="file-tree file-tree--attached">
+            <div
+              v-for="dirPath in attachedDirs"
+              :key="'attached-' + dirPath"
+            >
+              <!-- 附加目录根行 -->
+              <div
+                class="file-tree__item file-tree__item--attached"
+                :class="{ 'file-tree__item--expanded': expandedAttachedDirs.has(dirPath) }"
+                :style="{ paddingLeft: '8px' }"
+                @click="toggleAttachedDir(dirPath)"
+              >
+                <component
+                  :is="expandedAttachedDirs.has(dirPath) ? 'DownOutlined' : 'RightOutlined'"
+                  class="file-tree__arrow"
+                />
+                <FolderOutlined class="file-tree__icon" />
+                <span class="file-tree__name" :title="dirPath">{{ getDirName(dirPath) }}</span>
+                <button
+                  class="file-tree__detach"
+                  title="移除附加文件夹（不删除实际文件）"
+                  @click.stop="onDetachFolder(dirPath)"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              </div>
+              <!-- 附加目录子项（支持无限层级展开） -->
+              <template v-if="expandedAttachedDirs.has(dirPath)">
+                <div
+                  v-for="child in flattenAttachedDir(dirPath)"
+                  :key="child.path"
+                  class="file-tree__item"
+                  :class="{
+                    'file-tree__item--dir': child.isDir,
+                    'file-tree__item--expanded': child.isDir && child.expanded,
+                  }"
+                  :style="{ paddingLeft: 8 + child.depth * 16 + 'px' }"
+                  @click="child.isDir ? toggleAttachedDir(child.path) : openAttachedFile(dirPath, child.relativePath)"
+                >
+                  <component
+                    v-if="child.isDir"
+                    :is="child.expanded ? 'DownOutlined' : 'RightOutlined'"
+                    class="file-tree__arrow"
+                  />
+                  <span v-else class="file-tree__arrow-spacer" />
+                  <component :is="child.isDir ? 'FolderOutlined' : 'FileOutlined'" class="file-tree__icon" />
+                  <span class="file-tree__name">{{ child.name }}</span>
+                </div>
+              </template>
+            </div>
+          </div>
+
+          <div v-if="fileTree.length === 0 && attachedDirs.length === 0" class="files-empty">
             <FolderOutlined style="font-size: 32px" />
             <p>{{ filePanelMode === 'project' ? '暂无项目文件' : '暂无会话文件' }}</p>
-            <p v-if="filePanelMode === 'project'" class="files-empty__hint">点击 + 添加文件</p>
           </div>
           <div v-else class="file-tree">
             <div
               v-for="node in flatFileTree"
               :key="node.path"
               class="file-tree__item"
-              :class="{ 'file-tree__item--dir': node.isDir }"
+              :class="{
+                'file-tree__item--dir': node.isDir,
+                'file-tree__item--expanded': node.isDir && node.expanded,
+              }"
               :style="{ paddingLeft: 8 + node.depth * 16 + 'px' }"
               @click="node.isDir ? toggleDir(node) : openFile(node)"
             >
@@ -381,6 +453,34 @@
             </div>
           </div>
         </div>
+
+        <!-- 底部操作区：根据模式显示不同操作 -->
+        <div class="file-panel-footer">
+          <!-- 会话模式：只显示添加文件 -->
+          <div v-if="filePanelMode === 'session'" class="file-drop-zone" @click="onAddFile">
+            <svg class="file-drop-zone__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+            </svg>
+            <span class="file-drop-zone__label">添加文件到会话</span>
+          </div>
+          <!-- 项目模式：显示添加文件 + 附加文件夹 -->
+          <template v-else>
+            <div class="file-drop-zone" @click="onAddFile">
+              <svg class="file-drop-zone__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+              </svg>
+              <span class="file-drop-zone__label">添加文件</span>
+            </div>
+            <div class="file-drop-zone" @click="onAttachFolder">
+              <svg class="file-drop-zone__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2a2 2 0 0 0-1.66-.9H8a2 2 0 0 0-2 2v0a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2Z" />
+                <path d="M12 10v6" />
+                <path d="M9 13h6" />
+              </svg>
+              <span class="file-drop-zone__label">附加文件夹</span>
+            </div>
+          </template>
+        </div>
       </div>
     </template>
   </div>
@@ -393,10 +493,8 @@ import {
   RobotOutlined,
   FolderOutlined,
   FileOutlined,
-  ReloadOutlined,
   MenuUnfoldOutlined,
   MenuFoldOutlined,
-  PlusOutlined,
   DownOutlined,
   RightOutlined,
 } from '@ant-design/icons-vue'
@@ -404,6 +502,7 @@ import { ipc } from '@/utils/ipcRenderer'
 import { ipcApiRoute } from '@/api'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useAgentStore } from '@/stores/agent'
+import { useTabStore } from '@/stores/tab'
 import MarkdownRender from 'markstream-vue'
 import PanelDivider from '@/components/layout/PanelDivider.vue'
 import ProcessBlockGroup from '@/components/agent/ProcessBlockGroup.vue'
@@ -415,13 +514,28 @@ import { hasTaskBlocks } from '@/utils/task-progress'
 const ws = useWorkspaceStore()
 const agentStore = useAgentStore()
 
+// 接收 sessionId prop（由 TabContent 传入，用于多标签状态隔离）
+const props = defineProps({
+  sessionId: { type: String, default: null },
+})
+
+// Tab store（组件顶层声明，供 openFile 等函数使用）
+const tabStore = useTabStore()
+
+// 当 prop.sessionId 存在时，确保 agent store 选中该会话
+watch(() => props.sessionId, (sid) => {
+  if (sid && agentStore.currentSessionId !== sid) {
+    // 通过 Tab 激活该会话，触发 store 中 currentSessionId 计算属性更新
+    tabStore.activateTab(sid)
+  }
+}, { immediate: false })
+
 // ========== 顶部标题：项目名称 / 会话名称 ==========
 const toolbarTitle = computed(() => {
   const projectName = ws.currentAgentProject?.name
-  // 优先从 agent store 获取会话名称（MenuBar 修改后同步）
-  const sessionId = currentSessionId.value || agentStore.currentSessionId
+  const sessionId = agentStore.currentSessionId
   const session = agentStore.sessions.find((s) => s.id === sessionId)
-  const sessionName = session?.title || currentSession.value?.title
+  const sessionName = session?.title || agentStore.currentSession?.title
   if (projectName && sessionName) {
     return `${projectName} / ${sessionName}`
   }
@@ -489,8 +603,47 @@ const inputPlaceholder = computed(() =>
   '输入指令... (@ 引用文件, / 调用 Skill, # 使用 MCP, & 引用会话, Enter 发送)'
 )
 const fileTree = ref([])
-const filePanelMode = ref('project') // 'project' | 'session'
+const attachedDirs = ref([]) // 附加的外部目录路径列表
+const filePanelMode = ref('session') // 'project' | 'session'
 const fileLoading = ref(false)
+const sessionPathDisplay = ref('') // 会话文件目录路径（后端返回）
+
+// 当前项目路径（项目文件模式下显示在文件列表顶部）
+const projectPathDisplay = computed(() => {
+  const project = ws.currentAgentProject
+  if (!project) return ''
+  // 使用后端返回的 resolvedPath（空白项目为 workspace-files 托管路径）
+  return project.resolvedPath || project.projectPath || ''
+})
+
+// 路径层级 > 3 时使用 CSS 左侧省略（direction: rtl），否则完整显示
+const projectPathNeedsEllipsis = computed(() => {
+  const fullPath = projectPathDisplay.value
+  if (!fullPath) return false
+  return fullPath.replace(/\\/g, '/').split('/').filter(Boolean).length > 3
+})
+
+/** 在系统文件管理器中打开项目文件夹 */
+function openProjectFolder() {
+  const dir = projectPathDisplay.value
+  if (!dir) return
+  ipc.invoke(ipcApiRoute.os.openDirectory, { id: dir })
+}
+
+// 会话路径层级 > 3 时使用 CSS 左侧省略
+const sessionPathNeedsEllipsis = computed(() => {
+  const fullPath = sessionPathDisplay.value
+  if (!fullPath) return false
+  return fullPath.replace(/\\/g, '/').split('/').filter(Boolean).length > 3
+})
+
+/** 在系统文件管理器中打开会话文件夹 */
+function openSessionFolder() {
+  const dir = sessionPathDisplay.value
+  if (!dir) return
+  ipc.invoke(ipcApiRoute.os.openDirectory, { id: dir })
+}
+
 const permissionRequest = ref(null)
 const permissionResponding = ref(false)
 const askUserRequest = ref(null)
@@ -660,18 +813,27 @@ onMounted(async () => {
     await nextTick()
     scrollToBottom(true)
   }
+
+  // 组件挂载时加载文件列表（:key 切换导致组件重建后，watcher 不会触发，需手动加载）
+  loadFileTree()
 })
 
 // onUnmounted 不再 abort，流式请求在 store 中继续运行
 
-// 监听 MenuBar 中项目选中变化
+// 监听 MenuBar 中项目选中变化：刷新文件列表
 watch(() => ws.currentAgentProjectId, () => {
   loadFileTree()
 })
 
-// 监听会话变化时刷新会话文件
+// 监听会话变化：刷新文件列表（无论项目文件还是会话文件都刷新）
 watch(() => currentSessionId.value, () => {
-  if (filePanelMode.value === 'session') {
+  loadFileTree()
+})
+
+// 监听流式状态变化：LLM 回答完成时刷新文件列表
+watch(() => isStreaming.value, (streaming, wasStreaming) => {
+  // 仅在从 true → false（流式结束）时刷新
+  if (wasStreaming && !streaming) {
     loadFileTree()
   }
 })
@@ -744,6 +906,7 @@ function switchFileMode(mode) {
 /** 加载文件列表 */
 async function loadFileTree() {
   fileTree.value = []
+  attachedDirs.value = []
   fileLoading.value = true
   try {
     const workspaceId = ws.currentAgentProject?.id
@@ -758,7 +921,11 @@ async function loadFileTree() {
       mode: filePanelMode.value,
     })
     if (res.code === 0) {
-      fileTree.value = res.data || []
+      // 后端返回 { files, attachedDirs, resolvedPath } 结构
+      const data = res.data || {}
+      fileTree.value = data.files || []
+      attachedDirs.value = data.attachedDirs || []
+      sessionPathDisplay.value = data.resolvedPath || ''
     }
   } catch (err) {
     console.error('[agent] 加载文件列表失败:', err)
@@ -767,21 +934,28 @@ async function loadFileTree() {
   }
 }
 
-/** 添加文件到项目文件目录 */
-async function addFileToProject() {
+/** 添加文件（根据当前模式决定目标目录） */
+async function onAddFile() {
   const workspaceId = ws.currentAgentProject?.id
   if (!workspaceId) {
     message.warning('请先选择一个 Agent 项目')
+    return
+  }
+  if (filePanelMode.value === 'session' && !currentSessionId.value) {
+    message.warning('当前无活动会话')
     return
   }
   try {
     const res = await ipc.invoke(ipcApiRoute.piAgent.fileOperation, {
       action: 'add',
       workspaceId,
-      mode: 'project',
+      sessionId: currentSessionId.value,
+      mode: filePanelMode.value,
     })
     if (res.code === 0) {
-      fileTree.value = res.data || []
+      const data = res.data || {}
+      fileTree.value = data.files || []
+      attachedDirs.value = data.attachedDirs || []
       if (res.message && res.message !== '用户取消选择') {
         message.success(res.message)
       }
@@ -794,9 +968,161 @@ async function addFileToProject() {
   }
 }
 
-/** 打开文件（占位：后续可接入编辑器预览） */
+/** 附加外部文件夹到工作区（仅添加引用，不覆盖 projectPath） */
+async function onAttachFolder() {
+  const workspaceId = ws.currentAgentProject?.id
+  if (!workspaceId) {
+    message.warning('请先选择一个 Agent 项目')
+    return
+  }
+  try {
+    const folderPath = await ipc.invoke(ipcApiRoute.os.selectFolder)
+    if (!folderPath) return // 用户取消选择
+
+    // 调用 attachFolder：仅添加引用，不修改 projectPath
+    const res = await ipc.invoke(ipcApiRoute.piAgent.fileOperation, {
+      action: 'attachFolder',
+      workspaceId,
+      folderPath,
+    })
+    if (res.code === 0) {
+      attachedDirs.value = res.data || []
+      message.success(`已附加文件夹: ${folderPath.split('/').pop()}`)
+    } else {
+      message.error(res.message || '附加文件夹失败')
+    }
+  } catch (err) {
+    console.error('[agent] 附加文件夹失败:', err)
+    message.error('附加文件夹失败')
+  }
+}
+
+/** 移除附加文件夹引用（不删除实际文件夹） */
+async function onDetachFolder(dirPath) {
+  const workspaceId = ws.currentAgentProject?.id
+  if (!workspaceId) return
+  try {
+    const res = await ipc.invoke(ipcApiRoute.piAgent.fileOperation, {
+      action: 'detachFolder',
+      workspaceId,
+      folderPath: dirPath,
+    })
+    if (res.code === 0) {
+      attachedDirs.value = res.data || []
+      // 清除该目录的展开状态
+      expandedAttachedDirs.value.delete(dirPath)
+      expandedAttachedDirs.value = new Set(expandedAttachedDirs.value)
+      message.success('已移除附加文件夹')
+    } else {
+      message.error(res.message || '移除附加文件夹失败')
+    }
+  } catch (err) {
+    console.error('[agent] 移除附加文件夹失败:', err)
+    message.error('移除附加文件夹失败')
+  }
+}
+
+/** 附加目录展开状态：存储所有展开的目录完整路径 */
+const expandedAttachedDirs = ref(new Set())
+/** 附加目录子项缓存：key = 目录完整路径，value = 子项列表 */
+const attachedDirChildren = ref({})
+
+/** 展开/折叠附加目录（支持任意层级） */
+async function toggleAttachedDir(fullDirPath) {
+  if (expandedAttachedDirs.value.has(fullDirPath)) {
+    expandedAttachedDirs.value.delete(fullDirPath)
+    expandedAttachedDirs.value = new Set(expandedAttachedDirs.value)
+  } else {
+    expandedAttachedDirs.value.add(fullDirPath)
+    expandedAttachedDirs.value = new Set(expandedAttachedDirs.value)
+    // 首次展开时加载子项
+    if (!attachedDirChildren.value[fullDirPath]) {
+      await loadAttachedDirContents(fullDirPath)
+    }
+  }
+}
+
+/** 加载附加目录内容（支持子目录）
+ * @param fullDirPath - 完整目录路径（附加根目录或其子目录的绝对路径）
+ */
+async function loadAttachedDirContents(fullDirPath) {
+  try {
+    const res = await ipc.invoke(ipcApiRoute.piAgent.fileOperation, {
+      action: 'listAttachedDir',
+      folderPath: fullDirPath,
+    })
+    if (res.code === 0) {
+      attachedDirChildren.value = { ...attachedDirChildren.value, [fullDirPath]: res.data || [] }
+    }
+  } catch (err) {
+    console.error('[agent] 加载附加目录内容失败:', err)
+    attachedDirChildren.value = { ...attachedDirChildren.value, [fullDirPath]: [] }
+  }
+}
+
+/** 递归展平附加目录树（支持无限层级展开）
+ * @param dirPath - 当前目录的完整路径
+ * @param depth - 当前层级（用于缩进）
+ * @param attachedRoot - 附加根目录路径（用于计算文件相对路径）
+ */
+function flattenAttachedDir(dirPath, depth = 1, attachedRoot = dirPath) {
+  const children = attachedDirChildren.value[dirPath] || []
+  const result = []
+  for (const item of children) {
+    const parts = item.path.split('/')
+    const name = parts[parts.length - 1]
+    // 子目录的完整路径 = 当前目录路径 + '/' + 相对路径
+    const childFullPath = `${dirPath}/${item.path}`
+    // 相对于附加根目录的路径（用于后端读取文件）
+    const rootRelativePath = childFullPath.substring(attachedRoot.length + 1)
+    const isExpanded = expandedAttachedDirs.value.has(childFullPath)
+    result.push({
+      name,
+      path: childFullPath,
+      isDir: item.isDir,
+      size: item.size || 0,
+      depth,
+      isAttached: true,
+      attachedRoot,
+      relativePath: rootRelativePath,
+      expanded: isExpanded,
+    })
+    // 如果子目录已展开，递归展平其子项
+    if (item.isDir && isExpanded) {
+      result.push(...flattenAttachedDir(childFullPath, depth + 1, attachedRoot))
+    }
+  }
+  return result
+}
+
+/** 打开文件：在 Tab 栏中打开文件查看器（全局只保留一个文件 Tab） */
 function openFile(file) {
-  console.log('[agent] 打开文件:', file)
+  tabStore.openFileTab({
+    name: file.name,
+    path: file.path,
+    workspaceId: ws.currentAgentProject?.id,
+    sessionId: currentSessionId.value,
+    mode: filePanelMode.value,
+  })
+}
+
+/** 从完整路径中提取目录名 */
+function getDirName(dirPath) {
+  return dirPath.replace(/\\/g, '/').split('/').filter(Boolean).pop() || dirPath
+}
+
+/** 打开附加目录中的文件 */
+function openAttachedFile(dirPath, relativePath) {
+  const fileName = relativePath.split('/').pop() || relativePath
+  tabStore.openFileTab({
+    name: fileName,
+    path: relativePath,
+    workspaceId: ws.currentAgentProject?.id,
+    sessionId: currentSessionId.value,
+    mode: 'project',
+    // 附加目录文件需要特殊标记，文件查看器通过 IPC 读取时使用绝对路径
+    attachedDirPath: dirPath,
+  })
 }
 
 // ========== 文件树形结构 ==========

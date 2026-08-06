@@ -37,14 +37,32 @@
             type="button"
             class="mention-popup__item"
             :class="{ 'mention-popup__item--active': index === popupState.selectedIndex }"
+            :style="{ paddingLeft: (popupState.char === '@' && item.depth ? 10 + item.depth * 14 : 10) + 'px' }"
             @mousedown.prevent="selectItem(item)"
           >
-            <!-- @ 文件引用 -->
+            <!-- @ 文件引用（树形浏览） -->
             <template v-if="popupState.char === '@'">
-              <FileOutlined class="mention-popup__icon mention-popup__icon--file" />
-              <span class="mention-popup__label">{{ item.name }}</span>
-              <span v-if="item.source === 'session'" class="mention-popup__tag">会话</span>
-              <span v-else-if="item.source === 'workspace'" class="mention-popup__tag">项目</span>
+              <!-- 文件夹项 -->
+              <template v-if="item.isDir">
+                <component
+                  :is="fileExpandedFolders.has(item.togglePath) ? 'DownOutlined' : 'RightOutlined'"
+                  class="mention-popup__arrow"
+                />
+                <FolderOutlined class="mention-popup__icon mention-popup__icon--folder" />
+                <span class="mention-popup__label">{{ item.name }}</span>
+                <span v-if="item.source === 'session'" class="mention-popup__tag">会话</span>
+                <span v-else-if="item.source === 'workspace'" class="mention-popup__tag">项目</span>
+                <span v-else-if="item.source === 'attached'" class="mention-popup__tag">附加</span>
+              </template>
+              <!-- 文件项 -->
+              <template v-else>
+                <span class="mention-popup__indent" />
+                <FileOutlined class="mention-popup__icon mention-popup__icon--file" />
+                <span class="mention-popup__label">{{ item.name }}</span>
+                <span v-if="item.source === 'session'" class="mention-popup__tag">会话</span>
+                <span v-else-if="item.source === 'workspace'" class="mention-popup__tag">项目</span>
+                <span v-else-if="item.source === 'attached'" class="mention-popup__tag">附加</span>
+              </template>
             </template>
 
             <!-- / Skill 引用 -->
@@ -81,7 +99,7 @@ import Placeholder from '@tiptap/extension-placeholder'
 import Underline from '@tiptap/extension-underline'
 import Link from '@tiptap/extension-link'
 import Mention from '@tiptap/extension-mention'
-import { FileOutlined, ThunderboltOutlined, ApiOutlined, MessageOutlined } from '@ant-design/icons-vue'
+import { FileOutlined, FolderOutlined, ThunderboltOutlined, ApiOutlined, MessageOutlined, DownOutlined, RightOutlined } from '@ant-design/icons-vue'
 import { htmlToMarkdown } from '@/utils/htmlToMarkdown'
 import {
   isSuggestionTriggerPresent,
@@ -140,9 +158,21 @@ const workspaceSlugRef = ref(props.workspaceSlug)
 const sessionIdRef = ref(props.sessionId)
 
 // 同步 props 到 refs（供 suggestion 闭包使用）
-watch(() => props.workspaceId, (v) => { workspaceIdRef.value = v })
+watch(() => props.workspaceId, (v) => {
+  workspaceIdRef.value = v
+  // 切换工作区时清除 @ 文件树缓存
+  fileRootFolders.value = []
+  fileExpandedFolders.value = new Set()
+  fileFolderChildren.value = {}
+})
 watch(() => props.workspaceSlug, (v) => { workspaceSlugRef.value = v })
-watch(() => props.sessionId, (v) => { sessionIdRef.value = v })
+watch(() => props.sessionId, (v) => {
+  sessionIdRef.value = v
+  // 切换会话时清除 @ 文件树缓存
+  fileRootFolders.value = []
+  fileExpandedFolders.value = new Set()
+  fileFolderChildren.value = {}
+})
 
 // ===== 弹窗定位 =====
 const popupStyle = computed(() => {
@@ -160,6 +190,11 @@ watch(() => popupState.selectedIndex, () => {
 
 // ===== 选中项处理 =====
 function selectItem(item) {
+  // @ 文件引用：文件夹项 → 展开/折叠，不插入
+  if (popupState.char === '@' && item.isDir && item.togglePath) {
+    toggleFileFolder(item.togglePath)
+    return
+  }
   try {
     if (popupState.command && popupState.toCommand) {
       const cmd = popupState.toCommand(item)
@@ -287,6 +322,16 @@ function createSuggestion(config) {
             if (item) selectItem(item)
             return true
           }
+          // Tab 键：在 @ 模式下展开/折叠文件夹
+          if (sProps.event.key === 'Tab' && popupState.char === '@') {
+            if (popupState.items.length === 0) return false
+            const item = popupState.items[popupState.selectedIndex]
+            if (item && item.isDir && item.togglePath) {
+              sProps.event.preventDefault()
+              toggleFileFolder(item.togglePath)
+              return true
+            }
+          }
           // Escape 不在此处理：返回 false 交还给 TipTap suggestion 插件内置的 Escape 分支
           return false
         },
@@ -365,7 +410,244 @@ const sessionSuggestion = createSuggestion({
   toCommand: (item) => ({ id: item.id, label: item.title }),
 })
 
-// @ 文件引用
+// @ 文件引用 — 树形浏览模式
+// 无搜索词时显示根文件夹（会话/项目/附加），点击展开加载子项
+// 有搜索词时递归搜索所有文件，扁平显示匹配结果
+const fileExpandedFolders = ref(new Set()) // 展开的文件夹路径集合
+const fileFolderChildren = ref({}) // 文件夹路径 → 子项列表缓存
+
+/** 展开/折叠 @ 弹窗中的文件夹 */
+async function toggleFileFolder(folderPath) {
+  if (fileExpandedFolders.value.has(folderPath)) {
+    fileExpandedFolders.value.delete(folderPath)
+    fileExpandedFolders.value = new Set(fileExpandedFolders.value)
+  } else {
+    fileExpandedFolders.value.add(folderPath)
+    fileExpandedFolders.value = new Set(fileExpandedFolders.value)
+    // 首次展开时加载子项
+    if (!fileFolderChildren.value[folderPath]) {
+      await loadFileFolderChildren(folderPath)
+    }
+  }
+  // 重新计算 popupState.items
+  popupState.items = buildFileTreeItems()
+  popupState.selectedIndex = 0
+}
+
+/** 加载文件夹子项 */
+async function loadFileFolderChildren(folderPath) {
+  try {
+    let items = []
+    // 会话文件夹：通过 list action 加载会话文件（需要 workspaceId 构造路径）
+    if (folderPath.startsWith('session:')) {
+      const sId = folderPath.substring('session:'.length)
+      const res = await ipc.invoke(ipcApiRoute.piAgent.fileOperation, {
+        action: 'list', sessionId: sId, workspaceId: workspaceIdRef.value, mode: 'session',
+      })
+      if (res.code === 0 && res.data) {
+        items = ((res.data || {}).files || [])
+      }
+    }
+    // 项目文件夹：通过 list action 加载项目文件
+    else if (folderPath.startsWith('workspace:')) {
+      const wsId = folderPath.substring('workspace:'.length)
+      const res = await ipc.invoke(ipcApiRoute.piAgent.fileOperation, {
+        action: 'list', workspaceId: wsId, mode: 'project',
+      })
+      if (res.code === 0 && res.data) {
+        items = ((res.data || {}).files || [])
+      }
+    }
+    // 附加文件夹：通过 listAttachedDir 加载（仅当前层级）
+    else {
+      const res = await ipc.invoke(ipcApiRoute.piAgent.fileOperation, {
+        action: 'listAttachedDir',
+        folderPath,
+      })
+      if (res.code === 0) {
+        items = res.data || []
+      }
+    }
+    fileFolderChildren.value = { ...fileFolderChildren.value, [folderPath]: items }
+  } catch (err) {
+    console.error('[RichTextInput] 加载文件夹子项失败:', err)
+    fileFolderChildren.value = { ...fileFolderChildren.value, [folderPath]: [] }
+  }
+}
+
+/** 根文件夹列表缓存 */
+const fileRootFolders = ref([])
+
+/** 加载根文件夹列表 */
+async function loadFileRootFolders() {
+  const wsId = workspaceIdRef.value
+  const sId = sessionIdRef.value
+  const roots = []
+
+  if (sId) {
+    roots.push({
+      name: '会话文件',
+      source: 'session',
+      isDir: true,
+      isRoot: true,
+      togglePath: `session:${sId}`,
+      path: `session:${sId}`,
+      depth: 0,
+    })
+  }
+  if (wsId) {
+    roots.push({
+      name: '项目文件',
+      source: 'workspace',
+      isDir: true,
+      isRoot: true,
+      togglePath: `workspace:${wsId}`,
+      path: `workspace:${wsId}`,
+      depth: 0,
+    })
+
+    // 获取附加目录列表
+    try {
+      const res = await ipc.invoke(ipcApiRoute.piAgent.fileOperation, {
+        action: 'list', workspaceId: wsId, mode: 'project',
+      })
+      if (res.code === 0 && res.data) {
+        const attachedDirs = (res.data || {}).attachedDirs || []
+        for (const dirPath of attachedDirs) {
+          const dirName = dirPath.replace(/\\/g, '/').split('/').filter(Boolean).pop() || dirPath
+          roots.push({
+            name: dirName,
+            source: 'attached',
+            isDir: true,
+            isRoot: true,
+            togglePath: dirPath,
+            path: dirPath,
+            depth: 0,
+          })
+        }
+      }
+    } catch { /* 忽略 */ }
+  }
+
+  fileRootFolders.value = roots
+}
+
+/** 构建树形 items 列表（展开的文件夹递归插入子项） */
+function buildFileTreeItems() {
+  const result = []
+  for (const root of fileRootFolders.value) {
+    result.push(root)
+    if (fileExpandedFolders.value.has(root.togglePath)) {
+      result.push(...flattenFileFolder(root.togglePath, 1, root))
+    }
+  }
+  return result
+}
+
+/** 递归展平文件夹子项 */
+function flattenFileFolder(folderPath, depth, parentRoot) {
+  const children = fileFolderChildren.value[folderPath] || []
+  const result = []
+  for (const item of children) {
+    const name = item.name || item.path.split('/').pop() || item.path
+    // 子项的完整路径
+    let childFullPath
+    if (folderPath.startsWith('session:') || folderPath.startsWith('workspace:')) {
+      // 会话/项目文件夹：path 是相对于 baseDir 的相对路径
+      childFullPath = item.path
+    } else {
+      // 附加文件夹：path 是相对于附加根的相对路径
+      childFullPath = `${folderPath}/${item.path}`
+    }
+    const childTogglePath = childFullPath
+    const isExpanded = fileExpandedFolders.value.has(childTogglePath)
+
+    result.push({
+      name,
+      path: childFullPath,
+      isDir: item.isDir,
+      size: item.size || 0,
+      depth,
+      source: parentRoot.source,
+      togglePath: item.isDir ? childTogglePath : undefined,
+      // 文件额外信息
+      attachedDirPath: parentRoot.source === 'attached' ? parentRoot.path : undefined,
+    })
+
+    if (item.isDir && isExpanded) {
+      result.push(...flattenFileFolder(childTogglePath, depth + 1, parentRoot))
+    }
+  }
+  return result
+}
+
+/** 搜索所有文件（递归） */
+async function searchAllFiles(query) {
+  const wsId = workspaceIdRef.value
+  const sId = sessionIdRef.value
+  if (!wsId && !sId) return []
+
+  const tasks = []
+
+  // 项目文件
+  if (wsId) {
+    tasks.push(ipc.invoke(ipcApiRoute.piAgent.fileOperation, {
+      action: 'list', workspaceId: wsId, mode: 'project',
+    }).then((res) => {
+      if (res.code === 0 && res.data) {
+        const data = res.data || {}
+        const files = (data.files || []).filter((f) => !f.isDir)
+        return files.map((f) => ({ ...f, source: 'workspace' }))
+      }
+      return []
+    }).catch(() => []))
+
+    // 附加目录文件（递归）
+    tasks.push(ipc.invoke(ipcApiRoute.piAgent.fileOperation, {
+      action: 'list', workspaceId: wsId, mode: 'project',
+    }).then(async (res) => {
+      if (res.code !== 0 || !res.data) return []
+      const attachedDirs = (res.data || {}).attachedDirs || []
+      if (attachedDirs.length === 0) return []
+      const dirTasks = attachedDirs.map((dirPath) =>
+        ipc.invoke(ipcApiRoute.piAgent.fileOperation, {
+          action: 'listAllFiles', folderPath: dirPath,
+        }).then((dirRes) => {
+          if (dirRes.code !== 0 || !dirRes.data) return []
+          return dirRes.data
+            .filter((f) => !f.isDir)
+            .map((f) => ({
+              name: f.name,
+              path: `${dirPath}/${f.path}`,
+              source: 'attached',
+              attachedDirPath: dirPath,
+            }))
+        }).catch(() => [])
+      )
+      return (await Promise.all(dirTasks)).flat()
+    }).catch(() => []))
+  }
+
+  // 会话文件
+  if (sId) {
+    tasks.push(ipc.invoke(ipcApiRoute.piAgent.fileOperation, {
+      action: 'list', sessionId: sId, mode: 'session',
+    }).then((res) => {
+      if (res.code === 0 && res.data) {
+        const files = ((res.data || {}).files || []).filter((f) => !f.isDir)
+        return files.map((f) => ({ ...f, source: 'session' }))
+      }
+      return []
+    }).catch(() => []))
+  }
+
+  const results = (await Promise.all(tasks)).flat()
+  const q = query.toLowerCase()
+  return results
+    .filter((f) => (f.name || '').toLowerCase().includes(q) || (f.path || '').toLowerCase().includes(q))
+    .slice(0, 200)
+}
+
 const fileSuggestion = createSuggestion({
   char: '@',
   headerLabel: '引用文件',
@@ -375,45 +657,27 @@ const fileSuggestion = createSuggestion({
     const sId = sessionIdRef.value
     if (!wsId && !sId) return []
 
-    // 并行获取项目文件和会话文件
-    const tasks = []
-    if (wsId) {
-      tasks.push(ipc.invoke(ipcApiRoute.piAgent.fileOperation, {
-        action: 'list', workspaceId: wsId, mode: 'project',
-      }).then((res) => {
-        if (res.code === 0 && res.data) {
-          return res.data.map((f) => ({ ...f, source: 'workspace' }))
-        }
-        return []
-      }).catch(() => []))
-    }
-    if (sId) {
-      tasks.push(ipc.invoke(ipcApiRoute.piAgent.fileOperation, {
-        action: 'list', sessionId: sId, mode: 'session',
-      }).then((res) => {
-        if (res.code === 0 && res.data) {
-          return res.data.map((f) => ({ ...f, source: 'session' }))
-        }
-        return []
-      }).catch(() => []))
+    // 有搜索词：递归搜索所有文件，扁平显示
+    if (query) {
+      // 清除展开状态（搜索模式不使用树形）
+      fileExpandedFolders.value = new Set()
+      return await searchAllFiles(query)
     }
 
-    const results = await Promise.all(tasks)
-    const allFiles = results.flat()
-
-    // 过滤文件（不含目录）
-    const files = allFiles.filter((f) => !f.isDir)
-
-    // 按查询过滤
-    const q = query.toLowerCase()
-    const filtered = q
-      ? files.filter((f) => (f.name || '').toLowerCase().includes(q) || (f.path || '').toLowerCase().includes(q))
-      : files
-
-    return filtered.slice(0, 200)
+    // 无搜索词：树形浏览模式
+    // 首次加载根文件夹
+    if (fileRootFolders.value.length === 0) {
+      await loadFileRootFolders()
+    }
+    return buildFileTreeItems()
   },
   keyExtractor: (item) => `${item.source}:${item.path}`,
-  toCommand: (item) => ({ id: item.path, label: item.name }),
+  toCommand: (item) => ({
+    id: item.path,
+    label: item.name,
+    isDirectory: !!item.isDir,
+    attachedDirPath: item.attachedDirPath,
+  }),
 })
 
 // ===== Mention 扩展配置 =====
@@ -820,9 +1084,23 @@ onBeforeUnmount(() => {
     flex-shrink: 0;
 
     &--file { color: #185FA5; }
+    &--folder { color: #E8A838; }
     &--skill { color: #8A2BE2; }
     &--mcp { color: #006400; }
     &--session { color: #1E90FF; }
+  }
+
+  &__arrow {
+    font-size: 10px;
+    color: var(--text-muted, #999);
+    flex-shrink: 0;
+    width: 12px;
+    text-align: center;
+  }
+
+  &__indent {
+    width: 12px;
+    flex-shrink: 0;
   }
 
   &__label {
