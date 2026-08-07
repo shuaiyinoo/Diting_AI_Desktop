@@ -104,6 +104,23 @@ export interface SkillMeta {
   hasUpdate?: boolean
 }
 
+/** Skill 资源文件树节点 */
+export interface SkillFileNode {
+  name: string
+  relativePath: string
+  type: 'file' | 'directory'
+  size?: number
+  children?: SkillFileNode[]
+}
+
+/** Skill 资源文件内容 */
+export interface SkillFileContent {
+  relativePath: string
+  isText: boolean
+  size: number
+  content?: string
+}
+
 /** 工作区能力 */
 export interface WorkspaceCapabilities {
   mcpServers: BuiltinMcpServerSummary[]

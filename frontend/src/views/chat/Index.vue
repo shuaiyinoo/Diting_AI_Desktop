@@ -610,7 +610,8 @@ function onMessagesScroll() {
   line-height: 1.7;
   color: var(--text-primary);
   word-break: break-word;
-  display: inline;
+  display: block;
+  min-width: 0;
   max-width: 100%;
   overflow-wrap: break-word;
 }

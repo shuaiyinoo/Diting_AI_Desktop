@@ -18,8 +18,9 @@ import {
   readFileSync,
   mkdirSync,
   renameSync,
+  statSync,
 } from 'fs'
-import { join } from 'path'
+import { join, relative, extname } from 'path'
 import { logger } from 'ee-core/log'
 import {
   getDefaultSkillsDir,
@@ -33,7 +34,7 @@ import {
   removeRetiredDefaultSkills,
   isRetiredDefaultSkill,
 } from '../config-paths'
-import type { SkillMeta } from '../types'
+import type { SkillMeta, SkillFileNode, SkillFileContent } from '../types'
 
 /** Skill 文件复制过滤器：排除 .DS_Store 等无关文件 */
 function defaultSkillCopyFilter(src: string): boolean {
@@ -448,5 +449,151 @@ export function copyDefaultSkillsToWorkspace(workspaceSlug: string): void {
     logger.info(`[Pi Agent Skills] 已复制默认 Skills 到工作区: ${workspaceSlug}`)
   } catch (err) {
     logger.warn(`[Pi Agent Skills] 复制默认 Skills 到工作区失败 (${workspaceSlug}):`, err)
+  }
+}
+
+/** 获取 Skill 目录的绝对路径（优先活跃目录，其次不活跃目录，最后 default-skills） */
+function getSkillDir(workspaceSlug: string, skillSlug: string): string | null {
+  const activePath = join(getWorkspaceSkillsDir(workspaceSlug), skillSlug)
+  const inactivePath = join(getInactiveSkillsDir(workspaceSlug), skillSlug)
+  const defaultPath = join(getDefaultSkillsDir(), skillSlug)
+
+  if (existsSync(activePath)) return activePath
+  if (existsSync(inactivePath)) return inactivePath
+  if (existsSync(defaultPath)) return defaultPath
+  return null
+}
+
+/** 二进制文件扩展名集合（不需要在详情面板中展示文本内容） */
+const BINARY_EXTENSIONS = new Set([
+  '.png', '.jpg', '.jpeg', '.gif', '.bmp', '.ico', '.webp', '.tiff',
+  '.pdf', '.zip', '.gz', '.tar', '.7z', '.rar',
+  '.woff', '.woff2', '.ttf', '.otf', '.eot',
+  '.mp3', '.mp4', '.avi', '.mov', '.wav',
+  '.exe', '.dll', '.so', '.dylib', '.bin',
+  '.db', '.sqlite', '.db-shm', '.db-wal',
+])
+
+/** 递归扫描 Skill 目录下的资源文件树（排除 SKILL.md 和 .DS_Store） */
+function scanSkillFileTree(dir: string, basePath: string): SkillFileNode[] {
+  const nodes: SkillFileNode[] = []
+
+  let entries
+  try {
+    entries = readdirSync(dir, { withFileTypes: true })
+  } catch {
+    return nodes
+  }
+
+  // 排序：目录在前，然后按名称排序
+  entries.sort((a, b) => {
+    if (a.isDirectory() && !b.isDirectory()) return -1
+    if (!a.isDirectory() && b.isDirectory()) return 1
+    return a.name.localeCompare(b.name)
+  })
+
+  for (const entry of entries) {
+    // 跳过 SKILL.md 和系统文件
+    if (entry.name === 'SKILL.md' || entry.name.startsWith('.DS_Store') || entry.name === 'Thumbs.db') continue
+
+    const fullPath = join(dir, entry.name)
+    const relPath = relative(basePath, fullPath).replace(/\\/g, '/')
+
+    if (entry.isDirectory()) {
+      const children = scanSkillFileTree(fullPath, basePath)
+      nodes.push({
+        name: entry.name,
+        relativePath: relPath,
+        type: 'directory',
+        children,
+      })
+    } else {
+      let size: number | undefined
+      try {
+        size = statSync(fullPath).size
+      } catch {
+        // 忽略 stat 失败
+      }
+      nodes.push({
+        name: entry.name,
+        relativePath: relPath,
+        type: 'file',
+        size,
+      })
+    }
+  }
+
+  return nodes
+}
+
+/** 列出 Skill 目录下的资源文件树（排除 SKILL.md） */
+export function listSkillFiles(workspaceSlug: string, skillSlug: string): SkillFileNode[] {
+  const skillDir = getSkillDir(workspaceSlug, skillSlug)
+  if (!skillDir) {
+    throw new Error(`Skill 不存在: ${skillSlug}`)
+  }
+  return scanSkillFileTree(skillDir, skillDir)
+}
+
+/** 读取 Skill 目录下的指定资源文件 */
+export function readSkillFile(
+  workspaceSlug: string,
+  skillSlug: string,
+  relativePath: string,
+): SkillFileContent {
+  const skillDir = getSkillDir(workspaceSlug, skillSlug)
+  if (!skillDir) {
+    throw new Error(`Skill 不存在: ${skillSlug}`)
+  }
+
+  const filePath = join(skillDir, relativePath)
+
+  // 安全检查：确保文件在 skill 目录内
+  const resolvedPath = require('path').resolve(filePath)
+  const resolvedSkillDir = require('path').resolve(skillDir)
+  if (!resolvedPath.startsWith(resolvedSkillDir + require('path').sep) && resolvedPath !== resolvedSkillDir) {
+    throw new Error('路径越界')
+  }
+
+  if (!existsSync(filePath)) {
+    throw new Error(`文件不存在: ${relativePath}`)
+  }
+
+  const stat = statSync(filePath)
+  const ext = extname(filePath).toLowerCase()
+  const isBinary = BINARY_EXTENSIONS.has(ext)
+
+  // 二进制文件不返回内容
+  if (isBinary) {
+    return {
+      relativePath,
+      isText: false,
+      size: stat.size,
+    }
+  }
+
+  // 文本文件：限制读取大小（超过 1MB 截断）
+  const MAX_TEXT_SIZE = 1024 * 1024
+  let content: string | undefined
+  try {
+    if (stat.size <= MAX_TEXT_SIZE) {
+      content = readFileSync(filePath, 'utf-8')
+    } else {
+      // 大文本文件只读取前 1MB
+      const buf = Buffer.alloc(MAX_TEXT_SIZE)
+      const fd = require('fs').openSync(filePath, 'r')
+      require('fs').readSync(fd, buf, 0, MAX_TEXT_SIZE, 0)
+      require('fs').closeSync(fd)
+      content = buf.toString('utf-8') + '\n\n... (文件过大，仅显示前 1MB)'
+    }
+  } catch {
+    // 读取失败返回空内容
+  }
+
+  return {
+    relativePath,
+    isText: true,
+    size: stat.size,
+    content,
   }
 }

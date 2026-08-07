@@ -39,7 +39,7 @@
           <span class="calendar-day__num">{{ day.date }}</span>
           <div class="calendar-day__events">
             <div
-              v-for="ev in day.events.slice(0, 3)"
+              v-for="ev in day.events.slice(0, 2)"
               :key="ev.id"
               class="calendar-event"
               :style="{ borderColor: eventColor(ev), background: eventBg(ev) }"
@@ -47,8 +47,8 @@
               @mouseenter="showEventTooltip(ev, $event)"
               @mouseleave="hideEventTooltip"
             >{{ ev.title }}</div>
-            <div v-if="day.events.length > 3" class="calendar-day__more" @click.stop="showAllDayEvents(day)">
-              +{{ day.events.length - 3 }} 更多
+            <div v-if="day.events.length > 2" class="calendar-day__more" @click.stop="showAllDayEvents(day)">
+              +{{ day.events.length - 2 }} 更多
             </div>
             <div v-if="day.automationCount" class="calendar-day__auto">定时任务 {{ day.automationCount }}</div>
           </div>
@@ -1067,12 +1067,12 @@ async function setGroupColor(group, color) {
   border-right: 1px solid var(--border-color-light);
   border-bottom: 1px solid var(--border-color-light);
   padding: 4px; cursor: pointer; transition: background 0.15s ease;
-  overflow: hidden; display: flex; flex-direction: column; min-height: 0;
+  overflow: hidden; display: flex; flex-direction: row; min-height: 0;
   &:hover { background: rgba(22, 119, 255, 0.03); }
   &--other { background: rgba(0, 0, 0, 0.02); .calendar-day__num { color: var(--text-muted); } }
   &--today { .calendar-day__num { color: var(--accent); font-weight: 600; } }
-  &__num { font-size: 12px; color: var(--text-secondary); }
-  &__events { display: flex; flex-direction: column; gap: 2px; margin-top: 2px; flex: 1; min-height: 0; }
+  &__num { font-size: 12px; color: var(--text-secondary); flex-shrink: 0; width: 18px; text-align: right; line-height: 1.4; }
+  &__events { display: flex; flex-direction: column; gap: 2px; margin-left: 4px; flex: 1; min-width: 0; }
   &__more { font-size: 10px; color: var(--text-muted); padding: 1px 4px; margin-top: 2px; cursor: pointer; &:hover { color: var(--accent); } }
   &__auto { font-size: 10px; color: var(--accent); padding: 1px 4px; background: rgba(22, 119, 255, 0.08); border-radius: 3px; margin-top: 2px; }
 }

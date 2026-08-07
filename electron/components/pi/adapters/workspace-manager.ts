@@ -23,6 +23,7 @@ import {
   getInactiveSkillsDir,
   getWorkspaceMcpPath,
   getWorkspaceClaudeMdPath,
+  getWorkspaceAutoMemoryDir,
   getProjectFilesPath,
 } from '../config-paths'
 import { copyDefaultSkillsToWorkspace } from '../skills/skills-manager'
@@ -146,6 +147,10 @@ export function createWorkspace(input: {
     const claudeMd = `# ${workspace.name}\n\n这是 ${workspace.name} 工作区的项目说明文件。\nAgent 会自动读取此文件获取项目上下文。\n`
     writeFileSync(getWorkspaceClaudeMdPath(id), claudeMd, 'utf-8')
   }
+
+  // 创建 Auto Memory 目录（.claude/memory/）
+  // Agent 会在此目录中维护 MEMORY.md 索引和主题记忆文件
+  getWorkspaceAutoMemoryDir(id)
 
   workspaces.push(workspace)
   writeWorkspaceIndex(workspaces)

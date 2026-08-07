@@ -14,6 +14,8 @@ import {
   readWorkspaceSkillContent,
   writeWorkspaceSkillContent,
   getDefaultSkillSlugs,
+  listSkillFiles,
+  readSkillFile,
 } from '../components/pi/skills/skills-manager'
 import { listBuiltinMcpServers } from '../components/pi/builtin-mcp/catalog'
 import { setBuiltinMcpUserEnabled } from '../components/pi/builtin-mcp/settings'
@@ -43,6 +45,13 @@ import {
   getAgentWorkspacePath,
   getWorkspaceClaudeMdPath,
   getProjectFilesPath,
+  getWorkspaceMemorySummary,
+  listWorkspaceAutoMemoryFiles,
+  readWorkspaceClaudeMd,
+  writeWorkspaceClaudeMd,
+  readWorkspaceAutoMemoryFile,
+  writeWorkspaceAutoMemoryFile,
+  getWorkspaceAutoMemoryDir,
 } from '../components/pi/config-paths'
 import type { AgentChannel } from '../components/pi/types'
 
@@ -61,11 +70,12 @@ class PiAgentController {
    * Skills 管理（列表/切换/删除/读取内容/写入内容）。
    */
   async skillsOperation(args: {
-    action: 'list' | 'toggle' | 'delete' | 'read' | 'write' | 'defaultSlugs'
+    action: 'list' | 'toggle' | 'delete' | 'read' | 'write' | 'defaultSlugs' | 'listFiles' | 'readFile'
     workspaceSlug?: string
     skillSlug?: string
     enabled?: boolean
     content?: string
+    filePath?: string
   }): Promise<{ code: number; message?: string; data?: unknown }> {
     try {
       switch (args.action) {
@@ -105,6 +115,20 @@ class PiAgentController {
         }
         case 'defaultSlugs': {
           return { code: 0, data: getDefaultSkillSlugs() }
+        }
+        case 'listFiles': {
+          if (!args.workspaceSlug || !args.skillSlug) {
+            return { code: -1, message: '缺少必要参数' }
+          }
+          const tree = listSkillFiles(args.workspaceSlug, args.skillSlug)
+          return { code: 0, data: tree }
+        }
+        case 'readFile': {
+          if (!args.workspaceSlug || !args.skillSlug || !args.filePath) {
+            return { code: -1, message: '缺少必要参数' }
+          }
+          const content = readSkillFile(args.workspaceSlug, args.skillSlug, args.filePath)
+          return { code: 0, data: content }
         }
         default:
           return { code: -1, message: `未知操作: ${args.action}` }
@@ -495,42 +519,77 @@ class PiAgentController {
   }
 
   /**
-   * 记忆文件管理（列表/读取/写入）。
-   * 管理工作区中的 CLAUDE.md、Memory 等记忆文件。
+   * 记忆文件管理（摘要/列表/树/读取/写入）。
+   * 管理工作区中的 CLAUDE.md、Auto Memory 等记忆文件。
+   *
+   * 安全设计：
+   * - CLAUDE.md 和 auto memory 文件的读写都经过 config-paths 中的安全函数
+   * - 路径遍历防护：禁止绝对路径和 `..` 相对路径
+   * - symlink 逃逸防护：通过 realpathSync 校验
+   * - 文件大小限制：10 MB
+   * - 二进制文件检测
    */
   async memoryOperation(args: {
-    action: 'list' | 'read' | 'write'
+    action: 'summary' | 'list' | 'tree' | 'read' | 'write'
     workspaceSlug?: string
     filePath?: string
     content?: string
   }): Promise<{ code: number; message?: string; data?: unknown }> {
     try {
       const slug = args.workspaceSlug || 'default'
-      const wsPath = getAgentWorkspacePath(slug)
 
       switch (args.action) {
+        // 获取记忆摘要：CLAUDE.md + Auto Memory 统计信息
+        case 'summary': {
+          const summary = getWorkspaceMemorySummary(slug)
+          return { code: 0, data: summary }
+        }
+
+        // 列出所有记忆文件（扁平结构，兼容旧接口）
         case 'list': {
+          const wsPath = getAgentWorkspacePath(slug)
           const files = this.scanMemoryFiles(wsPath, '')
           return { code: 0, data: { files, basePath: wsPath } }
         }
+
+        // 列出 auto memory 文件树（树形结构，用于前端文件浏览器）
+        case 'tree': {
+          const files = listWorkspaceAutoMemoryFiles(slug)
+          return { code: 0, data: files }
+        }
+
+        // 读取记忆文件
         case 'read': {
           if (!args.filePath) return { code: -1, message: '缺少 filePath' }
-          const fullPath = join(wsPath, args.filePath)
-          if (!existsSync(fullPath)) return { code: -1, message: '文件不存在' }
-          const content = readFileSync(fullPath, 'utf-8')
-          return { code: 0, data: content }
+
+          // CLAUDE.md 走专用安全读取函数
+          if (args.filePath === 'CLAUDE.md') {
+            const file = readWorkspaceClaudeMd(slug)
+            return { code: 0, data: file }
+          }
+
+          // auto memory 文件走安全读取函数（含路径遍历防护）
+          const file = readWorkspaceAutoMemoryFile(slug, args.filePath)
+          return { code: 0, data: file }
         }
+
+        // 写入记忆文件
         case 'write': {
           if (!args.filePath || args.content === undefined) {
             return { code: -1, message: '缺少 filePath 或 content' }
           }
-          const fullPath = join(wsPath, args.filePath)
-          // 确保目录存在
-          const dir = join(fullPath, '..')
-          if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
-          writeFileSync(fullPath, args.content, 'utf-8')
+
+          // CLAUDE.md 走专用安全写入函数
+          if (args.filePath === 'CLAUDE.md') {
+            writeWorkspaceClaudeMd(slug, args.content)
+            return { code: 0, message: '保存成功' }
+          }
+
+          // auto memory 文件走安全写入函数（含路径遍历防护 + 自动创建父目录）
+          writeWorkspaceAutoMemoryFile(slug, args.filePath, args.content)
           return { code: 0, message: '保存成功' }
         }
+
         default:
           return { code: -1, message: `未知操作: ${args.action}` }
       }

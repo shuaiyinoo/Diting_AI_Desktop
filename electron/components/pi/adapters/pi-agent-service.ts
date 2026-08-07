@@ -16,9 +16,15 @@ import {
   getAgentWorkspacePath,
   getWorkspaceSkillsDir,
   getWorkspaceClaudeMdPath,
+  getWorkspaceAutoMemoryDir,
+  getWorkspaceAutoMemoryIndexPath,
   getSdkConfigDir,
   getDefaultSkillsDir,
+  AUTO_MEMORY_INDEX,
 } from '../config-paths'
+import {
+  createDitingAgentsFilesOverride,
+} from './pi-resource-loader-overrides'
 import { buildPiMcpTools, disposePiMcpConnections } from './pi-mcp-tools'
 import { getWorkspaceMcpConfig, getWorkspaceCwd } from './workspace-manager'
 import { mergeMcpConfigs } from '../builtin-mcp/registry'
@@ -271,18 +277,73 @@ function buildSystemPrompt(workspace?: WorkspaceMeta): string {
 - **大文件写入**：写入超过约 10,000 字时，主动拆分为多次写入——先 Write 首段，再用 Edit 追加后续段落，避免 token 截断。
 - **回复中的代码块必须标语言**：在 Markdown 回复里写 fenced code block 时，开头围栏一定要紧跟语言标识（\`\`\`ts / \`\`\`python / \`\`\`json 等），纯文本用 \`\`\`text。`)
 
-  // 工作区上下文
+  // 工作区上下文 + 记忆系统路径注入
   if (workspace) {
-    parts.push(`\n## 工作区: ${workspace.name}`)
+    const workspaceRoot = getAgentWorkspacePath(workspace.id)
+    const claudeMdPath = getWorkspaceClaudeMdPath(workspace.id)
+    const autoMemoryDir = getWorkspaceAutoMemoryDir(workspace.id)
+    const autoMemoryIndex = getWorkspaceAutoMemoryIndexPath(workspace.id)
+    const skillsDir = getWorkspaceSkillsDir(workspace.id)
+    const mcpConfigPath = join(workspaceRoot, 'mcp.json')
+
+    parts.push(`\n## 项目
+- 项目名称: ${workspace.name}
+- Diting 工作区目录: ${workspaceRoot}（存放 MCP、Skills、CLAUDE.md 与 Memory 等配置）
+- 项目根目录: ${workspace.projectPath || '(空白项目，使用 Diting 托管目录)'}
+- Diting 工作区 CLAUDE.md: ${claudeMdPath}
+- Diting 工作区 Auto Memory 目录: ${autoMemoryDir}
+- Diting 工作区 Auto Memory 索引: ${autoMemoryIndex}
+- Diting 工作区 Skills 目录: ${skillsDir}/
+- Diting 工作区 MCP 配置: ${mcpConfigPath}（顶层 key 是 \`servers\`）`)
+
     if (workspace.description) parts.push(workspace.description)
     if (workspace.projectPath) parts.push(`项目根目录: ${workspace.projectPath}`)
 
-    // 注入 CLAUDE.md
-    const claudeMdPath = getWorkspaceClaudeMdPath(workspace.slug)
+    // 注入 CLAUDE.md 内容
     if (existsSync(claudeMdPath)) {
       const claudeMd = readFileSync(claudeMdPath, 'utf-8')
-      parts.push(`\n## 项目说明\n${claudeMd}`)
+      parts.push(`\n## 项目说明（来自 CLAUDE.md）\n${claudeMd}`)
     }
+
+    // 注入 Auto Memory 索引内容（如果存在）
+    if (existsSync(autoMemoryIndex)) {
+      const memoryIndex = readFileSync(autoMemoryIndex, 'utf-8')
+      parts.push(`\n## 记忆索引（来自 MEMORY.md）\n${memoryIndex}`)
+    }
+
+    // 知识维护架构指导
+    parts.push(`\n## Diting 知识维护架构
+
+**核心原则：CLAUDE.md 约束行为，Memory 改善判断，Skills 固化流程，Context 承载当前任务。**
+
+### CLAUDE.md — Diting 工作区项目指令（长期持久化）
+维护 ${claudeMdPath}，记录未来任何 Agent 都应默认遵守的项目规则和入口：
+- **适合写入**：项目硬约束、架构边界、常用命令、测试/发布流程、关键路径索引
+- **不适合写入**：临时调试过程、一次性偏好、长篇调研正文、从代码中显而易见的内容
+- **维护要求**：保持精炼（<200 行），发现已有内容不准确时小幅修订或标注过时
+
+### Auto Memory — 自动记忆（用户可审计）
+维护 ${autoMemoryDir} 中的 ${AUTO_MEMORY_INDEX} 和主题文件：
+- **用途**：沉淀跨会话学习到的经验、用户偏好、误判纠正、问题状态变化和易错点
+- **入口文件**：${autoMemoryIndex} 只放主题索引和路由；详细内容拆到同目录或子目录下的主题文件
+- **路径边界**：不要在项目根目录或 cwd 下的 \`.claude/memory/\` 创建记忆文件，只使用上面给出的 Diting 工作区 Auto Memory 目录
+- **使用要求**：不要把它当聊天流水账；只有明确重复出现、用户明确要求记住，或删掉后未来 Agent 明显会犯错的稳定经验才写入
+- **会话内维护**：当用户确认问题已解决、否定先前判断、说明问题仍存在/加重，或明确表达长期偏好时，判断是否应更新 memory
+- **弱信号处理**：一次性偏好、临时过程和证据不足的判断，不要直接写入 auto memory；可在最终回复中建议用户确认后再沉淀
+- **user-profile.md**：持续迭代的用户画像，记录有充分证据的角色与技术背景、稳定协作偏好、反复出现的关注点；证据不足的信号标为“待确认”
+
+### 分类与维护去向
+
+| 场景 | 处理方式 |
+|------|----------|
+| 项目硬规则、架构边界、常用命令 | → 小幅更新 CLAUDE.md |
+| 用户偏好、误判纠正、跨会话经验 | → 必要时小幅更新 MEMORY.md 或主题文件 |
+| 重复流程、固定检查清单 | → 搜索/创建/更新 Skill |
+| 当前任务的临时计划、进度 | → 写入会话级 Context |
+| 简单问答、一次性修改 | → 直接回复，不写文件 |
+
+维护长期文件前，先按需搜索当前会话、CLAUDE.md、auto memory 索引和 Skills 元数据；
+涉及长期副作用时，优先提出简短维护建议，让用户知道会改哪里、为什么改。`)
   }
 
   // 运行时环境信息
@@ -527,14 +588,18 @@ export async function sendAgentMessage(
     }
 
     // 构建 ResourceLoader
-    // 关键：通过 additionalSkillPaths 让 SDK 发现工作区 Skills，
-    // noSkills: true 禁用 SDK 默认目录的 Skill 发现（避免加载 ~/.pi/agent/skills 中的无关 Skill），
-    // SDK 会自动调用 formatSkillsForPrompt() 将 Skills 列表注入系统提示词。
+    // 关键设计：
+    // - noSkills: true 禁用 SDK 默认目录的 Skill 发现（避免加载 ~/.pi/agent/skills 中的无关 Skill）
+    // - additionalSkillPaths 指定 Diting 工作区 Skills 目录
+    // - agentsFilesOverride 过滤掉本地项目中的 CLAUDE.md / AGENTS.md，防止与 Diting 注入的系统提示冲突
+    // - systemPromptOverride 完全替换系统提示词（包含记忆路径和维护规则）
+    // 注意：skillsOverride 因 SDK Skill 类型版本差异暂不使用，noSkills + additionalSkillPaths 已确保只加载工作区 Skills
     const resourceLoader = new DefaultResourceLoader({
       cwd,
       agentDir: getSdkConfigDir(),
       noSkills: true,
       additionalSkillPaths,
+      agentsFilesOverride: createDitingAgentsFilesOverride(),
       systemPromptOverride: () => systemPrompt,
       appendSystemPromptOverride: () => [],
     })
