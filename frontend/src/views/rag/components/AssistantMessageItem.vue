@@ -58,6 +58,8 @@
               :final="!msg.pending"
               :fade="false"
               smooth-streaming="auto"
+              :render-code-blocks-as-pre="false"
+              :is-dark="isDark" code-block-dark-theme="vitesse-dark" code-block-light-theme="vitesse-light" :themes="['vitesse-dark', 'vitesse-light']"
             />
           </div>
 
@@ -86,6 +88,7 @@
 import { computed } from 'vue';
 import { UserOutlined, RobotOutlined } from '@ant-design/icons-vue';
 import MarkdownRender from 'markstream-vue';
+import { isDark } from '@/theme';
 import CitationRail from './CitationRail.vue';
 
 const props = defineProps({

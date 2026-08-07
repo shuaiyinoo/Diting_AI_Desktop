@@ -75,6 +75,8 @@
                     :final="!msg.pending"
                     :fade="false"
                     smooth-streaming="auto"
+                    :render-code-blocks-as-pre="false"
+                    :is-dark="isDark" code-block-dark-theme="vitesse-dark" code-block-light-theme="vitesse-light" :themes="['vitesse-dark', 'vitesse-light']"
                   />
                   <!-- 流式呼吸脉冲点 -->
                   <span v-if="msg.pending" class="msg-streaming-dot" />
@@ -173,6 +175,7 @@ import { ipcApiRoute } from '@/api'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useChatStore } from '@/stores/chat'
 import { useTabStore } from '@/stores/tab'
+import { isDark } from '@/theme'
 import MarkdownRender from 'markstream-vue'
 
 const props = defineProps({

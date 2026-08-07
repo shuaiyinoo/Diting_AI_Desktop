@@ -133,7 +133,7 @@
                 <a-spin size="small" />
               </div>
               <div v-else class="skill-detail-markdown">
-                <MarkdownRender :content="skillBody || '暂无说明内容'" />
+                <MarkdownRender :content="skillBody || '暂无说明内容'" :render-code-blocks-as-pre="false" :is-dark="isDark" code-block-dark-theme="vitesse-dark" code-block-light-theme="vitesse-light" :themes="['vitesse-dark', 'vitesse-light']" />
               </div>
             </div>
             <!-- 资源文件 Tab -->
@@ -474,7 +474,7 @@
               ></textarea>
               <!-- 预览模式（Markdown 渲染） -->
               <div v-else class="editor-markdown">
-                <MarkdownRender :content="memoryContent || ''" />
+                <MarkdownRender :content="memoryContent || ''" :render-code-blocks-as-pre="false" :is-dark="isDark" code-block-dark-theme="vitesse-dark" code-block-light-theme="vitesse-light" :themes="['vitesse-dark', 'vitesse-light']" />
               </div>
               <!-- 未保存标记 -->
               <div v-if="selectedMemoryFile && hasUnsavedChanges" class="editor-unsaved">
@@ -514,6 +514,7 @@ import { ipcApiRoute } from '@/api'
 import MemoryFileTreeNode from '@/components/skills/MemoryFileTreeNode.vue'
 import SkillFileTreeNode from '@/components/skills/SkillFileTreeNode.vue'
 import MarkdownRender from 'markstream-vue'
+import { isDark } from '@/theme'
 import { useAgentStore } from '@/stores/agent'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useRouter } from 'vue-router'

@@ -3,6 +3,11 @@ import Antd from 'ant-design-vue';
 import { createApp } from 'vue';
 import { createPinia } from 'pinia';
 import App from './App.vue';
+
+// markstream-vue 流式 Markdown 渲染器样式（必须在自定义样式之前导入，
+// 确保自定义 global.less 能覆盖组件默认样式）
+import 'markstream-vue/index.css';
+import 'katex/dist/katex.min.css';
 import './assets/global.less';
 import './assets/theme.less';
 
@@ -26,11 +31,14 @@ dayjs.extend(localeData);
 dayjs.extend(weekOfYear);
 dayjs.extend(weekYear);
 dayjs.extend(quarterOfYear);
-// markstream-vue 流式 Markdown 渲染器样式（全局导入一次）
-import 'markstream-vue/index.css';
+import { enableKatex, enableMermaid } from 'markstream-vue';
 import components from './components/global';
 import Router from './router/index';
 import { initMarkdownFontSize } from './utils/markdown-font-size';
+
+// 启用 Mermaid 图表和 KaTeX 数学公式渲染（需对应 peer 依赖已安装）
+enableMermaid();
+enableKatex();
 
 const app = createApp(App)
 app.config.productionTip = false

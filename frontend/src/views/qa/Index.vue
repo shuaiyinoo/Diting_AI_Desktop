@@ -130,6 +130,8 @@
                     :final="!msg.pending"
                     :fade="false"
                     smooth-streaming="auto"
+                    :render-code-blocks-as-pre="false"
+                    :is-dark="isDark" code-block-dark-theme="vitesse-dark" code-block-light-theme="vitesse-light" :themes="['vitesse-dark', 'vitesse-light']"
                   />
                 </div>
 
@@ -239,6 +241,7 @@ import {
 } from '@ant-design/icons-vue';
 import { ipcApiRoute } from '@/api';
 import { ipc } from '@/utils/ipcRenderer';
+import { isDark } from '@/theme';
 import MarkdownRender from 'markstream-vue';
 
 // ========== HTTP 服务器地址（用于 SSE 流式通信） ==========

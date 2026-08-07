@@ -347,42 +347,14 @@ html, body {
   background-color: rgba(255, 255, 255, 0.15);
 }
 
-/* --- 3. 代码块：始终深色背景（对标 Proma --code-bg: 210 13% 12%） --- */
-.markstream-vue {
-  /* 代码块背景：深海军蓝，亮暗模式统一（Proma 风格核心特征） */
-  --code-bg: #1e2228;
-  --code-fg: #e1e4e8;
-  --code-border: rgba(255, 255, 255, 0.08);
-  --code-header-bg: rgba(255, 255, 255, 0.05);
-  --code-selection-bg: rgba(255, 255, 255, 0.15);
-  --code-line-number: rgba(255, 255, 255, 0.3);
-  /* 代码块操作按钮 */
-  --code-action-fg: rgba(255, 255, 255, 0.5);
-  --code-action-hover-bg: rgba(255, 255, 255, 0.1);
-  --code-action-hover-fg: rgba(255, 255, 255, 0.9);
-  --code-action-active-bg: rgba(255, 255, 255, 0.15);
-  --code-action-active-fg: #ffffff;
+/* --- 3. 代码块 & 行内代码：完全依赖 markstream-vue 内置样式 --- */
+/* 仅补充边框，使代码块与背景有清晰边界 */
+.markstream-vue .code-block-container {
+  border: 1px solid rgba(0, 0, 0, 0.12) !important;
+  border-radius: 8px !important;
 }
-
-/* --- 4. 行内代码：柔和背景 + 中等字重（对标 Proma inline code 样式） --- */
-.markstream-vue {
-  --inline-code-bg: rgba(0, 0, 0, 0.06);
-  --inline-code-fg: var(--text-primary);
-  --inline-code-border: transparent;
-}
-[data-theme='dark'] .markstream-vue {
-  --inline-code-bg: rgba(255, 255, 255, 0.1);
-  --inline-code-fg: var(--text-primary);
-  --inline-code-border: transparent;
-}
-
-/* 行内代码样式微调：圆角 + 缩小字号 + 中等字重 */
-.markstream-vue .inline-code-node,
-.markstream-vue code:not([class*="language-"]) {
-  border-radius: 4px;
-  font-size: 0.875em;
-  font-weight: 500;
-  padding: 0.1em 0.35em;
+[data-theme='dark'] .markstream-vue .code-block-container {
+  border-color: rgba(255, 255, 255, 0.1) !important;
 }
 
 /* --- 5. 表格渲染：对标 Proma 表格样式 --- */
@@ -404,8 +376,6 @@ html, body {
   --ms-flow-table-y: 0.75em;
   /* 单元格内边距 */
   --ms-flow-table-cell: 0.4em 0.6em;
-  /* 表格无阴影 */
-  --ms-shadow-subtle: none;
 }
 [data-theme='dark'] .markstream-vue {
   --table-border: rgba(255, 255, 255, 0.1);
@@ -471,14 +441,10 @@ html, body {
   border-radius: 0;
 }
 
-/* --- 6. 代码块渲染（由 markstream-vue 内置 CSS + Shiki 处理） --- */
-/* 不在此处覆盖 .code-block-header / .code-block-container 等样式， */
-/* 避免与 markstream-vue 内置 Shiki 主题样式冲突。 */
-/* 亮/暗模式通过 :is-dark prop + .dark 类自动切换。 */
-
-/* 防止祖先容器（如 .msg-markdown 的 word-break: break-word）破坏代码块渲染 */
-/* 同时添加 min-width: 0，确保在 flex 布局中代码块能收缩并启用内部横向滚动 */
-.markstream-vue,
+/* --- 6. 代码块布局保护（仅布局，不干预视觉样式） --- */
+/* min-width: 0 确保 flex 子项能收缩，代码块可内部横向滚动 */
+/* word-break/overflow-wrap: normal 防止从 .msg-markdown 继承的 break-word */
+/* 导致代码行换行与绝对定位的行号错位重叠 */
 .markstream-vue pre,
 .markstream-vue .code-block-container,
 .markstream-vue .code-block-container pre,

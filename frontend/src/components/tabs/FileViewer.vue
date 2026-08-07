@@ -40,7 +40,7 @@
 
       <!-- Markdown 预览 -->
       <div v-else-if="fileType === 'markdown'" class="file-viewer__markdown">
-        <MarkdownRender mode="chat" :content="textContent" :final="true" :fade="false" />
+        <MarkdownRender mode="chat" :content="textContent" :final="true" :fade="false" :render-code-blocks-as-pre="false" :is-dark="isDark" code-block-dark-theme="vitesse-dark" code-block-light-theme="vitesse-light" :themes="['vitesse-dark', 'vitesse-light']" />
       </div>
 
       <!-- 代码/文本 -->
@@ -60,6 +60,7 @@ import { FileExclamationOutlined } from '@ant-design/icons-vue'
 import { ipc } from '@/utils/ipcRenderer'
 import { ipcApiRoute } from '@/api'
 import MarkdownRender from 'markstream-vue'
+import { isDark } from '@/theme'
 
 const props = defineProps({
   filePath: { type: String, required: true },

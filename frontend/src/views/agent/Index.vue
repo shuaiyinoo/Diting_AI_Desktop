@@ -189,6 +189,8 @@
                       :final="!msg.pending"
                       :fade="false"
                       smooth-streaming="auto"
+                      :render-code-blocks-as-pre="false"
+                      :is-dark="isDark" code-block-dark-theme="vitesse-dark" code-block-light-theme="vitesse-light" :themes="['vitesse-dark', 'vitesse-light']"
                     />
                     <span v-if="msg.pending" class="msg-streaming-dot" />
                   </div>
@@ -503,6 +505,7 @@ import { ipcApiRoute } from '@/api'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useAgentStore } from '@/stores/agent'
 import { useTabStore } from '@/stores/tab'
+import { isDark } from '@/theme'
 import MarkdownRender from 'markstream-vue'
 import PanelDivider from '@/components/layout/PanelDivider.vue'
 import ProcessBlockGroup from '@/components/agent/ProcessBlockGroup.vue'
