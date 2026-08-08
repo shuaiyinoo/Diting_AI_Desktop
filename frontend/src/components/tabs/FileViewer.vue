@@ -9,48 +9,58 @@
       </div>
     </div>
 
-    <!-- 加载中 -->
-    <div v-if="loading" class="file-viewer__loading">
-      <a-spin size="large" />
-      <p>正在加载文件...</p>
-    </div>
+    <!-- ===== fileItemId 模式：使用 @file-viewer/vue3-full 全功能查看器 ===== -->
+    <template v-if="fileItemId">
+      <div class="file-viewer__full">
+        <FullFileViewer :file-item-id="fileItemId" :theme="isDark ? 'dark' : 'light'" @loaded="onFullLoaded" @error="onFullError" />
+      </div>
+    </template>
 
-    <!-- 加载失败 -->
-    <div v-else-if="error" class="file-viewer__error">
-      <FileExclamationOutlined style="font-size: 48px; opacity: 0.3" />
-      <p>{{ error }}</p>
-    </div>
-
-    <!-- 文件内容 -->
-    <div v-else class="file-viewer__body">
-      <!-- 图片预览 -->
-      <div v-if="fileType === 'image'" class="file-viewer__image">
-        <img :src="imageSrc" :alt="fileName" />
+    <!-- ===== filePath 模式：内置轻量查看器 ===== -->
+    <template v-else>
+      <!-- 加载中 -->
+      <div v-if="loading" class="file-viewer__loading">
+        <a-spin size="large" />
+        <p>正在加载文件...</p>
       </div>
 
-      <!-- PDF 预览 -->
-      <div v-else-if="fileType === 'pdf'" class="file-viewer__pdf">
-        <iframe :src="pdfSrc" :title="fileName" frameborder="0" />
+      <!-- 加载失败 -->
+      <div v-else-if="error" class="file-viewer__error">
+        <FileExclamationOutlined style="font-size: 48px; opacity: 0.3" />
+        <p>{{ error }}</p>
       </div>
 
-      <!-- SVG 预览 -->
-      <div v-else-if="fileType === 'svg'" class="file-viewer__image">
-        <img :src="svgSrc" :alt="fileName" />
-      </div>
-
-      <!-- Markdown 预览 -->
-      <div v-else-if="fileType === 'markdown'" class="file-viewer__markdown">
-        <MarkdownRender mode="chat" :content="textContent" :final="true" :fade="false" :render-code-blocks-as-pre="false" :is-dark="isDark" code-block-dark-theme="vitesse-dark" code-block-light-theme="vitesse-light" :themes="['vitesse-dark', 'vitesse-light']" />
-      </div>
-
-      <!-- 代码/文本 -->
-      <div v-else class="file-viewer__code">
-        <div class="file-viewer__code-header">
-          <span>{{ fileExt || 'txt' }} · {{ lineCount }} 行</span>
+      <!-- 文件内容 -->
+      <div v-else class="file-viewer__body">
+        <!-- 图片预览 -->
+        <div v-if="fileType === 'image'" class="file-viewer__image">
+          <img :src="imageSrc" :alt="fileName" />
         </div>
-        <pre><code>{{ textContent }}</code></pre>
+
+        <!-- PDF 预览 -->
+        <div v-else-if="fileType === 'pdf'" class="file-viewer__pdf">
+          <iframe :src="pdfSrc" :title="fileName" frameborder="0" />
+        </div>
+
+        <!-- SVG 预览 -->
+        <div v-else-if="fileType === 'svg'" class="file-viewer__image">
+          <img :src="svgSrc" :alt="fileName" />
+        </div>
+
+        <!-- Markdown 预览 -->
+        <div v-else-if="fileType === 'markdown'" class="file-viewer__markdown">
+          <MarkdownRender mode="chat" :content="textContent" :final="true" :fade="false" :render-code-blocks-as-pre="false" :is-dark="isDark" code-block-dark-theme="vitesse-dark" code-block-light-theme="vitesse-light" :themes="['vitesse-dark', 'vitesse-light']" />
+        </div>
+
+        <!-- 代码/文本 -->
+        <div v-else class="file-viewer__code">
+          <div class="file-viewer__code-header">
+            <span>{{ fileExt || 'txt' }} · {{ lineCount }} 行</span>
+          </div>
+          <pre><code>{{ textContent }}</code></pre>
+        </div>
       </div>
-    </div>
+    </template>
   </div>
 </template>
 
@@ -61,16 +71,19 @@ import { ipc } from '@/utils/ipcRenderer'
 import { ipcApiRoute } from '@/api'
 import MarkdownRender from 'markstream-vue'
 import { isDark } from '@/theme'
+import FullFileViewer from '@/components/file/FileViewer.vue'
 
 const props = defineProps({
-  filePath: { type: String, required: true },
+  filePath: { type: String, default: '' },
   workspaceId: { type: String, default: null },
   sessionId: { type: String, default: null },
   mode: { type: String, default: 'project' },
   attachedDirPath: { type: String, default: null },
+  /** RAG 文件项 ID（优先于 filePath，使用全功能查看器） */
+  fileItemId: { type: [Number, String], default: null },
 })
 
-const loading = ref(true)
+const loading = ref(!props.fileItemId)
 const error = ref('')
 const textContent = ref('')
 const imageSrc = ref('')
@@ -96,8 +109,25 @@ const lineCount = computed(() => {
   return textContent.value.split('\n').length
 })
 
-/** 加载文件内容 */
+/** fileItemId 模式：全功能查看器加载完成回调 */
+function onFullLoaded(info) {
+  fileName.value = info?.name || ''
+  fileSize.value = info?.size || 0
+  if (info?.name) {
+    fileExt.value = info.name.split('.').pop()?.toLowerCase() || ''
+  }
+}
+
+/** fileItemId 模式：全功能查看器加载失败回调 */
+function onFullError(errMsg) {
+  error.value = errMsg || '加载文件失败'
+}
+
+/** 加载文件内容（filePath 模式） */
 async function loadFile() {
+  // fileItemId 模式不走此路径
+  if (props.fileItemId) return
+
   loading.value = true
   error.value = ''
   textContent.value = ''
@@ -155,13 +185,17 @@ function formatSize(bytes) {
   return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
 }
 
-// 文件路径变化时重新加载
+// filePath 模式：文件路径变化时重新加载
 watch(() => [props.filePath, props.workspaceId, props.sessionId, props.mode, props.attachedDirPath], () => {
-  loadFile()
+  if (!props.fileItemId) {
+    loadFile()
+  }
 })
 
 onMounted(() => {
-  loadFile()
+  if (!props.fileItemId) {
+    loadFile()
+  }
 })
 </script>
 
@@ -214,6 +248,13 @@ onMounted(() => {
     background: rgba(22, 119, 255, 0.08);
     padding: 2px 8px;
     border-radius: 4px;
+  }
+
+  // ===== fileItemId 模式：全功能查看器容器 =====
+  &__full {
+    flex: 1;
+    overflow: hidden;
+    min-height: 0;
   }
 
   // ===== 加载/错误 =====

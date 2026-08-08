@@ -257,7 +257,7 @@ export const useAgentStore = defineStore('agent', () => {
    * @param {Object} params - { text, sessionId, model, workspaceSlug, httpServerUrl, onScroll, onEvent }
    */
   async function sendMessage(params) {
-    const { text, model, workspaceSlug: wsSlug, httpServerUrl, onScroll, onEvent } = params
+    const { text, model, workspaceSlug: wsSlug, httpServerUrl, onScroll, onEvent, permissionMode, thinkingLevel } = params
 
     // 获取或创建会话
     let sessionId = currentSessionId.value
@@ -350,6 +350,8 @@ export const useAgentStore = defineStore('agent', () => {
           message: text,
           model,
           workspaceSlug: wsSlug || undefined,
+          permissionMode: permissionMode || undefined,
+          thinkingLevel: thinkingLevel || undefined,
         }),
         signal: controller.signal,
       })
@@ -564,6 +566,17 @@ export const useAgentStore = defineStore('agent', () => {
       case 'complete':
         assistantMsg.pending = false
         break
+
+      case 'rag_citations': {
+        // SearchKnowledgeBase 工具检索到证据后发送的结构化引用数据
+        // 前端据此在助手消息底部渲染 CitationRail 证据卡片
+        if (data.citations && Array.isArray(data.citations) && data.citations.length > 0) {
+          // 累积合并多次检索的引用（Agent 可能多次调用 SearchKnowledgeBase）
+          const existing = assistantMsg.citations || []
+          assistantMsg.citations = [...existing, ...data.citations]
+        }
+        break
+      }
 
       case 'error':
         assistantMsg.pending = false

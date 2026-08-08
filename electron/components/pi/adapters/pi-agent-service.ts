@@ -45,6 +45,7 @@ import type { WorkspaceMeta } from './workspace-manager'
 import type { AgentChannel, AgentMessage, AgentSessionMeta } from '../types'
 import { channelToPiProvider } from './pi-model-registry'
 import { permissionService } from './agent-permission-service'
+import { hybridRetrievalService } from '../../rag/retrieval/hybridRetrieval'
 import type { PermissionRequest, AskUserRequest, CanUseToolOptions, PermissionResult } from './agent-permission-service'
 import {
   resolvePythonRuntime,
@@ -96,12 +97,14 @@ import { broadcastPlanningChanged, broadcastPlanningAgentOperation, broadcastAut
 
 /** Agent 发送输入 */
 export interface AgentSendInput {
-  sessionId: string
-  message: string
-  channelId?: string
-  workspaceId?: string
-  agentRuntime?: 'pi'
-  permissionMode?: string
+sessionId: string
+message: string
+channelId?: string
+workspaceId?: string
+agentRuntime?: 'pi'
+permissionMode?: string
+/** 思考深度等级：off / low / medium / high / xhigh */
+thinkingLevel?: string
 }
 
 /** 权限响应输入（前端回传） */
@@ -275,7 +278,8 @@ function buildSystemPrompt(workspace?: WorkspaceMeta): string {
   - **只追加或更新，绝不整表覆盖**：已有任务时只用 TaskCreate 新增、TaskUpdate 更新指定 taskId；任务范围扩大时新增任务，不得删除、重建或遗漏旧任务。
   - **术语不要混淆**：TaskCreate / TaskUpdate 是你的可见进度工具，用于向用户展示工作计划与完成情况。
 - **大文件写入**：写入超过约 10,000 字时，主动拆分为多次写入——先 Write 首段，再用 Edit 追加后续段落，避免 token 截断。
-- **回复中的代码块必须标语言**：在 Markdown 回复里写 fenced code block 时，开头围栏一定要紧跟语言标识（\`\`\`ts / \`\`\`python / \`\`\`json 等），纯文本用 \`\`\`text。`)
+- **回复中的代码块必须标语言**：在 Markdown 回复里写 fenced code block 时，开头围栏一定要紧跟语言标识（\`\`\`ts / \`\`\`python / \`\`\`json 等），纯文本用 \`\`\`text。
+- **知识库检索（SearchKnowledgeBase）**：当用户提问涉及已上传到本地知识库的文档内容时，主动调用 SearchKnowledgeBase 检索相关片段作为回答依据。不传 folderId 时搜索全部知识库；如果用户指定了某个知识库分组，可传 folderId 限定范围。回答中引用检索到的内容时，在末尾标注对应的 evidenceId（如 [E1]、[E2]）。检索结果为空时如实告知，不要编造。`)
 
   // 工作区上下文 + 记忆系统路径注入
   if (workspace) {
@@ -989,6 +993,101 @@ ${output}` }],
           content: [{ type: 'text' as const, text: `执行失败 (${runtime.source}):
 ${output}` }],
           details: { source: runtime.source, runtime: runtime.path, error: true },
+        }
+      }
+    },
+  })
+
+  // ========== RAG 知识库检索工具 ==========
+  // SearchKnowledgeBase 让 Agent 自主检索本地知识库，
+  // 支持「全库搜索」（不传 folderId）和「指定分组搜索」（传 folderId）两种模式。
+  const searchKnowledgeBaseTool = sdkModule.defineTool({
+    name: 'SearchKnowledgeBase',
+    label: '搜索知识库',
+    description: '从本地知识库中检索与用户问题相关的文档片段。不传 folderId 时搜索全部知识库，传 folderId 时仅搜索指定分组。当用户提问涉及已上传到知识库的文档内容时调用。',
+    promptSnippet: '从知识库检索相关文档片段作为回答依据。',
+    parameters: Type.Object({
+      query: Type.String({ description: '检索关键词或问题，用自然语言描述要查找的内容。' }),
+      folderId: Type.Optional(Type.Number({ description: '知识库分组 ID。不传则搜索全库。' })),
+      topK: Type.Optional(Type.Number({ description: '返回结果数量，默认 5，最大 10。' })),
+    }),
+    async execute(_toolCallId: string, params: Record<string, unknown>) {
+      const p = params as { query: string; folderId?: number; topK?: number }
+      const query = (p.query || '').trim()
+
+      // 统一 details 形状，避免 union 类型推断冲突
+      interface KbSearchDetails {
+        error?: string
+        ragResult?: {
+          total: number
+          evidenceLevel: string
+          evidenceGuidance: string
+          documents: Array<{
+            evidenceId: string
+            fileName: string
+            fileItemId: number
+            score: number
+            text: string
+          }>
+        }
+      }
+
+      if (!query) {
+        const details: KbSearchDetails = { error: 'query 不能为空' }
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({ error: details.error }) }],
+          details,
+        }
+      }
+
+      const topK = Math.min(Math.max(p.topK ?? 5, 1), 10)
+      const folderId = p.folderId && p.folderId > 0 ? p.folderId : undefined
+
+      try {
+        const bundle = folderId
+          ? await hybridRetrievalService.retrieve(folderId, query, topK)
+          : await hybridRetrievalService.retrieveAll(query, topK)
+
+        // 组装给 LLM 的检索摘要
+        const snippets = bundle.documents.map(doc => ({
+          evidenceId: doc.metadata.evidenceId,
+          fileName: doc.metadata.fileName,
+          fileItemId: doc.metadata.fileItemId,
+          score: Number(doc.metadata.score.toFixed(4)),
+          text: doc.text,
+        }))
+
+        const ragResult = {
+          total: snippets.length,
+          evidenceLevel: bundle.evidenceLevel,
+          evidenceGuidance: bundle.evidenceGuidance,
+          documents: snippets,
+        }
+
+        // 发送 rag_citations SSE 事件，前端据此渲染 CitationRail 证据卡片
+        const citations = bundle.documents.map(doc => ({
+          evidenceId: doc.metadata.evidenceId,
+          fileName: doc.metadata.fileName,
+          fileItemId: doc.metadata.fileItemId,
+          chunkId: doc.metadata.chunkId,
+          chunkIndex: doc.metadata.chunkIndex,
+          score: doc.metadata.score,
+          snippet: doc.text.replace(/^文件名：.+\n/, '').slice(0, 200),
+        }))
+        onEvent('rag_citations', { citations })
+
+        const details: KbSearchDetails = { ragResult }
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify(ragResult, null, 2) }],
+          details,
+        }
+      } catch (err: unknown) {
+        const errorMsg = err instanceof Error ? err.message : String(err)
+        logger.error(`[SearchKnowledgeBase] 检索失败: ${errorMsg}`)
+        const details: KbSearchDetails = { error: errorMsg }
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({ error: '知识库检索失败', detail: errorMsg }) }],
+          details,
         }
       }
     },
@@ -1839,6 +1938,7 @@ ${output}` }],
     wrapToolWithPermission(runNodeScriptTool as unknown as ToolDefinition, canUseTool),
     wrapToolWithPermission(installPackageTool as unknown as ToolDefinition, canUseTool),
     wrapToolWithPermission(runGitCommandTool as unknown as ToolDefinition, canUseTool),
+    searchKnowledgeBaseTool as unknown as ToolDefinition,
     ...collaborationTools,
     ...automationTools,
     ...planningTools,
@@ -1848,7 +1948,7 @@ ${output}` }],
   // 调试日志：确认工具已注册
   logger.info(`[Pi Agent] 已注册 ${allCustomTools.length} 个自定义工具: ${allCustomTools.map(t => t.name).join(', ')}`)
 
-  // 创建 Pi Agent 会话
+    // 创建 Pi Agent 会话
   const { session: piSession } = await createAgentSession({
     cwd,
     model,
@@ -1861,6 +1961,8 @@ ${output}` }],
       compaction: { enabled: false },
       retry: { enabled: true, maxRetries: 2 },
     }),
+    // 思考深度等级（off / low / medium / high / xhigh）
+    ...(input.thinkingLevel && input.thinkingLevel !== 'off' && { thinkingLevel: input.thinkingLevel as any }),
   })
 
     // 监听事件：AgentSession 使用 subscribe() 而非 on()

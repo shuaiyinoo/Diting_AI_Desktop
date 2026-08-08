@@ -81,6 +81,13 @@
                   <!-- 流式呼吸脉冲点 -->
                   <span v-if="msg.pending" class="msg-streaming-dot" />
                 </div>
+
+                <!-- 引用证据卡片（KB_SEARCH 模式，回答完成后展示） -->
+                <CitationRail
+                  v-if="!msg.pending && msg.citations && msg.citations.length > 0"
+                  :citations="msg.citations"
+                  @citation-click="onCitationClick"
+                />
               </template>
             </div>
           </div>
@@ -103,18 +110,27 @@
 
           <!-- 底部工具栏 -->
           <div class="chat-input-toolbar">
-            <!-- 左侧：模型选择 -->
+            <!-- 左侧：模型选择 + 知识库文件夹选择 -->
             <div class="chat-input-toolbar__left">
               <a-select
                 v-model:value="selectedModel"
                 size="small"
-                style="min-width: 160px; max-width: 240px"
+                style="min-width: 140px; max-width: 200px"
                 :placeholder="availableModels.length === 0 ? '未启用模型' : '选择模型'"
                 :disabled="availableModels.length === 0"
                 :bordered="false"
               >
                 <a-select-option v-for="m in availableModels" :key="m.id" :value="m.id">{{ m.name }}</a-select-option>
               </a-select>
+              <a-select
+                v-model:value="selectedFolderId"
+                size="small"
+                style="min-width: 120px; max-width: 180px"
+                placeholder="知识库（可选）"
+                allow-clear
+                :bordered="false"
+                :options="folderOptions"
+              />
             </div>
 
             <!-- 右侧：发送/停止按钮 -->
@@ -177,6 +193,7 @@ import { useChatStore } from '@/stores/chat'
 import { useTabStore } from '@/stores/tab'
 import { isDark } from '@/theme'
 import MarkdownRender from 'markstream-vue'
+import CitationRail from '@/components/CitationRail.vue'
 
 const props = defineProps({
   /** 会话 ID，由 TabContent 传入 */
@@ -204,6 +221,52 @@ const httpServerUrl = ref('http://127.0.0.1:7071')
 // ========== 模型选择 ==========
 const selectedModel = ref(null)
 const availableModels = ref([])
+
+// ========== 知识库文件夹选择 ==========
+const folderList = ref([])
+
+/** 当前会话的 folderId：从 chat store 读写，实现会话级记忆 */
+const selectedFolderId = computed({
+  get() {
+    const sid = currentSessionId.value
+    if (!sid) return null
+    return chatStore.getSessionFolderId(sid)
+  },
+  set(val) {
+    chatStore.setSessionFolderId(val)
+  },
+})
+
+/** 加载授权文件夹列表 */
+async function loadFolderList() {
+  try {
+    const data = await ipc.invoke(ipcApiRoute.file.getFolderList)
+    folderList.value = data || []
+    // 校验当前会话记忆的 folderId 是否仍存在，不存在则清除
+    const sid = currentSessionId.value
+    if (sid) {
+      const remembered = chatStore.getSessionFolderId(sid)
+      if (remembered && !folderList.value.some((f) => f.id === remembered)) {
+        chatStore.setSessionFolderId(null)
+      }
+    }
+  } catch (err) {
+    console.error('[chat] 加载文件夹列表失败:', err)
+  }
+}
+
+/** 文件夹选项：显示文件夹名而非完整路径 */
+const folderOptions = computed(() =>
+  folderList.value.map((f) => ({
+    value: f.id,
+    label: f.path?.split('/').pop() || f.path || `文件夹 ${f.id}`,
+  }))
+)
+
+/** 当前 toolMode：选了文件夹则为 KB_SEARCH，否则为 CHAT */
+const currentToolMode = computed(() =>
+  selectedFolderId.value ? 'KB_SEARCH' : 'CHAT'
+)
 
 // ========== 会话消息（全部使用 chat store） ==========
 const messages = computed(() => chatStore.messages)
@@ -278,6 +341,7 @@ watch(() => messages.value.length, async () => {
 onMounted(async () => {
   await loadHttpServerUrl()
   await loadEnabledModel()
+  await loadFolderList()
   if (currentSessionId.value) {
     // 如果 store 中没有该会话的消息，则从后端加载
     if (!chatStore.messagesBySession[currentSessionId.value]) {
@@ -332,6 +396,8 @@ async function sendMessage() {
   await chatStore.sendMessage({
     text,
     httpServerUrl: httpServerUrl.value,
+    toolMode: currentToolMode.value,
+    folderId: selectedFolderId.value || undefined,
     onScroll: () => scrollToBottom(),
   })
 }
@@ -339,6 +405,18 @@ async function sendMessage() {
 /** 停止生成 */
 function stopGeneration() {
   chatStore.stopGeneration()
+}
+
+/**
+ * 点击引用证据卡片，在 Tab 栏中打开文件查看器（全局只保留一个文件 Tab）。
+ */
+function onCitationClick(cite) {
+  const fileId = cite.documentId ?? cite.fileItemId
+  if (fileId === null || fileId === undefined) return
+  tabStore.openFileTab({
+    name: cite.fileName || '文件',
+    fileItemId: fileId,
+  })
 }
 
 /** 智能滚动：仅在用户已处于底部时自动滚动 */

@@ -113,6 +113,14 @@
       "category": "runtime",
       "source": "custom",
       "readOnly": false
+    },
+    {
+      "name": "SearchKnowledgeBase",
+      "label": "搜索知识库",
+      "description": "从本地知识库中检索与用户问题相关的文档片段。不传 folderId 时搜索全部知识库，传 folderId 时仅搜索指定分组。",
+      "category": "rag",
+      "source": "custom",
+      "readOnly": true
     }
   ]
 }

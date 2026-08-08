@@ -22,12 +22,13 @@
       <!-- 文件查看器 -->
       <FileViewer
         v-else-if="tabStore.activeTab.type === 'file'"
-        :key="'file-' + tabStore.activeTab.filePath"
+        :key="'file-' + (tabStore.activeTab.fileItemId || tabStore.activeTab.filePath)"
         :file-path="tabStore.activeTab.filePath"
         :workspace-id="tabStore.activeTab.workspaceId"
         :session-id="tabStore.activeTab.fileSessionId"
         :mode="tabStore.activeTab.mode"
         :attached-dir-path="tabStore.activeTab.attachedDirPath"
+        :file-item-id="tabStore.activeTab.fileItemId"
       />
     </template>
 

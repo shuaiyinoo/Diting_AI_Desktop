@@ -58,10 +58,42 @@ class HybridRetrievalService {
     question: string,
     topK: number = DEFAULT_TOP_K
   ): Promise<RetrievedEvidenceBundle> {
-    const startNano = process.hrtime.bigint();
     if (!folderId || folderId <= 0) {
       return emptyBundle();
     }
+    return this.doRetrieve(question, topK, folderId);
+  }
+
+  /**
+   * 全库混合检索（不限定 folderId），供 Agent RAG 模式使用。
+   *
+   * 当用户未指定知识库分组时，跨所有文件夹搜索，
+   * 向量检索结果不做 folderId 过滤，关键词检索使用 searchAll。
+   *
+   * @param question 用户问题
+   * @param topK     返回的最大文档数（默认 5）
+   */
+  async retrieveAll(
+    question: string,
+    topK: number = DEFAULT_TOP_K
+  ): Promise<RetrievedEvidenceBundle> {
+    return this.doRetrieve(question, topK, undefined);
+  }
+
+  /**
+   * 混合检索核心实现。
+   *
+   * @param question  用户问题
+   * @param topK      返回的最大文档数
+   * @param folderId  可选，限定检索范围；不传则全库搜索
+   */
+  private async doRetrieve(
+    question: string,
+    topK: number,
+    folderId?: number
+  ): Promise<RetrievedEvidenceBundle> {
+    const startNano = process.hrtime.bigint();
+    const scopeLabel = folderId ? `folderId=${folderId}` : 'ALL';
     const normalizedQuestion = (question || '').trim();
     if (!normalizedQuestion) {
       return emptyBundle();
@@ -69,7 +101,7 @@ class HybridRetrievalService {
     const validTopK = topK > 0 ? topK : DEFAULT_TOP_K;
 
     logger.info(
-      `[HybridRetrieval] 检索开始: folderId=${folderId}, topK=${validTopK}, questionLength=${normalizedQuestion.length}`
+      `[HybridRetrieval] 检索开始: ${scopeLabel}, topK=${validTopK}, questionLength=${normalizedQuestion.length}`
     );
 
     // 获取检索资源（确保初始化）
@@ -78,14 +110,16 @@ class HybridRetrievalService {
     // ── 双通道检索 ──
     const candidates = new Map<number, RetrievalCandidate>();
 
-    // 向量检索（zvec 不支持 folderId 过滤，取较多候选后过滤）
+    // 向量检索（zvec 不支持 folderId 过滤，取较多候选后按需过滤）
     const vectorHits = await searchVectors(
       ctx.collection,
       ctx.embedder,
       normalizedQuestion,
       CHANNEL_TOP_K
     );
-    const filteredVectorHits = vectorHits.filter(h => h.folderId === folderId);
+    const filteredVectorHits = folderId
+      ? vectorHits.filter(h => h.folderId === folderId)
+      : vectorHits;
     filteredVectorHits.forEach((hit, index) => {
       const candidate = candidates.get(hit.chunkId) ?? createCandidate(hit);
       candidate.vectorMatched = true;
@@ -95,7 +129,9 @@ class HybridRetrievalService {
     });
 
     // 关键词检索（MiniSearch 支持 folderId 过滤）
-    const keywordHits = ctx.kwService.search(folderId, normalizedQuestion, CHANNEL_TOP_K);
+    const keywordHits = folderId
+      ? ctx.kwService.search(folderId, normalizedQuestion, CHANNEL_TOP_K)
+      : ctx.kwService.searchAll(normalizedQuestion, CHANNEL_TOP_K);
     keywordHits.forEach((hit, index) => {
       const candidate = candidates.get(hit.chunkId) ?? createCandidateFromKeyword(hit);
       candidate.keywordMatched = true;
@@ -107,11 +143,11 @@ class HybridRetrievalService {
     const vectorHitCount = Array.from(candidates.values()).filter(c => c.vectorMatched).length;
     const keywordHitCount = Array.from(candidates.values()).filter(c => c.keywordMatched).length;
     logger.info(
-      `[HybridRetrieval] 双路检索完成: folderId=${folderId}, candidates=${candidates.size}, vectorHits=${vectorHitCount}, keywordHits=${keywordHitCount}`
+      `[HybridRetrieval] 双路检索完成: ${scopeLabel}, candidates=${candidates.size}, vectorHits=${vectorHitCount}, keywordHits=${keywordHitCount}`
     );
 
     if (candidates.size === 0) {
-      logElapsed(folderId, startNano, 0, EvidenceLevel.NONE);
+      logElapsed(scopeLabel, startNano, 0, EvidenceLevel.NONE);
       return emptyBundle();
     }
 
@@ -162,7 +198,7 @@ class HybridRetrievalService {
     }
 
     if (documents.length === 0) {
-      logElapsed(folderId, startNano, 0, EvidenceLevel.NONE);
+      logElapsed(scopeLabel, startNano, 0, EvidenceLevel.NONE);
       return emptyBundle();
     }
 
@@ -170,7 +206,7 @@ class HybridRetrievalService {
     const evidenceLevel = evaluateEvidenceLevel(documents);
     const evidenceGuidance = buildEvidenceGuidance(evidenceLevel);
 
-    logElapsed(folderId, startNano, documents.length, evidenceLevel);
+    logElapsed(scopeLabel, startNano, documents.length, evidenceLevel);
     return { documents, evidenceLevel, evidenceGuidance };
   }
 }
@@ -285,13 +321,13 @@ function emptyBundle(): RetrievedEvidenceBundle {
 }
 
 function logElapsed(
-  folderId: number,
+  scopeLabel: string,
   startNano: bigint,
   evidenceCount: number,
   level: EvidenceLevel
 ): void {
   const elapsedMs = Number(process.hrtime.bigint() - startNano) / 1_000_000;
   logger.info(
-    `[HybridRetrieval] 检索完成: folderId=${folderId}, evidenceCount=${evidenceCount}, evidenceLevel=${level}, elapsedMs=${elapsedMs.toFixed(1)}`
+    `[HybridRetrieval] 检索完成: ${scopeLabel}, evidenceCount=${evidenceCount}, evidenceLevel=${level}, elapsedMs=${elapsedMs.toFixed(1)}`
   );
 }

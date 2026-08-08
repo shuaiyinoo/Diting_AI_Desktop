@@ -378,12 +378,23 @@
   border-radius: 17px;
   border: 0.5px solid var(--border-color);
   background: var(--bg-panel);
-  transition: border-color 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
   overflow: hidden;
 
   &--focused {
     border-color: var(--accent);
     box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.08);
+  }
+
+  // 需确认模式：虚线边框
+  &--confirm {
+    border: 1.5px dashed var(--accent);
+
+    // 聚焦时保留虚线但加强阴影
+    &.chat-input-card--focused {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.12);
+    }
   }
 }
 
@@ -444,59 +455,78 @@
   }
 }
 
+// 右侧工具栏也包含模型选择，复用相同样式
+.chat-input-toolbar__right {
+  :deep(.ant-select) {
+    font-size: 12px;
+
+    .ant-select-selector {
+      padding: 0 8px !important;
+      background: var(--bg-sidebar) !important;
+      border-radius: 6px !important;
+    }
+
+    .ant-select-selection-item {
+      color: var(--text-secondary) !important;
+    }
+  }
+}
+
 .chat-send-btn {
-  width: 34px;
-  height: 34px;
+  width: 32px;
+  height: 32px;
   border: none;
   border-radius: 8px;
-  background: var(--accent);
-  color: white;
+  background: transparent;
+  color: var(--text-secondary);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s;
+  transition: all 0.15s ease;
   flex-shrink: 0;
+  padding: 0;
 
   svg {
-    width: 16px;
-    height: 16px;
+    width: 17px;
+    height: 17px;
   }
 
   &:hover:not(:disabled) {
-    background: var(--accent-hover);
-    transform: scale(1.05);
+    background: var(--bg-hover);
+    color: var(--accent);
   }
 
   &:disabled {
-    background: var(--border-color);
     color: var(--text-muted);
+    opacity: 0.4;
     cursor: not-allowed;
   }
 }
 
 .chat-stop-btn {
-  width: 34px;
-  height: 34px;
+  width: 32px;
+  height: 32px;
   border: none;
   border-radius: 8px;
-  background: #ef4444;
-  color: white;
+  background: transparent;
+  color: #ef4444;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s;
+  transition: all 0.15s ease;
   flex-shrink: 0;
+  padding: 0;
 
   svg {
-    width: 14px;
-    height: 14px;
+    width: 15px;
+    height: 15px;
   }
 
   &:hover {
-    background: #dc2626;
-    transform: scale(1.05);
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
   }
 }
 

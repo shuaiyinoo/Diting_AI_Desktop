@@ -145,6 +145,32 @@ export class KeywordSearchService {
         return stored.folderId === folderId && stored.status === 'READY';
       },
     }).slice(0, topK);
+    return this.mapResults(results);
+  }
+
+  /**
+   * 全库关键词检索（不限定 folderId）
+   *
+   * 供 Agent RAG 模式使用：当用户未指定知识库分组时，
+   * 跨所有文件夹搜索，仅过滤掉非 READY 状态的切片。
+   */
+  searchAll(query: string, topK: number = 50): KeywordHit[] {
+    if (!query?.trim() || topK <= 0) return [];
+    const results = this.miniSearch.search(query.trim(), {
+      fields: ['chunkText', 'fileName'],
+      boost: { fileName: 2, chunkText: 1 },
+      prefix: true,
+      fuzzy: 0.2,
+      filter: (result) => {
+        const stored = result as unknown as Record<string, unknown>;
+        return stored.status === 'READY';
+      },
+    }).slice(0, topK);
+    return this.mapResults(results);
+  }
+
+  /** 将 MiniSearch 原始结果映射为 KeywordHit[] */
+  private mapResults(results: { score: number; [key: string]: unknown }[]): KeywordHit[] {
     return results.map((result) => {
       const r = result as unknown as Record<string, unknown>;
       return {

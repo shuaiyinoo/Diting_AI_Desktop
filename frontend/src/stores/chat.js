@@ -22,6 +22,9 @@ export const useChatStore = defineStore('chat', () => {
   /** 多会话隔离：消息按 sessionId 分组存储 */
   const messagesBySession = ref({})
 
+  /** 多会话隔离：每个会话最后选择的知识库 folderId */
+  const folderIdBySession = ref({})
+
   /** 多会话隔离：流式状态按 sessionId 跟踪 */
   const streamingSessions = ref(new Set())
 
@@ -84,6 +87,7 @@ export const useChatStore = defineStore('chat', () => {
           id: m.messageId ?? m.id,
           role: String(m.role).toLowerCase(),
           content: m.content,
+          citations: m.citations || [],
           pending: false,
           time: m.createdAt ? formatTime(new Date(m.createdAt)) : '',
         }))
@@ -104,7 +108,7 @@ export const useChatStore = defineStore('chat', () => {
    * @param {Object} params - { text, sessionId, httpServerUrl, onScroll }
    */
   async function sendMessage(params) {
-    const { text, httpServerUrl, onScroll } = params
+    const { text, httpServerUrl, onScroll, toolMode, folderId } = params
 
     // 获取或创建会话
     let sessionId = currentSessionId.value
@@ -152,6 +156,7 @@ export const useChatStore = defineStore('chat', () => {
       content: '',
       pending: true,
       time: formatTime(now),
+      citations: [],
     })
     sessionMessages.push(assistantMsg)
     onScroll?.()
@@ -161,11 +166,22 @@ export const useChatStore = defineStore('chat', () => {
     const controller = new AbortController()
     abortControllers.set(sessionId, controller)
 
+    // 构造请求体（KB_SEARCH 模式必须包含 folderId）
+    const requestBody = {
+      sessionId,
+      message: text,
+      toolMode: toolMode || 'CHAT',
+    }
+    if (folderId) {
+      requestBody.folderId = folderId
+    }
+    console.log('[ChatStore] SSE 请求体:', JSON.stringify(requestBody))
+
     try {
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId, message: text, toolMode: 'CHAT' }),
+        body: JSON.stringify(requestBody),
         signal: controller.signal,
       })
 
@@ -224,10 +240,28 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
+  /** 设置当前会话选择的知识库 folderId */
+  function setSessionFolderId(folderId) {
+    const sid = currentSessionId.value
+    if (!sid) return
+    if (folderId) {
+      folderIdBySession.value[sid] = folderId
+    } else {
+      delete folderIdBySession.value[sid]
+    }
+  }
+
+  /** 获取指定会话的记忆 folderId */
+  function getSessionFolderId(sessionId) {
+    return folderIdBySession.value[sessionId] ?? null
+  }
+
   /** 删除会话时清理状态 */
   function cleanupSession(sessionId) {
     // 清理消息
     delete messagesBySession.value[sessionId]
+    // 清理知识库记忆
+    delete folderIdBySession.value[sessionId]
     // 如果删除的是当前会话，清空 messages ref
     if (sessionId === currentSessionId.value) {
       messages.value = []
@@ -277,11 +311,26 @@ export const useChatStore = defineStore('chat', () => {
           assistantMsg.content += rawData
         }
         break
+      case 'citations':
+        // KB_SEARCH 模式：流开始前发送引用证据
+        try {
+          const data = JSON.parse(rawData)
+          if (data.citations && Array.isArray(data.citations) && data.citations.length > 0) {
+            assistantMsg.citations = data.citations
+          }
+        } catch {
+          // 忽略解析失败
+        }
+        break
       case 'complete':
         try {
           const data = JSON.parse(rawData)
           if (data.reply && !assistantMsg.content) {
             assistantMsg.content = data.reply
+          }
+          // 解析引用证据（complete 事件也携带 citations）
+          if (data.citations && Array.isArray(data.citations) && data.citations.length > 0) {
+            assistantMsg.citations = data.citations
           }
         } catch {
           // 忽略解析失败
@@ -303,6 +352,7 @@ export const useChatStore = defineStore('chat', () => {
   return {
     // State
     messagesBySession,
+    folderIdBySession,
     streamingSessions,
     // Getters
     currentSessionId,
@@ -313,6 +363,8 @@ export const useChatStore = defineStore('chat', () => {
     sendMessage,
     stopGeneration,
     cleanupSession,
+    setSessionFolderId,
+    getSessionFolderId,
   }
 })
 

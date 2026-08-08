@@ -69,6 +69,7 @@ export const useTabStore = defineStore('tab', () => {
       fileSessionId: file.sessionId,
       mode: file.mode || 'project',
       attachedDirPath: file.attachedDirPath || null,
+      fileItemId: file.fileItemId ?? null,
     }
 
     // 保留草稿 + 保留会话标签 + 替换已有的 file 标签

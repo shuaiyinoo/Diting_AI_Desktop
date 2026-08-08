@@ -145,7 +145,7 @@ onMounted(() => {
   width: 100%;
   height: 100%;
   position: relative;
-  background: #f5f7fa;
+  background: var(--bg-panel, #f5f7fa);
 
   &__state {
     width: 100%;

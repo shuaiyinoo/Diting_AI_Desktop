@@ -195,6 +195,13 @@
                     <span v-if="msg.pending" class="msg-streaming-dot" />
                   </div>
 
+                  <!-- 引用证据卡片（SearchKnowledgeBase 工具检索结果） -->
+                  <CitationRail
+                    v-if="!msg.pending && msg.citations && msg.citations.length > 0"
+                    :citations="msg.citations"
+                    @citation-click="onCitationClick"
+                  />
+
                   <!-- 消息内联统计栏 -->
                   <div v-if="messageStats[msg.id] && (msg.pending || messageStats[msg.id].elapsed > 0)" class="msg-stats">
                     <span class="msg-stats-item msg-stats-item--time">
@@ -257,7 +264,7 @@
           </div>
         </Transition>
 
-        <div class="chat-input-card" :class="{ 'chat-input-card--focused': inputFocused }">
+        <div class="chat-input-card" :class="{ 'chat-input-card--focused': inputFocused, 'chat-input-card--confirm': permissionMode === 'ask' }">
           <!-- 输入区：TipTap 富文本编辑器，支持 @文件 /Skill #MCP &会话 引用 -->
           <RichTextInput
             v-model="inputText"
@@ -274,22 +281,28 @@
 
           <!-- 底部工具栏 -->
           <div class="chat-input-toolbar">
-            <!-- 左侧：模型选择 -->
+            <!-- 左侧：权限模式 + 思考深度 -->
             <div class="chat-input-toolbar__left">
+              <PermissionModeSelector
+                v-model="permissionMode"
+              />
+              <ThinkingDepthPopover
+                v-model="thinkingLevel"
+              />
+            </div>
+
+            <!-- 右侧：模型选择 + 发送/停止按钮 -->
+            <div class="chat-input-toolbar__right">
               <a-select
                 v-model:value="selectedModel"
                 size="small"
-                style="min-width: 160px; max-width: 240px"
+                style="min-width: 140px; max-width: 200px"
                 :placeholder="availableModels.length === 0 ? '未启用模型' : '选择模型'"
                 :disabled="availableModels.length === 0"
                 :bordered="false"
               >
                 <a-select-option v-for="m in availableModels" :key="m.id" :value="m.id">{{ m.name }}</a-select-option>
               </a-select>
-            </div>
-
-            <!-- 右侧：发送/停止按钮 -->
-            <div class="chat-input-toolbar__right">
               <button
                 v-if="isStreaming"
                 class="chat-stop-btn"
@@ -512,6 +525,9 @@ import ProcessBlockGroup from '@/components/agent/ProcessBlockGroup.vue'
 import TaskProgressCard from '@/components/agent/TaskProgressCard.vue'
 import DelegationCard from '@/components/agent/DelegationCard.vue'
 import RichTextInput from '@/components/agent/RichTextInput.vue'
+import PermissionModeSelector from '@/components/agent/PermissionModeSelector.vue'
+import ThinkingDepthPopover from '@/components/agent/ThinkingDepthPopover.vue'
+import CitationRail from '@/components/CitationRail.vue'
 import { hasTaskBlocks } from '@/utils/task-progress'
 
 const ws = useWorkspaceStore()
@@ -551,6 +567,12 @@ const httpServerUrl = ref('http://127.0.0.1:7071')
 // ========== 模型选择 ==========
 const selectedModel = ref(null)
 const availableModels = ref([])
+
+// ========== 权限模式 & 思考深度（从 Proma 移植） ==========
+// 权限模式：bypassPermissions（完全自动） / ask（需确认）
+const permissionMode = ref('bypassPermissions')
+// 思考深度：off / low / medium / high / xhigh
+const thinkingLevel = ref('high')
 
 // ========== 面板宽度 & 折叠 ==========
 const workspaceRef = ref(null)
@@ -796,6 +818,8 @@ onMounted(async () => {
         workspaceSlug: ws.currentAgentProject?.slug || undefined,
         workspaceId: pending.workspaceId || ws.currentAgentProject?.id,
         httpServerUrl: httpServerUrl.value,
+        permissionMode: permissionMode.value,
+        thinkingLevel: thinkingLevel.value,
         onScroll: () => scrollToBottom(),
         onEvent: (eventName, data) => {
           if (eventName === 'permission_request') {
@@ -1200,6 +1224,18 @@ function toggleDir(node) {
 
 // ========== 权限横幅：SSE 事件处理 + HTTP 响应回传 ==========
 
+/**
+ * 点击引用证据卡片，在 Tab 栏中打开文件查看器（与 Chat 模式一致）。
+ */
+function onCitationClick(cite) {
+  const fileId = cite.documentId ?? cite.fileItemId
+  if (fileId === null || fileId === undefined) return
+  tabStore.openFileTab({
+    name: cite.fileName || '文件',
+    fileItemId: fileId,
+  })
+}
+
 /** 格式化工具显示名称 */
 function formatToolName(toolName) {
   // MCP 工具名格式: mcp__server__tool → server / tool
@@ -1338,6 +1374,8 @@ async function sendMessage() {
     workspaceSlug: ws.currentAgentProject?.slug || undefined,
     workspaceId: ws.currentAgentProject?.id,
     httpServerUrl: httpServerUrl.value,
+    permissionMode: permissionMode.value,
+    thinkingLevel: thinkingLevel.value,
     onScroll: () => scrollToBottom(),
     onEvent: (eventName, data) => {
       if (eventName === 'permission_request') {

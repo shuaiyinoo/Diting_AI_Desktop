@@ -229,6 +229,7 @@ class PiAgentController {
       modelId?: string
       workspaceSlug?: string
       permissionMode?: string
+      thinkingLevel?: string
     },
     ctx: Context,
   ): Promise<{ code: number; message?: string }> {
@@ -295,6 +296,7 @@ class PiAgentController {
           workspaceId: workspace?.id,
           agentRuntime: 'pi',
           permissionMode: args.permissionMode || 'ask',
+          thinkingLevel: args.thinkingLevel,
         },
         channel,
         workspace,
