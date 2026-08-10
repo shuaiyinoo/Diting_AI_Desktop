@@ -30,7 +30,7 @@
 
       <div class="panel__body panel__body--scroll">
         <!-- ===== 模型管理 ===== -->
-        <div v-if="activeTab === 'model'" class="setting-section setting-section--full">
+        <div v-if="activeTab === 'model'" class="setting-section">
           <div class="model-header">
             <div class="model-header__info">
               <h3 class="setting-section__title">
@@ -56,15 +56,16 @@
               {{ providerLabel(enabledModel.provider) }} · {{ enabledModel.model_name }}
             </span>
           </div>
-          <div class="active-model-bar inactive" v-else>
+          <div class="active-model-bar active-model-bar--inactive" v-else>
             <a-tag color="default">
               <ExclamationCircleFilled />
               未启用
             </a-tag>
-            <span class="active-name inactive-text">尚未启用任何模型，请添加并启用一个模型</span>
+            <span class="active-name active-name--muted">尚未启用任何模型，请添加并启用一个模型</span>
           </div>
 
           <!-- 模型列表表格 -->
+          <div class="model-table-wrapper">
           <a-table
             :columns="modelColumns"
             :data-source="modelList"
@@ -73,6 +74,7 @@
             row-key="id"
             size="small"
             class="model-table"
+            :scroll="{ x: 600 }"
           >
             <template #bodyCell="{ column, record }">
               <template v-if="column.key === 'enabled'">
@@ -114,6 +116,7 @@
               </template>
             </template>
           </a-table>
+          </div>
         </div>
 
         <!-- Skills 管理 -->
@@ -740,13 +743,12 @@ const formRules = {
 }
 
 const modelColumns = [
-  { title: '状态', key: 'enabled', width: 80 },
-  { title: '别名', dataIndex: 'name', key: 'name', width: 140 },
-  { title: '提供商', key: 'provider', width: 120 },
-  { title: '模型名称', dataIndex: 'model_name', key: 'model_name', width: 180 },
-  { title: 'API 地址', key: 'base_url', ellipsis: true },
-  { title: 'API Key', key: 'api_key', width: 130 },
-  { title: '操作', key: 'action', width: 220, fixed: 'right' },
+  { title: '状态', key: 'enabled', width: 70 },
+  { title: '别名', dataIndex: 'name', key: 'name', width: 100 },
+  { title: '提供商', key: 'provider', width: 100 },
+  { title: '模型名称', dataIndex: 'model_name', key: 'model_name', width: 120, ellipsis: true },
+  { title: 'API Key', key: 'api_key', width: 100 },
+  { title: '操作', key: 'action', width: 180, fixed: 'right' },
 ]
 
 async function fetchModels() {
@@ -1016,10 +1018,7 @@ async function handleTest(record) {
 
 .setting-section {
   max-width: 640px;
-
-  &--full {
-    max-width: 100%;
-  }
+  margin: 0 auto;
 
   &__title {
     font-size: 16px;
@@ -1058,16 +1057,16 @@ async function handleTest(record) {
 .active-model-bar {
   margin-bottom: 14px;
   padding: 10px 14px;
-  background: #f6ffed;
-  border: 1px solid #b7eb8f;
-  border-radius: 6px;
+  background: var(--bg-hover);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
   display: flex;
   align-items: center;
   gap: 10px;
+  box-shadow: var(--shadow-sm);
 
-  &.inactive {
-    background: #fffbe6;
-    border-color: #ffe58f;
+  &--inactive {
+    border-color: var(--border-color);
   }
 
   .active-tag {
@@ -1077,17 +1076,26 @@ async function handleTest(record) {
   .active-name {
     font-weight: 600;
     font-size: 14px;
+    color: var(--text-primary);
 
-    &.inactive-text {
-      color: #999;
+    &--muted {
+      color: var(--text-muted);
       font-weight: 400;
     }
   }
 
   .active-meta {
-    color: #888;
+    color: var(--text-muted);
     font-size: 13px;
   }
+}
+
+.model-table-wrapper {
+  background: var(--bg-panel);
+  border-radius: 10px;
+  padding: 4px;
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
 }
 
 .model-table {

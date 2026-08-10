@@ -124,6 +124,28 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     }
   }
 
+  /** 删除授权文件夹（后端会同步删除 RAG 数据和取消文件监听） */
+  async function deleteFolder(folderId) {
+    try {
+      const result = await ipc.invoke(ipcApiRoute.file.deleteFolder, { folderId })
+      if (result.success) {
+        folderList.value = result.folderList || []
+        // 如果删除的是当前选中的文件夹，选中最新的
+        if (selectedFolderId.value === folderId) {
+          if (folderList.value.length > 0) {
+            selectFolder(folderList.value[0].id)
+          } else {
+            selectedFolderId.value = null
+          }
+        }
+      }
+      return result
+    } catch (err) {
+      console.error('[workspace] 删除文件夹失败:', err)
+      return null
+    }
+  }
+
   /** 设置选中文件 */
   function selectFile(file) {
     selectedFile.value = file
@@ -278,6 +300,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     loadFolderList,
     selectFolder,
     addFolder,
+    deleteFolder,
     selectFile,
     loadChatSessions,
     selectChatSession,

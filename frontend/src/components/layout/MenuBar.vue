@@ -73,7 +73,7 @@
         <div v-if="ws.activeModule === 'file'" class="mb-group mb-group--flex">
           <div class="mb-group-header">
             <span class="mb-group-title">文件</span>
-            <span class="mb-group-meta">{{ totalFileCount }}</span>
+            <span class="mb-group-meta">{{ ws.folderList.length }}</span>
             <button class="mb-add-btn" @click="onAddFolder">
               <PlusOutlined />
             </button>
@@ -89,6 +89,10 @@
             >
               <FolderOutlined class="mb-item-icon" />
               <span class="mb-item-text" :title="getFolderName(folder.path)">{{ getFolderName(folder.path) }}</span>
+              <span class="mb-item-count" v-if="folder.file_count != null">{{ folder.file_count }}</span>
+              <button class="mb-delete-btn" @click.stop="onDeleteFolder(folder)">
+                <DeleteOutlined />
+              </button>
             </div>
             <div v-if="!ws.folderLoading && ws.folderList.length === 0" class="mb-empty">暂无文件夹</div>
           </div>
@@ -530,6 +534,31 @@ async function onAddFolder() {
   } finally {
     addFolderLoading.value = false
   }
+}
+
+/** 删除授权文件夹（带确认弹窗，后端会同步删除 RAG 数据和取消监听） */
+function onDeleteFolder(folder) {
+  Modal.confirm({
+    title: '删除文件夹',
+    content: `确定要删除文件夹「${getFolderName(folder.path)}」吗？该文件夹下的所有文件和 RAG 向量数据将被一并删除。`,
+    okText: '确认删除',
+    cancelText: '取消',
+    okType: 'danger',
+    async onOk() {
+      try {
+        const result = await ws.deleteFolder(folder.id)
+        if (result?.success) {
+          message.success('文件夹已删除')
+          await loadTotalFileCount()
+        } else {
+          message.error('删除文件夹失败')
+        }
+      } catch (err) {
+        console.error('[MenuBar] 删除文件夹失败:', err)
+        message.error('删除文件夹失败')
+      }
+    },
+  })
 }
 
 async function onCreateChat() {

@@ -142,10 +142,12 @@ class FiledbService extends BasedbService {
   }
 
   /**
-   * 获取所有授权文件夹
+   * 获取所有授权文件夹（含每个文件夹下的文件数量）
    */
   getFolderList(): AuthorizedFolder[] {
-    return this.db.prepare(`SELECT * FROM ${this.folderTableName} ORDER BY id DESC`).all() as AuthorizedFolder[];
+    return this.db.prepare(
+      `SELECT f.*, (SELECT COUNT(*) FROM ${this.itemTableName} WHERE folder_id = f.id AND is_dir = 0) AS file_count FROM ${this.folderTableName} f ORDER BY f.id DESC`
+    ).all() as AuthorizedFolder[];
   }
 
   /**
