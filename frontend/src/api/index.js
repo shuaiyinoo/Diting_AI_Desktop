@@ -159,6 +159,21 @@ const ipcApiRoute = {
     runAutomationNow: 'controller/planning/runAutomationNow',
   },
 
+  // 票据识别模块（独立模块，不与其他模块混用）
+  invoice: {
+    addFolder: 'controller/invoice/addFolder',
+    getFolderList: 'controller/invoice/getFolderList',
+    deleteFolder: 'controller/invoice/deleteFolder',
+    getFileTree: 'controller/invoice/getFileTree',
+    toggleArchived: 'controller/invoice/toggleArchived',
+    getFileDetail: 'controller/invoice/getFileDetail',
+    reRecognize: 'controller/invoice/reRecognize',
+    extractInvoice: 'controller/invoice/extractInvoice',
+    registerSyncCallback: 'controller/invoice/registerSyncCallback',
+    onSyncChange: 'controller/invoice/onSyncChange',
+    onOcrProgress: 'controller/invoice/onOcrProgress',
+  },
+
   // Pi Agent 模式
   piAgent: {
     // Skills 管理

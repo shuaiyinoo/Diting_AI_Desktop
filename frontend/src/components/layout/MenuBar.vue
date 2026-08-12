@@ -51,6 +51,14 @@
           </div>
           <div
             class="mb-item"
+            :class="{ 'mb-item--active': ws.activeModule === 'invoice' }"
+            @click="navigate('invoice')"
+          >
+            <FileSearchOutlined class="mb-item-icon" />
+            <span class="mb-item-text">票据识别</span>
+          </div>
+          <div
+            class="mb-item"
             :class="{ 'mb-item--active': ws.activeModule === 'planning' }"
             @click="navigate('planning')"
           >
@@ -249,7 +257,7 @@
 
       <div class="mb-divider"></div>
 
-      <!-- 模块图标（文件/任务日程/技能） -->
+      <!-- 模块图标（文件/票据识别/任务日程/技能） -->
       <button
         type="button"
         class="mb-icon-btn"
@@ -257,6 +265,14 @@
         @click="navigate('file')"
       >
         <FileFilled />
+      </button>
+      <button
+        type="button"
+        class="mb-icon-btn"
+        :class="{ 'mb-icon-btn--active': ws.activeModule === 'invoice' }"
+        @click="navigate('invoice')"
+      >
+        <FileSearchOutlined />
       </button>
       <button
         type="button"
@@ -339,6 +355,7 @@ import {
   RightOutlined,
   DeleteOutlined,
   ScheduleOutlined,
+  FileSearchOutlined,
 } from '@ant-design/icons-vue'
 import { ipc } from '@/utils/ipcRenderer'
 import { ipcApiRoute } from '@/api'
@@ -447,6 +464,7 @@ watch(
   (path) => {
     if (tabStore.tabMode) return
     if (path.startsWith('/file')) ws.setActiveModule('file')
+    else if (path.startsWith('/invoice')) ws.setActiveModule('invoice')
     else if (path.startsWith('/planning')) ws.setActiveModule('planning')
     else if (path.startsWith('/skills')) ws.setActiveModule('skills')
     else if (path.startsWith('/chat')) ws.setActiveModule('chat')
@@ -458,17 +476,17 @@ watch(
 
 /**
  * 导航函数
- * - 工具页面（file/planning/skills/setting）：退出 Tab 模式 + 路由跳转
+ * - 工具页面（file/invoice/planning/skills/setting）：退出 Tab 模式 + 路由跳转
  * - Chat/Agent：进入 Tab 模式，如果有当前会话则打开 Tab
  */
 function navigate(key) {
   console.log('[MenuBar] navigate:', key)
 
   // 工具页面：退出 Tab 模式，走路由
-  if (['file', 'planning', 'skills', 'setting'].includes(key)) {
+  if (['file', 'invoice', 'planning', 'skills', 'setting'].includes(key)) {
     tabStore.exitTabMode()
     ws.setActiveModule(key)
-    const map = { file: '/file', planning: '/planning', skills: '/skills', setting: '/setting' }
+    const map = { file: '/file', invoice: '/invoice', planning: '/planning', skills: '/skills', setting: '/setting' }
     if (map[key]) {
       router.push(map[key]).catch(err => console.error('[MenuBar] router.push 失败:', err))
     }

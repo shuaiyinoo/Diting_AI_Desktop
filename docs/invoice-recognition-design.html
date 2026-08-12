@@ -1,0 +1,1952 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>票据识别 · Diting Agent</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #F7F7F5;
+    --sidebar: #F0EFEC;
+    --sidebar-active: #E6F1FB;
+    --surface: #FFFFFF;
+    --border: #E5E3DD;
+    --border-strong: #D6D3CC;
+    --text: #1A1A18;
+    --text-secondary: #5F5E5A;
+    --text-tertiary: #8A8884;
+    --accent: #185FA5;
+    --accent-soft: #E6F1FB;
+    --green: #0F6E56;
+    --green-soft: #E1F5EE;
+    --amber: #854F0B;
+    --amber-soft: #FAEEDA;
+    --coral: #993C1D;
+    --coral-soft: #FAECE7;
+    --pill-bg: #F1EFE8;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 13px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .window {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    background: var(--bg);
+  }
+
+  /* ===== Title bar ===== */
+  .titlebar {
+    height: 38px;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .traffic { display: flex; gap: 8px; }
+  .traffic span {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+  .t-close { background: #FF5F57; }
+  .t-min { background: #FEBC2E; }
+  .t-max { background: #28C840; }
+  .tab-strip {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: 16px;
+    flex: 1;
+  }
+  .tab-item {
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    background: transparent;
+    border: 1px solid transparent;
+  }
+  .tab-item.active {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+  }
+  .tab-item .x {
+    margin-left: 6px;
+    color: var(--text-tertiary);
+    font-size: 11px;
+  }
+  .brand {
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+  .brand .badge {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-size: 11px;
+    margin-left: 6px;
+  }
+
+  /* ===== Layout ===== */
+  .layout {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+  .sidebar {
+    width: 220px;
+    background: var(--sidebar);
+    border-right: 1px solid var(--border);
+    padding: 12px 8px;
+    overflow-y: auto;
+    flex-shrink: 0;
+  }
+  .side-group {
+    padding: 8px 10px;
+    font-size: 11px;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    font-weight: 500;
+    margin-top: 8px;
+  }
+  .side-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    color: var(--text-secondary);
+    font-size: 13px;
+    cursor: pointer;
+    margin-bottom: 2px;
+  }
+  .side-item:hover { background: rgba(0,0,0,0.04); }
+  .side-item.active {
+    background: var(--sidebar-active);
+    color: var(--accent);
+    font-weight: 500;
+  }
+  .side-item .count {
+    margin-left: auto;
+    background: rgba(24,95,165,0.1);
+    color: var(--accent);
+    font-size: 11px;
+    padding: 1px 7px;
+    border-radius: 10px;
+    font-weight: 500;
+  }
+  .side-item .icon {
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .sidebar-bottom {
+    margin-top: auto;
+    padding: 12px 10px;
+    border-top: 1px solid var(--border);
+    font-size: 11px;
+    color: var(--text-tertiary);
+    position: absolute;
+    bottom: 0;
+    width: 204px;
+  }
+
+  /* ===== Main content ===== */
+  .main {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .toolbar {
+    display: flex;
+    align-items: center;
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    flex-shrink: 0;
+  }
+  .toolbar h1 {
+    font-size: 16px;
+    font-weight: 600;
+  }
+  .toolbar .sub {
+    color: var(--text-secondary);
+    font-size: 12px;
+    margin-top: 2px;
+  }
+  .toolbar-actions {
+    margin-left: auto;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .btn {
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 12px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-weight: 500;
+  }
+  .btn:hover { background: var(--pill-bg); }
+  .btn.primary {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+  .btn.primary:hover { background: #0C447C; }
+
+  /* ===== Sub-tab bar ===== */
+  .subtabs {
+    display: flex;
+    padding: 8px 24px;
+    gap: 4px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .subtab {
+    padding: 5px 14px;
+    border-radius: 6px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    cursor: pointer;
+  }
+  .subtab:hover { background: var(--pill-bg); }
+  .subtab.active {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-weight: 500;
+  }
+  .subtab .count {
+    color: var(--text-tertiary);
+    margin-left: 3px;
+    font-size: 11px;
+  }
+
+  /* ===== Workspace layout (file explorer + editor) ===== */
+  .workspace-layout {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+  }
+  .file-explorer {
+    width: 280px;
+    flex-shrink: 0;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .explorer-head {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .explorer-path {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 8px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg);
+    font-size: 11px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    overflow: hidden;
+  }
+  .explorer-path:hover { background: var(--pill-bg); border-color: var(--border-strong); }
+  .explorer-path .folder-icon { color: var(--amber); flex-shrink: 0; }
+  .explorer-path .path-text {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  .explorer-path .change-btn {
+    color: var(--accent);
+    font-size: 10px;
+    flex-shrink: 0;
+    font-weight: 500;
+  }
+  .explorer-filter {
+    display: flex;
+    gap: 4px;
+    margin-top: 8px;
+  }
+  .explorer-filter .fchip {
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-secondary);
+    cursor: pointer;
+  }
+  .explorer-filter .fchip.active {
+    background: var(--accent-soft);
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+  .explorer-stats {
+    padding: 6px 12px;
+    font-size: 10px;
+    color: var(--text-tertiary);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    display: flex;
+    gap: 10px;
+  }
+  .explorer-stats span b { color: var(--text); font-weight: 600; }
+  .file-list-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 4px 0;
+  }
+  .file-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    cursor: pointer;
+    border-left: 3px solid transparent;
+    transition: background 80ms;
+  }
+  .file-row:hover { background: var(--pill-bg); }
+  .file-row.active {
+    background: var(--accent-soft);
+    border-left-color: var(--accent);
+  }
+  .file-row .ficon {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+  }
+  .file-row .fname {
+    flex: 1;
+    font-size: 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--text);
+  }
+  .file-row.active .fname { color: var(--accent); font-weight: 500; }
+  .file-row .fmeta {
+    display: flex;
+    gap: 3px;
+    flex-shrink: 0;
+  }
+  .fmeta .badge {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    font-weight: 600;
+  }
+  .fmeta .badge.recognized { background: var(--green-soft); color: var(--green); }
+  .fmeta .badge.unrecognized { background: var(--coral-soft); color: var(--coral); }
+  .fmeta .badge.archived { background: var(--accent-soft); color: var(--accent); }
+  .fmeta .badge.pending { background: var(--pill-bg); color: var(--text-tertiary); }
+
+  .explorer-empty {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    text-align: center;
+    color: var(--text-tertiary);
+  }
+  .explorer-empty .emoji { font-size: 40px; margin-bottom: 12px; opacity: 0.5; }
+  .explorer-empty .title { font-size: 13px; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500; }
+  .explorer-empty .desc { font-size: 11px; line-height: 1.6; max-width: 200px; }
+  .explorer-empty .btn { margin-top: 16px; }
+
+  .editor-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .editor-empty {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-tertiary);
+  }
+  .editor-empty .emoji { font-size: 56px; margin-bottom: 16px; opacity: 0.3; }
+  .editor-empty .title { font-size: 16px; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500; }
+  .editor-empty .desc { font-size: 12px; }
+
+  /* ===== Pane: editor (two columns: invoice + right stack) ===== */
+  .editor-pane {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1.3fr;
+    gap: 12px;
+    padding: 14px;
+    overflow: hidden;
+  }
+  .right-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    overflow: hidden;
+    min-height: 0;
+  }
+  .right-stack .panel:first-child {
+    flex-shrink: 0;
+    max-height: 220px;
+  }
+  .right-stack .panel:last-child {
+    flex: 1;
+    min-height: 0;
+  }
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .panel-head {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .panel-title {
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .panel-actions {
+    display: flex;
+    gap: 4px;
+  }
+  .icon-btn {
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    border: none;
+    background: transparent;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .icon-btn:hover { background: var(--pill-bg); color: var(--text); }
+  .panel-body { flex: 1; overflow-y: auto; }
+
+  /* ===== Original invoice viewer (carousel) ===== */
+  .invoice-viewer {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: #FAFAF8;
+  }
+  .viewer-main {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 16px 20px;
+    position: relative;
+    display: flex;
+    justify-content: center;
+  }
+  .viewer-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.9);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    z-index: 10;
+    transition: all 120ms;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  }
+  .viewer-nav:hover { background: var(--surface); color: var(--accent); border-color: var(--accent); }
+  .viewer-nav.prev { left: 8px; }
+  .viewer-nav.next { right: 8px; }
+  .invoice-page {
+    display: none;
+    width: 100%;
+    max-width: 420px;
+  }
+  .invoice-page.active { display: block; }
+
+  .page-indicator {
+    font-size: 11px;
+    color: var(--text-secondary);
+    padding: 2px 8px;
+    background: var(--pill-bg);
+    border-radius: 4px;
+    font-weight: 500;
+    min-width: 36px;
+    text-align: center;
+  }
+  .count-badge {
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    margin-left: 4px;
+    font-weight: 500;
+  }
+
+  /* Thumbnail strip */
+  .viewer-thumbs {
+    flex-shrink: 0;
+    display: flex;
+    gap: 8px;
+    padding: 10px 16px;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    overflow-x: auto;
+  }
+  .thumb {
+    width: 56px;
+    height: 56px;
+    border-radius: 6px;
+    border: 2px solid var(--border);
+    background: var(--pill-bg);
+    cursor: pointer;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    transition: all 120ms;
+    overflow: hidden;
+  }
+  .thumb:hover { border-color: var(--border-strong); background: var(--bg); }
+  .thumb.active {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    box-shadow: 0 0 0 1px var(--accent);
+  }
+  .thumb .thumb-icon {
+    font-size: 18px;
+    line-height: 1;
+    opacity: 0.7;
+  }
+  .thumb.active .thumb-icon { opacity: 1; }
+  .thumb .thumb-label {
+    font-size: 9px;
+    color: var(--text-tertiary);
+    margin-top: 2px;
+    font-weight: 500;
+  }
+  .thumb.active .thumb-label { color: var(--accent); }
+  .thumb .thumb-page {
+    position: absolute;
+    top: 2px;
+    right: 3px;
+    font-size: 8px;
+    color: var(--text-tertiary);
+    font-weight: 600;
+  }
+  .thumb.active .thumb-page { color: var(--accent); }
+
+  .invoice-canvas {
+    padding: 20px;
+    background: #FAFAF8;
+    min-height: 100%;
+    position: relative;
+  }
+  .invoice-paper {
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    border-radius: 4px;
+    padding: 22px;
+    width: 100%;
+    max-width: 420px;
+    margin: 0 auto;
+    font-size: 11px;
+    position: relative;
+  }
+  .inv-title {
+    text-align: center;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 4px;
+    margin-bottom: 4px;
+  }
+  .inv-subtitle {
+    text-align: center;
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-bottom: 14px;
+  }
+  .inv-row {
+    display: flex;
+    border-bottom: 1px dashed #ccc;
+    padding: 4px 0;
+    font-size: 11px;
+  }
+  .inv-label { width: 88px; color: var(--text-secondary); flex-shrink: 0; }
+  .inv-value { flex: 1; position: relative; }
+  .inv-section {
+    border: 1px solid #aaa;
+    margin: 8px 0;
+    padding: 6px;
+  }
+  .inv-section-title {
+    font-size: 10px;
+    color: var(--text-tertiary);
+    margin-bottom: 4px;
+  }
+  .inv-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 6px 0;
+    font-size: 10px;
+  }
+  .inv-table th, .inv-table td {
+    border: 1px solid #888;
+    padding: 2px 4px;
+    text-align: left;
+  }
+  .inv-table th {
+    background: #F5F5F3;
+    font-weight: 500;
+  }
+
+  /* Highlight boxes over the invoice */
+  .field-box {
+    position: absolute;
+    border: 1.5px solid #185FA5;
+    background: rgba(24,95,165,0.08);
+    border-radius: 2px;
+    pointer-events: none;
+  }
+  .field-box.green { border-color: #0F6E56; background: rgba(15,110,86,0.08); }
+  .field-box.amber { border-color: #854F0B; background: rgba(133,79,11,0.08); }
+  .field-box.active { border-color: #185FA5; background: rgba(24,95,165,0.18); box-shadow: 0 0 0 2px rgba(24,95,165,0.3); }
+
+  .field-label {
+    position: absolute;
+    top: -16px;
+    left: -1px;
+    background: #185FA5;
+    color: #fff;
+    font-size: 9px;
+    padding: 1px 5px;
+    border-radius: 2px 2px 0 0;
+    white-space: nowrap;
+    font-weight: 500;
+  }
+
+  /* ===== Field table ===== */
+  .fields-panel { display: flex; flex-direction: column; }
+  .field-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+    padding: 0 14px;
+    flex-shrink: 0;
+  }
+  .field-tab {
+    padding: 8px 12px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+  }
+  .field-tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+    font-weight: 500;
+  }
+
+  .field-group {
+    padding: 12px 14px 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .field-group-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+  }
+  .field {
+    display: grid;
+    grid-template-columns: 96px 1fr 24px;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 0;
+    font-size: 12px;
+  }
+  .field-label-cell {
+    color: var(--text-secondary);
+    font-size: 12px;
+  }
+  .field-input {
+    border: 1px solid transparent;
+    background: transparent;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    width: 100%;
+    color: var(--text);
+    transition: all 100ms;
+  }
+  .field-input:hover {
+    border-color: var(--border);
+    background: var(--surface);
+  }
+  .field-input:focus {
+    border-color: var(--accent);
+    background: var(--surface);
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(24,95,165,0.15);
+  }
+  .field-input.high {
+    background: rgba(24,95,165,0.04);
+    border-color: rgba(24,95,165,0.3);
+  }
+  .field-input.warn {
+    background: rgba(133,79,11,0.04);
+    border-color: rgba(133,79,11,0.3);
+  }
+  .field-status {
+    color: var(--text-tertiary);
+    cursor: pointer;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+  }
+  .field-status:hover { background: var(--pill-bg); }
+  .field-status.ok { color: var(--green); }
+  .field-status.warn { color: var(--amber); }
+
+  .product-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+  }
+  .product-table th {
+    background: var(--pill-bg);
+    text-align: left;
+    padding: 6px 8px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    font-size: 11px;
+  }
+  .product-table td {
+    padding: 5px 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .product-table input {
+    border: none;
+    background: transparent;
+    width: 100%;
+    font-size: 11px;
+    padding: 0;
+    color: var(--text);
+  }
+  .product-table input:focus { outline: 1px solid var(--accent); border-radius: 2px; padding: 0 4px; }
+  .add-row-btn {
+    padding: 6px 8px;
+    color: var(--accent);
+    font-size: 11px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .add-row-btn:hover { background: var(--pill-bg); }
+
+  /* ===== Right panel: AI assistant ===== */
+  .ai-panel-body {
+    padding: 14px;
+    font-size: 12px;
+  }
+  .ai-summary {
+    background: var(--accent-soft);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 14px;
+  }
+  .ai-summary-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    font-size: 13px;
+  }
+  .ai-summary-title .badge {
+    background: var(--accent);
+    color: #fff;
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-weight: 500;
+  }
+  .ai-summary-text { color: var(--text-secondary); font-size: 12px; line-height: 1.6; }
+  .ai-summary-text b { color: var(--text); font-weight: 600; }
+  .ai-summary-text .v { color: var(--accent); font-weight: 500; }
+
+  .ai-section { margin-bottom: 16px; }
+  .ai-section-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .ai-section-title .ind {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent);
+  }
+  .check-list { display: flex; flex-direction: column; gap: 4px; }
+  .check-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+  }
+  .check-item .dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .check-item.ok .dot { background: var(--green-soft); color: var(--green); }
+  .check-item.warn .dot { background: var(--amber-soft); color: var(--amber); }
+  .check-item.err .dot { background: var(--coral-soft); color: var(--coral); }
+  .check-item .lbl { flex: 1; color: var(--text-secondary); }
+  .check-item .val { font-weight: 500; }
+
+  .suggest-list { display: flex; flex-direction: column; gap: 6px; }
+  .suggest-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px;
+    font-size: 12px;
+  }
+  .suggest-card .st {
+    font-weight: 600;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .suggest-card .sb { color: var(--text-secondary); font-size: 11px; }
+  .suggest-card .pill {
+    display: inline-block;
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    margin-left: auto;
+  }
+
+  .risk-card {
+    background: var(--coral-soft);
+    border: 1px solid rgba(153,60,29,0.2);
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 8px;
+  }
+  .risk-card .st { font-weight: 600; color: var(--coral); margin-bottom: 4px; font-size: 12px; }
+  .risk-card .sb { color: var(--text); font-size: 11px; line-height: 1.5; }
+
+  /* ===== Page: list view ===== */
+  .page { display: none; flex: 1; overflow: hidden; flex-direction: column; }
+  .page.active { display: flex; }
+
+  /* ===== List / archive page ===== */
+  .list-toolbar {
+    display: flex;
+    align-items: center;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    gap: 8px;
+    flex-shrink: 0;
+    background: var(--surface);
+  }
+  .search-input {
+    flex: 1;
+    padding: 6px 10px 6px 30px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 12px;
+    background: var(--surface) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14' fill='none'><circle cx='6' cy='6' r='4' stroke='%238A8884' stroke-width='1.4'/><path d='M9 9l3 3' stroke='%238A8884' stroke-width='1.4' stroke-linecap='round'/></svg>") no-repeat 10px center;
+    max-width: 320px;
+  }
+  .search-input:focus { outline: none; border-color: var(--accent); }
+
+  .filter-chip {
+    padding: 5px 10px;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    font-size: 12px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .filter-chip:hover { background: var(--pill-bg); }
+  .filter-chip.active { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+
+  .grid {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+    align-content: start;
+  }
+  .invoice-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px;
+    cursor: pointer;
+    transition: all 120ms;
+  }
+  .invoice-card:hover {
+    border-color: var(--accent);
+    box-shadow: 0 4px 12px rgba(24,95,165,0.08);
+    transform: translateY(-1px);
+  }
+  .ic-thumb {
+    width: 100%;
+    height: 110px;
+    background: var(--pill-bg);
+    border-radius: 6px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-tertiary);
+    font-size: 32px;
+    position: relative;
+    overflow: hidden;
+  }
+  .ic-thumb::before {
+    content: "";
+    position: absolute;
+    inset: 12px;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    z-index: 0;
+  }
+  .ic-thumb span { position: relative; z-index: 1; }
+  .ic-type {
+    display: inline-block;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    margin-bottom: 6px;
+    font-weight: 500;
+  }
+  .ic-type.travel { background: var(--green-soft); color: var(--green); }
+  .ic-type.taxi { background: var(--amber-soft); color: var(--amber); }
+  .ic-amount {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .ic-amount small { font-size: 11px; color: var(--text-tertiary); font-weight: 400; margin-left: 4px; }
+  .ic-meta {
+    color: var(--text-secondary);
+    font-size: 11px;
+    margin-top: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .ic-foot {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+    font-size: 11px;
+    color: var(--text-tertiary);
+  }
+  .ic-foot .status {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+  }
+  .ic-foot .status.ok { color: var(--green); }
+  .ic-foot .status.warn { color: var(--amber); }
+
+  /* ===== Upload area ===== */
+  .upload-pane {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+  }
+  .upload-zone {
+    border: 2px dashed var(--border-strong);
+    border-radius: 14px;
+    padding: 60px 80px;
+    text-align: center;
+    background: var(--surface);
+    max-width: 720px;
+    width: 100%;
+    transition: all 200ms;
+  }
+  .upload-zone:hover {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+  }
+  .upload-icon {
+    width: 72px;
+    height: 72px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+  }
+  .upload-zone h2 {
+    font-size: 18px;
+    margin-bottom: 8px;
+  }
+  .upload-zone p {
+    color: var(--text-secondary);
+    margin-bottom: 24px;
+    font-size: 13px;
+  }
+  .upload-formats {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+  .upload-formats span {
+    padding: 3px 10px;
+    border-radius: 4px;
+    background: var(--pill-bg);
+    color: var(--text-secondary);
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .upload-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  /* ===== Stats bar ===== */
+  .stats-bar {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+    padding: 14px;
+    flex-shrink: 0;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .stat-label {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    margin-bottom: 4px;
+  }
+  .stat-value {
+    font-size: 20px;
+    font-weight: 600;
+  }
+  .stat-value small { font-size: 11px; color: var(--text-tertiary); font-weight: 400; margin-left: 3px; }
+  .stat-trend {
+    font-size: 11px;
+    margin-top: 2px;
+  }
+  .stat-trend.up { color: var(--green); }
+  .stat-trend.down { color: var(--coral); }
+
+  /* ===== Detail header ===== */
+  .detail-header {
+    display: flex;
+    align-items: center;
+    padding: 12px 24px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    gap: 12px;
+    flex-shrink: 0;
+  }
+  .back-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .back-btn:hover { background: var(--pill-bg); }
+  .detail-title { font-size: 15px; font-weight: 600; }
+  .detail-sub { color: var(--text-secondary); font-size: 11px; }
+  .detail-tags { display: flex; gap: 6px; margin-left: 12px; }
+  .detail-pills { margin-left: auto; display: flex; gap: 8px; }
+
+  /* Switch */
+  .switch {
+    width: 32px;
+    height: 18px;
+    border-radius: 999px;
+    background: var(--border-strong);
+    position: relative;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .switch::after {
+    content: "";
+    position: absolute;
+    top: 2px; left: 2px;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: #fff;
+    transition: transform 160ms;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+  }
+  .switch.on { background: var(--text); }
+  .switch.on::after { transform: translateX(14px); }
+</style>
+</head>
+<body>
+<div class="window">
+  <!-- Title bar -->
+  <div class="titlebar">
+    <div class="traffic">
+      <span class="t-close"></span>
+      <span class="t-min"></span>
+      <span class="t-max"></span>
+    </div>
+    <div class="tab-strip">
+      <div class="tab-item">本地</div>
+      <div class="tab-item">远程</div>
+      <div class="tab-item active">票据识别 <span class="x">×</span></div>
+    </div>
+    <div class="brand">谛听 AI <span class="badge">为 AI 而听真实</span></div>
+  </div>
+
+  <!-- Layout -->
+  <div class="layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="side-group">工作区</div>
+      <div class="side-item active" data-page="editor">
+        <span class="icon">📂</span>票据工作区
+        <span class="count">12</span>
+      </div>
+      <div class="side-item" data-page="archive">
+        <span class="icon">📁</span>票据归档
+        <span class="count">38</span>
+      </div>
+
+      <div style="height: 40px;"></div>
+      <div style="position: relative; height: 100px;">
+        <div class="sidebar-bottom">v2.1.0 · 对齐白泽税务</div>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+
+      <!-- ===== Workspace Page (editor + file explorer) ===== -->
+      <div class="page active" data-page-content="editor">
+        <div class="workspace-layout">
+
+          <!-- Left: File Explorer -->
+          <div class="file-explorer">
+            <div class="explorer-head">
+              <div class="explorer-path" onclick="toggleFolderPicker()">
+                <span class="folder-icon">📁</span>
+                <span class="path-text">~/Documents/票据/2026-08</span>
+                <span class="change-btn">切换</span>
+              </div>
+              <div class="explorer-filter">
+                <span class="fchip active">全部 12</span>
+                <span class="fchip">未识别 2</span>
+                <span class="fchip">已识别 10</span>
+              </div>
+            </div>
+            <div class="explorer-stats">
+              <span>共 <b>12</b> 文件</span>
+              <span>识别 <b>10</b></span>
+              <span>归档 <b>7</b></span>
+            </div>
+            <div class="file-list-scroll">
+              <div class="file-row active" onclick="selectFile(this)">
+                <span class="ficon">📄</span>
+                <span class="fname">增值税专用发票_88294621.pdf</span>
+                <span class="fmeta">
+                  <span class="badge recognized" title="已识别">✓</span>
+                  <span class="badge archived" title="已归档">📦</span>
+                </span>
+              </div>
+              <div class="file-row" onclick="selectFile(this)">
+                <span class="ficon">🖼️</span>
+                <span class="fname">火车票_G12_0808.jpg</span>
+                <span class="fmeta">
+                  <span class="badge recognized" title="已识别">✓</span>
+                  <span class="badge pending" title="未归档">○</span>
+                </span>
+              </div>
+              <div class="file-row" onclick="selectFile(this)">
+                <span class="ficon">📄</span>
+                <span class="fname">增值税普通发票_京东_0807.pdf</span>
+                <span class="fmeta">
+                  <span class="badge recognized" title="已识别">✓</span>
+                  <span class="badge archived" title="已归档">📦</span>
+                </span>
+              </div>
+              <div class="file-row" onclick="selectFile(this)">
+                <span class="ficon">🖼️</span>
+                <span class="fname">飞机行程单_0806.jpg</span>
+                <span class="fmeta">
+                  <span class="badge recognized" title="已识别">✓</span>
+                  <span class="badge pending" title="未归档">○</span>
+                </span>
+              </div>
+              <div class="file-row" onclick="selectFile(this)">
+                <span class="ficon">🖼️</span>
+                <span class="fname">出租车发票_0805.jpg</span>
+                <span class="fmeta">
+                  <span class="badge recognized" title="已识别">✓</span>
+                  <span class="badge archived" title="已归档">📦</span>
+                </span>
+              </div>
+              <div class="file-row" onclick="selectFile(this)">
+                <span class="ficon">📄</span>
+                <span class="fname">增值税专用发票_联想_0804.pdf</span>
+                <span class="fmeta">
+                  <span class="badge recognized" title="已识别">✓</span>
+                  <span class="badge archived" title="已归档">📦</span>
+                </span>
+              </div>
+              <div class="file-row" onclick="selectFile(this)">
+                <span class="ficon">📄</span>
+                <span class="fname">餐饮发票_0803.pdf</span>
+                <span class="fmeta">
+                  <span class="badge recognized" title="已识别">✓</span>
+                  <span class="badge pending" title="未归档">○</span>
+                </span>
+              </div>
+              <div class="file-row" onclick="selectFile(this)">
+                <span class="ficon">🖼️</span>
+                <span class="fname">过路费发票_0802.jpg</span>
+                <span class="fmeta">
+                  <span class="badge recognized" title="已识别">✓</span>
+                  <span class="badge archived" title="已归档">📦</span>
+                </span>
+              </div>
+              <div class="file-row" onclick="selectFile(this)">
+                <span class="ficon">📄</span>
+                <span class="fname">住宿发票_0801.pdf</span>
+                <span class="fmeta">
+                  <span class="badge recognized" title="已识别">✓</span>
+                  <span class="badge archived" title="已归档">📦</span>
+                </span>
+              </div>
+              <div class="file-row" onclick="selectFile(this)">
+                <span class="ficon">🖼️</span>
+                <span class="fname">收据_0731.jpg</span>
+                <span class="fmeta">
+                  <span class="badge unrecognized" title="未识别">!</span>
+                  <span class="badge pending" title="未归档">○</span>
+                </span>
+              </div>
+              <div class="file-row" onclick="selectFile(this)">
+                <span class="ficon">📄</span>
+                <span class="fname">会议费发票_0730.pdf</span>
+                <span class="fmeta">
+                  <span class="badge recognized" title="已识别">✓</span>
+                  <span class="badge pending" title="未归档">○</span>
+                </span>
+              </div>
+              <div class="file-row" onclick="selectFile(this)">
+                <span class="ficon">📄</span>
+                <span class="fname">扫描件_0729.pdf</span>
+                <span class="fmeta">
+                  <span class="badge unrecognized" title="未识别">!</span>
+                  <span class="badge pending" title="未归档">○</span>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Editor Area -->
+          <div class="editor-area">
+            <div class="toolbar">
+              <div>
+                <h1>增值税专用发票_88294621.pdf</h1>
+                <div class="sub">¥66,476.00 · 上海航天电子有限公司 · 2026-08-09 · 已识别 ✓ 已归档 📦</div>
+              </div>
+              <div class="toolbar-actions">
+                <button class="btn primary">📦 归档</button>
+              </div>
+            </div>
+
+            <div class="editor-pane">
+          <!-- Left: Original invoice viewer (multi-page carousel) -->
+          <div class="panel">
+            <div class="panel-head">
+              <div class="panel-title">原始票面 <span class="count-badge">3 张</span></div>
+              <div class="panel-actions">
+                <button class="icon-btn" title="上一张" onclick="prevPage()">‹</button>
+                <span class="page-indicator" id="pageIndicator">1 / 3</span>
+                <button class="icon-btn" title="下一张" onclick="nextPage()">›</button>
+                <span style="width:1px;background:var(--border);height:16px;margin:0 4px;"></span>
+                <button class="icon-btn" title="缩小">−</button>
+                <button class="icon-btn" title="100%">100%</button>
+                <button class="icon-btn" title="放大">+</button>
+              </div>
+            </div>
+            <div class="panel-body" style="padding:0;">
+              <div class="invoice-viewer">
+                <div class="viewer-main">
+                  <button class="viewer-nav prev" onclick="prevPage()">‹</button>
+                  <button class="viewer-nav next" onclick="nextPage()">›</button>
+
+                  <!-- Page 1: 增值税专用发票 -->
+                  <div class="invoice-page active" data-page="0">
+                    <div class="invoice-paper" style="position:relative;">
+                      <div class="inv-title">增值税专用发票</div>
+                      <div class="inv-subtitle">No 04412600</div>
+                      <div class="inv-row"><span class="inv-label">开票日期:</span><span class="inv-value">2026年08月09日</span></div>
+                      <div class="field-box" style="top: 88px; left: 80px; width: 160px; height: 22px;"><span class="field-label">购买方名称</span></div>
+                      <div class="inv-section">
+                        <div class="inv-section-title">购买方信息</div>
+                        <div class="inv-row"><span class="inv-label">名称:</span><span class="inv-value">上海航天电子有限公司</span></div>
+                        <div class="inv-row"><span class="inv-label">纳税人识别号:</span><span class="inv-value">91310115MA1K3X9P2N</span></div>
+                        <div class="inv-row"><span class="inv-label">地址、电话:</span><span class="inv-value">上海市浦东新区...</span></div>
+                        <div class="inv-row"><span class="inv-label">开户行及账号:</span><span class="inv-value">工行浦东支行...</span></div>
+                      </div>
+                      <div class="inv-section">
+                        <div class="inv-section-title">销售方信息</div>
+                        <div class="inv-row"><span class="inv-label">名称:</span><span class="inv-value">深圳市精密仪器股份有限公司</span></div>
+                        <div class="inv-row"><span class="inv-label">纳税人识别号:</span><span class="inv-value">91440300MA5DG7H8X1</span></div>
+                      </div>
+                      <div class="field-box" style="top: 280px; left: 240px; width: 130px; height: 20px;"><span class="field-label">价税合计</span></div>
+                      <table class="inv-table">
+                        <thead><tr><th>货物名称</th><th>数量</th><th>单价</th><th>金额</th><th>税率</th><th>税额</th></tr></thead>
+                        <tbody>
+                          <tr><td>精密传感器</td><td>10</td><td>5,800.00</td><td>58,000.00</td><td>13%</td><td>7,540.00</td></tr>
+                          <tr><td>控制模块</td><td>5</td><td>120.00</td><td>600.00</td><td>13%</td><td>78.00</td></tr>
+                          <tr><td>校准服务费</td><td>1</td><td>228.00</td><td>228.00</td><td>6%</td><td>13.68</td></tr>
+                        </tbody>
+                      </table>
+                      <div class="inv-row"><span class="inv-label">价税合计:</span><span class="inv-value">¥66,476.00  陆万陆仟肆佰柒拾陆元整</span></div>
+                      <div class="inv-row"><span class="inv-label">备注:</span><span class="inv-value">合同号 HT-2026-0801</span></div>
+                    </div>
+                  </div>
+
+                  <!-- Page 2: 火车票 -->
+                  <div class="invoice-page" data-page="1">
+                    <div class="invoice-paper" style="position:relative; max-width:380px;">
+                      <div class="inv-title" style="font-size:14px; letter-spacing:1px;">中国铁路</div>
+                      <div class="inv-subtitle">G12 次</div>
+                      <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:2px solid #333;">
+                        <div style="text-align:center;">
+                          <div style="font-size:18px; font-weight:700;">上海虹桥</div>
+                          <div style="font-size:10px; color:var(--text-tertiary);">07:42</div>
+                        </div>
+                        <div style="flex:1; text-align:center; color:var(--text-tertiary);">
+                          <div style="font-size:10px;">08月08日</div>
+                          <div style="font-size:16px;">→</div>
+                          <div style="font-size:9px;">05时28分</div>
+                        </div>
+                        <div style="text-align:center;">
+                          <div style="font-size:18px; font-weight:700;">北京南</div>
+                          <div style="font-size:10px; color:var(--text-tertiary);">13:10</div>
+                        </div>
+                      </div>
+                      <div class="field-box" style="top: 130px; left: 20px; width: 100px; height: 18px;"><span class="field-label">乘客姓名</span></div>
+                      <div class="inv-row"><span class="inv-label">姓名:</span><span class="inv-value">赵明</span></div>
+                      <div class="inv-row"><span class="inv-label">身份证号:</span><span class="inv-value">3101**********0012</span></div>
+                      <div class="inv-row"><span class="inv-label">车次:</span><span class="inv-value">G12</span></div>
+                      <div class="inv-row"><span class="inv-label">席别:</span><span class="inv-value">二等座</span></div>
+                      <div class="inv-row"><span class="inv-label">车厢:</span><span class="inv-value">05车12A</span></div>
+                      <div class="inv-row"><span class="inv-label">票价:</span><span class="inv-value" style="font-weight:700; font-size:14px;">¥553.50</span></div>
+                      <div class="inv-row" style="margin-top:8px; border-top:1px dashed #ccc; padding-top:8px;">
+                        <span class="inv-label">电子客票号:</span><span class="inv-value" style="font-size:10px;">E123456789</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Page 3: 增值税普通发票 -->
+                  <div class="invoice-page" data-page="2">
+                    <div class="invoice-paper" style="position:relative;">
+                      <div class="inv-title">增值税普通发票</div>
+                      <div class="inv-subtitle">No 12008826</div>
+                      <div class="inv-row"><span class="inv-label">开票日期:</span><span class="inv-value">2026年08月07日</span></div>
+                      <div class="field-box" style="top: 88px; left: 80px; width: 160px; height: 22px;"><span class="field-label">购买方名称</span></div>
+                      <div class="inv-section">
+                        <div class="inv-section-title">购买方信息</div>
+                        <div class="inv-row"><span class="inv-label">名称:</span><span class="inv-value">上海航天电子有限公司</span></div>
+                        <div class="inv-row"><span class="inv-label">纳税人识别号:</span><span class="inv-value">91310115MA1K3X9P2N</span></div>
+                      </div>
+                      <div class="inv-section">
+                        <div class="inv-section-title">销售方信息</div>
+                        <div class="inv-row"><span class="inv-label">名称:</span><span class="inv-value">京东商城电子商务有限公司</span></div>
+                        <div class="inv-row"><span class="inv-label">纳税人识别号:</span><span class="inv-value">91110108551345678X</span></div>
+                      </div>
+                      <div class="field-box" style="top: 260px; left: 240px; width: 130px; height: 20px;"><span class="field-label">价税合计</span></div>
+                      <table class="inv-table">
+                        <thead><tr><th>货物名称</th><th>数量</th><th>单价</th><th>金额</th><th>税率</th><th>税额</th></tr></thead>
+                        <tbody>
+                          <tr><td>笔记本电脑</td><td>1</td><td>2,530.97</td><td>2,530.97</td><td>13%</td><td>329.03</td></tr>
+                          <tr><td>无线鼠标</td><td>1</td><td>44.25</td><td>44.25</td><td>13%</td><td>5.75</td></tr>
+                        </tbody>
+                      </table>
+                      <div class="inv-row"><span class="inv-label">价税合计:</span><span class="inv-value">¥2,860.00  贰仟捌佰陆拾元整</span></div>
+                      <div class="inv-row"><span class="inv-label">备注:</span><span class="inv-value">办公用品采购</span></div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Thumbnail strip -->
+                <div class="viewer-thumbs">
+                  <div class="thumb active" onclick="selectPage(0)">
+                    <span class="thumb-page">1</span>
+                    <span class="thumb-icon">📄</span>
+                    <span class="thumb-label">专票</span>
+                  </div>
+                  <div class="thumb" onclick="selectPage(1)">
+                    <span class="thumb-page">2</span>
+                    <span class="thumb-icon">🚄</span>
+                    <span class="thumb-label">火车票</span>
+                  </div>
+                  <div class="thumb" onclick="selectPage(2)">
+                    <span class="thumb-page">3</span>
+                    <span class="thumb-icon">📄</span>
+                    <span class="thumb-label">普票</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right stack: AI assistant (top) + Fields (bottom) -->
+          <div class="right-stack">
+          <!-- AI assistant (moved to top) -->
+          <div class="panel">
+            <div class="panel-head">
+              <div class="panel-title">智能助手</div>
+              <div class="panel-actions">
+                <span class="switch on"></span>
+              </div>
+            </div>
+            <div class="panel-body">
+              <div class="ai-panel-body">
+                <div class="ai-summary">
+                  <div class="ai-summary-title">
+                    <span>✦</span> AI 识别总览 <span class="badge">完成</span>
+                  </div>
+                  <div class="ai-summary-text">
+                    自动识别为<b>增值税专用发票</b>, 共提取 <span class="v">18</span> 个字段,
+                    识别完整度 <span class="v">94%</span>, 价税勾稽<b>通过</b>, 无重复报销风险。
+                  </div>
+                </div>
+                <div class="ai-section">
+                  <div class="ai-section-title"><span class="ind"></span>智能校验</div>
+                  <div class="check-list">
+                    <div class="check-item ok">
+                      <span class="dot">✓</span>
+                      <span class="lbl">发票验真</span>
+                      <span class="val" style="color:var(--green);">国税平台可查</span>
+                    </div>
+                    <div class="check-item ok">
+                      <span class="dot">✓</span>
+                      <span class="lbl">价税勾稽</span>
+                      <span class="val" style="color:var(--green);">一致</span>
+                    </div>
+                    <div class="check-item ok">
+                      <span class="dot">✓</span>
+                      <span class="lbl">重复报销检测</span>
+                      <span class="val" style="color:var(--green);">未发现重复</span>
+                    </div>
+                    <div class="check-item warn">
+                      <span class="dot">!</span>
+                      <span class="lbl">地址字段</span>
+                      <span class="val" style="color:var(--amber);">需核对</span>
+                    </div>
+                    <div class="check-item ok">
+                      <span class="dot">✓</span>
+                      <span class="lbl">发票专用章</span>
+                      <span class="val" style="color:var(--green);">已识别</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Field editor (below AI) -->
+          <div class="panel fields-panel">
+            <div class="panel-head">
+              <div class="panel-title">结构化字段</div>
+              <div class="panel-actions">
+                <button class="icon-btn" title="复制">⧉</button>
+                <button class="icon-btn" title="导出">⤓</button>
+                <button class="icon-btn" title="刷新">↻</button>
+              </div>
+            </div>
+
+            <div style="overflow-y: auto; flex: 1;">
+              <div class="field-group">
+                <div class="field-group-title">发票基本信息</div>
+                <div class="field">
+                  <span class="field-label-cell">发票类型</span>
+                  <input class="field-input high" value="增值税专用发票" />
+                  <span class="field-status ok">✓</span>
+                </div>
+                <div class="field">
+                  <span class="field-label-cell">发票代码</span>
+                  <input class="field-input high" value="04412600" />
+                  <span class="field-status ok">✓</span>
+                </div>
+                <div class="field">
+                  <span class="field-label-cell">发票号码</span>
+                  <input class="field-input high" value="88294621" />
+                  <span class="field-status ok">✓</span>
+                </div>
+                <div class="field">
+                  <span class="field-label-cell">开票日期</span>
+                  <input class="field-input high" value="2026-08-09" />
+                  <span class="field-status ok">✓</span>
+                </div>
+                <div class="field">
+                  <span class="field-label-cell">校验码</span>
+                  <input class="field-input high" value="8A6D 5E2C 1B7F 4D90" />
+                  <span class="field-status ok">✓</span>
+                </div>
+              </div>
+
+              <div class="field-group">
+                <div class="field-group-title">购买方</div>
+                <div class="field">
+                  <span class="field-label-cell">名称</span>
+                  <input class="field-input high" value="上海航天电子有限公司" />
+                  <span class="field-status ok">✓</span>
+                </div>
+                <div class="field">
+                  <span class="field-label-cell">纳税人识别号</span>
+                  <input class="field-input high" value="91310115MA1K3X9P2N" />
+                  <span class="field-status ok">✓</span>
+                </div>
+                <div class="field">
+                  <span class="field-label-cell">地址电话</span>
+                  <input class="field-input warn" value="上海市浦东新区张江路 88 号" />
+                  <span class="field-status warn">!</span>
+                </div>
+                <div class="field">
+                  <span class="field-label-cell">开户行</span>
+                  <input class="field-input" value="工行浦东支行 100123450900002" />
+                  <span class="field-status">⋯</span>
+                </div>
+              </div>
+
+              <div class="field-group">
+                <div class="field-group-title">销售方</div>
+                <div class="field">
+                  <span class="field-label-cell">名称</span>
+                  <input class="field-input high" value="深圳市精密仪器股份有限公司" />
+                  <span class="field-status ok">✓</span>
+                </div>
+                <div class="field">
+                  <span class="field-label-cell">纳税人识别号</span>
+                  <input class="field-input high" value="91440300MA5DG7H8X1" />
+                  <span class="field-status ok">✓</span>
+                </div>
+              </div>
+
+              <div class="field-group">
+                <div class="field-group-title">金额信息</div>
+                <div class="field">
+                  <span class="field-label-cell">不含税金额</span>
+                  <input class="field-input high" value="58,840.71" />
+                  <span class="field-status ok">✓</span>
+                </div>
+                <div class="field">
+                  <span class="field-label-cell">税额合计</span>
+                  <input class="field-input high" value="7,635.29" />
+                  <span class="field-status ok">✓</span>
+                </div>
+                <div class="field">
+                  <span class="field-label-cell">价税合计</span>
+                  <input class="field-input high" value="¥66,476.00" />
+                  <span class="field-status ok">✓</span>
+                </div>
+                <div class="field">
+                  <span class="field-label-cell">合计大写</span>
+                  <input class="field-input high" value="陆万陆仟肆佰柒拾陆元整" />
+                  <span class="field-status ok">✓</span>
+                </div>
+              </div>
+
+              <div class="field-group">
+                <div class="field-group-title">商品明细</div>
+                <table class="product-table" style="margin: 4px 0;">
+                  <thead><tr><th>名称</th><th>规格</th><th>数量</th><th>单价</th><th>金额</th><th>税率</th><th>税额</th></tr></thead>
+                  <tbody>
+                    <tr><td><input value="精密传感器" /></td><td><input value="PS-200" /></td><td><input value="10" /></td><td><input value="5,800.00" /></td><td><input value="58,000.00" /></td><td><input value="13%" /></td><td><input value="7,540.00" /></td></tr>
+                    <tr><td><input value="控制模块" /></td><td><input value="CM-50" /></td><td><input value="5" /></td><td><input value="120.00" /></td><td><input value="600.00" /></td><td><input value="13%" /></td><td><input value="78.00" /></td></tr>
+                    <tr><td><input value="校准服务费" /></td><td><input value="—" /></td><td><input value="1" /></td><td><input value="228.00" /></td><td><input value="228.00" /></td><td><input value="6%" /></td><td><input value="13.68" /></td></tr>
+                  </tbody>
+                </table>
+                <div class="add-row-btn">+ 添加一行</div>
+              </div>
+            </div>
+          </div>
+
+          </div>
+          <!-- End right-stack -->
+        </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== Archive Page ===== -->
+      <div class="page" data-page-content="archive">
+        <div class="toolbar">
+          <div>
+            <h1>票据归档</h1>
+            <div class="sub">已识别票据 38 张 · 待审核 4 · 已归档 34</div>
+          </div>
+          <div class="toolbar-actions">
+            <button class="btn">⤓ 导出报表</button>
+            <button class="btn">🖨 批量打印</button>
+            <button class="btn primary">📤 上传票据</button>
+          </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-bar">
+          <div class="stat-card">
+            <div class="stat-label">本月总额</div>
+            <div class="stat-value">¥486,290<small>.00</small></div>
+            <div class="stat-trend up">↑ 12.5% 较上月</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">进项税</div>
+            <div class="stat-value">¥53,847<small>.00</small></div>
+            <div class="stat-trend up">↑ 8.3% 较上月</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">待审核</div>
+            <div class="stat-value">4<small>张</small></div>
+            <div class="stat-trend down">↓ 2 张</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">重复风险</div>
+            <div class="stat-value">0<small>张</small></div>
+            <div class="stat-trend">本月安全</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">识别准确率</div>
+            <div class="stat-value">98.6<small>%</small></div>
+            <div class="stat-trend up">↑ 0.4%</div>
+          </div>
+        </div>
+
+        <!-- Filter bar -->
+        <div class="list-toolbar">
+          <input class="search-input" placeholder="搜索发票号 / 销售方 / 项目..." />
+          <div class="filter-chip active">全部 38</div>
+          <div class="filter-chip">专用发票 12</div>
+          <div class="filter-chip">普通发票 9</div>
+          <div class="filter-chip">差旅票据 11</div>
+          <div class="filter-chip">其他 6</div>
+          <div class="filter-chip" style="margin-left: auto;">📅 本月 ▾</div>
+          <div class="filter-chip">排序 ▾</div>
+        </div>
+
+        <div class="grid">
+          <!-- Invoice card 1 -->
+          <div class="invoice-card">
+            <div class="ic-thumb"><span>📄</span></div>
+            <span class="ic-type">增值税专用发票</span>
+            <div class="ic-amount">¥66,476.00 <small>含税</small></div>
+            <div class="ic-meta">
+              <span>📅 2026-08-09</span>
+              <span>·</span>
+              <span>深圳精密仪器</span>
+            </div>
+            <div class="ic-foot">
+              <span>发票号 88294621</span>
+              <span class="status ok">✓ 已核对</span>
+            </div>
+          </div>
+
+          <!-- Invoice card 2 -->
+          <div class="invoice-card">
+            <div class="ic-thumb"><span>📄</span></div>
+            <span class="ic-type travel">火车票</span>
+            <div class="ic-amount">¥553.50</div>
+            <div class="ic-meta">
+              <span>📅 2026-08-08</span>
+              <span>·</span>
+              <span>上海→北京 G12</span>
+            </div>
+            <div class="ic-foot">
+              <span>赵明</span>
+              <span class="status warn">⚠ 待审核</span>
+            </div>
+          </div>
+
+          <!-- Invoice card 3 -->
+          <div class="invoice-card">
+            <div class="ic-thumb"><span>📄</span></div>
+            <span class="ic-type">增值税普通发票</span>
+            <div class="ic-amount">¥2,860.00 <small>含税</small></div>
+            <div class="ic-meta">
+              <span>📅 2026-08-07</span>
+              <span>·</span>
+              <span>京东商城</span>
+            </div>
+            <div class="ic-foot">
+              <span>办公用品</span>
+              <span class="status ok">✓ 已归档</span>
+            </div>
+          </div>
+
+          <!-- Invoice card 4 -->
+          <div class="invoice-card">
+            <div class="ic-thumb"><span>📄</span></div>
+            <span class="ic-type travel">飞机行程单</span>
+            <div class="ic-amount">¥1,420.00</div>
+            <div class="ic-meta">
+              <span>📅 2026-08-06</span>
+              <span>·</span>
+              <span>上海虹桥→深圳宝安</span>
+            </div>
+            <div class="ic-foot">
+              <span>李雪</span>
+              <span class="status ok">✓ 已归档</span>
+            </div>
+          </div>
+
+          <!-- Invoice card 5 -->
+          <div class="invoice-card">
+            <div class="ic-thumb"><span>📄</span></div>
+            <span class="ic-type taxi">出租车发票</span>
+            <div class="ic-amount">¥42.00</div>
+            <div class="ic-meta">
+              <span>📅 2026-08-05</span>
+              <span>·</span>
+              <span>沪A·X1234</span>
+            </div>
+            <div class="ic-foot">
+              <span>市内交通</span>
+              <span class="status ok">✓ 已归档</span>
+            </div>
+          </div>
+
+          <!-- Invoice card 6 -->
+          <div class="invoice-card">
+            <div class="ic-thumb"><span>📄</span></div>
+            <span class="ic-type">增值税专用发票</span>
+            <div class="ic-amount">¥128,500.00 <small>含税</small></div>
+            <div class="ic-meta">
+              <span>📅 2026-08-04</span>
+              <span>·</span>
+              <span>联想供应链</span>
+            </div>
+            <div class="ic-foot">
+              <span>服务器采购</span>
+              <span class="status ok">✓ 已归档</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== Upload Page (merged into workspace) ===== -->
+
+      <!-- End of pages -->
+
+    </main>
+  </div>
+</div>
+
+<script>
+  // Page switching
+  document.querySelectorAll('.side-item[data-page]').forEach(item => {
+    item.addEventListener('click', () => {
+      const target = item.dataset.page;
+      document.querySelectorAll('.side-item').forEach(i => i.classList.remove('active'));
+      item.classList.add('active');
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.querySelector(`.page[data-page-content="${target}"]`).classList.add('active');
+    });
+  });
+
+  // Switch toggle
+  document.querySelectorAll('.switch').forEach(s => {
+    s.addEventListener('click', e => {
+      e.stopPropagation();
+      s.classList.toggle('on');
+    });
+  });
+
+  // Filter chip
+  document.querySelectorAll('.filter-chip').forEach(c => {
+    c.addEventListener('click', () => {
+      document.querySelectorAll('.filter-chip').forEach(x => x.classList.remove('active'));
+      c.classList.add('active');
+    });
+  });
+
+  // Subtab
+  document.querySelectorAll('.subtab').forEach(s => {
+    s.addEventListener('click', () => {
+      document.querySelectorAll('.subtab').forEach(x => x.classList.remove('active'));
+      s.classList.add('active');
+    });
+  });
+
+  // File explorer: select file
+  function selectFile(el) {
+    document.querySelectorAll('.file-row').forEach(r => r.classList.remove('active'));
+    el.classList.add('active');
+    // Update editor header with selected file name
+    const name = el.querySelector('.fname').textContent;
+    const header = document.querySelector('.editor-area .toolbar h1');
+    if (header) header.textContent = name;
+  }
+
+  // Folder picker (simulated)
+  function toggleFolderPicker() {
+    const paths = [
+      '~/Documents/票据/2026-08',
+      '~/Documents/票据/2026-07',
+      '~/Desktop/报销票据',
+      '~/Downloads/发票收集'
+    ];
+    const current = document.querySelector('.explorer-path .path-text').textContent;
+    const idx = paths.indexOf(current);
+    const next = paths[(idx + 1) % paths.length];
+    document.querySelector('.explorer-path .path-text').textContent = next;
+  }
+
+  // Explorer filter chips
+  document.querySelectorAll('.explorer-filter .fchip').forEach(c => {
+    c.addEventListener('click', () => {
+      document.querySelectorAll('.explorer-filter .fchip').forEach(x => x.classList.remove('active'));
+      c.classList.add('active');
+    });
+  });
+
+  // Invoice viewer carousel
+  let currentPage = 0;
+  const totalPages = document.querySelectorAll('.invoice-page').length;
+
+  function selectPage(idx) {
+    if (idx < 0 || idx >= totalPages) return;
+    currentPage = idx;
+    document.querySelectorAll('.invoice-page').forEach((p, i) => {
+      p.classList.toggle('active', i === idx);
+    });
+    document.querySelectorAll('.thumb').forEach((t, i) => {
+      t.classList.toggle('active', i === idx);
+    });
+    const indicator = document.getElementById('pageIndicator');
+    if (indicator) indicator.textContent = (idx + 1) + ' / ' + totalPages;
+  }
+
+  function prevPage() { selectPage(currentPage - 1); }
+  function nextPage() { selectPage(currentPage + 1); }
+</script>
+</body>
+</html>

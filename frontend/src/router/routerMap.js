@@ -134,6 +134,12 @@ const constantRouterMap = [
         props: { title: '文件' },
       },
       {
+        path: '/invoice',
+        name: 'Invoice',
+        component: () => import('@/views/invoice/Index.vue'),
+        props: { title: '票据识别' },
+      },
+      {
         path: '/skills',
         name: 'Skills',
         component: () => import('@/views/skills/Index.vue'),

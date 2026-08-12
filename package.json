@@ -4,6 +4,7 @@
   "description": "A fast, desktop software development framework",
   "main": "./public/electron/main.js",
   "scripts": {
+    "postinstall": "node -e \"const fs=require('fs');const f='node_modules/ppu-pdf/index.js';if(fs.existsSync(f)){let c=fs.readFileSync(f,'utf8');c=c.replace('from\\\"./pdf-reader\\\"','from\\\"./pdf-reader.js\\\"');fs.writeFileSync(f,c);console.log('patched ppu-pdf/index.js')}\"",
     "dev": "ee-bin dev",
     "build": "npm run build-frontend && npm run build-electron && ee-bin encrypt",
     "start": "ee-bin start",
@@ -63,6 +64,7 @@
     "axios": "^1.7.9",
     "better-sqlite3": "^12.5.0",
     "bytenode": "^1.5.7",
+    "canvas": "^3.2.3",
     "chokidar": "^5.0.0",
     "dayjs": "^1.11.13",
     "ee-core": "^5.0.1",
@@ -70,8 +72,11 @@
     "hf-embedder": "^0.2.1",
     "mammoth": "^1.12.0",
     "minisearch": "^7.2.0",
+    "onnxruntime-node": "^1.27.0",
     "pdf-efficient-loader": "^1.0.0",
     "pdf-parse": "^2.4.5",
+    "ppu-paddle-ocr": "^6.4.0",
+    "ppu-pdf": "^6.2.0",
     "qwen-embedder": "^0.1.5",
     "typebox": "1.1.38"
   }
