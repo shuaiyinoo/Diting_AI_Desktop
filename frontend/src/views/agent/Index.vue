@@ -518,6 +518,7 @@ import { ipcApiRoute } from '@/api'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useAgentStore } from '@/stores/agent'
 import { useTabStore } from '@/stores/tab'
+import { useBrowserStore } from '@/stores/browser'
 import { isDark } from '@/theme'
 import MarkdownRender from 'markstream-vue'
 import PanelDivider from '@/components/layout/PanelDivider.vue'
@@ -531,6 +532,7 @@ import CitationRail from '@/components/CitationRail.vue'
 import { hasTaskBlocks } from '@/utils/task-progress'
 
 const ws = useWorkspaceStore()
+const browserStore = useBrowserStore()
 const agentStore = useAgentStore()
 
 // 接收 sessionId prop（由 TabContent 传入，用于多标签状态隔离）
@@ -568,9 +570,12 @@ const httpServerUrl = ref('http://127.0.0.1:7071')
 const selectedModel = ref(null)
 const availableModels = ref([])
 
-// ========== 权限模式 & 思考深度（从 Proma 移植） ==========
-// 权限模式：bypassPermissions（完全自动） / ask（需确认）
-const permissionMode = ref('bypassPermissions')
+// ========== 权限模式 & 思考深度 ==========
+// 权限模式从 agent store 获取（按会话持久化）：bypassPermissions / ask
+const permissionMode = computed({
+  get: () => agentStore.permissionMode,
+  set: (val) => { agentStore.permissionMode = val },
+})
 // 思考深度：off / low / medium / high / xhigh
 const thinkingLevel = ref('high')
 
@@ -582,6 +587,18 @@ const panel4Collapsed = ref(false)
 function togglePanel4() {
   panel4Collapsed.value = !panel4Collapsed.value
 }
+
+// Agent 触发浏览器时自动折叠文件面板，浏览器关闭时自动恢复
+watch(() => browserStore.forceFilePanelCollapsed, (forced) => {
+  if (forced) {
+    // 记忆当前状态并折叠
+    if (!panel4Collapsed.value) {
+      panel4Collapsed.value = true
+    }
+  }
+})
+
+// 浏览器关闭后（forceFilePanelCollapsed 变回 false），不自动展开，尊重用户当前操作
 
 function onPanel4Resize(delta) {
   panel4Width.value = Math.min(400, Math.max(240, panel4Width.value - delta))

@@ -26,6 +26,9 @@ export const useAgentStore = defineStore('agent', () => {
   // 多会话隔离：消息按 sessionId 分组存储
   const messagesBySession = ref({})
 
+  // 多会话隔离：权限模式按 sessionId 存储
+  const permissionModeBySession = ref({})
+
   // 多会话隔离：流式状态按 sessionId 跟踪
   const streamingSessions = ref(new Set())
 
@@ -109,10 +112,20 @@ export const useAgentStore = defineStore('agent', () => {
   // 监听 currentSessionId 变化，同步消息
   watch(currentSessionId, () => syncMessages(), { immediate: true })
 
-  /** 当前会话是否正在流式输出 */
-  const isStreaming = computed(() =>
-    streamingSessions.value.has(currentSessionId.value),
-  )
+/** 当前会话是否正在流式输出 */
+const isStreaming = computed(() =>
+streamingSessions.value.has(currentSessionId.value),
+)
+
+/** 当前会话的权限模式 */
+const permissionMode = computed({
+get: () => permissionModeBySession.value[currentSessionId.value] || 'bypassPermissions',
+set: (val) => {
+  if (currentSessionId.value) {
+    permissionModeBySession.value[currentSessionId.value] = val
+  }
+},
+})
 
   const enabledSkills = computed(() =>
     skills.value.filter((s) => s.enabled),
@@ -784,6 +797,7 @@ export const useAgentStore = defineStore('agent', () => {
     currentSession,
     messages,
     isStreaming,
+    permissionMode,
     enabledSkills,
     enabledMcpServers,
     // Actions

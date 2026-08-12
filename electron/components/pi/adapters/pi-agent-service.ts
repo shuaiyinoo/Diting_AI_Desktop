@@ -94,6 +94,8 @@ import {
   snoozePlanningReminder,
 } from '../../planning/planning-manager'
 import { broadcastPlanningChanged, broadcastPlanningAgentOperation, broadcastAutomationsChanged } from '../../planning/planning-events'
+import { browserController } from '../../browser/browser-controller'
+import { resolveBrowserProfileKey } from '../../browser/browser-profile-policy'
 
 /** Agent 发送输入 */
 export interface AgentSendInput {
@@ -224,15 +226,17 @@ export function deleteSession(id: string): boolean {
     try { unlinkSync(sessionFile) } catch { /* 忽略 */ }
   }
 
-  // 终止活跃会话
-  const active = activeSessions.get(id)
-  if (active) {
-    active.abortController.abort()
-    if (active.unsubscribe) {
-      active.unsubscribe()
-    }
-    activeSessions.delete(id)
-  }
+// 终止活跃会话
+const active = activeSessions.get(id)
+if (active) {
+active.abortController.abort()
+if (active.unsubscribe) {
+active.unsubscribe()
+}
+activeSessions.delete(id)
+}
+// 关闭受管浏览器
+browserController.close(id).catch(() => {/* 忽略 */})
 
   logger.info(`[Pi Agent] 已删除会话: ${id}`)
   return true
@@ -630,6 +634,7 @@ export async function sendAgentMessage(
       // 发送 AskUser 请求 SSE 事件到前端
       onEvent('ask_user', request)
     },
+    input.permissionMode,
   )
 
   // 创建 AskUserQuestion 自定义工具
@@ -1929,6 +1934,252 @@ ${output}` }],
   // 关键：AskUserQuestion 必须经过 wrapToolWithPermission，
   // 这样 canUseTool 回调才能拦截它，发送 ask_user SSE 事件到前端，
   // 等待用户回答后注入 answers 字段到 updatedInput，再执行工具的 execute
+  // ===== 内置浏览器工具 =====
+  // 配置浏览器会话的 profile 和工作区隔离
+  browserController.configureSession(sessionId, {
+    profileKey: resolveBrowserProfileKey(workspace?.id, sessionId),
+    allowedRoots: workspace ? [workspace.path || ''].filter(Boolean) : [],
+    executionSource: 'user',
+  })
+
+  const browserTools: ToolDefinition[] = []
+
+  // 1. BrowserNavigate
+  browserTools.push(sdkModule.defineTool({
+    name: 'BrowserNavigate',
+    label: '导航到网址',
+    description: '在受管浏览器中打开公共 HTTP/HTTPS 页面。',
+    promptSnippet: '打开网页。',
+    parameters: Type.Object({
+      url: Type.String({ description: '要导航到的 URL 或域名。' }),
+      tabId: Type.Optional(Type.String({ description: '指定标签 ID；不传则使用当前工作标签。' })),
+    }),
+    async execute(_toolCallId: string, params: Record<string, unknown>, signal?: AbortSignal) {
+      const p = params as { url: string; tabId?: string }
+      const state = await browserController.navigate(sessionId, p.url, p.tabId, signal)
+      return { content: [{ type: 'text' as const, text: JSON.stringify({ url: state.url, title: state.title, tabId: state.activeTabId }) }], details: { url: state.url, title: state.title, tabId: state.activeTabId } }
+    },
+  }) as unknown as ToolDefinition)
+
+  // 2. BrowserObserve
+  browserTools.push(sdkModule.defineTool({
+    name: 'BrowserObserve',
+    label: '观察页面元素',
+    description: '读取当前页面的可访问性结构与可交互元素 ref。',
+    promptSnippet: '观察页面可交互元素。',
+    parameters: Type.Object({
+      maxElements: Type.Optional(Type.Number({ description: '最多返回的元素数量，默认 240，最大 400。' })),
+      tabId: Type.Optional(Type.String({ description: '指定标签 ID。' })),
+    }),
+    async execute(_toolCallId: string, params: Record<string, unknown>, signal?: AbortSignal) {
+      const p = params as { maxElements?: number; tabId?: string }
+      const result = await browserController.observe(sessionId, p.tabId, p.maxElements, signal)
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result) }], details: result }
+    },
+  }) as unknown as ToolDefinition)
+
+  // 3. BrowserClick
+  browserTools.push(sdkModule.defineTool({
+    name: 'BrowserClick',
+    label: '点击元素',
+    description: '点击 BrowserObserve 返回的 ref 指向的元素。',
+    promptSnippet: '点击页面元素。',
+    parameters: Type.Object({
+      ref: Type.String({ description: 'BrowserObserve 返回的元素 ref。' }),
+      tabId: Type.Optional(Type.String({ description: '指定标签 ID。' })),
+    }),
+    async execute(_toolCallId: string, params: Record<string, unknown>, signal?: AbortSignal) {
+      const p = params as { ref: string; tabId?: string }
+      const state = await browserController.click(sessionId, p.ref, p.tabId, signal)
+      return { content: [{ type: 'text' as const, text: JSON.stringify({ url: state.url, title: state.title, tabId: state.activeTabId }) }], details: { url: state.url, title: state.title } }
+    },
+  }) as unknown as ToolDefinition)
+
+  // 4. BrowserFill
+  browserTools.push(sdkModule.defineTool({
+    name: 'BrowserFill',
+    label: '填写输入框',
+    description: '替换指定 ref 的 input、textarea 或 contenteditable 编辑器内容。',
+    promptSnippet: '在输入框填写文本。',
+    parameters: Type.Object({
+      ref: Type.String({ description: 'BrowserObserve 返回的可编辑元素 ref。' }),
+      text: Type.String({ description: '要输入的文本。' }),
+      tabId: Type.Optional(Type.String({ description: '指定标签 ID。' })),
+    }),
+    async execute(_toolCallId: string, params: Record<string, unknown>, signal?: AbortSignal) {
+      const p = params as { ref: string; text: string; tabId?: string }
+      const state = await browserController.fill(sessionId, p.ref, p.text, p.tabId, signal)
+      return { content: [{ type: 'text' as const, text: JSON.stringify({ url: state.url, title: state.title, tabId: state.activeTabId }) }], details: { url: state.url, title: state.title } }
+    },
+  }) as unknown as ToolDefinition)
+
+  // 5. BrowserPress
+  browserTools.push(sdkModule.defineTool({
+    name: 'BrowserPress',
+    label: '按键/输入',
+    description: '按下导航键（Enter/Tab/方向键等），或向已聚焦的编辑器一次插入完整文本。',
+    promptSnippet: '按键或输入文本。',
+    parameters: Type.Object({
+      key: Type.String({ description: '导航键名称或要输入的完整文本。' }),
+      tabId: Type.Optional(Type.String({ description: '指定标签 ID。' })),
+    }),
+    async execute(_toolCallId: string, params: Record<string, unknown>, signal?: AbortSignal) {
+      const p = params as { key: string; tabId?: string }
+      const state = await browserController.press(sessionId, p.key, p.tabId, signal)
+      return { content: [{ type: 'text' as const, text: JSON.stringify({ url: state.url, title: state.title, tabId: state.activeTabId }) }], details: { url: state.url, title: state.title } }
+    },
+  }) as unknown as ToolDefinition)
+
+  // 6. BrowserWaitFor
+  browserTools.push(sdkModule.defineTool({
+    name: 'BrowserWaitFor',
+    label: '等待条件',
+    description: '等待 URL 片段、可见文本或 CSS selector 出现。',
+    promptSnippet: '等待页面状态。',
+    parameters: Type.Object({
+      kind: Type.Union([Type.Literal('url'), Type.Literal('text'), Type.Literal('selector')], { description: '等待条件类型' }),
+      value: Type.String({ description: 'URL 片段、文本或 CSS selector。' }),
+      timeoutMs: Type.Optional(Type.Number({ description: '超时毫秒，默认 10000。' })),
+      tabId: Type.Optional(Type.String({ description: '指定标签 ID。' })),
+    }),
+    async execute(_toolCallId: string, params: Record<string, unknown>, signal?: AbortSignal) {
+      const p = params as { kind: 'url' | 'text' | 'selector'; value: string; timeoutMs?: number; tabId?: string }
+      const result = await browserController.waitFor(sessionId, { kind: p.kind, value: p.value }, p.timeoutMs, p.tabId, signal)
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result) }], details: result }
+    },
+  }) as unknown as ToolDefinition)
+
+  // 7. BrowserDomAction
+  browserTools.push(sdkModule.defineTool({
+    name: 'BrowserDomAction',
+    label: 'DOM 操作',
+    description: '用 CSS selector 执行固定的 focus/fill/click/inspect 操作。',
+    promptSnippet: '用 CSS selector 操作 DOM。',
+    parameters: Type.Object({
+      action: Type.Union([Type.Literal('focus'), Type.Literal('fill'), Type.Literal('click'), Type.Literal('inspect')], { description: 'DOM 操作类型' }),
+      selector: Type.String({ description: 'CSS selector。' }),
+      text: Type.Optional(Type.String({ description: 'fill 操作时的文本。' })),
+      tabId: Type.Optional(Type.String({ description: '指定标签 ID。' })),
+    }),
+    async execute(_toolCallId: string, params: Record<string, unknown>, signal?: AbortSignal) {
+      const p = params as { action: 'focus' | 'fill' | 'click' | 'inspect'; selector: string; text?: string; tabId?: string }
+      const result = await browserController.domAction(sessionId, p, p.tabId, signal)
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result) }], details: result }
+    },
+  }) as unknown as ToolDefinition)
+
+  // 8. BrowserExecuteJavaScript
+  browserTools.push(sdkModule.defineTool({
+    name: 'BrowserExecuteJavaScript',
+    label: '执行页面 JS',
+    description: '在当前页面上下文执行 JavaScript。仅用于用户明确目标的最小操作。',
+    promptSnippet: '在页面执行 JavaScript。',
+    parameters: Type.Object({
+      script: Type.String({ description: '要执行的 JavaScript 代码。' }),
+      tabId: Type.Optional(Type.String({ description: '指定标签 ID。' })),
+    }),
+    async execute(_toolCallId: string, params: Record<string, unknown>, signal?: AbortSignal) {
+      const p = params as { script: string; tabId?: string }
+      const result = await browserController.evaluate(sessionId, p.script, p.tabId, signal)
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result) }], details: result }
+    },
+  }) as unknown as ToolDefinition)
+
+  // 9. BrowserScreenshot
+  browserTools.push(sdkModule.defineTool({
+    name: 'BrowserScreenshot',
+    label: '截取页面截图',
+    description: '截取当前页面的截图。',
+    promptSnippet: '截取页面截图。',
+    parameters: Type.Object({
+      tabId: Type.Optional(Type.String({ description: '指定标签 ID。' })),
+    }),
+    async execute(_toolCallId: string, params: Record<string, unknown>, signal?: AbortSignal) {
+      const p = params as { tabId?: string }
+      const result = await browserController.screenshot(sessionId, p.tabId, signal)
+      return { content: [{ type: 'text' as const, text: JSON.stringify({ tabId: result.tabId, url: result.url, mimeType: result.mimeType, base64Length: result.base64.length }) }], details: result }
+    },
+  }) as unknown as ToolDefinition)
+
+  // 10. BrowserListTabs
+  browserTools.push(sdkModule.defineTool({
+    name: 'BrowserListTabs',
+    label: '列出标签',
+    description: '列出当前会话的所有浏览器标签。',
+    promptSnippet: '查看浏览器标签列表。',
+    parameters: Type.Object({}),
+    async execute() {
+      const state = browserController.listTabs(sessionId)
+      return { content: [{ type: 'text' as const, text: JSON.stringify({ tabs: state.tabs, activeTabId: state.activeTabId, agentTabId: state.agentTabId }) }], details: { tabs: state.tabs, activeTabId: state.activeTabId, agentTabId: state.agentTabId } }
+    },
+  }) as unknown as ToolDefinition)
+
+  // 11. BrowserNewTab
+  browserTools.push(sdkModule.defineTool({
+    name: 'BrowserNewTab',
+    label: '新建标签',
+    description: '创建新的 Agent 工作标签并激活到用户可见面板。',
+    promptSnippet: '新建浏览器标签。',
+    parameters: Type.Object({
+      url: Type.Optional(Type.String({ description: '新标签要打开的 URL。' })),
+    }),
+    async execute(_toolCallId: string, params: Record<string, unknown>, signal?: AbortSignal) {
+      const p = params as { url?: string }
+      const state = await browserController.createNewTab(sessionId, p.url, signal)
+      return { content: [{ type: 'text' as const, text: JSON.stringify({ tabId: state.activeTabId, url: state.url, title: state.title }) }], details: { tabId: state.activeTabId, url: state.url, title: state.title } }
+    },
+  }) as unknown as ToolDefinition)
+
+  // 12. BrowserSelectTab
+  browserTools.push(sdkModule.defineTool({
+    name: 'BrowserSelectTab',
+    label: '选择标签',
+    description: '选择已有标签作为 Agent 工作标签。',
+    promptSnippet: '切换浏览器工作标签。',
+    parameters: Type.Object({
+      tabId: Type.String({ description: '要选择的标签 ID。' }),
+    }),
+    async execute(_toolCallId: string, params: Record<string, unknown>) {
+      const p = params as { tabId: string }
+      const state = browserController.selectAgentTab(sessionId, p.tabId)
+      return { content: [{ type: 'text' as const, text: JSON.stringify({ tabId: state.activeTabId, url: state.url, title: state.title }) }], details: { tabId: state.activeTabId, url: state.url, title: state.title } }
+    },
+  }) as unknown as ToolDefinition)
+
+  // 13. BrowserCloseTab
+  browserTools.push(sdkModule.defineTool({
+    name: 'BrowserCloseTab',
+    label: '关闭标签',
+    description: '关闭指定标签。',
+    promptSnippet: '关闭浏览器标签。',
+    parameters: Type.Object({
+      tabId: Type.String({ description: '要关闭的标签 ID。' }),
+    }),
+    async execute(_toolCallId: string, params: Record<string, unknown>) {
+      const p = params as { tabId: string }
+      const state = await browserController.closeTab(sessionId, p.tabId)
+      return { content: [{ type: 'text' as const, text: JSON.stringify({ closed: true, remainingTabs: state?.tabs?.length ?? 0 }) }], details: { closed: true, remainingTabs: state?.tabs?.length ?? 0 } }
+    },
+  }) as unknown as ToolDefinition)
+
+  // 14. BrowserPreviewOpen
+  browserTools.push(sdkModule.defineTool({
+    name: 'BrowserPreviewOpen',
+    label: '预览本地文件',
+    description: '在受管浏览器中预览当前项目或已授权目录中的 HTML / index.html。',
+    promptSnippet: '预览本地 HTML 文件。',
+    parameters: Type.Object({
+      path: Type.String({ description: '要预览的 HTML 文件路径或目录路径。' }),
+      tabId: Type.Optional(Type.String({ description: '指定标签 ID。' })),
+    }),
+    async execute(_toolCallId: string, params: Record<string, unknown>, signal?: AbortSignal) {
+      const p = params as { path: string; tabId?: string }
+      const allowedRoots = workspace ? [workspace.path || ''].filter(Boolean) : []
+      const state = await browserController.previewOpen(sessionId, p.path, p.tabId, allowedRoots, cwd, signal)
+      return { content: [{ type: 'text' as const, text: JSON.stringify({ tabId: state.activeTabId, url: state.url, title: state.title }) }], details: { tabId: state.activeTabId, url: state.url, title: state.title } }
+    },
+  }) as unknown as ToolDefinition)
+
   const allCustomTools: ToolDefinition[] = [
     ...wrappedTools,
     wrapToolWithPermission(askUserQuestionTool as unknown as ToolDefinition, canUseTool),
@@ -1942,6 +2193,7 @@ ${output}` }],
     ...collaborationTools,
     ...automationTools,
     ...planningTools,
+    ...browserTools,
     ...mcpTools,
   ]
 
@@ -2019,9 +2271,11 @@ export function abortSession(sessionId: string): boolean {
   if (active.unsubscribe) {
     active.unsubscribe()
   }
-  // 清理该会话的所有待处理权限/AskUser 请求
-  permissionService.clearSession(sessionId)
-  activeSessions.delete(sessionId)
+// 清理该会话的所有待处理权限/AskUser 请求
+permissionService.clearSession(sessionId)
+// 取消浏览器操作
+browserController.cancelSession(sessionId)
+activeSessions.delete(sessionId)
   logger.info(`[Pi Agent] 已中止会话: ${sessionId}`)
   return true
 }

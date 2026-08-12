@@ -60,6 +60,20 @@
 
       <span class="status-bar__separator" />
 
+      <!-- 内置浏览器 -->
+      <a-tooltip :title="browserStore.panelOpen ? '关闭内置浏览器' : '打开内置浏览器'">
+        <span
+          class="status-bar__item"
+          :class="{ 'status-bar__item--active': browserStore.panelOpen }"
+          @click="toggleBrowser"
+        >
+          <global-outlined class="status-bar__icon" />
+          <span class="status-bar__text">浏览器</span>
+        </span>
+      </a-tooltip>
+
+      <span class="status-bar__separator" />
+
       <!-- 设置 -->
       <a-tooltip title="设置">
         <span class="status-bar__item" @click="goSettings">
@@ -94,8 +108,12 @@ import { message } from 'ant-design-vue';
 import { isDark, toggleTheme } from '@/theme';
 import { ipcApiRoute } from '@/api';
 import { ipc } from '@/utils/ipcRenderer';
+import { useTabStore } from '@/stores/tab';
+import { useBrowserStore } from '@/stores/browser';
 
 const router = useRouter();
+const tabStore = useTabStore();
+const browserStore = useBrowserStore();
 
 const appVersion = ref('1.0.0');
 const remoteAddress = ref('');
@@ -151,6 +169,12 @@ function openExternal(url) {
 function goSettings() {
   router.push('/setting');
 }
+
+/** 切换内置浏览器面板 */
+function toggleBrowser() {
+  const sessionId = tabStore.activeTab?.sessionId || null;
+  browserStore.toggleBrowser(sessionId);
+}
 </script>
 
 <style lang="less" scoped>
@@ -189,6 +213,11 @@ function goSettings() {
     &:hover {
       background-color: var(--bg-hover);
       color: var(--text-primary);
+    }
+
+    &--active {
+      color: var(--accent);
+      background-color: var(--bg-active);
     }
   }
 

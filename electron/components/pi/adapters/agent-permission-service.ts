@@ -211,6 +211,7 @@ export class AgentPermissionService {
     sessionId: string,
     sendToRenderer: (request: PermissionRequest) => void,
     sendAskUserToRenderer: (request: AskUserRequest) => void,
+    permissionMode?: string,
   ): (toolName: string, input: Record<string, unknown>, options: CanUseToolOptions) => Promise<PermissionResult> {
     return async (toolName, input, options) => {
       // AskUserQuestion 工具：委托给交互式问答流程
@@ -219,6 +220,9 @@ export class AgentPermissionService {
       }
 
       const allow = (): PermissionResult => ({ behavior: 'allow' as const, updatedInput: input })
+
+      // bypassPermissions 模式：除 AskUserQuestion 外全部自动放行
+      if (permissionMode === 'bypassPermissions') return allow()
 
       // 会话白名单检查（用户之前选择了"始终允许"）
       if (this.isWhitelisted(sessionId, toolName, input)) return allow()

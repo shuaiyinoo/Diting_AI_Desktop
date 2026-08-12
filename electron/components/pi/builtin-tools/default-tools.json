@@ -121,6 +121,118 @@
       "category": "rag",
       "source": "custom",
       "readOnly": true
+    },
+    {
+      "name": "BrowserNavigate",
+      "label": "导航到网址",
+      "description": "在受管浏览器中打开公共 HTTP/HTTPS 页面。",
+      "category": "browser",
+      "source": "custom",
+      "readOnly": false
+    },
+    {
+      "name": "BrowserObserve",
+      "label": "观察页面元素",
+      "description": "读取当前页面的可访问性结构与可交互元素 ref。",
+      "category": "browser",
+      "source": "custom",
+      "readOnly": true
+    },
+    {
+      "name": "BrowserClick",
+      "label": "点击元素",
+      "description": "点击 BrowserObserve 返回的 ref 指向的元素。",
+      "category": "browser",
+      "source": "custom",
+      "readOnly": false
+    },
+    {
+      "name": "BrowserFill",
+      "label": "填写输入框",
+      "description": "替换指定 ref 的 input、textarea 或 contenteditable 编辑器内容。",
+      "category": "browser",
+      "source": "custom",
+      "readOnly": false
+    },
+    {
+      "name": "BrowserPress",
+      "label": "按键/输入",
+      "description": "按下导航键或向已聚焦的编辑器一次插入完整文本。",
+      "category": "browser",
+      "source": "custom",
+      "readOnly": false
+    },
+    {
+      "name": "BrowserWaitFor",
+      "label": "等待条件",
+      "description": "等待 URL 片段、可见文本或 CSS selector 出现。",
+      "category": "browser",
+      "source": "custom",
+      "readOnly": true
+    },
+    {
+      "name": "BrowserDomAction",
+      "label": "DOM 操作",
+      "description": "用 CSS selector 执行固定的 focus/fill/click/inspect 操作。",
+      "category": "browser",
+      "source": "custom",
+      "readOnly": false
+    },
+    {
+      "name": "BrowserExecuteJavaScript",
+      "label": "执行页面 JS",
+      "description": "在当前页面上下文执行 JavaScript。仅用于用户明确目标的最小操作。",
+      "category": "browser",
+      "source": "custom",
+      "readOnly": false
+    },
+    {
+      "name": "BrowserScreenshot",
+      "label": "截取页面截图",
+      "description": "截取当前页面的截图。",
+      "category": "browser",
+      "source": "custom",
+      "readOnly": true
+    },
+    {
+      "name": "BrowserListTabs",
+      "label": "列出标签",
+      "description": "列出当前会话的所有浏览器标签。",
+      "category": "browser",
+      "source": "custom",
+      "readOnly": true
+    },
+    {
+      "name": "BrowserNewTab",
+      "label": "新建标签",
+      "description": "创建新的 Agent 工作标签并激活到用户可见面板。",
+      "category": "browser",
+      "source": "custom",
+      "readOnly": false
+    },
+    {
+      "name": "BrowserSelectTab",
+      "label": "选择标签",
+      "description": "选择已有标签作为 Agent 工作标签。",
+      "category": "browser",
+      "source": "custom",
+      "readOnly": false
+    },
+    {
+      "name": "BrowserCloseTab",
+      "label": "关闭标签",
+      "description": "关闭指定标签。",
+      "category": "browser",
+      "source": "custom",
+      "readOnly": false
+    },
+    {
+      "name": "BrowserPreviewOpen",
+      "label": "预览本地文件",
+      "description": "在受管浏览器中预览当前项目或已授权目录中的 HTML / index.html。",
+      "category": "browser",
+      "source": "custom",
+      "readOnly": false
     }
   ]
 }

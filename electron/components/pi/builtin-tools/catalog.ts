@@ -11,7 +11,7 @@ import manifest from './default-tools.json'
 export type ToolSource = 'sdk' | 'custom'
 
 /** 工具分类 */
-export type ToolCategory = 'file' | 'system' | 'search' | 'interaction' | 'task' | 'runtime'
+export type ToolCategory = 'file' | 'system' | 'search' | 'interaction' | 'task' | 'runtime' | 'browser'
 
 /** 工具摘要 */
 export interface ToolSummary {
@@ -51,6 +51,7 @@ export const CATEGORY_LABELS: Record<ToolCategory, string> = {
   interaction: '用户交互',
   task: '任务跟踪',
   runtime: '运行时',
+  browser: '浏览器',
 }
 
 /** 来源标签映射 */

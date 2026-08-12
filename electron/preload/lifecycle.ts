@@ -3,6 +3,7 @@ import { logger } from 'ee-core/log';
 import { getConfig } from 'ee-core/config';
 import { getMainWindow } from 'ee-core/electron';
 import { initPiAgent } from '../components/pi';
+import { browserController } from '../components/browser/browser-controller';
 import { startScheduler as startAutomationScheduler } from '../components/planning/automation-scheduler';
 import { startPlanningReminderScheduler } from '../components/planning/reminder-scheduler';
 import { stopScheduler as stopAutomationScheduler } from '../components/planning/automation-scheduler';
@@ -55,6 +56,9 @@ class Lifecycle {
     logger.info('[lifecycle] window-ready');
 
     const win = getMainWindow();
+
+    // 绑定主窗口给内置浏览器控制器
+    browserController.setOwnerWindow(win);
 
     // The window is centered and scaled proportionally
     // Obtain the size information of the main screen, calculate the width and height of the window as a percentage of the screen,
