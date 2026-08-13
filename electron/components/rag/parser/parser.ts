@@ -1,19 +1,28 @@
 /**
- * 文档解析器（基于 @kreuzberg/node，支持 91+ 文件格式）
+ * 文档解析器
  *
- * @kreuzberg/node 是 Rust 实现的高性能文档解析库，支持：
- *   - Office 文档（PDF, DOCX, XLSX, PPTX, ODT 等）
- *   - 图片（OCR，需 Tesseract）
+ * 混合解析策略：
+ *   - PDF 和图片 → 使用 PaddleOCR（ppu-paddle-ocr + ppu-pdf），原生支持中文和扫描件
+ *   - 其余格式 → 使用 @kreuzberg/node（Rust 高性能解析库），支持 Office/Web/文本/代码等
+ *
+ * @kreuzberg/node 支持：
+ *   - Office 文档（DOCX, XLSX, PPTX, ODT 等）
  *   - Web & 数据（HTML, XML, JSON, CSV 等）
  *   - 文本 & Markdown
  *   - 邮件 & 压缩包
  *   - 学术论文（BibTeX, LaTeX, Typst 等）
  *   - 代码（tree-sitter）
  *
- * 所有解析 API 都是异步的（extractFile），不会阻塞 Electron 主进程事件循环。
+ * PaddleOCR 支持：
+ *   - 数字 PDF：mupdf 直接提取文本+坐标（毫秒级）
+ *   - 扫描 PDF：渲染为图片后 PaddleOCR 识别
+ *   - 图片：PaddleOCR V6_MEDIUM 模型识别（原生中文）
+ *
+ * 所有解析 API 都是异步的，不会阻塞 Electron 主进程事件循环。
  */
 
 import { extractFile } from '@kreuzberg/node';
+import { invoiceOcrService } from '../../invoice/InvoiceOcrService';
 
 export interface DocumentParser {
   readonly extensions: string[];
@@ -61,15 +70,6 @@ const IMAGE_OCR_EXTENSIONS = new Set([
   'png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'tiff', 'tif',
 ]);
 
-/**
- * OCR (Tesseract) 可用性缓存：
- *   - true:  已验证可用
- *   - false: 已验证不可用（tessdata 缺失）
- *   - null:  未检测
- * 避免每个图片文件都重复触发 Tesseract 初始化失败的 stderr 噪音。
- */
-let ocrAvailable: boolean | null = null;
-
 function getFileExtension(filePath: string): string {
   const lower = filePath.toLowerCase();
   const match = lower.match(/\.([^.]+)$/);
@@ -87,65 +87,45 @@ export function isSupportedFormat(fileName: string): boolean {
 }
 
 /**
- * 使用 @kreuzberg/node 解析文档
+ * 解析文档，提取纯文本内容
  *
- * 对图片文件需要 OCR 支持（Tesseract）；如果 OCR 不可用会直接抛错。
- * 对非图片文件，禁用 OCR 以避免 PDF/Office 中嵌入图片时触发 Tesseract 报错。
+ * 分流策略：
+ *   1. PDF → 使用 PaddleOCR 管线（数字 PDF 直接提取，扫描 PDF 自动 OCR）
+ *   2. 图片 → 使用 PaddleOCR V6_MEDIUM 模型识别
+ *   3. 其余格式 → 使用 @kreuzberg/node 解析（禁用 OCR）
  */
 export async function parseDocument(filePath: string): Promise<string> {
   const ext = getFileExtension(filePath);
-  const isImage = IMAGE_OCR_EXTENSIONS.has(ext);
 
-  // ★ 图片文件需要 OCR；预先检测 Tesseract 是否可用，避免触发 stderr 噪音
-  if (isImage) {
-    if (ocrAvailable === false) {
-      throw new Error('图片解析需要 OCR 支持（Tesseract），但当前环境未配置 tessdata，已跳过');
+  // ── 分流 1：PDF → PaddleOCR 管线 ──
+  if (ext === 'pdf') {
+    const result = await invoiceOcrService.recognizePdf(filePath);
+    if (!result.success || !result.text) {
+      throw new Error(`PDF OCR 识别失败: ${result.error || '内容为空'}`);
     }
-    if (ocrAvailable === null) {
-      // 首次遇到图片文件，尝试解析来检测 OCR 是否可用
-      try {
-        const probeResult = await extractFile(filePath, null, {
-          ocr: { enabled: true, backend: 'tesseract', language: 'eng' },
-        });
-        const probeContent = (probeResult?.content || '').trim();
-        if (probeContent) {
-          ocrAvailable = true;
-          return probeContent.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
-        }
-        // 内容为空也可能是 OCR 失败
-        throw new Error('OCR 返回空内容');
-      } catch (error: any) {
-        ocrAvailable = false;
-        const msg = error?.message || String(error);
-        throw new Error(`图片解析需要 OCR 支持（Tesseract），但当前环境未配置 tessdata: ${msg}`);
-      }
-    }
+    return result.text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
   }
 
-  try {
-    // ★ 对非图片文件，禁用 OCR 以避免 PDF/Office 中嵌入图片时触发 Tesseract（tessdata 缺失会报错）
-    const config = isImage
-      ? { ocr: { enabled: true, backend: 'tesseract', language: 'eng' } }
-      : { ocr: { enabled: false, backend: 'tesseract' } };
+  // ── 分流 2：图片 → PaddleOCR 识别 ──
+  if (IMAGE_OCR_EXTENSIONS.has(ext)) {
+    const result = await invoiceOcrService.recognize(filePath);
+    if (!result.success || !result.text) {
+      throw new Error(`图片 OCR 识别失败: ${result.error || '内容为空'}`);
+    }
+    return result.text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
+  }
 
-    // extractFile 会自动根据文件扩展名/内容检测 MIME 类型并选择解析器
+  // ── 分流 3：其余格式 → @kreuzberg/node（禁用 OCR） ──
+  try {
+    const config = { ocr: { enabled: false, backend: 'tesseract' as const } };
     const result = await extractFile(filePath, null, config);
     const content = (result?.content || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
     if (!content) {
       throw new Error('解析结果内容为空');
     }
-    // 如果是图片文件且成功提取了内容，标记 OCR 可用
-    if (isImage) {
-      ocrAvailable = true;
-    }
     return content;
   } catch (error: any) {
     const msg = error?.message || String(error);
-    // OCR 相关错误（tessdata 缺失）给出更友好的提示，并缓存不可用状态
-    if (msg.includes('tesseract') || msg.includes('tessdata') || msg.includes('OCR') || msg.includes('Ocr')) {
-      ocrAvailable = false;
-      throw new Error(`图片解析需要 OCR 支持（Tesseract），但环境未配置 tessdata: ${msg}`);
-    }
     throw new Error(`文档解析失败: ${msg}`);
   }
 }

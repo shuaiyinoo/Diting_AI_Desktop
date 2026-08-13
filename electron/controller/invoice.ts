@@ -20,6 +20,7 @@ import type { InvoiceFileRecord, InvoiceFolderRecord } from '../service/database
 import { invoiceOcrService } from '../components/invoice/InvoiceOcrService';
 import { invoiceAiService } from '../components/invoice/InvoiceAiService';
 import { pdfToImageService } from '../components/invoice/PdfToImageService';
+import { RECEIPT_TYPES, getCategories } from '../components/invoice/ReceiptTypes';
 
 // 文件变化通知通道
 const SYNC_CHANGE_CHANNEL = 'controller/invoice/onSyncChange';
@@ -661,6 +662,20 @@ class InvoiceController {
     }
 
     return { success: false, error: result.error || 'AI 提取失败' };
+  }
+
+  /**
+   * 获取所有支持的票据/文档类型定义
+   * 前端用于动态展示分类信息和类型选择
+   */
+  async getReceiptTypes(): Promise<{
+    types: typeof RECEIPT_TYPES;
+    categories: ReturnType<typeof getCategories>;
+  }> {
+    return {
+      types: RECEIPT_TYPES,
+      categories: getCategories(),
+    };
   }
 
   /**

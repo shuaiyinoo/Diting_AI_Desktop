@@ -55,7 +55,7 @@
             @click="navigate('invoice')"
           >
             <FileSearchOutlined class="mb-item-icon" />
-            <span class="mb-item-text">票据识别</span>
+            <span class="mb-item-text">OCR识别</span>
           </div>
           <div
             class="mb-item"
@@ -74,6 +74,31 @@
             <ThunderboltFilled class="mb-item-icon" />
             <span class="mb-item-text">Agent 技能</span>
             <span class="mb-item-count">{{ skillsCount }}</span>
+          </div>
+        </div>
+
+        <!-- ===== OCR（仅 OCR 识别模块激活时显示） ===== -->
+        <div v-if="ws.activeModule === 'invoice'" class="mb-group">
+          <div class="mb-group-header">
+            <span class="mb-group-title">OCR</span>
+          </div>
+          <div class="mb-group-body">
+            <div
+              class="mb-item mb-item--sub"
+              :class="{ 'mb-item--active': isOcrSubActive('recognize') }"
+              @click="navigateOcrSub('recognize')"
+            >
+              <FileTextOutlined class="mb-item-icon" />
+              <span class="mb-item-text">录入识读</span>
+            </div>
+            <div
+              class="mb-item mb-item--sub"
+              :class="{ 'mb-item--active': isOcrSubActive('archive') }"
+              @click="navigateOcrSub('archive')"
+            >
+              <InboxOutlined class="mb-item-icon" />
+              <span class="mb-item-text">归集查阅</span>
+            </div>
           </div>
         </div>
 
@@ -257,7 +282,7 @@
 
       <div class="mb-divider"></div>
 
-      <!-- 模块图标（文件/票据识别/任务日程/技能） -->
+      <!-- 模块图标（文件/OCR识别/任务日程/技能） -->
       <button
         type="button"
         class="mb-icon-btn"
@@ -356,6 +381,8 @@ import {
   DeleteOutlined,
   ScheduleOutlined,
   FileSearchOutlined,
+  FileTextOutlined,
+  InboxOutlined,
 } from '@ant-design/icons-vue'
 import { ipc } from '@/utils/ipcRenderer'
 import { ipcApiRoute } from '@/api'
@@ -465,6 +492,7 @@ watch(
     if (tabStore.tabMode) return
     if (path.startsWith('/file')) ws.setActiveModule('file')
     else if (path.startsWith('/invoice')) ws.setActiveModule('invoice')
+    else if (path.startsWith('/ocr/archive')) ws.setActiveModule('invoice')
     else if (path.startsWith('/planning')) ws.setActiveModule('planning')
     else if (path.startsWith('/skills')) ws.setActiveModule('skills')
     else if (path.startsWith('/chat')) ws.setActiveModule('chat')
@@ -493,6 +521,14 @@ function navigate(key) {
     return
   }
 
+  // 点击 OCR 识别父菜单时，默认选中录入识读子菜单
+  if (key === 'ocr') {
+    tabStore.exitTabMode()
+    ws.setActiveModule('invoice')
+    router.push('/invoice').catch(err => console.error('[MenuBar] router.push 失败:', err))
+    return
+  }
+
   // Chat/Agent：进入 Tab 模式
   ws.setActiveModule(key)
 
@@ -518,6 +554,28 @@ function navigate(key) {
       tabStore.enterTabMode()
     }
   }
+}
+
+/** OCR 组子菜单导航 */
+function navigateOcrSub(subKey) {
+  tabStore.exitTabMode()
+  ws.setActiveModule('invoice')
+  if (subKey === 'recognize') {
+    router.push('/invoice').catch(err => console.error('[MenuBar] router.push 失败:', err))
+  } else if (subKey === 'archive') {
+    router.push('/ocr/archive').catch(err => console.error('[MenuBar] router.push 失败:', err))
+  }
+}
+
+/** 判断 OCR 组子菜单是否处于激活状态 */
+function isOcrSubActive(subKey) {
+  if (subKey === 'recognize') {
+    return route.path.startsWith('/invoice')
+  }
+  if (subKey === 'archive') {
+    return route.path.startsWith('/ocr/archive')
+  }
+  return false
 }
 
 // 展开模式下点击文件夹：通过 storeToRefs 的 ref 直接赋值，确保响应式触发

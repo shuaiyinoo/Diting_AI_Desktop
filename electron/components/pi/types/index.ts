@@ -46,6 +46,8 @@ export interface AgentSessionMeta {
   workspaceId?: string
   agentRuntime: AgentRuntime
   sdkSessionId?: string
+  /** SDK 持久化会话文件路径（用于 resume） */
+  sdkSessionFile?: string
   createdAt: number
   updatedAt: number
   /** 委派深度：0=用户主会话 */

@@ -137,7 +137,13 @@ const constantRouterMap = [
         path: '/invoice',
         name: 'Invoice',
         component: () => import('@/views/invoice/Index.vue'),
-        props: { title: '票据识别' },
+        props: { title: '录入识读' },
+      },
+      {
+        path: '/ocr/archive',
+        name: 'OcrArchive',
+        component: () => import('@/views/Placeholder.vue'),
+        props: { title: '归集查阅' },
       },
       {
         path: '/skills',

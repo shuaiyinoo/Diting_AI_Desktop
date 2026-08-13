@@ -110,7 +110,7 @@ export { hybridRetrievalService } from './retrieval/hybridRetrieval';
 // ═══════════════════════════════════════════
 
 export { chat, chatStream } from './llm/llmClient';
-export type { ChatMessage, ChatResult, StreamCallbacks } from './llm/llmClient';
+export type { ChatMessage, ChatResult, ChatOptions, StreamCallbacks } from './llm/llmClient';
 export {
   buildSystemPrompt,
   buildStreamSystemPrompt,

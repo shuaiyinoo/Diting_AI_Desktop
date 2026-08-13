@@ -4,7 +4,7 @@
     <div class="panel panel--file-tree" :style="{ width: panelWidth + 'px', flexShrink: 0 }">
       <!-- 顶部工具栏 -->
       <div class="panel__toolbar">
-        <span class="panel__title">票据识别</span>
+        <span class="panel__title">录入识读</span>
         <div class="panel__toolbar-right">
           <a-tag v-if="store.ocrProcessing" color="processing" class="ocr-tag">
             <a-spin size="small" style="margin-right: 4px" />
@@ -319,12 +319,14 @@
               <div class="result-text-content">{{ ocrText || '暂无识别文本' }}</div>
             </div>
 
-            <!-- AI 结构化结果 -->
+            <!-- AI 结构化结果（按大类/小类动态展示） -->
             <div v-if="resultTab === 'ai'" class="result-panel__body">
               <div v-if="aiLoading" class="ai-loading">
                 <a-spin tip="AI 提取中..." />
+                <p class="ai-loading__hint">步骤 1: 文档分类 → 步骤 2: 结构化提取</p>
               </div>
               <div v-else-if="aiData" class="ai-result">
+                <!-- 操作按钮 -->
                 <div class="ai-result__actions">
                   <a-button size="small" type="text" @click="copyAiData">
                     <CopyOutlined />
@@ -335,89 +337,60 @@
                     <span>重新提取</span>
                   </a-button>
                 </div>
-                <!-- 票据类型 -->
-                <div class="ai-field" v-if="aiData.invoice_type">
-                  <span class="ai-field__label">票据类型</span>
-                  <span class="ai-field__value">{{ aiData.invoice_type }}</span>
-                </div>
-                <!-- 基本信息 -->
-                <div class="ai-section" v-if="aiData.basic_info">
-                  <div class="ai-section__title">基本信息</div>
-                  <div class="ai-field" v-for="(val, key) in aiData.basic_info" :key="key">
-                    <span class="ai-field__label">{{ fieldLabelMap[key] || key }}</span>
-                    <span class="ai-field__value">{{ val ?? '-' }}</span>
+
+                <!-- 文档分类信息 -->
+                <div class="ai-classify-header">
+                  <div class="ai-classify-header__main">
+                    <span class="ai-classify-header__category">{{ aiData.category_display || '未知' }}</span>
+                    <span class="ai-classify-header__separator">/</span>
+                    <span class="ai-classify-header__type">{{ aiData.type_name || '未知' }}</span>
+                  </div>
+                  <div class="ai-classify-header__meta">
+                    <span class="ai-classify-tag" :class="{ 'ai-classify-tag--review': aiData.needs_review }">
+                      {{ (aiData.confidence * 100).toFixed(0) }}% 置信
+                    </span>
+                    <span v-if="aiData.needs_review" class="ai-classify-tag ai-classify-tag--warn">需复核</span>
+                    <span v-else class="ai-classify-tag ai-classify-tag--ok">已确认</span>
                   </div>
                 </div>
-                <!-- 购方信息 -->
-                <div class="ai-section" v-if="aiData.buyer">
-                  <div class="ai-section__title">购方信息</div>
-                  <div class="ai-field" v-for="(val, key) in aiData.buyer" :key="key">
-                    <span class="ai-field__label">{{ fieldLabelMap[key] || key }}</span>
-                    <span class="ai-field__value">{{ val ?? '-' }}</span>
-                  </div>
+
+                <!-- 类型编码 -->
+                <div class="ai-field">
+                  <span class="ai-field__label">类型编码</span>
+                  <span class="ai-field__value">{{ aiData.type_code || '-' }}</span>
                 </div>
-                <!-- 销方信息 -->
-                <div class="ai-section" v-if="aiData.seller">
-                  <div class="ai-section__title">销方信息</div>
-                  <div class="ai-field" v-for="(val, key) in aiData.seller" :key="key">
-                    <span class="ai-field__label">{{ fieldLabelMap[key] || key }}</span>
-                    <span class="ai-field__value">{{ val ?? '-' }}</span>
-                  </div>
-                </div>
-                <!-- 金额信息 -->
-                <div class="ai-section" v-if="aiData.amount">
-                  <div class="ai-section__title">金额信息</div>
-                  <div class="ai-field" v-for="(val, key) in aiData.amount" :key="key">
-                    <span class="ai-field__label">{{ fieldLabelMap[key] || key }}</span>
-                    <span class="ai-field__value">{{ val ?? '-' }}</span>
-                  </div>
-                </div>
-                <!-- 明细项 -->
-                <div class="ai-section" v-if="aiData.line_items && aiData.line_items.length">
-                  <div class="ai-section__title">明细项 ({{ aiData.line_items.length }})</div>
-                  <div class="ai-line-item" v-for="(item, idx) in aiData.line_items" :key="idx">
-                    <span class="ai-line-item__index">{{ idx + 1 }}</span>
-                    <div class="ai-line-item__body">
-                      <div class="ai-field" v-for="(val, key) in item" :key="key">
-                        <span class="ai-field__label">{{ fieldLabelMap[key] || key }}</span>
-                        <span class="ai-field__value">{{ val ?? '-' }}</span>
+
+                <!-- 结构化数据：递归渲染 -->
+                <template v-if="aiData.structured_data">
+                  <template v-for="(val, key) in aiData.structured_data" :key="key">
+                    <!-- 嵌套对象 -->
+                    <div v-if="isObject(val)" class="ai-section">
+                      <div class="ai-section__title">{{ key }}</div>
+                      <div class="ai-field" v-for="(subVal, subKey) in val" :key="subKey">
+                        <span class="ai-field__label">{{ subKey }}</span>
+                        <span class="ai-field__value">{{ formatValue(subVal) }}</span>
                       </div>
                     </div>
-                  </div>
-                </div>
-                <!-- 其他信息 -->
-                <div class="ai-section" v-if="aiData.other">
-                  <div class="ai-section__title">其他信息</div>
-                  <div class="ai-field" v-for="(val, key) in aiData.other" :key="key">
-                    <span class="ai-field__label">{{ fieldLabelMap[key] || key }}</span>
-                    <span class="ai-field__value">{{ val ?? '-' }}</span>
-                  </div>
-                </div>
-                <!-- 校验结果 -->
-                <div class="ai-section" v-if="aiData.verification">
-                  <div class="ai-section__title">勾稽校验</div>
-                  <div class="ai-field" v-for="(val, key) in aiData.verification" :key="key">
-                    <span class="ai-field__label">{{ fieldLabelMap[key] || key }}</span>
-                    <span class="ai-field__value" :class="{ 'ai-field__value--fail': val === 'fail' }">{{ val ?? '-' }}</span>
-                  </div>
-                </div>
-                <!-- 置信度 -->
-                <div class="ai-section" v-if="aiData.confidence">
-                  <div class="ai-section__title">置信度</div>
-                  <div class="ai-field">
-                    <span class="ai-field__label">整体置信度</span>
-                    <span class="ai-field__value">{{ (aiData.confidence.overall * 100).toFixed(0) }}%</span>
-                  </div>
-                  <div class="ai-field" v-if="aiData.confidence.low_confidence_fields && aiData.confidence.low_confidence_fields.length">
-                    <span class="ai-field__label">低置信字段</span>
-                    <span class="ai-field__value">{{ aiData.confidence.low_confidence_fields.join(', ') }}</span>
-                  </div>
-                </div>
-                <!-- 复核标记 -->
-                <div class="ai-field" v-if="aiData.needs_review !== undefined">
-                  <span class="ai-field__label">需要复核</span>
-                  <span class="ai-field__value" :class="{ 'ai-field__value--warn': aiData.needs_review }">{{ aiData.needs_review ? '是' : '否' }}</span>
-                </div>
+                    <!-- 数组（明细项） -->
+                    <div v-else-if="isArray(val) && val.length > 0" class="ai-section">
+                      <div class="ai-section__title">{{ key }} ({{ val.length }})</div>
+                      <div class="ai-line-item" v-for="(item, idx) in val" :key="idx">
+                        <span class="ai-line-item__index">{{ idx + 1 }}</span>
+                        <div class="ai-line-item__body">
+                          <div class="ai-field" v-for="(itemVal, itemKey) in item" :key="itemKey">
+                            <span class="ai-field__label">{{ itemKey }}</span>
+                            <span class="ai-field__value">{{ formatValue(itemVal) }}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <!-- 简单值 -->
+                    <div v-else class="ai-field">
+                      <span class="ai-field__label">{{ key }}</span>
+                      <span class="ai-field__value">{{ formatValue(val) }}</span>
+                    </div>
+                  </template>
+                </template>
               </div>
               <div v-else class="result-empty">
                 <p>暂未进行 AI 提取</p>
@@ -433,13 +406,120 @@
         </div>
       </template>
 
-      <!-- 未选中文件时的占位 -->
+      <!-- 未选中文件时的介绍页 -->
       <div v-else class="content-placeholder">
-        <div class="content-placeholder__icon">
-          <FileSearchOutlined />
+        <div class="intro-page">
+          <!-- 头部 -->
+          <div class="intro-header">
+            <div class="intro-header__icon">
+              <FileSearchOutlined />
+            </div>
+            <h2 class="intro-header__title">录入识读</h2>
+            <p class="intro-header__desc">从左侧选择文件查看识别结果，或先了解以下能力总览</p>
+          </div>
+
+          <!-- 核心优势 -->
+          <div class="intro-section">
+            <h3 class="intro-section__title">核心优势</h3>
+            <div class="intro-advantages">
+              <div class="advantage-card">
+                <div class="advantage-card__icon">
+                  <SafetyCertificateOutlined />
+                </div>
+                <div class="advantage-card__body">
+                  <div class="advantage-card__name">本地识别，数据不出电脑</div>
+                  <p class="advantage-card__desc">所有图片的识别、文字提取、结构化解析都在本地完成，原始图片和识别结果不会上传到任何外部服务器，从根本上保障数据安全与隐私合规。</p>
+                </div>
+              </div>
+              <div class="advantage-card">
+                <div class="advantage-card__icon">
+                  <AppstoreOutlined />
+                </div>
+                <div class="advantage-card__body">
+                  <div class="advantage-card__name">覆盖全面，一机通识</div>
+                  <p class="advantage-card__desc">支持 40+ 种主流票据与证件的高精度识别，涵盖财务报销、交通出行、资质证照等核心业务场景。</p>
+                </div>
+              </div>
+              <div class="advantage-card">
+                <div class="advantage-card__icon">
+                  <RobotOutlined />
+                </div>
+                <div class="advantage-card__body">
+                  <div class="advantage-card__name">智能提取，识用一体</div>
+                  <p class="advantage-card__desc">识别结果自动映射为结构化字段（金额、日期、票号、销方/购方等），异构数据归一为统一视图，支持跨类型检索、统计与多格式导出。</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 识别能力 -->
+          <div class="intro-section">
+            <h3 class="intro-section__title">识别能力</h3>
+            <div class="intro-capabilities">
+              <div class="capability-item">
+                <div class="capability-item__header">
+                  <span class="capability-item__badge capability-item__badge--finance">财税报销</span>
+                  <span class="capability-item__count">13 种</span>
+                </div>
+                <p class="capability-item__desc">增值税发票（专用/普通/电子/卷票/区块链）、定额发票、通用机打发票、火车票、出租车票、飞机行程单、汽车票、过路过桥费发票、船票、网约车行程单、购物小票、银行回单、智能票据混贴。</p>
+              </div>
+              <div class="capability-item">
+                <div class="capability-item__header">
+                  <span class="capability-item__badge capability-item__badge--card">资质证照</span>
+                  <span class="capability-item__count">11 种</span>
+                </div>
+                <p class="capability-item__desc">身份证、银行卡、营业执照、护照、社保卡、港澳台证件、户口本、出生证明、结婚证、离婚证、房产证。</p>
+              </div>
+              <div class="capability-item">
+                <div class="capability-item__header">
+                  <span class="capability-item__badge capability-item__badge--traffic">交通出行</span>
+                  <span class="capability-item__count">7 种</span>
+                </div>
+                <p class="capability-item__desc">车牌识别、VIN码识别、驾驶证、行驶证、机动车销售发票、车辆合格证、二手车销售发票。</p>
+              </div>
+<!-- 暂时屏蔽的医疗健康 -->
+<!--
+<div class="capability-item">
+<div class="capability-item__header">
+<span class="capability-item__badge capability-item__badge--medical">医疗健康</span>
+<span class="capability-item__count">7 种</span>
+</div>
+<p class="capability-item__desc">医疗发票、医疗费用明细、费用结算单、检验报告单、诊断报告单、病案首页、出院小结。</p>
+</div>
+-->
+<!-- 暂时屏蔽的教育培训 -->
+<!--
+<div class="capability-item">
+<div class="capability-item__header">
+<span class="capability-item__badge capability-item__badge--education">教育培训</span>
+<span class="capability-item__count">2 种</span>
+</div>
+<p class="capability-item__desc">试卷分析与识别、试卷切题识别。</p>
+</div>
+-->
+<!-- 暂时屏蔽的通用识别 -->
+<!--
+<div class="capability-item">
+<div class="capability-item__header">
+<span class="capability-item__badge capability-item__badge--general">通用识别</span>
+<span class="capability-item__count">5 种</span>
+</div>
+<p class="capability-item__desc">通用文字识别（标准版）、通用文字识别（高精度版）、表格文字识别、二维码识别、印章识别。</p>
+</div>
+-->
+<!-- 暂时屏蔽的其他场景 -->
+<!--
+<div class="capability-item">
+<div class="capability-item__header">
+<span class="capability-item__badge capability-item__badge--other">其他场景</span>
+<span class="capability-item__count">2 种</span>
+</div>
+<p class="capability-item__desc">仪器仪表盘读数识别、门脸文字识别。</p>
+</div>
+-->
+            </div>
+          </div>
         </div>
-        <h2 class="content-placeholder__title">票据识别</h2>
-        <p class="content-placeholder__desc">从左侧选择文件查看识别结果</p>
       </div>
     </div>
   </div>
@@ -466,6 +546,8 @@ import {
   ZoomOutOutlined,
   ExpandOutlined,
   RobotOutlined,
+  SafetyCertificateOutlined,
+  AppstoreOutlined,
 } from '@ant-design/icons-vue'
 import { useInvoiceStore } from '@/stores/invoice'
 import PanelDivider from '@/components/layout/PanelDivider.vue'
@@ -643,36 +725,23 @@ const currentPageText = computed(() => {
   return pages[currentPageIdx.value]?.text || ''
 })
 
-// AI 字段名中文映射
-const fieldLabelMap = {
-  invoice_code: '发票代码',
-  invoice_number: '发票号码',
-  issue_date: '开票日期',
-  check_code: '校验码',
-  machine_number: '机器编号',
-  name: '名称',
-  tax_id: '税号',
-  address_phone: '地址电话',
-  bank_account: '开户行及账号',
-  total_excluding_tax: '不含税金额',
-  total_tax: '税额',
-  total_including_tax: '价税合计',
-  total_in_words: '价税合计(大写)',
-  specification: '规格',
-  unit: '单位',
-  quantity: '数量',
-  unit_price: '单价',
-  amount: '金额',
-  tax_rate: '税率',
-  tax_amount: '税额',
-  payee: '收款人',
-  reviewer: '复核人',
-  issuer: '开票人',
-  remark: '备注',
-  has_seal: '是否有印章',
-  amount_check: '金额校验',
-  line_items_check: '明细校验',
-  mismatch_detail: '差异说明',
+// ========== 通用辅助函数 ==========
+
+/** 判断是否为对象（非数组、非 null） */
+function isObject(val) {
+  return val !== null && typeof val === 'object' && !Array.isArray(val)
+}
+
+/** 判断是否为数组 */
+function isArray(val) {
+  return Array.isArray(val)
+}
+
+/** 格式化值用于显示：null → '-', 对象/数组 → JSON 字符串，其他 → String */
+function formatValue(val) {
+  if (val === null || val === undefined) return '-'
+  if (typeof val === 'object') return JSON.stringify(val)
+  return String(val)
 }
 
 async function onSelectFile(file) {
@@ -1485,33 +1554,194 @@ watch(() => store.selectedFolderId, () => {
   }
 }
 
-// ========== 占位区 ==========
+// ========== 占位区（介绍页） ==========
 .content-placeholder {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: var(--bg-layout);
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 3px;
+  }
+}
+
+.intro-page {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 32px 28px 48px;
+}
+
+// ===== 头部 =====
+.intro-header {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  height: 100%;
-  gap: 12px;
-  color: var(--text-muted);
+  gap: 10px;
+  margin-bottom: 32px;
 
   &__icon {
-    font-size: 48px;
-    opacity: 0.3;
+    font-size: 44px;
     color: var(--accent);
+    opacity: 0.7;
+    line-height: 1;
   }
 
   &__title {
-    font-size: 20px;
-    font-weight: 600;
-    color: var(--text-secondary);
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-primary);
     margin: 0;
   }
 
   &__desc {
-    font-size: 14px;
+    font-size: 13px;
     color: var(--text-muted);
     margin: 0;
+  }
+}
+
+// ===== 分区 =====
+.intro-section {
+  margin-bottom: 28px;
+
+  &__title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 14px;
+    padding-left: 10px;
+    border-left: 3px solid var(--accent);
+  }
+}
+
+// ===== 核心优势卡片 =====
+.intro-advantages {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.advantage-card {
+  display: flex;
+  gap: 14px;
+  padding: 16px 18px;
+  background: var(--bg-panel);
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  transition: box-shadow 0.2s ease;
+
+  &:hover {
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  }
+
+  &__icon {
+    flex-shrink: 0;
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9px;
+    background: rgba(22, 119, 255, 0.08);
+    color: var(--accent);
+    font-size: 19px;
+  }
+
+  &__body {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+  }
+
+  &__desc {
+    font-size: 12px;
+    line-height: 1.7;
+    color: var(--text-secondary);
+    margin: 0;
+  }
+}
+
+// ===== 识别能力列表 =====
+.intro-capabilities {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.capability-item {
+  padding: 12px 16px;
+  background: var(--bg-panel);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+
+  &__count {
+    font-size: 11px;
+    color: var(--text-muted);
+    background: var(--bg-active);
+    padding: 1px 8px;
+    border-radius: 8px;
+  }
+
+  &__desc {
+    font-size: 12px;
+    line-height: 1.7;
+    color: var(--text-secondary);
+    margin: 0;
+  }
+}
+
+// 大类标签颜色
+.capability-item__badge {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 10px;
+  border-radius: 6px;
+
+  &--finance {
+    color: #1677ff;
+    background: rgba(22, 119, 255, 0.1);
+  }
+  &--card {
+    color: #722ed1;
+    background: rgba(114, 46, 209, 0.1);
+  }
+  &--traffic {
+    color: #13c2c2;
+    background: rgba(19, 194, 194, 0.1);
+  }
+  &--medical {
+    color: #52c41a;
+    background: rgba(82, 196, 26, 0.1);
+  }
+  &--education {
+    color: #fa8c16;
+    background: rgba(250, 140, 22, 0.1);
+  }
+  &--general {
+    color: #595959;
+    background: rgba(89, 89, 89, 0.08);
+  }
+  &--other {
+    color: #eb2f96;
+    background: rgba(235, 47, 150, 0.08);
   }
 }
 
@@ -1815,9 +2045,17 @@ watch(() => store.selectedFolderId, () => {
 
 .ai-loading {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   height: 200px;
+  gap: 12px;
+
+  &__hint {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin: 0;
+  }
 }
 
 .ai-result {
@@ -1832,6 +2070,81 @@ watch(() => store.selectedFolderId, () => {
     top: 0;
     background: var(--bg-panel);
     z-index: 1;
+  }
+}
+
+// ========== 文档分类头部 ==========
+.ai-classify-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  margin: 0 0 4px;
+  background: linear-gradient(135deg, rgba(22, 119, 255, 0.06) 0%, rgba(82, 196, 26, 0.04) 100%);
+  border-radius: 8px;
+  border: 1px solid rgba(22, 119, 255, 0.1);
+
+  &__main {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    flex: 1;
+  }
+
+  &__category {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+
+  &__separator {
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  &__type {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__meta {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+}
+
+.ai-classify-tag {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 8px;
+  white-space: nowrap;
+
+  &--review {
+    color: #faad14;
+    background: rgba(250, 173, 20, 0.1);
+  }
+
+  &--warn {
+    color: #faad14;
+    background: rgba(250, 173, 20, 0.15);
+    font-weight: 600;
+  }
+
+  &--ok {
+    color: #52c41a;
+    background: rgba(82, 196, 26, 0.1);
+    font-weight: 600;
   }
 }
 

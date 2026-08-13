@@ -169,6 +169,7 @@ const ipcApiRoute = {
     getFileDetail: 'controller/invoice/getFileDetail',
     reRecognize: 'controller/invoice/reRecognize',
     extractInvoice: 'controller/invoice/extractInvoice',
+    getReceiptTypes: 'controller/invoice/getReceiptTypes',
     registerSyncCallback: 'controller/invoice/registerSyncCallback',
     onSyncChange: 'controller/invoice/onSyncChange',
     onOcrProgress: 'controller/invoice/onOcrProgress',

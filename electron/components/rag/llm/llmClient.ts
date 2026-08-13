@@ -32,6 +32,18 @@ export interface ChatResult {
   modelName: string;
 }
 
+/** 同步对话可选参数 */
+export interface ChatOptions {
+  timeoutMs?: number;
+  signal?: AbortSignal;
+  /** 覆盖模型配置的 temperature */
+  temperature?: number;
+  /** 覆盖模型配置的 max_tokens */
+  maxTokens?: number;
+  /** 强制 JSON 输出格式（部分模型支持） */
+  responseFormat?: { type: 'json_object' | 'text' };
+}
+
 /** 流式对话回调 */
 export interface StreamCallbacks {
   /** 收到一个文本片段 */
@@ -51,17 +63,21 @@ const DEFAULT_TIMEOUT_MS = 120_000;
 export async function chat(
   model: LlmModelRecord,
   messages: ChatMessage[],
-  options: { timeoutMs?: number; signal?: AbortSignal } = {}
+  options: ChatOptions = {}
 ): Promise<ChatResult> {
   const startMs = Date.now();
   const url = buildChatUrl(model.base_url);
-  const body = {
+  const body: Record<string, any> = {
     model: model.model_name,
     messages,
-    temperature: model.temperature ?? 0.7,
-    max_tokens: model.max_tokens ?? 4096,
+    temperature: options.temperature ?? model.temperature ?? 0.7,
+    max_tokens: options.maxTokens ?? model.max_tokens ?? 4096,
     stream: false,
   };
+  // 部分模型支持 response_format 强制 JSON 输出
+  if (options.responseFormat) {
+    body.response_format = options.responseFormat;
+  }
 
   const response = await fetchWithTimeout(url, {
     method: 'POST',

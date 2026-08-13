@@ -207,6 +207,7 @@ export function updateSession(id: string, input: Partial<AgentSessionMeta>): Age
   if (input.channelId !== undefined) session.channelId = input.channelId
   if (input.workspaceId !== undefined) session.workspaceId = input.workspaceId
   if (input.sdkSessionId !== undefined) session.sdkSessionId = input.sdkSessionId
+  if (input.sdkSessionFile !== undefined) session.sdkSessionFile = input.sdkSessionFile
   session.updatedAt = Date.now()
 
   writeSessionIndex(sessions)
@@ -216,14 +217,22 @@ export function updateSession(id: string, input: Partial<AgentSessionMeta>): Age
 /** 删除会话 */
 export function deleteSession(id: string): boolean {
   const sessions = readSessionIndex()
+  const idx = sessions.findIndex((s) => s.id === id)
+  if (idx === -1) return false
+  const session = sessions[idx]
   const filtered = sessions.filter((s) => s.id !== id)
-  if (filtered.length === sessions.length) return false
   writeSessionIndex(filtered)
 
   // 删除消息文件
   const sessionFile = join(getAgentSessionsDir(), `${id}.jsonl`)
   if (existsSync(sessionFile)) {
     try { unlinkSync(sessionFile) } catch { /* 忽略 */ }
+  }
+
+  // 删除 SDK 持久化会话文件（如果存在）
+  if (session.sdkSessionFile && existsSync(session.sdkSessionFile)) {
+    try { unlinkSync(session.sdkSessionFile) } catch { /* 忽略 */ }
+    logger.info(`[Pi Agent] 已删除 SDK 会话文件: ${session.sdkSessionFile}`)
   }
 
 // 终止活跃会话
@@ -256,6 +265,68 @@ function readMessages(sessionId: string): AgentMessage[] {
   return lines.map((line) => {
     try { return JSON.parse(line) as AgentMessage } catch { return null }
   }).filter((msg): msg is AgentMessage => msg !== null)
+}
+
+// ========== 会话元数据查找 ==========
+
+/** 查找会话元数据 */
+function findSessionMeta(sessionId: string): AgentSessionMeta | undefined {
+  return readSessionIndex().find((s) => s.id === sessionId)
+}
+
+// ========== 上下文回填 ==========
+
+/** 回填的最大历史消息条数 */
+const MAX_CONTEXT_MESSAGES = 20
+
+/**
+ * 构建带历史上下文的 prompt（兜底机制）
+ *
+ * 当 SDK resume 不可用时（首次会话、session 文件丢失等），
+ * 将最近 N 条消息拼接为上下文注入 prompt，让新 SDK 会话保留对话记忆。
+ */
+function buildContextPrompt(sessionId: string, currentUserMessage: string): string {
+  const allMessages = readMessages(sessionId)
+  if (allMessages.length === 0) return currentUserMessage
+
+  // 排除最后一条（当前用户消息，刚刚才 append 的）
+  const history = allMessages.slice(0, -1)
+  if (history.length === 0) return currentUserMessage
+
+  const recent = history.slice(-MAX_CONTEXT_MESSAGES)
+  const lines = recent
+    .filter((m) => m.role === 'user' || m.role === 'assistant')
+    .map((m) => {
+      // 提取文本内容
+      const textParts = (m.content || [])
+        .filter((b) => b.type === 'text' && b.text)
+        .map((b) => b.text!)
+      const text = textParts.join('\n')
+      if (!text) return null
+
+      // 提取工具活动摘要
+      const toolParts = (m.content || [])
+        .filter((b) => b.type === 'tool_use' && b.toolName)
+        .map((b) => `[tool: ${b.toolName}]`)
+      const toolSummary = toolParts.length > 0 ? toolParts.join(' ') : ''
+
+      let line = `[${m.role}]: ${text}`
+      if (m.role === 'assistant' && toolSummary) {
+        line += `\n  工具活动: ${toolSummary}`
+      }
+      return line
+    })
+    .filter(Boolean)
+
+  if (lines.length === 0) return currentUserMessage
+
+  const sessionFile = join(getAgentSessionsDir(), `${sessionId}.jsonl`)
+  const sessionInfoBlock = `\n<session_info>\nSession ID: ${sessionId}\nHistory path: ${sessionFile}\n` +
+    `重要：上方仅为最近 ${MAX_CONTEXT_MESSAGES} 条对话摘要，可能不完整。` +
+    `恢复时先确认「已经完成了哪些工作、进行到哪一步」，然后从中断处继续，切勿重复执行已完成的步骤。\n</session_info>\n`
+
+  logger.info(`[Pi Agent] buildContextPrompt: 读取 ${allMessages.length} 条消息，注入 ${lines.length} 条历史`)
+  return `<conversation_history>${sessionInfoBlock}\n${lines.join('\n')}\n</conversation_history>\n\n${currentUserMessage}`
 }
 
 // ========== 提示词构建 ==========
@@ -2200,7 +2271,27 @@ ${output}` }],
   // 调试日志：确认工具已注册
   logger.info(`[Pi Agent] 已注册 ${allCustomTools.length} 个自定义工具: ${allCustomTools.map(t => t.name).join(', ')}`)
 
-    // 创建 Pi Agent 会话
+    // ===== 会话恢复（resume）逻辑 =====
+    // 读取已有的 SDK 会话文件路径，如果存在则恢复（resume），否则创建新的持久化会话
+    const sessionMeta = findSessionMeta(sessionId)
+    const existingSdkSessionFile = sessionMeta?.sdkSessionFile
+    const hasExistingSession = !!(existingSdkSessionFile && existsSync(existingSdkSessionFile))
+
+    // 创建持久化 SessionManager：优先恢复已有会话，否则新建
+    // 使用 any 类型避免 SDK 动态加载导致的类型推断问题
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let sessionManager: any
+    if (hasExistingSession && existingSdkSessionFile) {
+      logger.info(`[Pi Agent] 恢复 SDK 会话: ${existingSdkSessionFile}`)
+      sessionManager = SessionManager.open(existingSdkSessionFile, undefined, cwd)
+    } else {
+      logger.info(`[Pi Agent] 创建新的持久化 SDK 会话，cwd=${cwd}`)
+      const sdkSessionDir = join(getSdkConfigDir(), 'sessions')
+      if (!existsSync(sdkSessionDir)) mkdirSync(sdkSessionDir, { recursive: true })
+      sessionManager = SessionManager.create(cwd, sdkSessionDir)
+    }
+
+    // 创建 Pi Agent 会话（使用持久化 SessionManager）
   const { session: piSession } = await createAgentSession({
     cwd,
     model,
@@ -2208,7 +2299,7 @@ ${output}` }],
     resourceLoader,
     noTools: 'builtin',
     customTools: allCustomTools,
-    sessionManager: SessionManager.inMemory(cwd),
+    sessionManager,
     settingsManager: SettingsManager.inMemory({
       compaction: { enabled: false },
       retry: { enabled: true, maxRetries: 2 },
@@ -2216,6 +2307,14 @@ ${output}` }],
     // 思考深度等级（off / low / medium / high / xhigh）
     ...(input.thinkingLevel && input.thinkingLevel !== 'off' && { thinkingLevel: input.thinkingLevel as any }),
   })
+
+    // 持久化 SDK 会话 ID 和文件路径（供下次 resume 使用）
+    const sdkSessionId = piSession.sessionId
+    const sdkSessionFile = piSession.sessionFile
+    if (sdkSessionId && sdkSessionFile) {
+      updateSession(sessionId, { sdkSessionId, sdkSessionFile })
+      logger.info(`[Pi Agent] 已持久化 SDK 会话: id=${sdkSessionId}, file=${sdkSessionFile}`)
+    }
 
     // 监听事件：AgentSession 使用 subscribe() 而非 on()
     const eventListener: AgentSessionEventListener = (event: AgentSessionEvent) => {
@@ -2229,14 +2328,24 @@ ${output}` }],
     onEvent('start', { sessionId })
 
     // 预处理用户提示词：检测 /skill:name 命令并注入完整 Skill 内容
-    const enrichedPrompt = await preparePromptWithSkills(resourceLoader, message)
+    const skillEnrichedPrompt = await preparePromptWithSkills(resourceLoader, message)
 
-    await piSession.prompt(enrichedPrompt)
+    // 上下文回填：如果是新会话（非 resume），且有历史消息，注入历史上下文
+    // resume 模式下 SDK 自带完整历史，不需要回填
+    const finalPrompt = hasExistingSession
+      ? skillEnrichedPrompt
+      : buildContextPrompt(sessionId, skillEnrichedPrompt)
+
+    if (!hasExistingSession && finalPrompt !== skillEnrichedPrompt) {
+      logger.info(`[Pi Agent] 新会话模式，已回填历史上下文（最近 ${MAX_CONTEXT_MESSAGES} 条消息）`)
+    }
+
+    await piSession.prompt(finalPrompt)
 
     // 获取 AI 回复文本
     const replyText = piSession.getLastAssistantText() || ''
 
-    // 持久化 AI 消息
+    // 持久化 AI 消息（到 Diting 自己的 JSONL，供 UI 展示）
     const aiMessage: AgentMessage = {
       id: `msg-${Date.now()}-ai`,
       sessionId,
@@ -2248,8 +2357,10 @@ ${output}` }],
 
     onEvent('complete', { sessionId, reply: replyText })
 
-    // 清理会话
-    piSession.dispose()
+    // 不再调用 piSession.dispose()：SDK 的 subscribe() 内部会自动持久化消息到 session 文件。
+    // dispose 会断开事件监听并阻止后续持久化，导致下次 resume 时会话状态不完整。
+    // 仅取消事件订阅即可，保留 SDK 会话状态供下次 resume。
+    unsubscribe()
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : String(err)
     logger.error('[Pi Agent] 发送消息失败:', err)
