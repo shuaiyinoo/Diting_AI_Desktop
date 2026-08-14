@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex h-full shrink-0 select-none flex-col overflow-hidden border-r border-[var(--border-color)] bg-[var(--bg-sidebar)] transition-all duration-250"
+    class="flex h-full shrink-0 select-none flex-col overflow-hidden border-r border-border bg-sidebar transition-all duration-250"
     style="-webkit-app-region: no-drag"
     :style="{ width: ws.menuCollapsed ? '56px' : ws.menuWidth + 'px' }"
   >
@@ -8,33 +8,35 @@
     <template v-if="!ws.menuCollapsed">
       <!-- 顶部：Chat/Agent 切换 + 折叠按钮 -->
       <div class="flex shrink-0 items-center justify-between px-2.5 py-2">
-        <div class="mr-1.5 flex flex-1 gap-0.5 rounded-lg bg-[var(--bg-active)] p-0.5">
-          <button
-            type="button"
-            class="flex h-7 flex-1 items-center justify-center gap-1 rounded-md text-[13px] transition-all duration-200"
+        <div class="mr-1.5 flex flex-1 gap-0.5 rounded-lg bg-muted p-0.5">
+          <Button
+            variant="ghost"
+            size="sm"
+            class="h-7 flex-1 gap-1 rounded-md text-[13px]"
             :class="ws.activeModule === 'chat'
-              ? 'bg-[var(--accent)] font-semibold text-white shadow-[0_1px_4px_rgba(22,119,255,0.25)]'
-              : 'bg-transparent text-[var(--text-secondary)] hover:bg-white/40 hover:text-[var(--text-primary)]'"
+              ? 'bg-primary font-semibold text-primary-foreground shadow-[0_1px_4px_rgba(22,119,255,0.25)] hover:bg-primary/90'
+              : 'bg-transparent text-muted-foreground hover:bg-white/40 hover:text-foreground'"
             @click="navigate('chat')"
           >
             <MessageSquare class="size-4" />
             <span>Chat</span>
-          </button>
-          <button
-            type="button"
-            class="flex h-7 flex-1 items-center justify-center gap-1 rounded-md text-[13px] transition-all duration-200"
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            class="h-7 flex-1 gap-1 rounded-md text-[13px]"
             :class="ws.activeModule === 'agent'
-              ? 'bg-[var(--accent)] font-semibold text-white shadow-[0_1px_4px_rgba(22,119,255,0.25)]'
-              : 'bg-transparent text-[var(--text-secondary)] hover:bg-white/40 hover:text-[var(--text-primary)]'"
+              ? 'bg-primary font-semibold text-primary-foreground shadow-[0_1px_4px_rgba(22,119,255,0.25)] hover:bg-primary/90'
+              : 'bg-transparent text-muted-foreground hover:bg-white/40 hover:text-foreground'"
             @click="navigate('agent')"
           >
             <Bot class="size-4" />
             <span>Agent</span>
-          </button>
+          </Button>
         </div>
-        <button type="button" class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[var(--text-muted)] transition-all hover:bg-[var(--bg-hover)] hover:text-[var(--accent)]" @click="ws.toggleMenu">
+        <Button variant="ghost" size="icon" class="h-7 w-7 shrink-0 text-muted-foreground hover:text-primary" @click="ws.toggleMenu">
           <PanelLeftClose class="size-4" />
-        </button>
+        </Button>
       </div>
 
       <!-- 导航区 -->
@@ -42,76 +44,76 @@
         <!-- ===== 工具分组 ===== -->
         <div class="mb-1">
           <div class="flex items-center gap-1.5 px-2 pb-1 pt-2.5">
-            <span class="flex-1 text-xs font-medium text-[var(--text-muted)]">工具</span>
+            <span class="flex-1 text-xs font-medium text-muted-foreground">工具</span>
           </div>
           <div
             class="relative mb-0.5 flex h-[34px] cursor-pointer items-center gap-2 rounded-[7px] px-2.5 text-sm transition-colors duration-150"
             :class="ws.activeModule === 'file'
-              ? 'bg-[var(--bg-active)] font-semibold text-[var(--accent)]'
-              : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]'"
+              ? 'bg-muted font-semibold text-primary'
+              : 'text-muted-foreground hover:bg-accent hover:text-foreground'"
             @click="navigate('file')"
           >
-            <Folder class="size-3.5 shrink-0" :class="ws.activeModule === 'file' ? 'text-[var(--accent)]' : 'text-[var(--text-muted)]'" />
+            <Folder class="size-3.5 shrink-0" :class="ws.activeModule === 'file' ? 'text-primary' : 'text-muted-foreground'" />
             <span class="flex-1 min-w-0 truncate">文件</span>
-            <span class="flex h-4 shrink-0 items-center rounded-full bg-[var(--bg-active)] px-1.5 text-[11px] leading-none text-[var(--text-muted)]">{{ ws.folderList.length }}</span>
+            <span class="flex h-4 shrink-0 items-center rounded-full bg-muted px-1.5 text-[11px] leading-none text-muted-foreground">{{ ws.folderList.length }}</span>
           </div>
           <div
             class="relative mb-0.5 flex h-[34px] cursor-pointer items-center gap-2 rounded-[7px] px-2.5 text-sm transition-colors duration-150"
             :class="ws.activeModule === 'invoice'
-              ? 'bg-[var(--bg-active)] font-semibold text-[var(--accent)]'
-              : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]'"
+              ? 'bg-muted font-semibold text-primary'
+              : 'text-muted-foreground hover:bg-accent hover:text-foreground'"
             @click="navigate('invoice')"
           >
-            <FileSearch class="size-3.5 shrink-0" :class="ws.activeModule === 'invoice' ? 'text-[var(--accent)]' : 'text-[var(--text-muted)]'" />
+            <FileSearch class="size-3.5 shrink-0" :class="ws.activeModule === 'invoice' ? 'text-primary' : 'text-muted-foreground'" />
             <span class="flex-1 min-w-0 truncate">OCR识别</span>
           </div>
           <div
             class="relative mb-0.5 flex h-[34px] cursor-pointer items-center gap-2 rounded-[7px] px-2.5 text-sm transition-colors duration-150"
             :class="ws.activeModule === 'planning'
-              ? 'bg-[var(--bg-active)] font-semibold text-[var(--accent)]'
-              : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]'"
+              ? 'bg-muted font-semibold text-primary'
+              : 'text-muted-foreground hover:bg-accent hover:text-foreground'"
             @click="navigate('planning')"
           >
-            <CalendarRange class="size-3.5 shrink-0" :class="ws.activeModule === 'planning' ? 'text-[var(--accent)]' : 'text-[var(--text-muted)]'" />
+            <CalendarRange class="size-3.5 shrink-0" :class="ws.activeModule === 'planning' ? 'text-primary' : 'text-muted-foreground'" />
             <span class="flex-1 min-w-0 truncate">任务/日程/Todo</span>
-            <span v-if="planningCount" class="flex h-4 shrink-0 items-center rounded-full bg-[var(--bg-active)] px-1.5 text-[11px] leading-none text-[var(--text-muted)]">{{ planningCount }}</span>
+            <span v-if="planningCount" class="flex h-4 shrink-0 items-center rounded-full bg-muted px-1.5 text-[11px] leading-none text-muted-foreground">{{ planningCount }}</span>
           </div>
           <div
             class="relative mb-0.5 flex h-[34px] cursor-pointer items-center gap-2 rounded-[7px] px-2.5 text-sm transition-colors duration-150"
             :class="ws.activeModule === 'skills'
-              ? 'bg-[var(--bg-active)] font-semibold text-[var(--accent)]'
-              : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]'"
+              ? 'bg-muted font-semibold text-primary'
+              : 'text-muted-foreground hover:bg-accent hover:text-foreground'"
             @click="navigate('skills')"
           >
-            <Zap class="size-3.5 shrink-0" :class="ws.activeModule === 'skills' ? 'text-[var(--accent)]' : 'text-[var(--text-muted)]'" />
+            <Zap class="size-3.5 shrink-0" :class="ws.activeModule === 'skills' ? 'text-primary' : 'text-muted-foreground'" />
             <span class="flex-1 min-w-0 truncate">Agent 技能</span>
-            <span class="flex h-4 shrink-0 items-center rounded-full bg-[var(--bg-active)] px-1.5 text-[11px] leading-none text-[var(--text-muted)]">{{ skillsCount }}</span>
+            <span class="flex h-4 shrink-0 items-center rounded-full bg-muted px-1.5 text-[11px] leading-none text-muted-foreground">{{ skillsCount }}</span>
           </div>
         </div>
 
         <!-- ===== OCR 子菜单 ===== -->
         <div v-if="ws.activeModule === 'invoice'" class="mb-1">
           <div class="flex items-center gap-1.5 px-2 pb-1 pt-2.5">
-            <span class="flex-1 text-xs font-medium text-[var(--text-muted)]">OCR</span>
+            <span class="flex-1 text-xs font-medium text-muted-foreground">OCR</span>
           </div>
           <div
             class="mb-0.5 flex h-[30px] cursor-pointer items-center gap-2 rounded-[7px] px-2.5 pl-7 text-[13px] transition-colors duration-150"
             :class="isOcrSubActive('recognize')
-              ? 'bg-[var(--bg-active)] font-semibold text-[var(--accent)]'
-              : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]'"
+              ? 'bg-muted font-semibold text-primary'
+              : 'text-muted-foreground hover:bg-accent hover:text-foreground'"
             @click="navigateOcrSub('recognize')"
           >
-            <FileText class="size-3.5 shrink-0 text-[var(--text-muted)]" />
+            <FileText class="size-3.5 shrink-0 text-muted-foreground" />
             <span class="flex-1 min-w-0 truncate">录入识读</span>
           </div>
           <div
             class="mb-0.5 flex h-[30px] cursor-pointer items-center gap-2 rounded-[7px] px-2.5 pl-7 text-[13px] transition-colors duration-150"
             :class="isOcrSubActive('archive')
-              ? 'bg-[var(--bg-active)] font-semibold text-[var(--accent)]'
-              : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]'"
+              ? 'bg-muted font-semibold text-primary'
+              : 'text-muted-foreground hover:bg-accent hover:text-foreground'"
             @click="navigateOcrSub('archive')"
           >
-            <Inbox class="size-3.5 shrink-0 text-[var(--text-muted)]" />
+            <Inbox class="size-3.5 shrink-0 text-muted-foreground" />
             <span class="flex-1 min-w-0 truncate">归集查阅</span>
           </div>
         </div>
@@ -119,11 +121,11 @@
         <!-- ===== 文件分组 ===== -->
         <div v-if="ws.activeModule === 'file'" class="flex min-h-0 flex-1 flex-col">
           <div class="flex items-center gap-1.5 px-2 pb-1 pt-2.5">
-            <span class="flex-1 text-xs font-medium text-[var(--text-muted)]">文件</span>
-            <span class="text-[11px] text-[var(--text-muted)]">{{ ws.folderList.length }}</span>
-            <button class="flex h-5 w-5 items-center justify-center rounded text-[var(--text-muted)] transition-all hover:bg-[var(--bg-hover)] hover:text-[var(--accent)]" @click="onAddFolder">
+            <span class="flex-1 text-xs font-medium text-muted-foreground">文件</span>
+            <span class="text-[11px] text-muted-foreground">{{ ws.folderList.length }}</span>
+            <Button variant="ghost" size="icon" class="h-5 w-5 text-muted-foreground hover:text-primary" @click="onAddFolder">
               <Plus class="size-3.5" />
-            </button>
+            </Button>
           </div>
           <div class="min-h-0 flex-1 overflow-y-auto px-0.5 pb-1 [&::-webkit-scrollbar]:hidden">
             <Spinner v-if="ws.folderLoading" size="sm" class="mx-auto my-2" />
@@ -132,28 +134,28 @@
               :key="folder.id"
               class="relative mb-0.5 flex h-[34px] cursor-pointer items-center gap-2 rounded-[7px] px-2.5 text-sm transition-colors duration-150"
               :class="ws.selectedFolderId === folder.id
-                ? 'bg-[var(--bg-active)] font-semibold text-[var(--accent)]'
-                : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]'"
+                ? 'bg-muted font-semibold text-primary'
+                : 'text-muted-foreground hover:bg-accent hover:text-foreground'"
               @click="onSelectFolder(folder.id)"
             >
-              <Folder class="size-3.5 shrink-0" :class="ws.selectedFolderId === folder.id ? 'text-[var(--accent)]' : 'text-[var(--text-muted)]'" />
+              <Folder class="size-3.5 shrink-0" :class="ws.selectedFolderId === folder.id ? 'text-primary' : 'text-muted-foreground'" />
               <span class="flex-1 min-w-0 truncate" :title="getFolderName(folder.path)">{{ getFolderName(folder.path) }}</span>
-              <span v-if="folder.file_count != null" class="flex h-4 shrink-0 items-center rounded-full bg-[var(--bg-active)] px-1.5 text-[11px] leading-none text-[var(--text-muted)]">{{ folder.file_count }}</span>
-              <button class="flex h-5 w-5 shrink-0 items-center justify-center rounded text-[var(--text-muted)] transition-all hover:bg-red-500/10 hover:text-red-500" @click.stop="onDeleteFolder(folder)">
+              <span v-if="folder.file_count != null" class="flex h-4 shrink-0 items-center rounded-full bg-muted px-1.5 text-[11px] leading-none text-muted-foreground">{{ folder.file_count }}</span>
+              <Button variant="ghost" size="icon" class="h-5 w-5 shrink-0 text-muted-foreground hover:bg-red-500/10 hover:text-red-500" @click.stop="onDeleteFolder(folder)">
                 <Trash2 class="size-3.5" />
-              </button>
+              </Button>
             </div>
-            <div v-if="!ws.folderLoading && ws.folderList.length === 0" class="px-2 py-3 text-center text-xs text-[var(--text-muted)]">暂无文件夹</div>
+            <div v-if="!ws.folderLoading && ws.folderList.length === 0" class="px-2 py-3 text-center text-xs text-muted-foreground">暂无文件夹</div>
           </div>
         </div>
 
         <!-- ===== 对话分组 ===== -->
         <div v-if="ws.activeModule === 'chat'" class="flex min-h-0 flex-1 flex-col">
           <div class="flex items-center gap-1.5 px-2 pb-1 pt-2.5">
-            <span class="flex-1 text-xs font-medium text-[var(--text-muted)]">对话</span>
-            <button class="flex h-5 w-5 items-center justify-center rounded text-[var(--text-muted)] transition-all hover:bg-[var(--bg-hover)] hover:text-[var(--accent)]" @click="onCreateChat">
+            <span class="flex-1 text-xs font-medium text-muted-foreground">对话</span>
+            <Button variant="ghost" size="icon" class="h-5 w-5 text-muted-foreground hover:text-primary" @click="onCreateChat">
               <Plus class="size-3.5" />
-            </button>
+            </Button>
           </div>
           <div class="min-h-0 flex-1 overflow-y-auto px-0.5 pb-1 [&::-webkit-scrollbar]:hidden">
             <Spinner v-if="ws.chatSessionLoading" size="sm" class="mx-auto my-2" />
@@ -162,27 +164,27 @@
               :key="session.id"
               class="relative mb-0.5 flex h-[34px] cursor-pointer items-center gap-2 rounded-[7px] px-2.5 text-sm transition-colors duration-150"
               :class="ws.currentChatSessionId === session.id
-                ? 'bg-[var(--bg-active)] font-semibold text-[var(--accent)]'
-                : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]'"
+                ? 'bg-muted font-semibold text-primary'
+                : 'text-muted-foreground hover:bg-accent hover:text-foreground'"
               @click="onSelectChatSession(session.id)"
             >
-              <MessageSquare class="size-3.5 shrink-0" :class="ws.currentChatSessionId === session.id ? 'text-[var(--accent)]' : 'text-[var(--text-muted)]'" />
+              <MessageSquare class="size-3.5 shrink-0" :class="ws.currentChatSessionId === session.id ? 'text-primary' : 'text-muted-foreground'" />
               <span class="flex-1 min-w-0 truncate">{{ session.title || '新会话' }}</span>
-              <button class="flex h-5 w-5 shrink-0 items-center justify-center rounded text-[var(--text-muted)] transition-all hover:bg-red-500/10 hover:text-red-500" @click.stop="onDeleteChatSession(session)">
+              <Button variant="ghost" size="icon" class="h-5 w-5 shrink-0 text-muted-foreground hover:bg-red-500/10 hover:text-red-500" @click.stop="onDeleteChatSession(session)">
                 <Trash2 class="size-3.5" />
-              </button>
+              </Button>
             </div>
-            <div v-if="!ws.chatSessionLoading && ws.chatSessions.length === 0" class="px-2 py-3 text-center text-xs text-[var(--text-muted)]">暂无对话</div>
+            <div v-if="!ws.chatSessionLoading && ws.chatSessions.length === 0" class="px-2 py-3 text-center text-xs text-muted-foreground">暂无对话</div>
           </div>
         </div>
 
         <!-- ===== 项目分组 ===== -->
         <div v-if="ws.activeModule === 'agent'" class="flex min-h-0 flex-1 flex-col">
           <div class="flex items-center gap-1.5 px-2 pb-1 pt-2.5">
-            <span class="flex-1 text-xs font-medium text-[var(--text-muted)]">项目</span>
-            <button class="flex h-5 w-5 items-center justify-center rounded text-[var(--text-muted)] transition-all hover:bg-[var(--bg-hover)] hover:text-[var(--accent)]" @click="onCreateProject">
+            <span class="flex-1 text-xs font-medium text-muted-foreground">项目</span>
+            <Button variant="ghost" size="icon" class="h-5 w-5 text-muted-foreground hover:text-primary" @click="onCreateProject">
               <Plus class="size-3.5" />
-            </button>
+            </Button>
           </div>
           <div class="min-h-0 flex-1 overflow-y-auto px-0.5 pb-1 [&::-webkit-scrollbar]:hidden">
             <Spinner v-if="ws.agentProjectLoading" size="sm" class="mx-auto my-2" />
@@ -190,29 +192,29 @@
               <div
                 class="relative mb-0.5 flex h-[34px] cursor-pointer items-center gap-2 rounded-[7px] px-2.5 text-sm transition-colors duration-150"
                 :class="expandedProjects.has(project.id)
-                  ? 'font-semibold text-[var(--text-primary)]'
-                  : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]'"
+                  ? 'font-semibold text-foreground'
+                  : 'text-muted-foreground hover:bg-accent hover:text-foreground'"
                 @click="toggleProjectExpand(project)"
               >
                 <ChevronDown v-if="expandedProjects.has(project.id)" class="size-3.5 shrink-0 text-muted-foreground" />
                 <ChevronRight v-else class="size-3.5 shrink-0 text-muted-foreground" />
-                <input
+                <Input
                   v-if="editingType === 'project' && editingId === project.id"
                   ref="editInputRef"
                   v-model="editingText"
-                  class="flex-1 min-w-0 rounded border border-[var(--accent)] bg-white px-1.5 py-0.5 text-[13px] text-[var(--text-primary)] outline-none ring-2 ring-blue-500/15"
+                  class="h-6 flex-1 min-w-0 rounded border-primary px-1.5 py-0.5 text-[13px] ring-2 ring-blue-500/15"
                   @click.stop
                   @keydown.enter="saveProjectName(project)"
                   @keydown.escape="cancelEdit"
                   @blur="saveProjectName(project)"
                 />
                 <span v-else class="flex-1 min-w-0 truncate" @dblclick.stop="startEditProject(project)">{{ project.name }}</span>
-                <button class="flex h-5 w-5 shrink-0 items-center justify-center rounded text-[var(--text-muted)] transition-all hover:bg-red-500/10 hover:text-red-500" @click.stop="onDeleteProject(project)">
+                <Button variant="ghost" size="icon" class="h-5 w-5 shrink-0 text-muted-foreground hover:bg-red-500/10 hover:text-red-500" @click.stop="onDeleteProject(project)">
                   <Trash2 class="size-3.5" />
-                </button>
-                <button class="flex h-5 w-5 shrink-0 items-center justify-center rounded text-[var(--text-muted)] transition-all hover:bg-[var(--bg-hover)] hover:text-[var(--accent)]" @click.stop="onCreateAgentSession(project)">
+                </Button>
+                <Button variant="ghost" size="icon" class="h-5 w-5 shrink-0 text-muted-foreground hover:text-primary" @click.stop="onCreateAgentSession(project)">
                   <Plus class="size-3.5" />
-                </button>
+                </Button>
               </div>
               <template v-if="expandedProjects.has(project.id)">
                 <div
@@ -220,37 +222,37 @@
                   :key="sess.id"
                   class="relative mb-0.5 flex h-[30px] cursor-pointer items-center gap-2 rounded-[7px] px-2.5 pl-7 text-[13px] transition-colors duration-150"
                   :class="agent.currentSessionId === sess.id
-                    ? 'bg-[var(--bg-active)] font-semibold text-[var(--accent)]'
-                    : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]'"
+                    ? 'bg-muted font-semibold text-primary'
+                    : 'text-muted-foreground hover:bg-accent hover:text-foreground'"
                   @click="onSelectAgentSession(sess, project)"
                 >
-                  <MessageSquare class="size-3.5 shrink-0 text-[var(--text-muted)]" />
-                  <input
+                  <MessageSquare class="size-3.5 shrink-0 text-muted-foreground" />
+                  <Input
                     v-if="editingType === 'session' && editingId === sess.id"
                     ref="editInputRef"
                     v-model="editingText"
-                    class="flex-1 min-w-0 rounded border border-[var(--accent)] bg-white px-1.5 py-0.5 text-[13px] text-[var(--text-primary)] outline-none ring-2 ring-blue-500/15"
+                    class="h-6 flex-1 min-w-0 rounded border-primary px-1.5 py-0.5 text-[13px] ring-2 ring-blue-500/15"
                     @click.stop
                     @keydown.enter="saveSessionName(sess)"
                     @keydown.escape="cancelEdit"
                     @blur="saveSessionName(sess)"
                   />
                   <span v-else class="flex-1 min-w-0 truncate" @dblclick.stop="startEditSession(sess)">{{ sess.title || '未命名' }}</span>
-                  <button class="flex h-5 w-5 shrink-0 items-center justify-center rounded text-[var(--text-muted)] transition-all hover:bg-red-500/10 hover:text-red-500" @click.stop="onDeleteAgentSession(sess, project)">
+                  <Button variant="ghost" size="icon" class="h-5 w-5 shrink-0 text-muted-foreground hover:bg-red-500/10 hover:text-red-500" @click.stop="onDeleteAgentSession(sess, project)">
                     <Trash2 class="size-3.5" />
-                  </button>
+                  </Button>
                 </div>
-                <div v-if="getProjectSessions(project.id).length === 0" class="py-1.5 pl-7 text-left text-xs text-[var(--text-muted)]">暂无会话</div>
+                <div v-if="getProjectSessions(project.id).length === 0" class="py-1.5 pl-7 text-left text-xs text-muted-foreground">暂无会话</div>
                 <div
                   v-if="getProjectSessions(project.id).length > 3"
-                  class="cursor-pointer select-none py-1 pl-7 text-xs text-[var(--text-muted)] transition-colors hover:text-[var(--accent)]"
+                  class="cursor-pointer select-none py-1 pl-7 text-xs text-muted-foreground transition-colors hover:text-primary"
                   @click.stop="toggleSessionListExpand(project.id)"
                 >
                   {{ expandedSessionLists.has(project.id) ? '收起' : `显示更多 (${getProjectSessions(project.id).length - 3})` }}
                 </div>
               </template>
             </template>
-            <div v-if="!ws.agentProjectLoading && ws.agentProjects.length === 0" class="px-2 py-3 text-center text-xs text-[var(--text-muted)]">暂无项目</div>
+            <div v-if="!ws.agentProjectLoading && ws.agentProjects.length === 0" class="px-2 py-3 text-center text-xs text-muted-foreground">暂无项目</div>
           </div>
         </div>
       </nav>
@@ -258,73 +260,79 @@
 
     <!-- ===================== 收起模式 ===================== -->
     <template v-else>
-      <button type="button" class="mx-auto my-2 flex h-7 w-7 items-center justify-center rounded-md text-[var(--text-muted)] transition-all hover:bg-[var(--bg-hover)] hover:text-[var(--accent)]" @click="ws.toggleMenu">
+      <Button variant="ghost" size="icon" class="mx-auto my-2 h-7 w-7 text-muted-foreground hover:text-primary" @click="ws.toggleMenu">
         <PanelLeftOpen class="size-4" />
-      </button>
+      </Button>
 
-      <div class="mx-2 my-1 h-px shrink-0 bg-[var(--border-color)]" />
+      <div class="mx-2 my-1 h-px shrink-0 bg-border" />
 
-      <button
-        type="button"
-        class="mx-auto my-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-transparent bg-[var(--bg-active)] text-[var(--text-secondary)] transition-all hover:border-[var(--border-color)] hover:text-[var(--accent)]"
-        :class="ws.activeModule === 'chat' ? 'border-[var(--accent)] bg-[var(--accent)] text-white shadow-[0_1px_4px_rgba(22,119,255,0.3)] hover:border-[var(--accent)] hover:text-white' : ''"
+      <Button
+        variant="ghost"
+        size="icon"
+        class="mx-auto my-0.5 h-10 w-10 shrink-0 rounded-lg border border-transparent bg-muted text-muted-foreground hover:border-border hover:text-primary"
+        :class="ws.activeModule === 'chat' ? 'border-primary bg-primary text-primary-foreground shadow-[0_1px_4px_rgba(22,119,255,0.3)] hover:border-primary hover:text-primary-foreground' : ''"
         @click="navigate('chat')"
       >
         <MessageSquare class="size-4" />
-      </button>
-      <button
-        type="button"
-        class="mx-auto my-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-transparent bg-[var(--bg-active)] text-[var(--text-secondary)] transition-all hover:border-[var(--border-color)] hover:text-[var(--accent)]"
-        :class="ws.activeModule === 'agent' ? 'border-[var(--accent)] bg-[var(--accent)] text-white shadow-[0_1px_4px_rgba(22,119,255,0.3)] hover:border-[var(--accent)] hover:text-white' : ''"
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        class="mx-auto my-0.5 h-10 w-10 shrink-0 rounded-lg border border-transparent bg-muted text-muted-foreground hover:border-border hover:text-primary"
+        :class="ws.activeModule === 'agent' ? 'border-primary bg-primary text-primary-foreground shadow-[0_1px_4px_rgba(22,119,255,0.3)] hover:border-primary hover:text-primary-foreground' : ''"
         @click="navigate('agent')"
       >
         <Bot class="size-4" />
-      </button>
+      </Button>
 
-      <div class="mx-2 my-1 h-px shrink-0 bg-[var(--border-color)]" />
+      <div class="mx-2 my-1 h-px shrink-0 bg-border" />
 
-      <button
-        type="button"
-        class="mx-auto my-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-transparent bg-[var(--bg-active)] text-[var(--text-secondary)] transition-all hover:border-[var(--border-color)] hover:text-[var(--accent)]"
-        :class="ws.activeModule === 'file' ? 'border-[var(--accent)] bg-[var(--accent)] text-white shadow-[0_1px_4px_rgba(22,119,255,0.3)] hover:border-[var(--accent)] hover:text-white' : ''"
+      <Button
+        variant="ghost"
+        size="icon"
+        class="mx-auto my-0.5 h-10 w-10 shrink-0 rounded-lg border border-transparent bg-muted text-muted-foreground hover:border-border hover:text-primary"
+        :class="ws.activeModule === 'file' ? 'border-primary bg-primary text-primary-foreground shadow-[0_1px_4px_rgba(22,119,255,0.3)] hover:border-primary hover:text-primary-foreground' : ''"
         @click="navigate('file')"
       >
         <Folder class="size-4" />
-      </button>
-      <button
-        type="button"
-        class="mx-auto my-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-transparent bg-[var(--bg-active)] text-[var(--text-secondary)] transition-all hover:border-[var(--border-color)] hover:text-[var(--accent)]"
-        :class="ws.activeModule === 'invoice' ? 'border-[var(--accent)] bg-[var(--accent)] text-white shadow-[0_1px_4px_rgba(22,119,255,0.3)] hover:border-[var(--accent)] hover:text-white' : ''"
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        class="mx-auto my-0.5 h-10 w-10 shrink-0 rounded-lg border border-transparent bg-muted text-muted-foreground hover:border-border hover:text-primary"
+        :class="ws.activeModule === 'invoice' ? 'border-primary bg-primary text-primary-foreground shadow-[0_1px_4px_rgba(22,119,255,0.3)] hover:border-primary hover:text-primary-foreground' : ''"
         @click="navigate('invoice')"
       >
         <FileSearch class="size-4" />
-      </button>
-      <button
-        type="button"
-        class="mx-auto my-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-transparent bg-[var(--bg-active)] text-[var(--text-secondary)] transition-all hover:border-[var(--border-color)] hover:text-[var(--accent)]"
-        :class="ws.activeModule === 'planning' ? 'border-[var(--accent)] bg-[var(--accent)] text-white shadow-[0_1px_4px_rgba(22,119,255,0.3)] hover:border-[var(--accent)] hover:text-white' : ''"
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        class="mx-auto my-0.5 h-10 w-10 shrink-0 rounded-lg border border-transparent bg-muted text-muted-foreground hover:border-border hover:text-primary"
+        :class="ws.activeModule === 'planning' ? 'border-primary bg-primary text-primary-foreground shadow-[0_1px_4px_rgba(22,119,255,0.3)] hover:border-primary hover:text-primary-foreground' : ''"
         @click="navigate('planning')"
       >
         <CalendarRange class="size-4" />
-      </button>
-      <button
-        type="button"
-        class="mx-auto my-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-transparent bg-[var(--bg-active)] text-[var(--text-secondary)] transition-all hover:border-[var(--border-color)] hover:text-[var(--accent)]"
-        :class="ws.activeModule === 'skills' ? 'border-[var(--accent)] bg-[var(--accent)] text-white shadow-[0_1px_4px_rgba(22,119,255,0.3)] hover:border-[var(--accent)] hover:text-white' : ''"
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        class="mx-auto my-0.5 h-10 w-10 shrink-0 rounded-lg border border-transparent bg-muted text-muted-foreground hover:border-border hover:text-primary"
+        :class="ws.activeModule === 'skills' ? 'border-primary bg-primary text-primary-foreground shadow-[0_1px_4px_rgba(22,119,255,0.3)] hover:border-primary hover:text-primary-foreground' : ''"
         @click="navigate('skills')"
       >
         <Zap class="size-4" />
-      </button>
+      </Button>
 
-      <div class="mx-2 my-1 h-px shrink-0 bg-[var(--border-color)]" />
+      <div class="mx-2 my-1 h-px shrink-0 bg-border" />
 
       <!-- 最近列表 -->
       <div class="flex flex-col items-center py-1">
         <div
           v-for="item in recentItems"
           :key="item.id"
-          class="mx-auto my-0.5 flex h-9 w-9 shrink-0 select-none items-center justify-center rounded-lg border border-transparent bg-[var(--bg-active)] text-sm font-semibold text-[var(--text-secondary)] transition-all hover:border-[var(--border-color)] hover:text-[var(--accent)]"
-          :class="item.active ? 'border-[var(--accent)] bg-[var(--accent)] text-white hover:border-[var(--accent)] hover:text-white' : ''"
+          class="mx-auto my-0.5 flex h-9 w-9 shrink-0 select-none items-center justify-center rounded-lg border border-transparent bg-muted text-sm font-semibold text-muted-foreground transition-all hover:border-border hover:text-primary"
+          :class="item.active ? 'border-primary bg-primary text-primary-foreground hover:border-primary hover:text-primary-foreground' : ''"
           @click="item.onClick"
         >
           {{ item.char }}
@@ -335,27 +343,28 @@
     </template>
 
     <!-- ===================== 底部：设置 ===================== -->
-    <div class="shrink-0 border-t border-[var(--border-color)] px-1.5 pb-2 pt-1">
+    <div class="shrink-0 border-t border-border px-1.5 pb-2 pt-1">
       <div
         v-if="!ws.menuCollapsed"
         class="relative mb-0.5 flex h-[34px] cursor-pointer items-center gap-2 rounded-[7px] px-2.5 text-sm transition-colors duration-150"
         :class="ws.activeModule === 'setting'
-          ? 'bg-[var(--bg-active)] font-semibold text-[var(--accent)]'
-          : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]'"
+          ? 'bg-muted font-semibold text-primary'
+          : 'text-muted-foreground hover:bg-accent hover:text-foreground'"
         @click="navigate('setting')"
       >
-        <Settings class="size-3.5 shrink-0" :class="ws.activeModule === 'setting' ? 'text-[var(--accent)]' : 'text-[var(--text-muted)]'" />
+        <Settings class="size-3.5 shrink-0" :class="ws.activeModule === 'setting' ? 'text-primary' : 'text-muted-foreground'" />
         <span class="flex-1 min-w-0 truncate">设置</span>
       </div>
-      <button
+      <Button
         v-else
-        type="button"
-        class="mx-auto my-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-transparent bg-[var(--bg-active)] text-[var(--text-secondary)] transition-all hover:border-[var(--border-color)] hover:text-[var(--accent)]"
-        :class="ws.activeModule === 'setting' ? 'border-[var(--accent)] bg-[var(--accent)] text-white shadow-[0_1px_4px_rgba(22,119,255,0.3)] hover:border-[var(--accent)] hover:text-white' : ''"
+        variant="ghost"
+        size="icon"
+        class="mx-auto my-0.5 h-10 w-10 shrink-0 rounded-lg border border-transparent bg-muted text-muted-foreground hover:border-border hover:text-primary"
+        :class="ws.activeModule === 'setting' ? 'border-primary bg-primary text-primary-foreground shadow-[0_1px_4px_rgba(22,119,255,0.3)] hover:border-primary hover:text-primary-foreground' : ''"
         @click="navigate('setting')"
       >
         <Settings class="size-4" />
-      </button>
+      </Button>
     </div>
 
     <!-- ===================== 删除确认弹窗 ===================== -->
@@ -396,6 +405,8 @@ import { useAgentStore } from '@/stores/agent'
 import { usePlanningStore } from '@/stores/planning'
 import { useTabStore } from '@/stores/tab'
 import { Spinner } from '@/components/ui/spinner'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
   AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction,

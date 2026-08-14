@@ -3,7 +3,7 @@
     <!-- 顶部工具栏 -->
     <div class="flex items-center justify-between px-2 pl-3.5 h-10 flex-shrink-0 border-b border-border bg-card">
       <div class="flex items-center gap-1.5 min-w-0 flex-1">
-        <EditOutlined class="size-3.5 text-primary flex-shrink-0" />
+        <Pencil class="size-3.5 text-primary flex-shrink-0" />
         <span class="text-[13px] font-medium text-foreground truncate" :title="fileName">{{ fileName || '文件编辑' }}</span>
       </div>
       <!-- 折叠第四面板按钮 -->
@@ -36,8 +36,7 @@
 <script setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
-import { PanelRightClose, PanelRightOpen } from '@lucide/vue';
-import { EditOutlined } from '@ant-design/icons-vue';
+import { PanelRightClose, PanelRightOpen, Pencil } from '@lucide/vue';
 import { ipcApiRoute } from '@/api';
 import { ipc } from '@/utils/ipcRenderer';
 import { isDark } from '@/theme';

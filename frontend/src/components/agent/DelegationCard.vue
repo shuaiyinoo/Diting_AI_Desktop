@@ -2,43 +2,31 @@
   <div v-if="delegations.length > 0" class="mx-[20%] mb-1.5 overflow-visible">
     <Transition name="dc-mode" mode="out-in">
       <!-- ===== 缩小模式 ===== -->
-      <button v-if="!expanded" key="collapsed" type="button" class="flex w-full items-center gap-2 rounded-[10px] border border-green-500 bg-card px-3.5 py-2 text-left text-xs text-muted-foreground transition-all hover:border-green-400 hover:shadow-md" style="box-shadow: 0 2px 8px rgba(82, 196, 26, 0.1)" @click="expanded = true">
+      <Button v-if="!expanded" key="collapsed" variant="outline" class="w-full gap-2 rounded-[10px] border-green-500 bg-card px-3.5 py-2 text-left text-xs text-muted-foreground hover:border-green-400 hover:shadow-md" style="box-shadow: 0 2px 8px rgba(82, 196, 26, 0.1)" @click="expanded = true">
         <span class="shrink-0 rounded-md bg-green-500/10 px-1.5 py-0.5 text-xs font-bold text-green-500" style="font-variant-numeric: tabular-nums">{{ completedCount }}/{{ totalCount }}</span>
         <span class="text-muted-foreground">·</span>
         <span class="flex min-w-0 flex-1 items-center gap-1 text-muted-foreground">
-          <svg v-if="runningCount > 0" class="size-3.5 shrink-0 text-green-500 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-          </svg>
-          <svg v-else class="size-3.5 shrink-0 text-green-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-            <path d="M22 4L12 14.01l-3-3" />
-          </svg>
+          <Loader2 v-if="runningCount > 0" class="size-3.5 shrink-0 animate-spin text-green-500" />
+          <CheckCircle2 v-else class="size-3.5 shrink-0 text-green-500" />
           <span class="truncate">
             {{ runningCount > 0 ? `${runningCount} 个子 Agent 运行中` : '全部完成' }}
           </span>
         </span>
-        <svg class="size-4 shrink-0 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M18 15l-6-6-6 6" />
-        </svg>
-      </button>
+        <ChevronDown class="size-4 shrink-0 text-muted-foreground" />
+      </Button>
 
       <!-- ===== 展开模式 ===== -->
       <div v-else key="expanded" class="flex max-h-[300px] flex-col overflow-hidden rounded-[10px] border border-green-500 bg-card shadow-md">
         <!-- 标题行 -->
         <div class="flex shrink-0 items-center justify-between border-b border-border/50 bg-green-500/[0.08] px-3 py-2">
           <div class="flex items-center gap-1.5">
-            <svg class="size-4 text-green-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="3" />
-              <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1m17.5-7.5l-4.24 4.24m-6.52 6.52L3.5 20.5m17-17l-4.24 4.24m-6.52 6.52L3.5 3.5" />
-            </svg>
+            <Cpu class="size-4 text-green-500" />
             <span class="text-[13px] font-semibold text-green-500">协作子 Agent</span>
             <span class="rounded-lg bg-green-500/[0.08] px-1.5 text-[11px] font-semibold text-green-500">{{ completedCount }}/{{ totalCount }}</span>
           </div>
-          <button type="button" class="flex cursor-pointer items-center border-none bg-transparent p-0.5 text-muted-foreground hover:text-foreground" @click="expanded = false" title="缩小">
-            <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M6 9l6 6 6-6" />
-            </svg>
-          </button>
+          <Button variant="ghost" size="icon" class="h-5 w-5 cursor-pointer text-muted-foreground hover:text-foreground" @click="expanded = false" title="缩小">
+            <ChevronUp class="size-4" />
+          </Button>
         </div>
 
         <!-- 进度条 -->
@@ -64,25 +52,11 @@
               'text-red-500': item.status === 'failed',
               'text-muted-foreground': item.status === 'cancelled' || item.status === 'pending',
             }">
-              <svg v-if="item.status === 'running'" class="size-3.5 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-              </svg>
-              <svg v-else-if="item.status === 'completed'" class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                <path d="M22 4L12 14.01l-3-3" />
-              </svg>
-              <svg v-else-if="item.status === 'failed'" class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10" />
-                <line x1="15" y1="9" x2="9" y2="15" />
-                <line x1="9" y1="9" x2="15" y2="15" />
-              </svg>
-              <svg v-else-if="item.status === 'cancelled'" class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10" />
-                <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
-              </svg>
-              <svg v-else class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="9" />
-              </svg>
+              <Loader2 v-if="item.status === 'running'" class="size-3.5 animate-spin" />
+              <CheckCircle2 v-else-if="item.status === 'completed'" class="size-3.5" />
+              <XCircle v-else-if="item.status === 'failed'" class="size-3.5" />
+              <Ban v-else-if="item.status === 'cancelled'" class="size-3.5" />
+              <Circle v-else class="size-3.5" />
             </span>
 
             <!-- 内容 -->
@@ -110,6 +84,8 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { Button } from '@/components/ui/button'
+import { ChevronDown, ChevronUp, Loader2, CheckCircle2, XCircle, Ban, Circle, Cpu } from '@lucide/vue'
 
 const props = defineProps({
   delegations: {

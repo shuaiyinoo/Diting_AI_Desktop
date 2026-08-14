@@ -79,16 +79,11 @@
                     <span v-if="skill.version" class="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">v{{ skill.version }}</span>
                   </div>
                   <!-- Toggle 开关 -->
-                  <button
-                    class="relative h-5 w-9 shrink-0 rounded-full transition-colors"
-                    :class="skill.enabled ? 'bg-primary' : 'bg-border'"
-                    @click.stop="toggleSkill(skill)"
-                  >
-                    <span
-                      class="absolute top-0.5 size-4 rounded-full bg-white shadow-sm transition-transform"
-                      :class="skill.enabled ? 'translate-x-4' : 'translate-x-0.5'"
-                    />
-                  </button>
+                  <Switch
+                    :model-value="skill.enabled"
+                    @update:model-value="() => toggleSkill(skill)"
+                    @click.stop
+                  />
                 </div>
                 <div class="mb-2 -mt-1 font-mono text-xs text-muted-foreground">{{ skill.slug }}</div>
                 <div class="mb-3.5 line-clamp-2 text-[13px] leading-relaxed text-muted-foreground">{{ skill.description || '无描述' }}</div>
@@ -147,19 +142,11 @@
           <!-- 说明 / 资源文件 Tab -->
           <div class="flex min-h-0 flex-1 flex-col">
             <div class="flex shrink-0 gap-1 border-b border-border/50 pb-2">
-              <button
-                class="inline-flex items-center gap-1.5 rounded-md px-3.5 py-1.5 text-[13px] font-medium transition-all"
-                :class="detailTab === 'body' ? 'border border-border bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:bg-accent'"
-                @click="detailTab = 'body'"
-              >说明</button>
-              <button
-                class="inline-flex items-center gap-1.5 rounded-md px-3.5 py-1.5 text-[13px] font-medium transition-all"
-                :class="detailTab === 'files' ? 'border border-border bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:bg-accent'"
-                @click="detailTab = 'files'"
-              >
+              <Button variant="ghost" size="sm" class="inline-flex items-center gap-1.5 rounded-md px-3.5 py-1.5 text-[13px] font-medium" :class="detailTab === 'body' ? 'border border-border bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:bg-accent'" @click="detailTab = 'body'">说明</Button>
+              <Button variant="ghost" size="sm" class="inline-flex items-center gap-1.5 rounded-md px-3.5 py-1.5 text-[13px] font-medium" :class="detailTab === 'files' ? 'border border-border bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:bg-accent'" @click="detailTab = 'files'">
                 资源文件
                 <span v-if="fileCount !== null" class="inline-flex h-4 min-w-[18px] items-center justify-center rounded bg-muted px-1 text-[10px] font-semibold text-muted-foreground">{{ fileCount }}</span>
-              </button>
+              </Button>
             </div>
             <!-- 说明 Tab -->
             <div v-show="detailTab === 'body'" class="mt-3 flex min-h-0 flex-1 flex-col">
@@ -255,16 +242,11 @@
                 <div class="overflow-hidden text-ellipsis whitespace-nowrap text-[15px] font-semibold text-foreground">{{ mcp.displayName }}</div>
                 <span class="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">stdio</span>
               </div>
-              <button
-                class="relative h-5 w-9 shrink-0 rounded-full transition-colors"
-                :class="mcp.enabled && mcp.available ? 'bg-primary' : 'bg-border'"
-                @click.stop="toggleMcp(mcp)"
-              >
-                <span
-                  class="absolute top-0.5 size-4 rounded-full bg-white shadow-sm transition-transform"
-                  :class="mcp.enabled && mcp.available ? 'translate-x-4' : 'translate-x-0.5'"
-                />
-              </button>
+              <Switch
+                :model-value="mcp.enabled && mcp.available"
+                @update:model-value="() => toggleMcp(mcp)"
+                @click.stop
+              />
             </div>
             <div class="mb-3.5 line-clamp-2 text-[13px] leading-relaxed text-muted-foreground">{{ mcp.description }}</div>
             <div class="flex flex-wrap items-center gap-2">
@@ -419,14 +401,10 @@
             <option value="3m">近 3 个月</option>
             <option value="all">全部</option>
           </select>
-          <button
-            class="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-[13px] font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:opacity-50"
-            :disabled="generatingMemory"
-            @click="generateMemory"
-          >
+          <Button class="inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-[13px] font-medium shadow-sm disabled:opacity-50" :disabled="generatingMemory" @click="generateMemory">
             <Zap class="size-4" />
             {{ generatingMemory ? '生成中...' : '生成项目记忆' }}
-          </button>
+          </Button>
         </div>
 
         <!-- 记忆文件浏览器 + 编辑器 -->
@@ -435,9 +413,9 @@
           <div class="min-h-0 min-w-0 overflow-y-auto rounded-xl border border-border bg-card py-2">
             <div class="flex items-center justify-between px-4 pb-2 pt-2.5 text-[13px] font-medium text-muted-foreground">
               <span>记忆文件</span>
-              <button class="cursor-pointer text-muted-foreground transition-colors hover:text-foreground" @click="loadMemoryData">
+              <Button variant="ghost" size="icon" class="cursor-pointer text-muted-foreground hover:text-foreground" @click="loadMemoryData">
                 <RefreshCw class="size-3.5" />
-              </button>
+              </Button>
             </div>
 
             <div v-if="memoryLoading" class="py-8 text-center">
@@ -483,29 +461,19 @@
                 <div class="truncate font-mono text-xs text-muted-foreground">{{ selectedMemoryFilePath }}</div>
               </div>
               <div class="flex shrink-0 gap-2">
-                <button
-                  class="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent"
-                  @click="toggleEditMode"
-                >
+                <Button variant="outline" size="sm" class="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs text-muted-foreground hover:bg-accent" @click="toggleEditMode">
                   <Eye v-if="memoryEditMode" class="size-3.5" />
                   <Pencil v-else class="size-3.5" />
                   {{ memoryEditMode ? '预览' : '编辑' }}
-                </button>
-                <button
-                  class="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent"
-                  @click="openInFinder"
-                >
+                </Button>
+                <Button variant="outline" size="sm" class="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs text-muted-foreground hover:bg-accent" @click="openInFinder">
                   <FolderOpen class="size-3.5" />
                   打开文件夹
-                </button>
-                <button
-                  class="inline-flex items-center gap-1.5 rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:border disabled:border-border disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
-                  :disabled="!memoryEditMode && !hasUnsavedChanges"
-                  @click="saveMemoryContent"
-                >
+                </Button>
+                <Button size="sm" class="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium shadow-sm disabled:cursor-not-allowed disabled:opacity-50" :disabled="!memoryEditMode && !hasUnsavedChanges" @click="saveMemoryContent">
                   <Save class="size-3.5" />
                   保存
-                </button>
+                </Button>
               </div>
             </div>
             <div class="min-h-[200px] flex-1 overflow-y-auto px-8 py-6">
@@ -517,10 +485,10 @@
                 <Spinner class="size-5" />
               </div>
               <!-- 编辑模式 -->
-              <textarea
+              <Textarea
                 v-else-if="memoryEditMode"
                 v-model="memoryContent"
-                class="min-h-[400px] w-full resize-y border-none bg-transparent p-0 font-mono text-[13px] leading-relaxed text-foreground outline-none"
+                class="min-h-[400px] w-full resize-y border-none bg-transparent p-0 font-mono text-[13px] leading-relaxed focus-visible:ring-0"
                 @input="onContentInput"
               />
               <!-- 预览模式 -->
@@ -542,6 +510,9 @@
 
 <script setup>
 import { Spinner } from '@/components/ui/spinner'
+import { Button } from '@/components/ui/button'
+import { Switch } from '@/components/ui/switch'
+import { Textarea } from '@/components/ui/textarea'
 
 import { ref, computed, onMounted, watch } from 'vue'
 import { toast } from 'vue-sonner'

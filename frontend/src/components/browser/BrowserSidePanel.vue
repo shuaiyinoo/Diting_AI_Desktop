@@ -15,19 +15,19 @@
       <Globe class="size-4 shrink-0 text-primary" />
 
       <Tooltip title="后退">
-        <button class="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-all hover:bg-accent hover:text-primary disabled:opacity-35 disabled:cursor-not-allowed" :disabled="!browserState?.canGoBack" @click="browserStore.goBackDisplay()"><ArrowLeft class="size-3.5" /></button>
+        <Button variant="ghost" size="icon" class="size-7 text-muted-foreground hover:text-primary disabled:opacity-35 disabled:cursor-not-allowed" :disabled="!browserState?.canGoBack" @click="browserStore.goBackDisplay()"><ArrowLeft class="size-3.5" /></Button>
       </Tooltip>
       <Tooltip title="前进">
-        <button class="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-all hover:bg-accent hover:text-primary disabled:opacity-35 disabled:cursor-not-allowed" :disabled="!browserState?.canGoForward" @click="browserStore.goForwardDisplay()"><ArrowRight class="size-3.5" /></button>
+        <Button variant="ghost" size="icon" class="size-7 text-muted-foreground hover:text-primary disabled:opacity-35 disabled:cursor-not-allowed" :disabled="!browserState?.canGoForward" @click="browserStore.goForwardDisplay()"><ArrowRight class="size-3.5" /></Button>
       </Tooltip>
       <Tooltip title="刷新">
-        <button class="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-all hover:bg-accent hover:text-primary disabled:opacity-35 disabled:cursor-not-allowed" :disabled="!browserState" @click="browserStore.reloadDisplay()"><RefreshCw class="size-3.5" /></button>
+        <Button variant="ghost" size="icon" class="size-7 text-muted-foreground hover:text-primary disabled:opacity-35 disabled:cursor-not-allowed" :disabled="!browserState" @click="browserStore.reloadDisplay()"><RefreshCw class="size-3.5" /></Button>
       </Tooltip>
 
       <form class="relative mx-1 flex flex-1 min-w-0 items-center" @submit.prevent="onNavigate">
-        <input
+        <Input
           v-model="urlInput"
-          class="h-7 w-full rounded-md border border-border bg-card px-2.5 pr-7 text-xs text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10 disabled:opacity-50 disabled:cursor-not-allowed"
+          class="h-7 w-full rounded-md border-border bg-card pr-7 text-xs focus:border-primary focus:ring-primary/10 disabled:opacity-50 disabled:cursor-not-allowed"
           placeholder="输入域名或 URL（默认 HTTPS）"
           :disabled="riskBlocked"
         />
@@ -35,9 +35,9 @@
       </form>
 
       <Tooltip title="关闭浏览器">
-        <button class="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-all hover:bg-red-500/10 hover:text-red-500" @click="onClose">
+        <Button variant="ghost" size="icon" class="size-7 text-muted-foreground hover:bg-red-500/10 hover:text-red-500" @click="onClose">
           <X class="size-3.5" />
-        </button>
+        </Button>
       </Tooltip>
     </div>
 
@@ -55,9 +55,9 @@
         <span v-if="tab.openedByAgent" class="shrink-0 rounded bg-primary/10 px-1 text-[9px] text-primary">Agent</span>
         <span class="flex size-3.5 shrink-0 items-center justify-center rounded-[3px] text-[10px] opacity-40 transition-all hover:bg-red-500/10 hover:text-red-500 hover:opacity-100" @click.stop="browserStore.closeTab(tab.tabId)"><X /></span>
       </div>
-      <button class="flex size-6 shrink-0 items-center justify-center rounded-[5px] text-muted-foreground transition-all hover:bg-accent hover:text-primary" @click="browserStore.createDisplayTab()" title="新建标签">
+      <Button variant="ghost" size="icon" class="size-6 shrink-0 rounded-[5px] text-muted-foreground hover:text-primary" @click="browserStore.createDisplayTab()" title="新建标签">
         <Plus class="size-3" />
-      </button>
+      </Button>
     </div>
 
     <!-- ========== Agent 活动状态条 ========== -->
@@ -85,12 +85,12 @@
           </ul>
         </div>
         <div class="flex w-full max-w-[280px] flex-col gap-2">
-          <button class="h-9 rounded-md bg-primary text-[13px] font-medium text-primary-foreground transition-all hover:bg-primary/90" @click="browserStore.acceptRisk()">
+          <Button class="h-9 rounded-md text-[13px] font-medium" @click="browserStore.acceptRisk()">
             我已知悉并承担风险
-          </button>
-          <button class="h-9 rounded-md border border-border text-[13px] text-muted-foreground transition-all hover:border-foreground hover:text-foreground" @click="onClose">
+          </Button>
+          <Button variant="outline" class="h-9 rounded-md text-[13px] text-muted-foreground hover:border-foreground hover:text-foreground" @click="onClose">
             暂不使用
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -119,6 +119,8 @@
 
 <script setup>
 import { Spinner } from '@/components/ui/spinner'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import { Badge } from '@/components/ui/badge'
 

@@ -7,9 +7,9 @@
         <div class="flex size-16 items-center justify-center rounded-full bg-primary/[0.06] text-primary"><Clock class="size-7" /></div>
         <h3 class="m-0 text-base text-foreground">定时任务</h3>
         <p class="max-w-[400px] text-[13px] leading-relaxed text-muted-foreground">用自然语言描述一个任务，调度器按设定间隔在后台自动新建子会话执行。</p>
-        <button class="inline-flex h-8 items-center gap-1.5 rounded-lg bg-primary px-3.5 text-[13px] font-medium text-primary-foreground shadow-sm transition-all hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed" @click="createNew">
+        <Button size="sm" @click="createNew">
           <Plus class="size-4" /> 新建定时任务
-        </button>
+        </Button>
       </div>
 
       <!-- 分组列表 -->
@@ -35,15 +35,15 @@
               </div>
             </div>
             <div class="flex shrink-0 gap-1">
-              <button class="inline-flex h-[30px] items-center gap-1 rounded-[7px] border border-border bg-card px-2.5 text-xs text-muted-foreground transition-all hover:border-primary hover:text-primary disabled:opacity-50 disabled:cursor-not-allowed" @click.stop="runNow(a)" :disabled="runningIds.has(a.id)">
+              <Button variant="outline" size="sm" class="h-[30px] gap-1 px-2.5 text-xs" :disabled="runningIds.has(a.id)" @click.stop="runNow(a)">
                 <Play class="size-3.5" /> {{ runningIds.has(a.id) ? '运行中…' : '立即运行' }}
-              </button>
-              <button class="inline-flex h-[30px] items-center gap-1 rounded-[7px] border border-border bg-card px-2.5 text-xs text-muted-foreground transition-all hover:border-primary hover:text-primary" @click.stop="togglePause(a)">
+              </Button>
+              <Button variant="outline" size="sm" class="h-[30px] gap-1 px-2.5 text-xs" @click.stop="togglePause(a)">
                 <PauseCircle v-if="a.active" class="size-3.5" /> <PlayCircle v-else class="size-3.5" />
-              </button>
-              <button class="inline-flex h-[30px] items-center gap-1 rounded-[7px] border border-border bg-card px-2.5 text-xs text-muted-foreground transition-all hover:border-destructive hover:text-destructive hover:bg-destructive/5" @click.stop="confirmDelete(a)">
+              </Button>
+              <Button variant="outline" size="sm" class="h-[30px] gap-1 px-2.5 text-xs hover:text-destructive hover:bg-destructive/5" @click.stop="confirmDelete(a)">
                 <Trash2 class="size-3.5" />
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -66,12 +66,12 @@
               </div>
             </div>
             <div class="flex shrink-0 gap-1">
-              <button class="inline-flex h-[30px] items-center gap-1 rounded-[7px] border border-border bg-card px-2.5 text-xs text-muted-foreground transition-all hover:border-primary hover:text-primary" @click.stop="togglePause(a)">
+              <Button variant="outline" size="sm" class="h-[30px] gap-1 px-2.5 text-xs" @click.stop="togglePause(a)">
                 <PlayCircle class="size-3.5" /> 启用
-              </button>
-              <button class="inline-flex h-[30px] items-center gap-1 rounded-[7px] border border-border bg-card px-2.5 text-xs text-muted-foreground transition-all hover:border-destructive hover:text-destructive hover:bg-destructive/5" @click.stop="confirmDelete(a)">
+              </Button>
+              <Button variant="outline" size="sm" class="h-[30px] gap-1 px-2.5 text-xs hover:text-destructive hover:bg-destructive/5" @click.stop="confirmDelete(a)">
                 <Trash2 class="size-3.5" />
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -94,12 +94,12 @@
               </div>
             </div>
             <div class="flex shrink-0 gap-1">
-              <button class="inline-flex h-[30px] items-center gap-1 rounded-[7px] border border-border bg-card px-2.5 text-xs text-muted-foreground transition-all hover:border-primary hover:text-primary" @click.stop="togglePause(a)">
+              <Button variant="outline" size="sm" class="h-[30px] gap-1 px-2.5 text-xs" @click.stop="togglePause(a)">
                 <PlayCircle class="size-3.5" /> 重新启用
-              </button>
-              <button class="inline-flex h-[30px] items-center gap-1 rounded-[7px] border border-border bg-card px-2.5 text-xs text-muted-foreground transition-all hover:border-destructive hover:text-destructive hover:bg-destructive/5" @click.stop="confirmDelete(a)">
+              </Button>
+              <Button variant="outline" size="sm" class="h-[30px] gap-1 px-2.5 text-xs hover:text-destructive hover:bg-destructive/5" @click.stop="confirmDelete(a)">
                 <Trash2 class="size-3.5" />
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -113,15 +113,15 @@
         <div class="flex min-w-0 flex-1 flex-col gap-2">
           <!-- 顶部：返回 + 标题 -->
           <div class="flex shrink-0 items-center gap-3 pb-2">
-            <button class="inline-flex h-8 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-border bg-card px-3.5 text-[13px] text-muted-foreground transition-all hover:border-primary hover:text-primary" @click="closeForm">
+            <Button variant="outline" size="sm" class="shrink-0 gap-1.5" @click="closeForm">
               <ChevronLeft class="size-4" /> 返回
-            </button>
+            </Button>
             <!-- 双击编辑任务名 -->
-            <input
+            <Input
               v-if="titleEditing"
               ref="titleInputRef"
               v-model="draft.name"
-              class="min-w-0 flex-1 rounded-md border border-primary bg-card px-2 py-1 text-base font-semibold text-foreground outline-none"
+              class="min-w-0 flex-1 text-base font-semibold"
               placeholder="任务名称"
               @blur="titleEditing = false"
               @keydown.enter="titleEditing = false"
@@ -140,15 +140,15 @@
             <p class="m-0 text-xs leading-relaxed text-muted-foreground">例：检查 Diting 仓库新增 issue，主动回复问答类问题，不清楚的部分整理到项目级 Context 的 .context/issue-faq.md 文档；真正的 Bug 或请求罗列后发给我，不要记录任何重复的信息。</p>
           </div>
 
-          <label class="text-xs font-medium text-muted-foreground">自然语言任务描述</label>
-          <textarea
+          <Label class="text-xs font-medium text-muted-foreground">自然语言任务描述</Label>
+          <Textarea
             v-model="draft.prompt"
-            class="min-h-[200px] flex-1 resize-y rounded-lg border border-border p-3 text-[13px] leading-relaxed text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10"
+            class="min-h-[200px] flex-1 resize-y text-[13px] leading-relaxed"
             placeholder="用自然语言描述你想让 Agent 做什么。例如：
 • 每天早上检查项目 CI 状态，如有失败则汇总失败原因
 • 每小时获取最新新闻摘要
 • 检查数据库中未处理的订单，自动生成处理方案"
-          ></textarea>
+          />
           <div class="mt-1 text-xs text-muted-foreground">
             💡 推荐让 Agent 在对话中创建 — 只需在聊天中描述你想要的自动化任务。
           </div>
@@ -159,26 +159,24 @@
           <div class="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
           <!-- 启用状态 -->
           <div class="flex flex-col gap-1.5">
-            <label class="text-xs font-medium text-muted-foreground">状态</label>
-            <label class="flex cursor-pointer items-center gap-2 rounded-lg border border-border/50 px-3 py-2" :class="{ 'opacity-60': !draft.channelId || !draft.workspaceId }">
-              <input
-                type="checkbox"
+            <Label class="text-xs font-medium text-muted-foreground">状态</Label>
+            <div class="flex cursor-pointer items-center gap-2 rounded-lg border border-border/50 px-3 py-2" :class="{ 'opacity-60': !draft.channelId || !draft.workspaceId }">
+              <Switch
                 :checked="draft.active"
                 :disabled="!draft.channelId || !draft.workspaceId"
-                @change="draft.active = $event.target.checked"
-                class="size-4 cursor-pointer"
+                @update:checked="draft.active = $event"
               />
               <span>启用</span>
               <span class="text-[11px] text-muted-foreground">
                 {{ !draft.channelId || !draft.workspaceId ? '需要配置模型与项目才能启用' : '启用后将按设定频率自动执行' }}
               </span>
-            </label>
+            </div>
           </div>
 
           <!-- 运行频率 + 关联调度控件（同一行） -->
           <div class="flex gap-3">
             <div class="flex min-w-0 flex-1 flex-col gap-1.5">
-              <label class="text-xs font-medium text-muted-foreground">运行频率</label>
+              <Label class="text-xs font-medium text-muted-foreground">运行频率</Label>
               <Select v-model="draft.scheduleType">
                 <SelectTrigger class="w-full"><SelectValue placeholder="选择频率" /></SelectTrigger>
                 <SelectContent>
@@ -191,27 +189,27 @@
               </Select>
             </div>
             <div v-if="draft.scheduleType === 'interval'" class="flex min-w-0 flex-1 flex-col gap-1.5">
-              <label class="text-xs font-medium text-muted-foreground">间隔（分钟）</label>
-              <input
+              <Label class="text-xs font-medium text-muted-foreground">间隔（分钟）</Label>
+              <Input
                 type="number"
-                :value="draft.intervalMinutes"
-                @input="draft.intervalMinutes = Number($event.target.value)"
+                :model-value="draft.intervalMinutes"
+                @update:model-value="draft.intervalMinutes = Number($event)"
                 min="1"
                 max="44640"
-                class="h-8 w-full rounded-md border border-border px-2 text-[13px] outline-none focus:border-primary"
+                class="h-8 text-[13px]"
               />
             </div>
             <div v-if="draft.scheduleType === 'daily' || draft.scheduleType === 'weekly' || draft.scheduleType === 'monthly'" class="flex min-w-0 flex-1 flex-col gap-1.5">
-              <label class="text-xs font-medium text-muted-foreground">触发时刻</label>
-              <input
+              <Label class="text-xs font-medium text-muted-foreground">触发时刻</Label>
+              <Input
                 type="time"
-                :value="draftTimeOfDayInput"
-                @input="draftTimeOfDayInput = $event.target.value"
-                class="h-8 w-full rounded-md border border-border px-2 text-[13px] outline-none focus:border-primary"
+                :model-value="draftTimeOfDayInput"
+                @update:model-value="draftTimeOfDayInput = $event"
+                class="h-8 text-[13px]"
               />
             </div>
             <div v-if="draft.scheduleType === 'weekly'" class="flex min-w-0 flex-1 flex-col gap-1.5">
-              <label class="text-xs font-medium text-muted-foreground">星期</label>
+              <Label class="text-xs font-medium text-muted-foreground">星期</Label>
               <Select v-model="draft.dayOfWeek">
                 <SelectTrigger class="w-full"><SelectValue placeholder="选择星期" /></SelectTrigger>
                 <SelectContent>
@@ -221,7 +219,7 @@
               </Select>
             </div>
             <div v-if="draft.scheduleType === 'monthly'" class="flex min-w-0 flex-1 flex-col gap-1.5">
-              <label class="text-xs font-medium text-muted-foreground">日期</label>
+              <Label class="text-xs font-medium text-muted-foreground">日期</Label>
               <Select v-model="draft.dayOfMonth">
                 <SelectTrigger class="w-full"><SelectValue placeholder="选择日期" /></SelectTrigger>
                 <SelectContent>
@@ -230,12 +228,11 @@
               </Select>
             </div>
             <div v-if="draft.scheduleType === 'once'" class="flex min-w-0 flex-1 flex-col gap-1.5">
-              <label class="text-xs font-medium text-muted-foreground">触发时间</label>
-              <input
-                type="datetime-local"
-                :value="draftScheduledAtInput"
-                @input="draftScheduledAtInput = $event.target.value"
-                class="h-8 w-full rounded-md border border-border px-2 text-[13px] outline-none focus:border-primary"
+              <Label class="text-xs font-medium text-muted-foreground">触发时间</Label>
+              <DateTimePicker
+                :model-value="draftScheduledAtInput"
+                @update:model-value="draftScheduledAtInput = $event"
+                class="h-8 text-[13px]"
               />
             </div>
           </div>
@@ -243,19 +240,19 @@
           <!-- 运行次数上限 + 会话模式（同一行） -->
           <div class="flex gap-3">
             <div class="flex min-w-0 flex-1 flex-col gap-1.5">
-              <label class="text-xs font-medium text-muted-foreground">运行次数上限</label>
-              <input
+              <Label class="text-xs font-medium text-muted-foreground">运行次数上限</Label>
+              <Input
                 type="number"
-                :value="draft.maxRuns"
-                @input="draft.maxRuns = Number($event.target.value)"
+                :model-value="draft.maxRuns"
+                @update:model-value="draft.maxRuns = Number($event)"
                 min="0"
                 placeholder="0=不限"
-                class="h-8 w-full rounded-md border border-border px-2 text-[13px] outline-none focus:border-primary"
+                class="h-8 text-[13px]"
               />
               <span class="text-xs text-muted-foreground">达到上限后自动停用</span>
             </div>
             <div class="flex min-w-0 flex-1 flex-col gap-1.5">
-              <label class="text-xs font-medium text-muted-foreground">会话模式</label>
+              <Label class="text-xs font-medium text-muted-foreground">会话模式</Label>
               <Select v-model="draft.sessionMode">
                 <SelectTrigger class="w-full"><SelectValue placeholder="选择会话模式" /></SelectTrigger>
                 <SelectContent>
@@ -268,7 +265,7 @@
 
           <!-- 模型 -->
           <div class="flex flex-col gap-1.5">
-            <label class="text-xs font-medium text-muted-foreground">模型</label>
+            <Label class="text-xs font-medium text-muted-foreground">模型</Label>
             <Select v-model="draft.channelId">
               <SelectTrigger class="w-full"><SelectValue placeholder="选择渠道" /></SelectTrigger>
               <SelectContent>
@@ -279,7 +276,7 @@
 
           <!-- 项目 -->
           <div class="flex flex-col gap-1.5">
-            <label class="text-xs font-medium text-muted-foreground">项目</label>
+            <Label class="text-xs font-medium text-muted-foreground">项目</Label>
             <Select v-model="draft.workspaceId">
               <SelectTrigger class="w-full"><SelectValue placeholder="选择工作区" /></SelectTrigger>
               <SelectContent>
@@ -295,7 +292,7 @@
 
           <!-- 运行历史 -->
           <div v-if="draft.id && draft.runHistory?.length" class="flex flex-col gap-1.5">
-            <label class="text-xs font-medium text-muted-foreground">运行历史（最近 10 条）</label>
+            <Label class="text-xs font-medium text-muted-foreground">运行历史（最近 10 条）</Label>
             <div
               v-for="(run, i) in draft.runHistory.slice(0, 10)"
               :key="i"
@@ -312,9 +309,9 @@
 
           <!-- 底部操作（固定在右栏底部） -->
           <div class="flex shrink-0 border-t border-border/50 bg-card pt-2">
-            <button class="inline-flex h-8 flex-1 items-center justify-center gap-1.5 rounded-lg bg-primary px-3.5 text-[13px] font-medium text-primary-foreground shadow-sm transition-all hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed" @click="runNowDraft" :disabled="!draft.id">
+            <Button class="h-8 flex-1 gap-1.5" @click="runNowDraft" :disabled="!draft.id">
               <Play class="size-3.5" /> 运行一次
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -328,8 +325,8 @@
         </DialogHeader>
         <p>删除「{{ pendingDelete?.name }}」后无法恢复。</p>
         <DialogFooter>
-          <button class="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-card px-3.5 text-[13px] text-muted-foreground transition-all hover:border-primary hover:text-primary" @click="deleteModalOpen = false">取消</button>
-          <button class="inline-flex h-8 items-center gap-1.5 rounded-lg bg-red-500 px-3.5 text-[13px] font-medium text-white transition-all hover:bg-red-600" @click="confirmDeleteAction">删除</button>
+          <Button variant="outline" @click="deleteModalOpen = false">取消</Button>
+          <Button variant="destructive" @click="confirmDeleteAction">删除</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -345,6 +342,12 @@ import {
 } from '@lucide/vue'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
+import { DateTimePicker } from '@/components/ui/date-time-picker'
+import { Switch } from '@/components/ui/switch'
 import { usePlanningStore } from '@/stores/planning'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useAgentStore } from '@/stores/agent'

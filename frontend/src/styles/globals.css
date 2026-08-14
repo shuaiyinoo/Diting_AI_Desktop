@@ -162,6 +162,16 @@
   .dark ::-moz-selection {
     background-color: hsl(0 0% 100% / 0.15);
   }
+
+  /* ========== 原生表单控件主题色 ==========
+   * accent-color 让浏览器原生控件（time、checkbox、radio 等）
+   * 的激活/选中态跟随 --primary 主题色
+   */
+  input[type="time"],
+  input[type="checkbox"],
+  input[type="radio"] {
+    accent-color: hsl(var(--primary));
+  }
 }
 
 /* ============================================================

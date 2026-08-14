@@ -1,5 +1,5 @@
 <template>
-  <div class="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-[10px] border border-border bg-card">
+  <div class="relative flex min-h-0 flex-1 flex-row overflow-hidden rounded-[10px] border border-border bg-card">
     <!-- 左栏：导航 -->
     <aside class="flex w-[200px] shrink-0 flex-col overflow-y-auto border-r border-border/50 bg-primary/[0.02] p-3">
       <div class="px-2 pb-3 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Todo</div>
@@ -20,7 +20,7 @@
       <div class="mt-6">
         <div class="flex items-center justify-between px-2 pb-2">
           <span class="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Todo 分组</span>
-          <button class="cursor-pointer border-none bg-transparent text-[11px] text-muted-foreground hover:text-primary" @click="groupManagerOpen = true">管理</button>
+          <Button variant="ghost" size="sm" class="h-auto px-2 py-0.5 text-[11px] text-muted-foreground hover:text-primary" @click="groupManagerOpen = true">管理</Button>
         </div>
         <div class="flex flex-col gap-0.5">
           <button
@@ -70,9 +70,9 @@
               <span v-if="todo.sessionLinks.length" class="inline-flex h-[18px] items-center rounded bg-foreground/5 px-1.5 text-[11px] text-muted-foreground">会话 {{ todo.sessionLinks.length }}</span>
             </div>
           </div>
-          <button class="flex size-8 shrink-0 items-center justify-center rounded-md opacity-0 transition-all hover:bg-red-500/10 hover:text-red-500" :class="selectedId === todo.id || true ? 'opacity-0 hover:opacity-100' : ''" @click.stop="pendingDelete = todo">
+          <Button variant="ghost" size="icon" class="size-8 opacity-0 hover:opacity-100 hover:bg-destructive/10 hover:text-destructive" @click.stop="pendingDelete = todo">
             <Trash2 class="size-3.5" />
-          </button>
+          </Button>
         </div>
         <div v-if="!visibleTodos.length" class="flex min-h-0 flex-1 items-center justify-center p-6 text-center text-[13px] text-muted-foreground">
           这里还没有任务。点击右上角"新建 Todo"即可添加。
@@ -83,48 +83,47 @@
     <!-- 右栏：详情 Inspector（浮动覆盖） -->
     <div v-if="selectedTodo" class="absolute inset-0 z-30 cursor-pointer bg-black/[0.02]" @click="selectedId = null"></div>
     <aside v-if="selectedTodo" class="absolute right-3 top-3 bottom-3 z-40 flex w-[min(420px,calc(100%-24px))] flex-col overflow-hidden rounded-xl border border-border/50 bg-card shadow-[0_12px_32px_rgba(0,0,0,0.12)]">
-      <button class="absolute right-3 top-3 z-10 flex size-7 items-center justify-center rounded-md border-none bg-transparent text-muted-foreground transition-colors hover:bg-accent/10 hover:text-foreground" @click="selectedId = null">
+      <Button variant="ghost" size="icon" class="absolute right-3 top-3 z-10 size-7" @click="selectedId = null">
         <X class="size-4" />
-      </button>
+      </Button>
       <!-- 固定头部：冲突提示 + 标题 -->
       <div class="flex shrink-0 flex-col gap-2 border-b border-border/50 px-5 pb-3 pt-5">
         <div v-if="todoConflict" class="flex items-center justify-between gap-3 rounded-md border border-amber-400/20 bg-amber-500/[0.08] px-3 py-2 text-xs text-amber-700 dark:text-amber-500">
           <span>此 Todo 已在其他窗口更新，请重新加载后再编辑。</span>
-          <button class="shrink-0 cursor-pointer border-none bg-transparent text-xs text-primary" @click="reloadTodoDetail">重新加载</button>
+          <Button variant="link" class="h-auto p-0 text-xs text-primary" @click="reloadTodoDetail">重新加载</Button>
         </div>
-        <textarea
-          class="w-full resize-none border-none bg-transparent pr-10 text-[17px] font-semibold leading-relaxed text-foreground outline-none"
+        <Textarea
+          class="w-full resize-none border-none bg-transparent pr-10 text-[17px] font-semibold leading-relaxed"
           v-model="detailTitle"
           :disabled="todoConflict"
           placeholder="任务标题"
           rows="2"
           @blur="saveTitle"
-        ></textarea>
+        />
       </div>
       <!-- 可滚动中间内容 -->
       <div class="flex flex-1 flex-col gap-5 overflow-y-auto overflow-x-hidden px-5 py-4">
         <!-- 描述 -->
         <div class="flex flex-col gap-3">
-          <label class="mb-1.5 block text-[11px] font-medium text-muted-foreground">描述</label>
-          <textarea
-            class="min-h-[120px] resize-y rounded-lg border border-border/50 bg-primary/[0.03] px-3 py-2 text-[13px] text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10"
+          <Label class="mb-1.5 block text-[11px] font-medium text-muted-foreground">描述</Label>
+          <Textarea
+            class="min-h-[120px] resize-y bg-primary/[0.03]"
             v-model="detailNotes"
             :disabled="todoConflict"
             placeholder="添加描述…"
             @blur="saveNotes"
-          ></textarea>
+          />
         </div>
         <!-- 时间 -->
         <div class="flex flex-col gap-3">
           <h3 class="m-0 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">时间</h3>
           <div class="flex flex-col">
-            <label class="mb-1.5 text-[11px] font-medium text-muted-foreground">计划完成时间</label>
-            <input
-              type="datetime-local"
-              :value="detailDueAtInput"
-              @input="detailDueAtInput = $event.target.value"
+            <Label class="mb-1.5 text-[11px] font-medium text-muted-foreground">计划完成时间</Label>
+            <DateTimePicker
+              :model-value="detailDueAtInput"
+              @update:model-value="detailDueAtInput = $event"
               placeholder="选择时间"
-              class="w-full rounded-md border border-border/50 bg-transparent px-3 py-1.5 text-[13px] text-foreground outline-none focus:border-primary"
+              class="w-full"
               @change="saveDueAt"
             />
           </div>
@@ -133,7 +132,7 @@
         <div class="flex flex-col gap-3">
           <h3 class="m-0 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">组织</h3>
           <div class="flex flex-col">
-            <label class="mb-1.5 text-[11px] font-medium text-muted-foreground">优先级</label>
+            <Label class="mb-1.5 text-[11px] font-medium text-muted-foreground">优先级</Label>
             <Select v-model="detailPriority" class="w-full" @update:model-value="savePriority">
               <SelectTrigger class="w-full"><SelectValue placeholder="选择优先级" /></SelectTrigger>
               <SelectContent>
@@ -144,7 +143,7 @@
             </Select>
           </div>
           <div class="flex flex-col">
-            <label class="mb-1.5 text-[11px] font-medium text-muted-foreground">Todo 分组</label>
+            <Label class="mb-1.5 text-[11px] font-medium text-muted-foreground">Todo 分组</Label>
             <Select v-model="detailGroupId" class="w-full" @update:model-value="saveGroup">
               <SelectTrigger class="w-full"><SelectValue placeholder="选择分组" /></SelectTrigger>
               <SelectContent>
@@ -154,15 +153,17 @@
             </Select>
           </div>
           <div v-if="tags.length" class="flex flex-col">
-            <label class="mb-1.5 text-[11px] font-medium text-muted-foreground">标签</label>
+            <Label class="mb-1.5 text-[11px] font-medium text-muted-foreground">标签</Label>
             <div class="flex flex-wrap gap-1">
-              <button
+              <Button
                 v-for="tag in tags"
                 :key="tag.id"
-                class="cursor-pointer rounded border-none px-2 py-0.5 text-xs transition-colors"
-                :class="selectedTodo.tags.some(t => t.id === tag.id) ? 'bg-primary text-primary-foreground' : 'bg-foreground/5 text-muted-foreground hover:bg-primary/10 hover:text-primary'"
+                variant="ghost"
+                size="sm"
+                class="cursor-pointer rounded border-none px-2 py-0.5 text-xs"
+                :class="selectedTodo.tags.some(t => t.id === tag.id) ? 'bg-primary text-primary-foreground hover:bg-primary' : 'bg-foreground/5 text-muted-foreground hover:bg-primary/10 hover:text-primary'"
                 @click="toggleTag(tag)"
-              >#{{ tag.name }}</button>
+              >#{{ tag.name }}</Button>
             </div>
           </div>
         </div>
@@ -170,7 +171,7 @@
         <div class="flex flex-col gap-3">
           <h3 class="m-0 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">项目与 Agent</h3>
           <div class="flex flex-col">
-            <label class="mb-1.5 text-[11px] font-medium text-muted-foreground">执行项目</label>
+            <Label class="mb-1.5 text-[11px] font-medium text-muted-foreground">执行项目</Label>
             <Select v-model="detailWorkspaceId" class="w-full" @update:model-value="saveWorkspace">
               <SelectTrigger class="w-full"><SelectValue placeholder="选择项目" /></SelectTrigger>
               <SelectContent>
@@ -178,15 +179,15 @@
               </SelectContent>
             </Select>
           </div>
-          <button
-            class="inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-lg bg-primary px-3.5 text-[13px] font-medium text-primary-foreground shadow-[0_2px_6px_rgba(22,119,255,0.25)] transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+          <Button
+            class="h-8 w-full gap-1.5"
             :disabled="!selectedTodo.workspaceId || startingAgent"
             @click="startAgent"
           >
             <Bot class="size-4" /> {{ startingAgent ? '启动中…' : '开始运行 Agent' }}
-          </button>
+          </Button>
           <div class="flex flex-col">
-            <label class="mb-1.5 text-[11px] font-medium text-muted-foreground">关联会话</label>
+            <Label class="mb-1.5 text-[11px] font-medium text-muted-foreground">关联会话</Label>
             <div v-if="validSessionLinks.length" class="flex flex-col gap-1">
               <div
                 v-for="link in validSessionLinks"
@@ -204,13 +205,13 @@
       </div>
       <!-- 固定底部：操作按钮 -->
       <div class="flex shrink-0 justify-between gap-3 border-t border-border/50 bg-card px-5 py-3">
-        <button class="inline-flex h-8 items-center gap-1.5 rounded-lg bg-primary px-3.5 text-[13px] font-medium text-primary-foreground shadow-[0_2px_6px_rgba(22,119,255,0.25)] transition-colors hover:bg-primary/90" @click="toggleTodo(selectedTodo)">
+        <Button @click="toggleTodo(selectedTodo)">
           <Check class="size-4" />
           {{ selectedTodo.status === 'completed' ? '恢复任务' : '标记完成' }}
-        </button>
-        <button class="inline-flex h-8 items-center gap-1.5 rounded-lg border border-red-500/30 bg-red-500/10 px-3.5 text-[13px] text-red-500 transition-colors hover:bg-red-500 hover:text-white hover:border-red-500" @click="pendingDelete = selectedTodo">
+        </Button>
+        <Button variant="destructive" class="gap-1.5" @click="pendingDelete = selectedTodo">
           <Trash2 class="size-4" /> 删除
-        </button>
+        </Button>
       </div>
     </aside>
 
@@ -222,8 +223,8 @@
         </DialogHeader>
         <p>删除「{{ pendingDelete?.title }}」后无法恢复。</p>
         <DialogFooter>
-          <button class="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-card px-3.5 text-[13px] text-secondary-foreground transition-colors hover:border-primary hover:text-primary" @click="deleteModalOpen = false">取消</button>
-          <button class="inline-flex h-8 items-center gap-1.5 rounded-lg bg-red-500 px-3.5 text-[13px] text-white transition-colors hover:bg-red-600" @click="confirmDelete">删除</button>
+          <Button variant="outline" @click="deleteModalOpen = false">取消</Button>
+          <Button variant="destructive" @click="confirmDelete">删除</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -237,25 +238,25 @@
         <!-- 新建分组 -->
         <div class="mb-3 border-b border-border/50 pb-3">
           <div v-if="creatingGroup" class="flex items-center gap-1.5">
-            <input
+            <Input
               ref="newGroupInputRef"
-              :value="newGroupName"
-              @input="newGroupName = $event.target.value"
+              :model-value="newGroupName"
+              @update:model-value="newGroupName = $event"
               placeholder="输入分组名称"
-              class="h-8 flex-1 rounded-md border border-border px-2 text-[13px] outline-none focus:border-primary"
+              class="h-8 flex-1 text-[13px]"
               @keydown.enter="confirmCreateGroup"
               @keydown.escape="cancelCreateGroup"
             />
-            <button class="flex size-8 shrink-0 items-center justify-center rounded-md bg-green-500/12 text-green-500 transition-colors hover:bg-green-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-35" @click="confirmCreateGroup" :disabled="!newGroupName.trim() || savingGroupAction === 'create'" title="确认">
+            <Button variant="ghost" size="icon" class="size-8 text-green-500 hover:bg-green-500 hover:text-white" @click="confirmCreateGroup" :disabled="!newGroupName.trim() || savingGroupAction === 'create'" title="确认">
               <Check class="size-4" />
-            </button>
-            <button class="flex size-8 shrink-0 items-center justify-center rounded-md bg-foreground/5 text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-500" @click="cancelCreateGroup" title="取消">
+            </Button>
+            <Button variant="ghost" size="icon" class="size-8 text-muted-foreground hover:bg-destructive/10 hover:text-destructive" @click="cancelCreateGroup" title="取消">
               <X class="size-4" />
-            </button>
+            </Button>
           </div>
-          <button v-else class="flex h-[34px] w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-border bg-transparent text-[13px] text-muted-foreground transition-colors hover:border-primary hover:bg-primary/[0.03] hover:text-primary" @click="startCreateGroup">
+          <Button v-else variant="outline" class="h-[34px] w-full gap-1.5 border-dashed" @click="startCreateGroup">
             <Plus class="size-4" /> 新建分组
-          </button>
+          </Button>
         </div>
 
         <!-- 分组列表 -->
@@ -271,32 +272,32 @@
             <!-- 重命名模式 -->
             <template v-if="renamingGroupId === g.id">
               <span class="size-2 shrink-0 rounded-full" :style="{ background: g.color || 'currentColor' }"></span>
-              <input
+              <Input
                 ref="renameInputRef"
-                :value="renameGroupName"
-                @input="renameGroupName = $event.target.value"
-                class="h-8 flex-1 rounded-md border border-border px-2 text-[13px] outline-none focus:border-primary"
+                :model-value="renameGroupName"
+                @update:model-value="renameGroupName = $event"
+                class="h-8 flex-1 text-[13px]"
                 @keydown.enter="confirmRenameGroup(g)"
                 @keydown.escape="cancelRenameGroup"
               />
-              <button class="flex size-8 shrink-0 items-center justify-center rounded-md bg-green-500/12 text-green-500 transition-colors hover:bg-green-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-35" @click="confirmRenameGroup(g)" :disabled="!renameGroupName.trim() || savingGroupAction === 'rename'" title="确认">
+              <Button variant="ghost" size="icon" class="size-8 text-green-500 hover:bg-green-500 hover:text-white" @click="confirmRenameGroup(g)" :disabled="!renameGroupName.trim() || savingGroupAction === 'rename'" title="确认">
                 <Check class="size-4" />
-              </button>
-              <button class="flex size-8 shrink-0 items-center justify-center rounded-md bg-foreground/5 text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-500" @click="cancelRenameGroup" title="取消">
+              </Button>
+              <Button variant="ghost" size="icon" class="size-8 text-muted-foreground hover:bg-destructive/10 hover:text-destructive" @click="cancelRenameGroup" title="取消">
                 <X class="size-4" />
-              </button>
+              </Button>
             </template>
             <!-- 正常显示模式 -->
             <template v-else>
               <span class="size-2 shrink-0 rounded-full" :style="{ background: g.color || 'currentColor' }"></span>
               <span class="min-w-0 flex-1 truncate text-[13px] text-foreground">{{ g.name }}</span>
               <span class="min-w-[20px] shrink-0 text-right text-[11px] text-muted-foreground">{{ getGroupCount(g.id) }}</span>
-              <button class="group flex size-[26px] shrink-0 items-center justify-center rounded text-muted-foreground opacity-0 transition-all hover:bg-primary/10 hover:text-primary group-hover:opacity-100" title="重命名" @click="startRenameGroup(g)">
+              <Button variant="ghost" size="icon" class="size-[26px] text-muted-foreground opacity-0 hover:bg-primary/10 hover:text-primary group-hover:opacity-100" title="重命名" @click="startRenameGroup(g)">
                 <Pencil class="size-3.5" />
-              </button>
-              <button class="group flex size-[26px] shrink-0 items-center justify-center rounded text-muted-foreground opacity-0 transition-all hover:bg-red-500/10 hover:text-red-500 group-hover:opacity-100" title="删除" @click="requestDeleteGroup(g)">
+              </Button>
+              <Button variant="ghost" size="icon" class="size-[26px] text-muted-foreground opacity-0 hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100" title="删除" @click="requestDeleteGroup(g)">
                 <Trash2 class="size-3.5" />
-              </button>
+              </Button>
             </template>
           </div>
         </div>
@@ -314,8 +315,8 @@
         </p>
         <p v-else>删除「{{ pendingDeleteGroup?.name }}」后无法恢复。</p>
         <DialogFooter>
-          <button class="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-card px-3.5 text-[13px] text-secondary-foreground transition-colors hover:border-primary hover:text-primary" @click="deleteGroupModalOpen = false">取消</button>
-          <button class="inline-flex h-8 items-center gap-1.5 rounded-lg bg-red-500 px-3.5 text-[13px] text-white transition-colors hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-50" :disabled="savingGroupAction === 'delete'" @click="confirmDeleteGroup">删除</button>
+          <Button variant="outline" @click="deleteGroupModalOpen = false">取消</Button>
+          <Button variant="destructive" :disabled="savingGroupAction === 'delete'" @click="confirmDeleteGroup">删除</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -331,6 +332,11 @@ import {
 } from '@lucide/vue'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
+import { DateTimePicker } from '@/components/ui/date-time-picker'
 import { usePlanningStore } from '@/stores/planning'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useAgentStore } from '@/stores/agent'

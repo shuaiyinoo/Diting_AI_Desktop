@@ -11,14 +11,14 @@
             识别中
           </Badge>
           <Tooltip title="刷新">
-            <button class="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground" @click="onRefresh">
+            <Button variant="ghost" size="icon" class="size-7 text-muted-foreground hover:text-foreground" @click="onRefresh">
               <RefreshCw class="size-3.5" />
-            </button>
+            </Button>
           </Tooltip>
           <Tooltip title="添加授权文件夹">
-            <button class="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground" @click="onAddFolder">
+            <Button variant="ghost" size="icon" class="size-7 text-muted-foreground hover:text-foreground" @click="onAddFolder">
               <Plus class="size-3.5" />
-            </button>
+            </Button>
           </Tooltip>
         </div>
       </div>
@@ -40,9 +40,9 @@
           >
             <Folder class="size-3.5 shrink-0" :class="store.selectedFolderId === folder.id ? 'text-primary' : 'text-muted-foreground'" />
             <span class="min-w-0 flex-1 truncate" :title="folder.path">{{ folder.folder_name }}</span>
-            <button class="flex size-5 items-center justify-center rounded text-muted-foreground opacity-0 transition-all hover:bg-red-500/10 hover:text-red-500" @click.stop="onDeleteFolder(folder)">
+            <Button variant="ghost" size="icon" class="size-5 text-muted-foreground opacity-0 hover:bg-red-500/10 hover:text-red-500" @click.stop="onDeleteFolder(folder)">
               <Trash2 class="size-3" />
-            </button>
+            </Button>
           </div>
           <div v-if="!store.folderLoading && store.folderList.length === 0" class="px-2 py-3 text-center text-xs text-muted-foreground">
             暂无授权文件夹
@@ -95,11 +95,11 @@
             >
               <component
                 v-if="node.isDir"
-                :is="node.expanded ? 'DownOutlined' : 'RightOutlined'"
-                class="w-3.5 shrink-0 text-center text-xs text-muted-foreground transition-transform"
+                :is="node.expanded ? ChevronDown : ChevronRight"
+                class="size-2.5 shrink-0 text-muted-foreground"
               />
               <span v-else class="w-3.5 shrink-0" />
-              <component :is="node.isDir ? 'FolderOutlined' : 'FileOutlined'" class="size-3.5 shrink-0" :class="node.isDir ? 'text-primary' : 'text-muted-foreground'" />
+              <component :is="node.isDir ? Folder : FileText" class="size-3.5 shrink-0" :class="node.isDir ? 'text-primary' : 'text-muted-foreground'" />
               <span class="min-w-0 flex-1 truncate text-xs" :class="node.isDir ? 'font-medium' : ''">{{ node.name }}</span>
               <!-- 文件状态标识 -->
               <template v-if="!node.isDir">
@@ -183,16 +183,16 @@
                   <span v-if="pageImages.length > 1" class="font-medium text-primary">· 第 {{ currentPageIdx + 1 }}/{{ pageImages.length }} 页</span>
                 </span>
                 <div class="flex items-center gap-1">
-                  <button class="flex size-[26px] items-center justify-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-40" @click="zoomOut" :disabled="zoom <= 0.1">
+                  <Button variant="ghost" size="icon" class="size-[26px] text-muted-foreground hover:text-foreground disabled:opacity-40" @click="zoomOut" :disabled="zoom <= 0.1">
                     <ZoomOut class="size-3.5" />
-                  </button>
+                  </Button>
                   <span class="min-w-[36px] text-center text-[11px] text-muted-foreground">{{ Math.round(zoom * 100) }}%</span>
-                  <button class="flex size-[26px] items-center justify-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-40" @click="zoomIn" :disabled="zoom >= 5">
+                  <Button variant="ghost" size="icon" class="size-[26px] text-muted-foreground hover:text-foreground disabled:opacity-40" @click="zoomIn" :disabled="zoom >= 5">
                     <ZoomIn class="size-3.5" />
-                  </button>
-                  <button class="flex size-[26px] items-center justify-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-foreground" title="重置缩放" @click="resetZoom">
+                  </Button>
+                  <Button variant="ghost" size="icon" class="size-[26px] text-muted-foreground hover:text-foreground" title="重置缩放" @click="resetZoom">
                     <Expand class="size-3.5" />
-                  </button>
+                  </Button>
                 </div>
               </div>
 
@@ -251,28 +251,16 @@
           <div class="flex min-h-0 flex-col overflow-hidden bg-card">
             <!-- 标签页 -->
             <div class="flex shrink-0 gap-1 border-b border-border p-1.5">
-              <button
-                class="rounded-md px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent"
-                :class="resultTab === 'fields' ? 'bg-accent font-semibold text-primary' : ''"
-                @click="resultTab = 'fields'"
-              >
+              <Button variant="ghost" size="sm" class="rounded-md px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent" :class="resultTab === 'fields' ? 'bg-accent font-semibold text-primary' : ''" @click="resultTab = 'fields'">
                 识别区域 ({{ currentPageOcrBoxes.length }})
-              </button>
-              <button
-                class="rounded-md px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent"
-                :class="resultTab === 'text' ? 'bg-accent font-semibold text-primary' : ''"
-                @click="resultTab = 'text'"
-              >
+              </Button>
+              <Button variant="ghost" size="sm" class="rounded-md px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent" :class="resultTab === 'text' ? 'bg-accent font-semibold text-primary' : ''" @click="resultTab = 'text'">
                 全文文本
-              </button>
-              <button
-                class="rounded-md px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent"
-                :class="resultTab === 'ai' ? 'bg-accent font-semibold text-primary' : ''"
-                @click="resultTab = 'ai'"
-              >
+              </Button>
+              <Button variant="ghost" size="sm" class="rounded-md px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent" :class="resultTab === 'ai' ? 'bg-accent font-semibold text-primary' : ''" @click="resultTab = 'ai'">
                 AI 识别
                 <span v-if="aiData" class="ml-0.5 text-[10px] text-green-600">✓</span>
-              </button>
+              </Button>
             </div>
 
             <!-- 识别区域列表 -->
@@ -482,7 +470,7 @@ import { Badge } from '@/components/ui/badge'
 
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { toast } from 'vue-sonner'
-import { Folder, File, FileSearch, ChevronDown, ChevronRight, RefreshCw, Plus, Trash2, Check, X, Loader2, FolderOpen, Copy, ZoomIn, ZoomOut, Expand, Bot, BadgeCheck, LayoutGrid } from '@lucide/vue'
+import { Folder, File, FileSearch, ChevronDown, ChevronRight, FolderOpen, FileText, RefreshCw, Plus, Trash2, Check, X, Loader2, Copy, ZoomIn, ZoomOut, Expand, Bot, BadgeCheck, LayoutGrid } from '@lucide/vue'
 import { useInvoiceStore } from '@/stores/invoice'
 import PanelDivider from '@/components/layout/PanelDivider.vue'
 import PdfAnnotationViewer from '@/components/invoice/PdfAnnotationViewer.vue'
