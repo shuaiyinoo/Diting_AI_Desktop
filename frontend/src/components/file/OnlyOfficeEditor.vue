@@ -1,25 +1,28 @@
 <template>
-  <div class="oo-editor-wrap">
+  <div class="flex flex-col h-full bg-card overflow-hidden">
     <!-- 顶部工具栏 -->
-    <div class="oo-editor-wrap__toolbar">
-      <div class="oo-editor-wrap__title">
-        <edit-outlined class="oo-editor-wrap__icon" />
-        <span class="oo-editor-wrap__name" :title="fileName">{{ fileName || '文件编辑' }}</span>
+    <div class="flex items-center justify-between px-2 pl-3.5 h-10 flex-shrink-0 border-b border-border bg-card">
+      <div class="flex items-center gap-1.5 min-w-0 flex-1">
+        <EditOutlined class="size-3.5 text-primary flex-shrink-0" />
+        <span class="text-[13px] font-medium text-foreground truncate" :title="fileName">{{ fileName || '文件编辑' }}</span>
       </div>
-      <!-- 右侧：折叠第四面板按钮 -->
-      <a-tooltip :title="panel4Collapsed ? '展开信息面板' : '收起信息面板'">
-        <button class="oo-toggle-btn" @click="$emit('toggle-panel4')">
-          <component :is="panel4Collapsed ? 'MenuFoldOutlined' : 'MenuUnfoldOutlined'" />
-        </button>
-      </a-tooltip>
+      <!-- 折叠第四面板按钮 -->
+      <Tooltip>
+        <TooltipTrigger as-child>
+          <button class="inline-flex items-center justify-center size-7 border-none rounded-md bg-transparent text-muted-foreground cursor-pointer transition-all hover:bg-muted hover:text-foreground" @click="$emit('toggle-panel4')">
+            <component :is="panel4Collapsed ? PanelRightClose : PanelRightOpen" class="size-4" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>{{ panel4Collapsed ? '展开信息面板' : '收起信息面板' }}</TooltipContent>
+      </Tooltip>
     </div>
 
     <!-- 编辑器主体 -->
-    <div class="oo-editor-wrap__body" :style="{ height: 'calc(100% - 40px)' }">
-      <div class="oo-editor" style="height: 100%">
+    <div class="flex-1 min-h-0 overflow-hidden" :style="{ height: 'calc(100% - 40px)' }">
+      <div class="w-full min-h-[400px] h-full">
         <iframe
           ref="frameRef"
-          class="oo-editor__frame"
+          class="w-full h-full block border-none"
           :src="frameSrc"
           frameborder="0"
           allowfullscreen
@@ -32,6 +35,9 @@
 
 <script setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { PanelRightClose, PanelRightOpen } from '@lucide/vue';
+import { EditOutlined } from '@ant-design/icons-vue';
 import { ipcApiRoute } from '@/api';
 import { ipc } from '@/utils/ipcRenderer';
 import { isDark } from '@/theme';
@@ -370,85 +376,3 @@ onBeforeUnmount(() => {
   });
 });
 </script>
-
-<style lang="less" scoped>
-.oo-editor-wrap {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  background-color: var(--bg-panel);
-  overflow: hidden;
-
-  &__toolbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 8px 0 14px;
-    height: 40px;
-    flex-shrink: 0;
-    border-bottom: 1px solid var(--border-color);
-    background-color: var(--bg-panel);
-  }
-
-  &__title {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    min-width: 0;
-    flex: 1;
-  }
-
-  &__icon {
-    color: var(--accent);
-    font-size: 14px;
-    flex-shrink: 0;
-  }
-
-  &__name {
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--text-primary);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  &__body {
-    flex: 1;
-    min-height: 0;
-    overflow: hidden;
-  }
-}
-
-.oo-editor {
-  width: 100%;
-  min-height: 400px;
-
-  &__frame {
-    width: 100%;
-    height: 100%;
-    display: block;
-    border: none;
-  }
-}
-
-.oo-toggle-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border: none;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all 0.15s ease;
-  font-size: 14px;
-
-  &:hover {
-    background-color: var(--bg-hover);
-    color: var(--text-primary);
-  }
-}
-</style>

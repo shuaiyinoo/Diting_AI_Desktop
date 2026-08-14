@@ -1,18 +1,21 @@
 <template>
-  <div id="effect-login-window">
-    <div class="login-card">
-      <div class="login-card__body">
+  <div id="effect-login-window" class="w-full min-h-full bg-muted flex items-center justify-center">
+    <div class="bg-card border border-border rounded-2xl px-12 py-10 shadow-[0_8px_32px_rgba(7,193,96,0.12)]">
+      <div class="text-center">
         <a v-if="!loading" @click="login">
-          <a-button type="primary" size="large" shape="round">
+          <Button type="primary" size="large" shape="round">
             登录
-          </a-button>
+          </Button>
         </a>
-        <span v-else class="login-loading-text">{{ loginText }}</span>
+        <span v-else class="text-base text-muted-foreground">{{ loginText }}</span>
       </div>
     </div>
   </div>
 </template>
+
 <script setup>
+import { Button } from '@/components/ui/button'
+
 import { ipcApiRoute } from '@/api';
 import { ipc } from '@/utils/ipcRenderer';
 import { ref } from 'vue';
@@ -30,30 +33,3 @@ const login = () => {
   }, 2000);
 }
 </script>
-<style lang="less" scoped>
-#effect-login-window {
-  width: 100%;
-  min-height: 100%;
-  background: #f0f2f5;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  .login-card {
-    background-color: #ffffff;
-    border: 1px solid #e8e8e8;
-    border-radius: 16px;
-    padding: 40px 48px;
-    box-shadow: 0 8px 32px rgba(7, 193, 96, 0.12);
-  }
-
-  .login-card__body {
-    text-align: center;
-  }
-
-  .login-loading-text {
-    color: #666666;
-    font-size: 16px;
-  }
-}
-</style>

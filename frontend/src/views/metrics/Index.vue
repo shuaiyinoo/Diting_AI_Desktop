@@ -1,48 +1,45 @@
 <template>
-  <div class="metrics-page">
+  <div class="metrics-page space-y-3 p-4">
     <!-- 顶部说明 -->
-    <a-card class="header-card" :bordered="false">
-      <div class="header-row">
-        <div class="header-info">
-          <h2 class="header-title">
-            <BarChartOutlined class="header-icon" />
+    <Card class="p-4">
+      <div class="flex items-start justify-between">
+        <div class="flex-1">
+          <h2 class="mb-1.5 flex items-center gap-2 text-lg font-semibold">
+            <BarChart3 class="text-primary" />
             使用统计
           </h2>
-          <p class="header-desc">
+          <p class="m-0 text-sm text-muted-foreground">
             LLM 调用量、Token 消耗与费用分析。数据来自每次问答与助手调用的实时记录。
           </p>
         </div>
-        <a-space>
-          <a-select
-            v-model:value="selectedFolderId"
-            style="width: 200px"
-            placeholder="全部文件夹"
-            allow-clear
-            @change="loadAll"
-          >
-            <a-select-option :value="null">全部文件夹</a-select-option>
-            <a-select-option v-for="f in folderList" :key="f.id" :value="f.id">
-              {{ shortenPath(f.path) }}
-            </a-select-option>
-          </a-select>
-          <a-button @click="loadAll" :loading="loading">
-            <template #icon><ReloadOutlined /></template>
+        <div class="flex items-center gap-2">
+          <Select v-model="selectedFolderId" @update:model-value="loadAll">
+            <SelectTrigger class="w-[200px]">
+              <SelectValue placeholder="全部文件夹" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem :value="null">全部文件夹</SelectItem>
+              <SelectItem v-for="f in folderList" :key="f.id" :value="f.id">
+                {{ shortenPath(f.path) }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+          <Button variant="outline" :disabled="loading" @click="loadAll">
+            <RefreshCw class="mr-1 size-4" :class="{ 'animate-spin': loading }" />
             刷新
-          </a-button>
-        </a-space>
+          </Button>
+        </div>
       </div>
-    </a-card>
+    </Card>
 
     <!-- KPI 卡片 -->
-    <a-card class="kpi-card-wrapper" :bordered="false">
+    <Card class="p-4">
       <div v-if="loading" class="kpi-grid">
-        <a-skeleton-input v-for="i in 4" :key="i" active size="large" style="width: 100%; height: 120px" />
+        <div v-for="i in 4" :key="i" class="h-[120px] animate-pulse rounded-xl bg-muted" />
       </div>
       <div v-else-if="overview" class="kpi-grid">
         <div class="kpi-card kpi-card--blue">
-          <div class="kpi-card__icon">
-            <ThunderboltOutlined />
-          </div>
+          <div class="kpi-card__icon"><Zap /></div>
           <div class="kpi-card__label">今日调用次数</div>
           <div class="kpi-card__value">{{ formatNumber(overview.today.totalRequests) }}</div>
           <div class="kpi-card__sub">
@@ -51,9 +48,7 @@
           </div>
         </div>
         <div class="kpi-card kpi-card--teal">
-          <div class="kpi-card__icon">
-            <FieldNumberOutlined />
-          </div>
+          <div class="kpi-card__icon"><Hash /></div>
           <div class="kpi-card__label">今日 Token 消耗</div>
           <div class="kpi-card__value">{{ formatNumber(overview.today.totalTokens) }}</div>
           <div class="kpi-card__sub">
@@ -62,9 +57,7 @@
           </div>
         </div>
         <div class="kpi-card kpi-card--amber">
-          <div class="kpi-card__icon">
-            <DollarOutlined />
-          </div>
+          <div class="kpi-card__icon"><DollarSign /></div>
           <div class="kpi-card__label">今日费用（元）</div>
           <div class="kpi-card__value">{{ formatCost(overview.today.totalCost) }}</div>
           <div class="kpi-card__sub">
@@ -73,9 +66,7 @@
           </div>
         </div>
         <div class="kpi-card kpi-card--green">
-          <div class="kpi-card__icon">
-            <CheckCircleOutlined />
-          </div>
+          <div class="kpi-card__icon"><CheckCircle2 /></div>
           <div class="kpi-card__label">今日成功率</div>
           <div class="kpi-card__value">{{ formatPercent(overview.today.successRate) }}</div>
           <div class="kpi-card__sub">
@@ -84,11 +75,12 @@
           </div>
         </div>
       </div>
-      <a-empty v-else description="暂无数据" />
-    </a-card>
+      <div v-else class="py-8 text-center text-sm text-muted-foreground">暂无数据</div>
+    </Card>
 
     <!-- 趋势图 -->
-    <a-card class="section-card" :bordered="false" title="调用趋势（近30天）">
+    <Card class="p-4">
+      <h3 class="mb-3 text-base font-semibold">调用趋势（近30天）</h3>
       <div v-if="trendChart" class="trend-chart-area">
         <div class="trend-legend">
           <span class="trend-legend__item">
@@ -118,172 +110,140 @@
                   <stop offset="100%" stop-color="#14b8a6" stop-opacity="0.02" />
                 </linearGradient>
               </defs>
-              <line
-                v-for="(gy, gi) in trendChart.gridYs"
-                :key="'g' + gi"
-                :x1="0" :y1="gy" :x2="900" :y2="gy"
-                stroke="#f1f5f9" stroke-width="1"
-              />
+              <line v-for="(gy, gi) in trendChart.gridYs" :key="'g' + gi" :x1="0" :y1="gy" :x2="900" :y2="gy" stroke="#f1f5f9" stroke-width="1" />
               <path :d="trendChart.requestArea" fill="url(#trendGradBlue)" />
               <path :d="trendChart.tokenArea" fill="url(#trendGradTeal)" />
-              <polyline
-                :points="trendChart.requestPoints"
-                fill="none" stroke="#3b82f6" stroke-width="2"
-                stroke-linecap="round" stroke-linejoin="round"
-              />
-              <polyline
-                :points="trendChart.tokenPoints"
-                fill="none" stroke="#14b8a6" stroke-width="2"
-                stroke-linecap="round" stroke-linejoin="round"
-              />
-              <circle
-                :cx="trendChart.lastX" :cy="trendChart.lastYRequest" r="4"
-                fill="#fff" stroke="#3b82f6" stroke-width="2.5"
-              />
-              <circle
-                :cx="trendChart.lastX" :cy="trendChart.lastYToken" r="4"
-                fill="#fff" stroke="#14b8a6" stroke-width="2.5"
-              />
+              <polyline :points="trendChart.requestPoints" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+              <polyline :points="trendChart.tokenPoints" fill="none" stroke="#14b8a6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+              <circle :cx="trendChart.lastX" :cy="trendChart.lastYRequest" r="4" fill="#fff" stroke="#3b82f6" stroke-width="2.5" />
+              <circle :cx="trendChart.lastX" :cy="trendChart.lastYToken" r="4" fill="#fff" stroke="#14b8a6" stroke-width="2.5" />
             </svg>
             <div class="trend-x-labels">
-              <span
-                v-for="(xl, xi) in trendChart.xLabels"
-                :key="xi"
-                :style="{ left: (xl.x / 900) * 100 + '%' }"
-              >{{ xl.label }}</span>
+              <span v-for="(xl, xi) in trendChart.xLabels" :key="xi" :style="{ left: (xl.x / 900) * 100 + '%' }">{{ xl.label }}</span>
             </div>
           </div>
         </div>
       </div>
-      <a-empty v-else description="暂无趋势数据" />
-    </a-card>
+      <div v-else class="py-8 text-center text-sm text-muted-foreground">暂无趋势数据</div>
+    </Card>
 
-    <!-- 模块分布 + 详细统计 -->
-    <a-row :gutter="16" class="detail-row">
-      <a-col :span="24">
-        <a-card class="section-card" :bordered="false" title="模块用量分布">
-          <a-empty v-if="!moduleDistribution || moduleDistribution.length === 0" description="暂无数据" />
-          <div v-else class="module-distribution">
-            <div
-              v-for="item in moduleDistribution"
-              :key="item.module"
-              class="module-bar"
-            >
-              <div class="module-bar__label">
-                <span class="module-bar__name">{{ moduleLabel(item.module) }}</span>
-                <span class="module-bar__count">{{ formatNumber(item.requests) }} 次</span>
-              </div>
-              <a-progress
-                :percent="computePercent(item.requests, totalModuleRequests)"
-                :stroke-color="moduleColor(item.module)"
-                :show-info="true"
-                size="small"
-              />
-              <div class="module-bar__meta">
-                <span>{{ formatNumber(item.totalTokens) }} token</span>
-                <span>{{ formatCost(item.cost) }} 元</span>
-              </div>
-            </div>
+    <!-- 模块用量分布 -->
+    <Card class="p-4">
+      <h3 class="mb-3 text-base font-semibold">模块用量分布</h3>
+      <div v-if="!moduleDistribution || moduleDistribution.length === 0" class="py-8 text-center text-sm text-muted-foreground">暂无数据</div>
+      <div v-else class="module-distribution">
+        <div v-for="item in moduleDistribution" :key="item.module" class="module-bar">
+          <div class="module-bar__label">
+            <span class="module-bar__name">{{ moduleLabel(item.module) }}</span>
+            <span class="module-bar__count">{{ formatNumber(item.requests) }} 次</span>
           </div>
-        </a-card>
-      </a-col>
-      <a-col :span="24">
-        <a-card class="section-card" :bordered="false" title="周期统计明细">
-          <a-table
-            :columns="statsColumns"
-            :data-source="statsTableData"
-            :pagination="false"
-            size="middle"
-            row-key="period"
-          >
-            <template #bodyCell="{ column, record }">
-              <template v-if="column.key === 'period'">
-                <a-tag :color="periodColor(record.period)">{{ periodLabel(record.period) }}</a-tag>
-              </template>
-              <template v-else-if="column.key === 'successRate'">
-                <a-tag :color="record.successRate >= 95 ? 'green' : record.successRate >= 80 ? 'orange' : 'red'">
-                  {{ formatPercent(record.successRate) }}
-                </a-tag>
-              </template>
-              <template v-else-if="column.key === 'avgLatencyMs'">
-                {{ Math.round(record.avgLatencyMs) }}ms
-              </template>
-            </template>
-          </a-table>
-        </a-card>
-      </a-col>
-    </a-row>
+          <div class="h-2 w-full overflow-hidden rounded-full bg-muted">
+            <div class="h-full rounded-full transition-all" :style="{ width: computePercent(item.requests, totalModuleRequests) + '%', background: moduleColor(item.module) }" />
+          </div>
+          <div class="module-bar__meta">
+            <span>{{ formatNumber(item.totalTokens) }} token</span>
+            <span>{{ formatCost(item.cost) }} 元</span>
+          </div>
+        </div>
+      </div>
+    </Card>
 
-    <!-- 文件夹用量排行 -->
-    <a-card class="section-card" :bordered="false" title="文件夹用量统计">
-      <a-empty v-if="folderStatsList.length === 0" description="暂无文件夹统计数据" />
-      <a-table
-        v-else
-        :columns="folderColumns"
-        :data-source="folderStatsList"
-        :pagination="false"
-        :loading="folderStatsLoading"
-        size="middle"
-        row-key="folderId"
-      >
-        <template #bodyCell="{ column, record }">
-          <template v-if="column.key === 'folderPath'">
-            <span :title="record.folderPath">{{ shortenPath(record.folderPath) }}</span>
-          </template>
-          <template v-else-if="column.key === 'successRate'">
-            <a-tag :color="record.successRate >= 95 ? 'green' : record.successRate >= 80 ? 'orange' : 'red'">
-              {{ formatPercent(record.successRate) }}
-            </a-tag>
-          </template>
-        </template>
-      </a-table>
-    </a-card>
+    <!-- 周期统计明细 -->
+    <Card class="p-4">
+      <h3 class="mb-3 text-base font-semibold">周期统计明细</h3>
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b bg-muted/50">
+            <th class="px-3 py-2 text-left font-medium">周期</th>
+            <th class="px-3 py-2 text-right font-medium">调用次数</th>
+            <th class="px-3 py-2 text-right font-medium">输入 Token</th>
+            <th class="px-3 py-2 text-right font-medium">输出 Token</th>
+            <th class="px-3 py-2 text-right font-medium">总 Token</th>
+            <th class="px-3 py-2 text-right font-medium">费用（元）</th>
+            <th class="px-3 py-2 text-right font-medium">平均耗时</th>
+            <th class="px-3 py-2 text-center font-medium">成功率</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="record in statsTableData" :key="record.period" class="border-b hover:bg-muted/30">
+            <td class="px-3 py-2"><Badge variant="secondary">{{ periodLabel(record.period) }}</Badge></td>
+            <td class="px-3 py-2 text-right">{{ formatNumber(record.totalRequests) }}</td>
+            <td class="px-3 py-2 text-right">{{ formatNumber(record.promptTokens) }}</td>
+            <td class="px-3 py-2 text-right">{{ formatNumber(record.completionTokens) }}</td>
+            <td class="px-3 py-2 text-right">{{ formatNumber(record.totalTokens) }}</td>
+            <td class="px-3 py-2 text-right">{{ formatCost(record.totalCost) }}</td>
+            <td class="px-3 py-2 text-right">{{ Math.round(record.avgLatencyMs) }}ms</td>
+            <td class="px-3 py-2 text-center">
+              <Badge :variant="record.successRate >= 95 ? 'default' : record.successRate >= 80 ? 'secondary' : 'destructive'">
+                {{ formatPercent(record.successRate) }}
+              </Badge>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </Card>
+
+    <!-- 文件夹用量统计 -->
+    <Card class="p-4">
+      <h3 class="mb-3 text-base font-semibold">文件夹用量统计</h3>
+      <div v-if="folderStatsList.length === 0" class="py-8 text-center text-sm text-muted-foreground">暂无文件夹统计数据</div>
+      <div v-else>
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b bg-muted/50">
+              <th class="px-3 py-2 text-left font-medium">文件夹</th>
+              <th class="px-3 py-2 text-right font-medium">调用次数</th>
+              <th class="px-3 py-2 text-right font-medium">总 Token</th>
+              <th class="px-3 py-2 text-right font-medium">费用（元）</th>
+              <th class="px-3 py-2 text-right font-medium">平均耗时</th>
+              <th class="px-3 py-2 text-center font-medium">成功率</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="record in folderStatsList" :key="record.folderId" class="border-b hover:bg-muted/30">
+              <td class="px-3 py-2" :title="record.folderPath">{{ shortenPath(record.folderPath) }}</td>
+              <td class="px-3 py-2 text-right">{{ formatNumber(record.totalRequests) }}</td>
+              <td class="px-3 py-2 text-right">{{ formatNumber(record.totalTokens) }}</td>
+              <td class="px-3 py-2 text-right">{{ formatCost(record.totalCost) }}</td>
+              <td class="px-3 py-2 text-right">{{ Math.round(record.avgLatencyMs) }}ms</td>
+              <td class="px-3 py-2 text-center">
+                <Badge :variant="record.successRate >= 95 ? 'default' : record.successRate >= 80 ? 'secondary' : 'destructive'">
+                  {{ formatPercent(record.successRate) }}
+                </Badge>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </Card>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import { message } from 'ant-design-vue';
+import { toast } from 'vue-sonner';
 import {
-  BarChartOutlined,
-  ThunderboltOutlined,
-  FieldNumberOutlined,
-  DollarOutlined,
-  CheckCircleOutlined,
-  ReloadOutlined,
-} from '@ant-design/icons-vue';
+  BarChart3,
+  Zap,
+  Hash,
+  DollarSign,
+  CheckCircle2,
+  RefreshCw,
+} from '@lucide/vue';
+import { Button } from '@/components/ui/button';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
 import { ipcApiRoute } from '@/api';
 import { ipc } from '@/utils/ipcRenderer';
 
 // ========== 状态 ==========
 const loading = ref(false);
-const folderStatsLoading = ref(false);
 const overview = ref(null);
 const moduleDistribution = ref([]);
 const folderList = ref([]);
 const folderStatsList = ref([]);
 const selectedFolderId = ref(null);
-
-// ========== 表格列定义 ==========
-const statsColumns = [
-  { title: '周期', key: 'period', width: 120 },
-  { title: '调用次数', dataIndex: 'totalRequests', key: 'totalRequests', align: 'right' },
-  { title: '输入 Token', dataIndex: 'promptTokens', key: 'promptTokens', align: 'right' },
-  { title: '输出 Token', dataIndex: 'completionTokens', key: 'completionTokens', align: 'right' },
-  { title: '总 Token', dataIndex: 'totalTokens', key: 'totalTokens', align: 'right' },
-  { title: '费用（元）', key: 'totalCost', align: 'right' },
-  { title: '平均耗时', key: 'avgLatencyMs', align: 'right' },
-  { title: '成功率', key: 'successRate', align: 'center', width: 100 },
-];
-
-const folderColumns = [
-  { title: '文件夹', key: 'folderPath', width: 280, ellipsis: true },
-  { title: '调用次数', dataIndex: 'totalRequests', key: 'totalRequests', align: 'right' },
-  { title: '总 Token', dataIndex: 'totalTokens', key: 'totalTokens', align: 'right' },
-  { title: '费用（元）', key: 'totalCost', align: 'right' },
-  { title: '平均耗时', key: 'avgLatencyMs', align: 'right' },
-  { title: '成功率', key: 'successRate', align: 'center', width: 100 },
-];
 
 // ========== 计算属性 ==========
 const totalModuleRequests = computed(() => {
@@ -375,20 +335,18 @@ async function loadOverview() {
       overview.value = res.data;
       moduleDistribution.value = res.data?.moduleDistribution || [];
     } else {
-      message.error(res.message || '加载概览数据失败');
+      toast.error(res.message || '加载概览数据失败');
     }
   } catch (err) {
     console.error('[metrics] 加载概览失败:', err);
-    message.error('加载概览数据失败');
+    toast.error('加载概览数据失败');
   } finally {
     loading.value = false;
   }
 }
 
 async function loadFolderStats() {
-  folderStatsLoading.value = true;
   try {
-    // 为每个文件夹并行查询用量统计
     const tasks = folderList.value.map(async (folder) => {
       try {
         const res = await ipc.invoke(ipcApiRoute.qa.metricsOperation, {
@@ -397,11 +355,7 @@ async function loadFolderStats() {
           period: '30d',
         });
         if (res.code === 0 && res.data) {
-          return {
-            folderId: folder.id,
-            folderPath: folder.path,
-            ...res.data,
-          };
+          return { folderId: folder.id, folderPath: folder.path, ...res.data };
         }
         return null;
       } catch {
@@ -412,8 +366,6 @@ async function loadFolderStats() {
     folderStatsList.value = results.filter((r) => r && r.totalRequests > 0);
   } catch (err) {
     console.error('[metrics] 加载文件夹统计失败:', err);
-  } finally {
-    folderStatsLoading.value = false;
   }
 }
 
@@ -453,39 +405,18 @@ function shortenPath(path) {
 }
 
 function moduleLabel(module) {
-  const map = {
-    QA: '知识问答',
-    ASSISTANT: '智能助手',
-  };
+  const map = { QA: '知识问答', ASSISTANT: '智能助手' };
   return map[module] || module;
 }
 
 function moduleColor(module) {
-  const map = {
-    QA: '#3b82f6',
-    ASSISTANT: '#14b8a6',
-  };
+  const map = { QA: '#3b82f6', ASSISTANT: '#14b8a6' };
   return map[module] || '#1677ff';
 }
 
 function periodLabel(period) {
-  const map = {
-    today: '今天',
-    '7d': '近7天',
-    '30d': '近30天',
-    all: '全部',
-  };
+  const map = { today: '今天', '7d': '近7天', '30d': '近30天', all: '全部' };
   return map[period] || period;
-}
-
-function periodColor(period) {
-  const map = {
-    today: 'blue',
-    '7d': 'cyan',
-    '30d': 'geekblue',
-    all: 'purple',
-  };
-  return map[period] || 'default';
 }
 
 function computePercent(part, total) {
@@ -493,60 +424,13 @@ function computePercent(part, total) {
   return Math.round((part / total) * 1000) / 10;
 }
 
-// ========== 生命周期 ==========
 onMounted(async () => {
   await loadFolderList();
   await loadAll();
 });
 </script>
 
-<style lang="less" scoped>
-.metrics-page {
-  height: 100%;
-  overflow: auto;
-  padding: 16px;
-  background: #f5f6f8;
-}
-
-.header-card {
-  margin-bottom: 12px;
-  border-radius: 8px;
-
-  .header-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-  }
-
-  .header-info {
-    flex: 1;
-  }
-
-  .header-title {
-    font-size: 18px;
-    font-weight: 600;
-    margin: 0 0 6px 0;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-
-    .header-icon {
-      color: #1677ff;
-    }
-  }
-
-  .header-desc {
-    color: #888;
-    font-size: 13px;
-    margin: 0;
-  }
-}
-
-.kpi-card-wrapper {
-  margin-bottom: 12px;
-  border-radius: 8px;
-}
-
+<style scoped>
 .kpi-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -561,209 +445,56 @@ onMounted(async () => {
   overflow: hidden;
   border: 1px solid #f0f0f0;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-  }
-
-  &::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-  }
-
-  &--blue::after {
-    background: linear-gradient(90deg, #3b82f6, #60a5fa);
-  }
-  &--teal::after {
-    background: linear-gradient(90deg, #14b8a6, #5eead4);
-  }
-  &--amber::after {
-    background: linear-gradient(90deg, #f59e0b, #fbbf24);
-  }
-  &--green::after {
-    background: linear-gradient(90deg, #22c55e, #4ade80);
-  }
-
-  &__icon {
-    width: 36px;
-    height: 36px;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 12px;
-    font-size: 18px;
-  }
-
-  &--blue .kpi-card__icon {
-    background: #eff6ff;
-    color: #3b82f6;
-  }
-  &--teal .kpi-card__icon {
-    background: #f0fdfa;
-    color: #14b8a6;
-  }
-  &--amber .kpi-card__icon {
-    background: #fffbeb;
-    color: #f59e0b;
-  }
-  &--green .kpi-card__icon {
-    background: #f0fdf4;
-    color: #22c55e;
-  }
-
-  &__label {
-    font-size: 13px;
-    font-weight: 500;
-    color: #888;
-  }
-
-  &__value {
-    font-size: 26px;
-    font-weight: 700;
-    color: #2c3e50;
-    margin-top: 4px;
-    font-variant-numeric: tabular-nums;
-  }
-
-  &__sub {
-    font-size: 11px;
-    color: #aaa;
-    margin-top: 6px;
-  }
 }
+.kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+.kpi-card::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+}
+.kpi-card--blue::after { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
+.kpi-card--teal::after { background: linear-gradient(90deg, #14b8a6, #5eead4); }
+.kpi-card--amber::after { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+.kpi-card--green::after { background: linear-gradient(90deg, #22c55e, #4ade80); }
 
-.section-card {
-  margin-bottom: 12px;
+.kpi-card__icon {
+  width: 36px; height: 36px;
   border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 12px; font-size: 18px;
 }
+.kpi-card--blue .kpi-card__icon { background: #eff6ff; color: #3b82f6; }
+.kpi-card--teal .kpi-card__icon { background: #f0fdfa; color: #14b8a6; }
+.kpi-card--amber .kpi-card__icon { background: #fffbeb; color: #f59e0b; }
+.kpi-card--green .kpi-card__icon { background: #f0fdf4; color: #22c55e; }
 
-.detail-row {
-  margin-bottom: 0 !important;
-}
+.kpi-card__label { font-size: 13px; font-weight: 500; color: #888; }
+.kpi-card__value { font-size: 26px; font-weight: 700; color: #2c3e50; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.kpi-card__sub { font-size: 11px; color: #aaa; margin-top: 6px; }
 
-// ========== 趋势图 ==========
-.trend-chart-area {
-  display: flex;
-  flex-direction: column;
-}
+.trend-chart-area { display: flex; flex-direction: column; }
+.trend-legend { display: flex; gap: 24px; margin-bottom: 16px; }
+.trend-legend__item { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #666; }
+.trend-legend__dot { width: 10px; height: 10px; border-radius: 3px; }
+.trend-legend__dot--blue { background: #3b82f6; }
+.trend-legend__dot--teal { background: #14b8a6; }
+.trend-chart-body { display: flex; gap: 12px; }
+.trend-y-axis { display: flex; flex-direction: column; justify-content: space-between; padding-bottom: 22px; min-width: 40px; text-align: right; font-size: 11px; color: #999; }
+.trend-svg-wrap { flex: 1; position: relative; }
+.trend-svg { width: 100%; height: 220px; display: block; }
+.trend-x-labels { position: relative; margin-top: 6px; font-size: 10px; color: #999; height: 16px; }
+.trend-x-labels span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
 
-.trend-legend {
-  display: flex;
-  gap: 24px;
-  margin-bottom: 16px;
+.module-distribution { display: flex; flex-direction: column; gap: 16px; }
+.module-bar__label { display: flex; justify-content: space-between; margin-bottom: 4px; }
+.module-bar__name { font-size: 13px; font-weight: 500; color: #2c3e50; }
+.module-bar__count { font-size: 12px; color: #888; }
+.module-bar__meta { display: flex; justify-content: space-between; margin-top: 4px; font-size: 11px; color: #aaa; }
 
-  &__item {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 13px;
-    color: #666;
-  }
-
-  &__dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 3px;
-
-    &--blue {
-      background: #3b82f6;
-    }
-    &--teal {
-      background: #14b8a6;
-    }
-  }
-}
-
-.trend-chart-body {
-  display: flex;
-  gap: 12px;
-}
-
-.trend-y-axis {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding-bottom: 22px;
-  min-width: 40px;
-  text-align: right;
-  font-size: 11px;
-  color: #999;
-}
-
-.trend-svg-wrap {
-  flex: 1;
-  position: relative;
-}
-
-.trend-svg {
-  width: 100%;
-  height: 220px;
-  display: block;
-}
-
-.trend-x-labels {
-  position: relative;
-  margin-top: 6px;
-  font-size: 10px;
-  color: #999;
-  height: 16px;
-
-  span {
-    position: absolute;
-    transform: translateX(-50%);
-    white-space: nowrap;
-  }
-}
-
-// ========== 模块分布 ==========
-.module-distribution {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.module-bar {
-  &__label {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 4px;
-
-    .module-bar__name {
-      font-size: 13px;
-      font-weight: 500;
-      color: #2c3e50;
-    }
-
-    .module-bar__count {
-      font-size: 12px;
-      color: #888;
-    }
-  }
-
-  &__meta {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 4px;
-    font-size: 11px;
-    color: #aaa;
-  }
-}
-
-@media (max-width: 1024px) {
-  .kpi-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 640px) {
-  .kpi-grid {
-    grid-template-columns: 1fr;
-  }
-}
+@media (max-width: 1024px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 640px) { .kpi-grid { grid-template-columns: 1fr; } }
 </style>

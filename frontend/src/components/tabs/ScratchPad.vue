@@ -1,17 +1,17 @@
 <template>
-  <div class="scratch-pad">
+  <div class="flex flex-col h-full w-full bg-card">
     <!-- 顶部标题栏 -->
-    <div class="scratch-pad__header">
-      <EditOutlined class="scratch-pad__icon" />
-      <span class="scratch-pad__title">草稿</span>
-      <span class="scratch-pad__hint">临时记录 · 自动保存</span>
+    <div class="flex items-center gap-2 px-4 h-11 flex-shrink-0 border-b border-border">
+      <Pencil class="size-4 text-primary" />
+      <span class="text-sm font-semibold text-foreground">草稿</span>
+      <span class="text-[11px] text-muted-foreground ml-auto">临时记录 · 自动保存</span>
     </div>
 
     <!-- 编辑区 -->
-    <div class="scratch-pad__body">
+    <div class="flex-1 min-h-0 overflow-hidden px-4 py-3">
       <textarea
         v-model="content"
-        class="scratch-pad__textarea"
+        class="w-full h-full border-none outline-none resize-none text-sm leading-7 font-inherit text-foreground bg-transparent placeholder:text-muted-foreground [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-thumb]:rounded-sm"
         placeholder="临时记录、想法、备忘..."
         @input="onInput"
       ></textarea>
@@ -21,7 +21,7 @@
 
 <script setup>
 import { ref, watch } from 'vue'
-import { EditOutlined } from '@ant-design/icons-vue'
+import { Pencil } from '@lucide/vue'
 
 const STORAGE_KEY = 'diting-scratch-pad'
 
@@ -43,78 +43,3 @@ watch(content, () => {
   localStorage.setItem(STORAGE_KEY, content.value)
 })
 </script>
-
-<style lang="less" scoped>
-.scratch-pad {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  width: 100%;
-  background-color: var(--bg-panel);
-
-  &__header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 0 16px;
-    height: 44px;
-    flex-shrink: 0;
-    border-bottom: 1px solid var(--border-color);
-  }
-
-  &__icon {
-    font-size: 16px;
-    color: var(--accent);
-  }
-
-  &__title {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--text-primary);
-  }
-
-  &__hint {
-    font-size: 11px;
-    color: var(--text-muted);
-    margin-left: auto;
-  }
-
-  &__body {
-    flex: 1;
-    min-height: 0;
-    overflow: hidden;
-    padding: 12px 16px;
-  }
-
-  &__textarea {
-    width: 100%;
-    height: 100%;
-    border: none;
-    outline: none;
-    resize: none;
-    font-size: 14px;
-    line-height: 1.7;
-    font-family: inherit;
-    color: var(--text-primary);
-    background: transparent;
-
-    &::placeholder {
-      color: var(--text-muted);
-    }
-
-    &::-webkit-scrollbar {
-      width: 6px;
-    }
-    &::-webkit-scrollbar-track {
-      background: transparent;
-    }
-    &::-webkit-scrollbar-thumb {
-      background: var(--border-color);
-      border-radius: 3px;
-      &:hover {
-        background: var(--text-muted);
-      }
-    }
-  }
-}
-</style>

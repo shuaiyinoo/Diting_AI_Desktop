@@ -1,28 +1,31 @@
 <template>
-  <div class="composer">
-    <div class="composer__inner">
-      <a-textarea
-        v-model:value="text"
-        class="composer__textarea"
+  <div class="px-4 py-3.5 bg-card border-t border-border">
+    <!-- 输入框区域 -->
+    <div class="flex items-end gap-2.5 px-3 py-2 pl-3.5 bg-muted border border-border rounded-xl transition-colors focus-within:border-primary focus-within:bg-card">
+      <textarea
+        v-model="text"
+        class="flex-1 border-none bg-transparent resize-none text-sm leading-6 py-1 outline-none max-h-[180px] overflow-y-auto text-foreground"
         placeholder="输入消息，Enter 发送，Shift+Enter 换行"
-        :auto-size="{ minRows: 1, maxRows: 6 }"
         :disabled="disabled"
+        rows="1"
         @keydown="onKeydown"
+        @input="autoResize"
+        ref="textareaRef"
       />
-      <div class="composer__actions">
-        <a-button
-          type="primary"
-          shape="circle"
-          :disabled="!canSend"
-          :loading="disabled"
+      <div class="flex-shrink-0 pb-0.5">
+        <button
+          class="inline-flex items-center justify-center size-8 border-none rounded-full bg-primary text-primary-foreground cursor-pointer transition-all hover:not-disabled:bg-primary/80 disabled:opacity-50 disabled:cursor-not-allowed"
+          :disabled="!canSend || disabled"
           @click="onSend"
         >
-          <template #icon><SendOutlined /></template>
-        </a-button>
+          <Send v-if="!disabled" class="size-4" />
+          <Loader2 v-else class="size-4 animate-spin" />
+        </button>
       </div>
     </div>
-    <div class="composer__footer">
-      <span class="composer__hint">
+    <!-- 底部提示 -->
+    <div class="mt-1.5 text-center">
+      <span class="text-[11px] text-muted-foreground/60">
         {{ disabled ? '正在生成回答...' : '就绪' }}
       </span>
     </div>
@@ -30,8 +33,8 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
-import { SendOutlined } from '@ant-design/icons-vue';
+import { ref, computed, nextTick } from 'vue';
+import { Send, Loader2 } from '@lucide/vue';
 
 const props = defineProps({
   disabled: {
@@ -43,10 +46,18 @@ const props = defineProps({
 const emit = defineEmits(['send']);
 
 const text = ref('');
+const textareaRef = ref(null);
 
 const canSend = computed(() => {
   return !props.disabled && text.value.trim().length > 0;
 });
+
+function autoResize() {
+  const el = textareaRef.value;
+  if (!el) return;
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 180) + 'px';
+}
 
 function onKeydown(e) {
   // Enter 发送，Shift+Enter 换行
@@ -60,68 +71,14 @@ function onSend() {
   if (!canSend.value) return;
   const content = text.value.trim();
   text.value = '';
+  nextTick(() => autoResize());
   emit('send', content);
 }
 
 defineExpose({
   clear() {
     text.value = '';
+    nextTick(() => autoResize());
   },
 });
 </script>
-
-<style lang="less" scoped>
-.composer {
-  padding: 12px 16px 14px;
-  background: #fff;
-  border-top: 1px solid #e8e8e8;
-
-  &__inner {
-    display: flex;
-    align-items: flex-end;
-    gap: 10px;
-    padding: 8px 12px 8px 14px;
-    background: #f5f6f8;
-    border: 1px solid #e8e8e8;
-    border-radius: 12px;
-    transition: border-color 0.2s;
-
-    &:focus-within {
-      border-color: #1677ff;
-      background: #fff;
-    }
-  }
-
-  &__textarea {
-    flex: 1;
-    border: none !important;
-    background: transparent !important;
-    box-shadow: none !important;
-    resize: none;
-    font-size: 14px;
-    line-height: 1.6;
-    padding: 4px 0;
-
-    :deep(textarea) {
-      border: none !important;
-      background: transparent !important;
-      box-shadow: none !important;
-    }
-  }
-
-  &__actions {
-    flex-shrink: 0;
-    padding-bottom: 2px;
-  }
-
-  &__footer {
-    margin-top: 6px;
-    text-align: center;
-  }
-
-  &__hint {
-    font-size: 11px;
-    color: #bfbfbf;
-  }
-}
-</style>

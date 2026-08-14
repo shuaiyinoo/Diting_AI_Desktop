@@ -1,56 +1,59 @@
 <template>
-  <div class="message" :class="`message--${roleClass}`">
-    <div class="message__avatar">
-      <a-avatar :style="{ background: msg.role === 'USER' ? '#1677ff' : '#52c41a' }">
-        <template #icon>
-          <UserOutlined v-if="msg.role === 'USER'" />
-          <RobotOutlined v-else />
-        </template>
-      </a-avatar>
+  <div class="flex gap-3 py-4" :class="roleClass === 'user' ? 'flex-row-reverse' : ''">
+    <!-- 头像 -->
+    <div class="flex-shrink-0">
+      <div
+        class="flex items-center justify-center size-8 rounded-full"
+        :style="{ background: msg.role === 'USER' ? 'hsl(var(--primary))' : 'hsl(142 71% 45%)' }"
+      >
+        <User v-if="msg.role === 'USER'" class="size-4 text-white" />
+        <Bot v-else class="size-4 text-white" />
+      </div>
     </div>
-    <div class="message__body">
-      <div class="message__role">
+
+    <!-- 消息体 -->
+    <div class="max-w-[78%] flex flex-col" :class="roleClass === 'user' ? 'items-end' : ''">
+      <!-- 角色标签 -->
+      <div class="inline-flex items-center gap-1.5 text-xs text-muted-foreground mb-1.5" :class="roleClass === 'user' ? 'flex-row-reverse' : ''">
         {{ msg.role === 'USER' ? '我' : '助手' }}
-        <a-tag
+        <span
           v-if="msg.role === 'ASSISTANT' && msg.toolMode"
-          :color="msg.toolMode === 'KB_SEARCH' ? 'purple' : 'blue'"
-          class="message__mode-tag"
+          class="inline-flex items-center m-0 text-[11px] leading-4 px-1.5 rounded"
+          :style="{ background: msg.toolMode === 'KB_SEARCH' ? 'rgba(114,46,209,0.1)' : 'rgba(22,119,255,0.1)', color: msg.toolMode === 'KB_SEARCH' ? '#722ed1' : 'hsl(var(--primary))' }"
         >
           {{ msg.toolMode === 'KB_SEARCH' ? '文档问答' : 'AI 文档' }}
-        </a-tag>
-        <a-tag
+        </span>
+        <span
           v-if="msg.role === 'ASSISTANT' && msg.evidenceLevel"
-          :color="evidenceLevelColor(msg.evidenceLevel)"
-          class="message__evidence-tag"
+          class="inline-flex items-center m-0 text-[11px] leading-4 px-1.5 rounded"
+          :style="evidenceLevelStyle(msg.evidenceLevel)"
         >
           {{ evidenceLevelText(msg.evidenceLevel) }}
-        </a-tag>
+        </span>
       </div>
 
-      <div class="message__content">
+      <!-- 内容区 -->
+      <div class="flex flex-col">
         <!-- 用户消息 -->
         <template v-if="msg.role === 'USER'">
-          <div class="message__text">{{ msg.content }}</div>
+          <div class="px-3.5 py-2.5 rounded-lg text-sm leading-7 break-words whitespace-pre-wrap bg-primary text-primary-foreground rounded-tr-sm">{{ msg.content }}</div>
         </template>
 
         <!-- 助手消息 -->
         <template v-else>
           <!-- 加载中 -->
-          <div v-if="msg.pending && !msg.content" class="message__loading">
-            <a-spin size="small" />
-            <span class="message__loading-text">{{ loadingText }}</span>
+          <div v-if="msg.pending && !msg.content" class="inline-flex items-center gap-2 px-3.5 py-2.5 bg-card border border-border rounded-lg rounded-tl-sm">
+            <Loader2 class="size-4 animate-spin text-muted-foreground" />
+            <span class="text-[13px] text-muted-foreground">{{ loadingText }}</span>
           </div>
 
           <!-- 错误提示 -->
-          <a-alert
-            v-else-if="msg.error && !msg.content"
-            :message="msg.error"
-            type="error"
-            show-icon
-            class="message__alert"
-          />
+          <div v-else-if="msg.error && !msg.content" class="inline-flex items-center gap-2 px-3.5 py-2.5 bg-destructive/6 border border-destructive/20 rounded-lg rounded-tl-sm text-[13px] text-destructive max-w-full">
+            <AlertCircle class="size-4 text-red-500 flex-shrink-0" />
+            <span>{{ msg.error }}</span>
+          </div>
 
-          <!-- 回答正文（markstream-vue 流式 Markdown 渲染） -->
+          <!-- 回答正文 -->
           <div v-if="msg.content">
             <MarkdownRender
               mode="chat"
@@ -71,12 +74,12 @@
           />
 
           <!-- 用量信息 -->
-          <div v-if="msg.usage && !msg.pending" class="message__usage">
+          <div v-if="msg.usage && !msg.pending" class="flex flex-wrap gap-2 mt-1.5 text-[11px] text-muted-foreground/60">
             <span v-if="msg.usage.promptTokens">输入 {{ msg.usage.promptTokens }}</span>
             <span v-if="msg.usage.completionTokens">输出 {{ msg.usage.completionTokens }}</span>
             <span v-if="msg.usage.totalTokens">合计 {{ msg.usage.totalTokens }}</span>
             <span v-if="msg.usage.latencyMs">耗时 {{ (msg.usage.latencyMs / 1000).toFixed(1) }}s</span>
-            <span v-if="msg.usage.estimated" class="message__estimated">估算</span>
+            <span v-if="msg.usage.estimated" class="text-amber-500">估算</span>
           </div>
         </template>
       </div>
@@ -86,7 +89,7 @@
 
 <script setup>
 import { computed } from 'vue';
-import { UserOutlined, RobotOutlined } from '@ant-design/icons-vue';
+import { User, Bot, Loader2, AlertCircle } from '@lucide/vue';
 import MarkdownRender from 'markstream-vue';
 import { isDark } from '@/theme';
 import CitationRail from './CitationRail.vue';
@@ -109,18 +112,14 @@ const loadingText = computed(() => {
   return '正在思考并生成回答...';
 });
 
-function evidenceLevelColor(level) {
-  switch (level) {
-    case 'SUFFICIENT':
-      return 'green';
-    case 'PARTIAL':
-      return 'orange';
-    case 'WEAK':
-    case 'NONE':
-      return 'red';
-    default:
-      return 'default';
-  }
+function evidenceLevelStyle(level) {
+  const styles = {
+    SUFFICIENT: { background: 'rgba(82,196,26,0.1)', color: '#52c41a' },
+    PARTIAL: { background: 'rgba(250,173,20,0.1)', color: '#fa8c16' },
+    WEAK: { background: 'rgba(245,34,45,0.1)', color: '#f5222d' },
+    NONE: { background: 'rgba(245,34,45,0.1)', color: '#f5222d' },
+  };
+  return styles[level] || { background: 'rgba(0,0,0,0.04)', color: '#8c8c8c' };
 }
 
 function evidenceLevelText(level) {
@@ -138,119 +137,3 @@ function evidenceLevelText(level) {
   }
 }
 </script>
-
-<style lang="less" scoped>
-.message {
-  display: flex;
-  gap: 12px;
-  padding: 16px 0;
-
-  &--user {
-    flex-direction: row-reverse;
-  }
-
-  &__avatar {
-    flex-shrink: 0;
-  }
-
-  &__body {
-    max-width: 78%;
-    display: flex;
-    flex-direction: column;
-
-    .message--user & {
-      align-items: flex-end;
-    }
-  }
-
-  &__role {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 12px;
-    color: #8c8c8c;
-    margin-bottom: 6px;
-
-    .message--user & {
-      flex-direction: row-reverse;
-    }
-  }
-
-  &__mode-tag,
-  &__evidence-tag {
-    margin: 0;
-    font-size: 11px;
-    line-height: 16px;
-    padding: 0 6px;
-  }
-
-  &__content {
-    display: flex;
-    flex-direction: column;
-  }
-
-  &__text {
-    padding: 10px 14px;
-    border-radius: 10px;
-    font-size: 14px;
-    line-height: 1.7;
-    word-break: break-word;
-    white-space: pre-wrap;
-
-    .message--user & {
-      background: #1677ff;
-      color: #fff;
-      border-top-right-radius: 2px;
-    }
-
-    .message--assistant & {
-      background: #fff;
-      border: 1px solid #e8e8e8;
-      border-top-left-radius: 2px;
-    }
-  }
-
-  &__text--answer {
-    max-width: 100%;
-    // markstream-vue 渲染结构化 HTML，需要 normal 排版（覆盖父级 pre-wrap）
-    white-space: normal;
-    // 覆盖 #app 的 text-align: center，避免 Markdown 内容居中
-    text-align: left;
-  }
-
-  &__loading {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 14px;
-    background: #fff;
-    border: 1px solid #e8e8e8;
-    border-radius: 10px;
-    border-top-left-radius: 2px;
-  }
-
-  &__loading-text {
-    font-size: 13px;
-    color: #8c8c8c;
-  }
-
-  &__alert {
-    max-width: 100%;
-    border-top-left-radius: 2px;
-  }
-
-  &__usage {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 6px;
-    font-size: 11px;
-    color: #bfbfbf;
-  }
-
-  &__estimated {
-    color: #faad14;
-  }
-}
-
-</style>

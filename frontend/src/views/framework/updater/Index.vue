@@ -4,29 +4,31 @@
       <div class="feature-card feature-card--full">
         <div class="feature-card__title">1. 自动更新</div>
         <div class="feature-card__body">
-          <a-space>
-            <a-button @click="checkForUpdater()">检查更新</a-button>
-            <a-button @click="download()">下载并安装</a-button>
-          </a-space>
+          <span>
+            <Button @click="checkForUpdater()">检查更新</Button>
+            <Button @click="download()">下载并安装</Button>
+          </span>
         </div>
       </div>
       <div class="feature-card feature-card--full">
         <div class="feature-card__title">2. 下载进度</div>
         <div class="feature-card__body">
-          <a-progress :percent="percentNumber" status="active" />
-          <a-space>
+          <div :percent="percentNumber" status="active"  class="h-2 w-full rounded-full bg-muted"><div class="h-full rounded-full bg-primary" style="width: 50%"></div></div>
+          <span>
             {{ progress }}
-          </a-space>
+          </span>
         </div>
       </div>
     </div>
   </div>
 </template>
 <script setup>
+import { Button } from '@/components/ui/button'
+
 import { ipc } from '@/utils/ipcRenderer';
 import { ipcApiRoute, specialIpcRoute } from '@/api';
 import { ref, onMounted } from 'vue';
-import { message } from 'ant-design-vue';
+import { toast } from 'vue-sonner';
 
 const status = ref(0);
 const progress = ref('');
@@ -45,7 +47,7 @@ function init() {
       progress.value = result.desc;
       percentNumber.value = result.percentNumber;
     } else {
-      message.info(result.desc);
+      toast.info(result.desc);
     }
   })
 }
@@ -58,7 +60,7 @@ function checkForUpdater () {
 
 function download () {
   if (status.value !== 1) {
-    message.info('没有可用版本');
+    toast.info('没有可用版本');
     return
   }
   ipc.invoke(ipcApiRoute.framework.downloadApp).then(r => {
@@ -66,5 +68,3 @@ function download () {
   })
 }
 </script>
-<style lang="less" scoped>
-</style>

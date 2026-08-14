@@ -1,17 +1,5 @@
-<!--
-  BrowserSlot — WebContentsView 原生占位容器（占位版）
-
-  职责：
-  1. 一个 <div> 占位容器，测量自身边界位置
-  2. 通过 ResizeObserver + requestAnimationFrame 实时同步 DOM 位置到主进程
-  3. 主进程根据 IPC 收到的 bounds 摆放 Electron WebContentsView
-  4. MutationObserver 监听 Ant Design 浮层（Modal/Drawer/Select），
-     浮层打开时临时隐藏原生 View（WebContentsView 原生层级高于 DOM）
-
-  后端迁移后：取消 setLayout 注释，接入 IPC 通道
--->
 <template>
-  <div ref="containerRef" class="browser-slot" />
+  <div ref="containerRef" class="browser-slot flex-1 min-h-0 bg-card overflow-hidden" />
 </template>
 
 <script setup>
@@ -164,11 +152,8 @@ watch(() => props.tabId, () => {
 })
 </script>
 
-<style lang="less" scoped>
+<style scoped>
 .browser-slot {
-  flex: 1;
-  min-height: 0;
-  background-color: var(--bg-panel);
-  overflow: hidden;
+  /* 使用 scoped CSS 仅为保持选择器稳定，Tailwind 类已在模板中应用 */
 }
 </style>

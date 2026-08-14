@@ -1,63 +1,63 @@
 <template>
-  <div class="file-viewer">
+  <div class="flex flex-col h-full w-full overflow-hidden bg-card">
     <!-- 顶部工具栏 -->
-    <div class="file-viewer__toolbar">
-      <span class="file-viewer__title">{{ fileName }}</span>
-      <div class="file-viewer__meta">
-        <span v-if="fileSize" class="file-viewer__size">{{ formatSize(fileSize) }}</span>
-        <span v-if="fileExt" class="file-viewer__ext">{{ fileExt.toUpperCase() }}</span>
+    <div class="flex items-center justify-between gap-3 px-5 h-11 flex-shrink-0 border-b border-border">
+      <span class="text-sm font-semibold text-foreground truncate">{{ fileName }}</span>
+      <div class="flex items-center gap-2 flex-shrink-0">
+        <span v-if="fileSize" class="text-xs text-muted-foreground">{{ formatSize(fileSize) }}</span>
+        <span v-if="fileExt" class="text-[11px] font-semibold text-primary bg-primary/8 px-2 py-0.5 rounded">{{ fileExt.toUpperCase() }}</span>
       </div>
     </div>
 
-    <!-- ===== fileItemId 模式：使用 @file-viewer/vue3-full 全功能查看器 ===== -->
+    <!-- fileItemId 模式：全功能查看器 -->
     <template v-if="fileItemId">
-      <div class="file-viewer__full">
+      <div class="flex-1 overflow-hidden min-h-0">
         <FullFileViewer :file-item-id="fileItemId" :theme="isDark ? 'dark' : 'light'" @loaded="onFullLoaded" @error="onFullError" />
       </div>
     </template>
 
-    <!-- ===== filePath 模式：内置轻量查看器 ===== -->
+    <!-- filePath 模式：内置轻量查看器 -->
     <template v-else>
       <!-- 加载中 -->
-      <div v-if="loading" class="file-viewer__loading">
-        <a-spin size="large" />
-        <p>正在加载文件...</p>
+      <div v-if="loading" class="flex-1 flex flex-col items-center justify-center gap-4">
+        <Spinner size="large" />
+        <p class="text-sm text-muted-foreground m-0">正在加载文件...</p>
       </div>
 
       <!-- 加载失败 -->
-      <div v-else-if="error" class="file-viewer__error">
-        <FileExclamationOutlined style="font-size: 48px; opacity: 0.3" />
-        <p>{{ error }}</p>
+      <div v-else-if="error" class="flex-1 flex flex-col items-center justify-center gap-4">
+        <FileWarning class="size-12 opacity-30" />
+        <p class="text-sm text-muted-foreground m-0">{{ error }}</p>
       </div>
 
       <!-- 文件内容 -->
-      <div v-else class="file-viewer__body">
+      <div v-else class="flex-1 overflow-auto min-h-0">
         <!-- 图片预览 -->
-        <div v-if="fileType === 'image'" class="file-viewer__image">
-          <img :src="imageSrc" :alt="fileName" />
+        <div v-if="fileType === 'image'" class="flex items-center justify-center p-6 h-full">
+          <img :src="imageSrc" :alt="fileName" class="max-w-full max-h-full rounded-lg shadow-[0_4px_24px_rgba(0,0,0,0.12)] object-contain" />
         </div>
 
         <!-- PDF 预览 -->
-        <div v-else-if="fileType === 'pdf'" class="file-viewer__pdf">
-          <iframe :src="pdfSrc" :title="fileName" frameborder="0" />
+        <div v-else-if="fileType === 'pdf'" class="h-full">
+          <iframe :src="pdfSrc" :title="fileName" frameborder="0" class="w-full h-full border-none" />
         </div>
 
         <!-- SVG 预览 -->
-        <div v-else-if="fileType === 'svg'" class="file-viewer__image">
-          <img :src="svgSrc" :alt="fileName" />
+        <div v-else-if="fileType === 'svg'" class="flex items-center justify-center p-6 h-full">
+          <img :src="svgSrc" :alt="fileName" class="max-w-full max-h-full rounded-lg shadow-[0_4px_24px_rgba(0,0,0,0.12)] object-contain" />
         </div>
 
         <!-- Markdown 预览 -->
-        <div v-else-if="fileType === 'markdown'" class="file-viewer__markdown">
+        <div v-else-if="fileType === 'markdown'" class="p-6 px-8 max-w-[860px] mx-auto text-sm leading-7 text-foreground">
           <MarkdownRender mode="chat" :content="textContent" :final="true" :fade="false" :render-code-blocks-as-pre="false" :is-dark="isDark" code-block-dark-theme="vitesse-dark" code-block-light-theme="vitesse-light" :themes="['vitesse-dark', 'vitesse-light']" />
         </div>
 
         <!-- 代码/文本 -->
-        <div v-else class="file-viewer__code">
-          <div class="file-viewer__code-header">
-            <span>{{ fileExt || 'txt' }} · {{ lineCount }} 行</span>
+        <div v-else class="h-full flex flex-col">
+          <div class="px-5 py-2 text-xs text-muted-foreground bg-muted border-b border-border flex-shrink-0">
+            {{ fileExt || 'txt' }} · {{ lineCount }} 行
           </div>
-          <pre><code>{{ textContent }}</code></pre>
+          <pre class="flex-1 overflow-auto m-0 p-4 px-5 font-mono text-[13px] leading-relaxed text-foreground bg-card"><code class="font-inherit">{{ textContent }}</code></pre>
         </div>
       </div>
     </template>
@@ -65,8 +65,10 @@
 </template>
 
 <script setup>
+import { Spinner } from '@/components/ui/spinner'
+
 import { ref, computed, watch, onMounted } from 'vue'
-import { FileExclamationOutlined } from '@ant-design/icons-vue'
+import { FileWarning } from '@lucide/vue'
 import { ipc } from '@/utils/ipcRenderer'
 import { ipcApiRoute } from '@/api'
 import MarkdownRender from 'markstream-vue'
@@ -198,157 +200,3 @@ onMounted(() => {
   }
 })
 </script>
-
-<style lang="less" scoped>
-.file-viewer {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  width: 100%;
-  overflow: hidden;
-  background: var(--bg-panel);
-
-  // ===== 工具栏 =====
-  &__toolbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 0 20px;
-    height: 44px;
-    flex-shrink: 0;
-    border-bottom: 1px solid var(--border-color);
-  }
-
-  &__title {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--text-primary);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  &__meta {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-shrink: 0;
-  }
-
-  &__size {
-    font-size: 12px;
-    color: var(--text-muted);
-  }
-
-  &__ext {
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--accent);
-    background: rgba(22, 119, 255, 0.08);
-    padding: 2px 8px;
-    border-radius: 4px;
-  }
-
-  // ===== fileItemId 模式：全功能查看器容器 =====
-  &__full {
-    flex: 1;
-    overflow: hidden;
-    min-height: 0;
-  }
-
-  // ===== 加载/错误 =====
-  &__loading,
-  &__error {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 16px;
-
-    p {
-      font-size: 14px;
-      color: var(--text-muted);
-      margin: 0;
-    }
-  }
-
-  // ===== 文件内容区 =====
-  &__body {
-    flex: 1;
-    overflow: auto;
-    min-height: 0;
-  }
-
-  // ===== 图片 =====
-  &__image {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 24px;
-    height: 100%;
-
-    img {
-      max-width: 100%;
-      max-height: 100%;
-      border-radius: 8px;
-      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
-      object-fit: contain;
-    }
-  }
-
-  // ===== PDF =====
-  &__pdf {
-    height: 100%;
-
-    iframe {
-      width: 100%;
-      height: 100%;
-      border: none;
-    }
-  }
-
-  // ===== Markdown =====
-  &__markdown {
-    padding: 24px 32px;
-    max-width: 860px;
-    margin: 0 auto;
-    font-size: 14px;
-    line-height: 1.7;
-    color: var(--text-primary);
-  }
-
-  // ===== 代码/文本 =====
-  &__code {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-  }
-
-  &__code-header {
-    padding: 8px 20px;
-    font-size: 12px;
-    color: var(--text-muted);
-    background: var(--bg-sidebar);
-    border-bottom: 1px solid var(--border-color);
-    flex-shrink: 0;
-  }
-
-  pre {
-    flex: 1;
-    overflow: auto;
-    margin: 0;
-    padding: 16px 20px;
-    font-family: 'SF Mono', 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
-    font-size: 13px;
-    line-height: 1.6;
-    color: var(--text-primary);
-    background: var(--bg-panel);
-
-    code {
-      font-family: inherit;
-    }
-  }
-}
-</style>

@@ -1,99 +1,99 @@
 <template>
-  <div class="calendar-workspace">
+  <div class="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-[10px] border border-border bg-card">
     <!-- 工具栏 -->
-    <div class="calendar-toolbar">
-      <div class="calendar-toolbar__left">
-        <div class="calendar-toolbar__nav">
-          <button class="calendar-nav-btn" @click="prev"><LeftOutlined /></button>
-          <span class="calendar-toolbar__title">{{ toolbarTitle }}</span>
-          <button class="calendar-nav-btn" @click="next"><RightOutlined /></button>
+    <div class="flex shrink-0 items-center justify-between border-b border-border/50 px-5 py-4">
+      <div class="flex items-center gap-3">
+        <div class="flex items-center gap-3">
+          <button class="flex size-8 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground hover:border-primary hover:text-primary" @click="prev"><ChevronLeft class="size-4" /></button>
+          <span class="min-w-[180px] text-center text-[15px] font-semibold text-foreground">{{ toolbarTitle }}</span>
+          <button class="flex size-8 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground hover:border-primary hover:text-primary" @click="next"><ChevronRight class="size-4" /></button>
         </div>
         <button
           v-for="m in modes"
           :key="m.id"
-          class="calendar-mode-btn"
-          :class="{ 'calendar-mode-btn--active': mode === m.id }"
+          class="inline-flex h-8 items-center gap-1 rounded-lg border px-3 text-[13px] transition-all"
+          :class="mode === m.id ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-card text-muted-foreground hover:text-primary'"
           @click="mode = m.id"
         >{{ m.label }}</button>
       </div>
-      <div class="calendar-toolbar__right">
-        <button class="calendar-mode-btn" @click="groupManagerOpen = true">
-          <UnorderedListOutlined /> 分组
+      <div class="flex items-center gap-1">
+        <button class="inline-flex h-8 items-center gap-1 rounded-lg border border-border bg-card px-3 text-[13px] text-muted-foreground hover:border-primary hover:text-primary" @click="groupManagerOpen = true">
+          <ListOrdered class="size-4" /> 分组
         </button>
       </div>
     </div>
 
     <!-- 月视图 -->
-    <div v-if="mode === 'month'" class="calendar-month">
-      <div class="calendar-weekdays">
-        <div v-for="d in weekdays" :key="d" class="calendar-weekday">{{ d }}</div>
+    <div v-if="mode === 'month'" class="flex min-h-0 flex-1 flex-col">
+      <div class="grid shrink-0 grid-cols-7 border-b border-border/50">
+        <div v-for="d in weekdays" :key="d" class="p-2 text-center text-xs font-medium text-muted-foreground">{{ d }}</div>
       </div>
-      <div class="calendar-days">
+      <div class="grid min-h-0 flex-1 grid-cols-7 grid-rows-6 overflow-y-auto">
         <div
           v-for="day in monthDays"
           :key="day.key"
-          class="calendar-day"
-          :class="{ 'calendar-day--other': !day.inMonth, 'calendar-day--today': day.isToday }"
+          class="flex cursor-pointer flex-row overflow-hidden border-b border-border/50 border-r p-1 transition-colors hover:bg-primary/[0.03]"
+          :class="{ 'bg-foreground/[0.02]': !day.inMonth }"
           @click="onDayClick(day)"
         >
-          <span class="calendar-day__num">{{ day.date }}</span>
-          <div class="calendar-day__events">
+          <span class="w-[18px] shrink-0 text-right text-xs leading-relaxed" :class="{ 'text-muted-foreground': !day.inMonth, 'font-semibold text-primary': day.isToday, 'text-muted-foreground': !day.isToday && day.inMonth }">{{ day.date }}</span>
+          <div class="ml-1 flex min-w-0 flex-1 flex-col gap-0.5">
             <div
               v-for="ev in day.events.slice(0, 2)"
               :key="ev.id"
-              class="calendar-event"
+              class="cursor-pointer truncate rounded-[2px] border-l-[3px] px-1 py-0.5 text-[11px] text-foreground hover:brightness-95"
               :style="{ borderColor: eventColor(ev), background: eventBg(ev) }"
               @click.stop="selectEvent(ev)"
               @mouseenter="showEventTooltip(ev, $event)"
               @mouseleave="hideEventTooltip"
             >{{ ev.title }}</div>
-            <div v-if="day.events.length > 2" class="calendar-day__more" @click.stop="showAllDayEvents(day)">
+            <div v-if="day.events.length > 2" class="mt-0.5 cursor-pointer px-1 text-[10px] text-muted-foreground hover:text-primary" @click.stop="showAllDayEvents(day)">
               +{{ day.events.length - 2 }} 更多
             </div>
-            <div v-if="day.automationCount" class="calendar-day__auto">定时任务 {{ day.automationCount }}</div>
+            <div v-if="day.automationCount" class="mt-0.5 rounded-[3px] bg-primary/[0.08] px-1 text-[10px] text-primary">定时任务 {{ day.automationCount }}</div>
           </div>
         </div>
       </div>
     </div>
 
     <!-- 周视图 -->
-    <div v-else class="calendar-week">
-      <div class="calendar-week__header">
-        <div class="calendar-week__time-gutter"></div>
-        <div v-for="d in weekDays" :key="d.key" class="calendar-week__header-day">
-          <span class="calendar-week__weekday">{{ d.weekday }}</span>
-          <span class="calendar-week__date" :class="{ 'calendar-week__date--today': d.isToday }">{{ d.date }}</span>
+    <div v-else class="flex min-h-0 flex-1 flex-col">
+      <div class="grid shrink-0 grid-cols-[56px_repeat(7,1fr)] border-b border-border/50">
+        <div class="w-[56px] shrink-0"></div>
+        <div v-for="d in weekDays" :key="d.key" class="flex flex-col items-center border-r border-border/50 p-2">
+          <span class="text-[11px] text-muted-foreground">{{ d.weekday }}</span>
+          <span class="mt-0.5 text-base font-semibold" :class="d.isToday ? 'text-primary' : 'text-foreground'">{{ d.date }}</span>
         </div>
       </div>
-      <div class="calendar-week__body">
-        <div class="calendar-week__time-gutter">
-          <div v-for="hour in 24" :key="hour - 1" class="calendar-week__time-cell">
+      <div class="relative grid min-h-0 flex-1 grid-cols-[56px_repeat(7,1fr)] overflow-y-auto">
+        <div class="w-[56px] shrink-0">
+          <div v-for="hour in 24" :key="hour - 1" class="h-11 border-b border-border/50 pr-2 pt-0.5 text-right text-[11px] text-muted-foreground">
             {{ String(hour - 1).padStart(2, '0') }}:00
           </div>
         </div>
         <div
           v-for="(day, dayIdx) in weekDays"
           :key="day.key"
-          class="calendar-week__day-col"
+          class="relative min-w-0 cursor-crosshair touch-none overflow-hidden border-r border-border/50 select-none"
           @pointerdown="onPointerDown($event, dayIdx)"
           @pointermove="onPointerMove($event, dayIdx)"
           @pointerup="onPointerUp($event, dayIdx)"
           @pointercancel="onPointerCancel($event, dayIdx)"
         >
-          <div v-for="hour in 24" :key="hour - 1" class="calendar-week__hour-cell"></div>
+          <div v-for="hour in 24" :key="hour - 1" class="h-11 border-b border-border/50 hover:bg-primary/[0.02]"></div>
           <div
             v-if="dragDayIdx === dayIdx && dragStartMin !== null && dragEndMin !== null"
-            class="calendar-week__drag-preview"
+            class="pointer-events-none absolute left-0.5 right-0.5 z-[5] overflow-hidden rounded border border-primary border-l-2 bg-primary/15 p-1.5"
             :style="dragPreviewStyle"
           >
-            <span v-if="dragEndMin - dragStartMin >= 30" class="calendar-week__drag-label">
+            <span v-if="dragEndMin - dragStartMin >= 30" class="block truncate text-[11px] font-medium text-primary">
               新建日程 · {{ formatMinToTime(dragStartMin) }}–{{ formatMinToTime(dragEndMin) }}
             </span>
           </div>
           <div
             v-for="layout in dayEventLayouts[dayIdx]"
             :key="layout.event.id"
-            class="calendar-week__event"
+            class="absolute z-[3] min-w-0 cursor-pointer overflow-hidden rounded border-l-[3px] p-1.5 transition-[filter] hover:z-[4] hover:brightness-90"
             data-calendar-item
             :style="{
               top: layout.top + 'px',
@@ -107,8 +107,8 @@
             @mouseenter="showEventTooltip(layout.event, $event)"
             @mouseleave="hideEventTooltip"
           >
-            <span class="calendar-week__event-title">{{ layout.event.title }}</span>
-            <span v-if="layout.height >= 28" class="calendar-week__event-time">{{ formatEventTime(layout.event) }}</span>
+            <span class="block truncate text-xs font-medium text-foreground">{{ layout.event.title }}</span>
+            <span v-if="layout.height >= 28" class="mt-0.5 block text-[10px] text-muted-foreground">{{ formatEventTime(layout.event) }}</span>
           </div>
         </div>
       </div>
@@ -117,163 +117,174 @@
     <!-- 日程 hover 详情浮窗 -->
     <div
       v-if="hoveredEvent"
-      class="calendar-event-tooltip"
+      class="pointer-events-none absolute z-[999] min-w-[200px] max-w-[280px] rounded-lg border border-border/10 bg-card p-2.5 px-3 shadow-lg"
       :style="tooltipStyle"
     >
-      <div class="calendar-event-tooltip__header">
-        <span class="calendar-event-tooltip__dot" :style="{ background: eventColor(hoveredEvent) }"></span>
-        <span class="calendar-event-tooltip__title">{{ hoveredEvent.title }}</span>
+      <div class="mb-1.5 flex items-center gap-1.5">
+        <span class="size-2 shrink-0 rounded-full" :style="{ background: eventColor(hoveredEvent) }"></span>
+        <span class="truncate text-[13px] font-semibold text-foreground">{{ hoveredEvent.title }}</span>
       </div>
-      <div class="calendar-event-tooltip__time">
+      <div class="mb-1 flex items-center gap-1.5 text-xs text-muted-foreground">
         <span v-if="hoveredEvent.allDay">全天</span>
         <span v-else>{{ formatEventTime(hoveredEvent) }}</span>
-        <span class="calendar-event-tooltip__date">{{ formatEventDate(hoveredEvent) }}</span>
+        <span class="text-muted-foreground/70">{{ formatEventDate(hoveredEvent) }}</span>
       </div>
-      <div v-if="hoveredEvent.group" class="calendar-event-tooltip__group">
-        <span class="calendar-group-dot" :style="{ background: groupColor(hoveredEvent.group) }"></span>
+      <div v-if="hoveredEvent.group" class="mb-1 flex items-center gap-1 text-xs text-muted-foreground">
+        <span class="size-2 rounded-full" :style="{ background: groupColor(hoveredEvent.group) }"></span>
         {{ hoveredEvent.group.name }}
       </div>
-      <div v-if="hoveredEvent.tags?.length" class="calendar-event-tooltip__tags">
-        <span v-for="tag in hoveredEvent.tags" :key="tag.id" class="calendar-event-tooltip__tag">
-          <span class="calendar-tag-chip__dot" :style="{ background: tagColor(tag) }"></span>
+      <div v-if="hoveredEvent.tags?.length" class="mb-1 flex flex-wrap gap-1">
+        <span v-for="tag in hoveredEvent.tags" :key="tag.id" class="inline-flex items-center gap-0.5 text-[11px] text-muted-foreground">
+          <span class="size-2 rounded-full" :style="{ background: tagColor(tag) }"></span>
           {{ tag.name }}
         </span>
       </div>
-      <div v-if="hoveredEvent.notes" class="calendar-event-tooltip__notes">{{ hoveredEvent.notes }}</div>
+      <div v-if="hoveredEvent.notes" class="mt-1 max-h-[60px] overflow-hidden text-xs leading-relaxed text-muted-foreground">{{ hoveredEvent.notes }}</div>
     </div>
 
     <!-- 右侧详情 Inspector -->
-    <div v-if="selectedEvent" class="calendar-inspector-overlay" @click="selectedEventId = null"></div>
-    <aside v-if="selectedEvent" class="calendar-inspector">
-      <button class="calendar-inspector__close" @click="selectedEventId = null">
-        <CloseOutlined />
+    <div v-if="selectedEvent" class="absolute inset-0 z-30 cursor-pointer bg-foreground/[0.02]" @click="selectedEventId = null"></div>
+    <aside v-if="selectedEvent" class="absolute bottom-3 right-3 top-3 z-40 flex w-[min(400px,calc(100%-24px))] flex-col overflow-hidden rounded-xl border border-border/50 bg-card shadow-xl">
+        <button class="absolute right-3 top-3 z-10 flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground" @click="selectedEventId = null">
+        <X class="size-4" />
       </button>
-      <div class="calendar-inspector__header">
+      <div class="shrink-0 border-b border-border/50 px-5 pb-3 pt-5">
         <input
-          class="calendar-inspector__title"
+          class="w-full border-none bg-transparent pr-10 text-[17px] font-semibold text-foreground outline-none"
           v-model="detailTitle"
           placeholder="日程标题"
           @blur="saveField('title')"
           @keydown.enter="$event.target.blur()"
         />
       </div>
-      <div class="calendar-inspector__body">
-        <div class="calendar-inspector__section">
-          <h3 class="calendar-inspector__section-title">时间</h3>
-          <label class="calendar-inspector__all-day">
-            <a-checkbox v-model:checked="detailAllDay" @change="saveAllDay">全天</a-checkbox>
-            <span class="calendar-inspector__all-day-hint">不占用具体小时段</span>
+      <div class="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto overflow-x-hidden p-4 px-5">
+        <div class="flex flex-col gap-3">
+          <h3 class="m-0 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">时间</h3>
+          <label class="flex cursor-pointer items-center gap-2 rounded-lg border border-border/50 px-3 py-2">
+            <input
+              type="checkbox"
+              :checked="detailAllDay"
+              @change="detailAllDay = $event.target.checked; saveAllDay()"
+              class="size-4 cursor-pointer"
+            />
+            <span>全天</span>
+            <span class="text-[11px] text-muted-foreground">不占用具体小时段</span>
           </label>
-          <div class="calendar-inspector__field-row">
-            <div class="calendar-inspector__field">
-              <label class="calendar-inspector__field-label">开始</label>
-              <a-date-picker
-                v-model:value="detailStartAt"
+          <div class="flex gap-2">
+            <div class="flex flex-1 flex-col">
+              <label class="mb-1.5 text-[11px] font-medium text-muted-foreground">开始</label>
+              <input
+                type="datetime-local"
+                :value="detailStartAtInput"
+                @input="detailStartAtInput = $event.target.value"
                 placeholder="开始时间"
-                :show-time="!detailAllDay"
-                class="calendar-inspector__date"
+                class="h-8 w-full rounded-md border border-border px-2 text-[13px] outline-none focus:border-primary"
                 @change="saveField('startAt')"
               />
             </div>
-            <div class="calendar-inspector__field">
-              <label class="calendar-inspector__field-label">结束</label>
-              <a-date-picker
-                v-model:value="detailEndAt"
+            <div class="flex flex-1 flex-col">
+              <label class="mb-1.5 text-[11px] font-medium text-muted-foreground">结束</label>
+              <input
+                type="datetime-local"
+                :value="detailEndAtInput"
+                @input="detailEndAtInput = $event.target.value"
                 placeholder="结束时间"
-                :show-time="!detailAllDay"
-                class="calendar-inspector__date"
+                class="h-8 w-full rounded-md border border-border px-2 text-[13px] outline-none focus:border-primary"
                 @change="saveField('endAt')"
               />
             </div>
           </div>
         </div>
-        <div class="calendar-inspector__section">
-          <label class="calendar-inspector__label">更多信息</label>
+        <div class="flex flex-col gap-3">
+          <label class="mb-1.5 block text-[11px] font-medium text-muted-foreground">更多信息</label>
           <textarea
-            class="calendar-inspector__notes"
+            class="min-h-[80px] resize-y rounded-lg border border-border/50 bg-primary/[0.03] px-3 py-2 text-[13px] text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/10"
             v-model="detailNotes"
             placeholder="补充地点、议程、会议链接或其他上下文…"
             @blur="saveField('notes')"
           ></textarea>
         </div>
-        <div class="calendar-inspector__section">
-          <h3 class="calendar-inspector__section-title">组织</h3>
-          <div class="calendar-inspector__field">
-            <label class="calendar-inspector__field-label">日程分组</label>
-            <a-select v-model:value="detailGroupId" class="calendar-inspector__select" @change="saveField('groupId')">
-              <a-select-option value="__none__">不分组</a-select-option>
-              <a-select-option v-for="g in calendarGroups" :key="g.id" :value="g.id">
-                <span class="calendar-group-option">
-                  <span class="calendar-group-dot" :style="{ background: groupColor(g) }"></span>
-                  {{ g.name }}
-                </span>
-              </a-select-option>
-            </a-select>
+        <div class="flex flex-col gap-3">
+          <h3 class="m-0 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">组织</h3>
+          <div class="flex flex-col">
+            <label class="mb-1.5 text-[11px] font-medium text-muted-foreground">日程分组</label>
+            <Select v-model="detailGroupId" @update:model-value="saveField('groupId')">
+              <SelectTrigger class="w-full"><SelectValue placeholder="选择分组" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">不分组</SelectItem>
+                <SelectItem v-for="g in calendarGroups" :key="g.id" :value="g.id">
+                  <span class="inline-flex items-center gap-1.5">
+                    <span class="size-2 rounded-full" :style="{ background: groupColor(g) }"></span>
+                    {{ g.name }}
+                  </span>
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-          <div class="calendar-inspector__field" ref="tagFieldRef">
-            <label class="calendar-inspector__field-label">标签</label>
-            <div class="calendar-tag-chips">
+          <div class="flex flex-col" ref="tagFieldRef">
+            <label class="mb-1.5 text-[11px] font-medium text-muted-foreground">标签</label>
+            <div class="flex flex-wrap items-center gap-1.5">
               <span
                 v-for="tag in selectedEvent.tags"
                 :key="tag.id"
-                class="calendar-tag-chip"
+                class="inline-flex items-center gap-1 rounded-[12px] bg-foreground/5 px-1 py-0.5 pl-2 text-xs text-foreground transition-colors hover:bg-foreground/10"
               >
-                <span class="calendar-tag-chip__dot" :style="{ background: tagColor(tag) }"></span>
+                <span class="size-2 rounded-full" :style="{ background: tagColor(tag) }"></span>
                 {{ tag.name }}
-                <button class="calendar-tag-chip__close" @click.stop="removeTagFromEvent(tag)">
-                  <CloseOutlined />
+                <button class="flex size-4 items-center justify-center rounded-full text-muted-foreground transition-all hover:bg-red-500/15 hover:text-red-600" @click.stop="removeTagFromEvent(tag)">
+                  <X class="size-2.5" />
                 </button>
               </span>
-              <div class="calendar-tag-add" ref="tagAddRef">
-                <button class="calendar-tag-add__btn" @click.stop="toggleTagDropdown">
-                  <PlusOutlined />
+              <div class="relative inline-flex" ref="tagAddRef">
+                <button class="flex size-6 items-center justify-center rounded-md border border-dashed border-border text-muted-foreground transition-all hover:border-primary hover:text-primary hover:bg-primary/5" @click.stop="toggleTagDropdown">
+                  <Plus class="size-3" />
                 </button>
               </div>
             </div>
           </div>
         </div>
       </div>
-      <div class="calendar-inspector__footer">
-        <button class="calendar-inspector__delete-btn" @click="pendingDelete = selectedEvent">
-          <DeleteOutlined /> 删除日程
+      <div class="flex shrink-0 items-center justify-between border-t border-border/50 bg-card px-5 py-3">
+        <button class="inline-flex h-8 items-center gap-1.5 rounded-lg bg-red-500 px-3.5 text-[13px] font-medium text-white shadow-sm transition-all hover:bg-red-600" @click="pendingDelete = selectedEvent">
+          <Trash2 class="size-4" /> 删除日程
         </button>
-        <span class="calendar-inspector__save-hint">编辑后自动保存</span>
+        <span class="text-[11px] text-muted-foreground">编辑后自动保存</span>
       </div>
     </aside>
 
     <!-- 标签下拉面板（Teleport 到 body 避免被 inspector overflow 裁切） -->
     <Teleport to="body">
-      <div v-if="tagDropdownOpen" class="calendar-tag-dropdown" :style="tagDropdownStyle" @click.stop>
-        <div class="calendar-tag-dropdown__search">
+      <div v-if="tagDropdownOpen" class="z-[9999] overflow-hidden rounded-lg border border-border/10 bg-card shadow-xl" :style="tagDropdownStyle" @click.stop>
+        <div class="px-3 pb-1.5 pt-2.5">
           <input
             ref="tagSearchInput"
             v-model="tagSearchText"
-            class="calendar-tag-dropdown__input"
+            class="w-full rounded-md border border-border bg-muted/50 px-2.5 py-1.5 text-[13px] text-foreground outline-none transition-colors focus:border-primary"
             placeholder="搜索或输入新标签…"
             @keydown.enter="onTagSearchEnter"
           />
         </div>
-        <div class="calendar-tag-dropdown__list">
+        <div class="max-h-[220px] overflow-y-auto p-1 pb-2">
           <button
             v-for="tag in filteredTags"
             :key="tag.id"
-            class="calendar-tag-dropdown__item"
-            :class="{ 'calendar-tag-dropdown__item--selected': isTagSelected(tag) }"
+            class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] text-foreground transition-colors hover:bg-foreground/5"
+            :class="{ 'bg-primary/[0.08]': isTagSelected(tag) }"
             @click="toggleTagFromDropdown(tag)"
           >
-            <span class="calendar-tag-chip__dot" :style="{ background: tagColor(tag) }"></span>
-            <span class="calendar-tag-dropdown__item-name">{{ tag.name }}</span>
-            <CheckOutlined v-if="isTagSelected(tag)" class="calendar-tag-dropdown__item-check" />
+            <span class="size-2 rounded-full" :style="{ background: tagColor(tag) }"></span>
+            <span class="flex-1 truncate">{{ tag.name }}</span>
+            <Check v-if="isTagSelected(tag)" class="size-3 shrink-0 text-primary" />
           </button>
           <button
             v-if="canCreateTag"
-            class="calendar-tag-dropdown__item calendar-tag-dropdown__item--create"
+            class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] font-medium text-primary transition-colors hover:bg-foreground/5"
             @click="createAndAddTag"
           >
-            <PlusOutlined />
+            <Plus class="size-3" />
             <span>创建「{{ tagSearchText.trim() }}」</span>
           </button>
-          <div v-if="!filteredTags.length && !canCreateTag" class="calendar-tag-dropdown__empty">
+          <div v-if="!filteredTags.length && !canCreateTag" class="px-2 py-3 text-center text-xs text-muted-foreground">
             暂无标签，输入名称可创建
           </div>
         </div>
@@ -281,127 +292,132 @@
     </Teleport>
 
     <!-- 删除确认 -->
-    <a-modal
-      v-model:open="deleteModalOpen"
-      title="确认删除日程"
-      ok-text="删除"
-      cancel-text="取消"
-      ok-type="danger"
-      @ok="confirmDelete"
-    >
-      <p>删除「{{ pendingDelete?.title }}」后无法恢复。</p>
-    </a-modal>
+    <Dialog v-model:open="deleteModalOpen">
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>确认删除日程</DialogTitle>
+        </DialogHeader>
+        <p>删除「{{ pendingDelete?.title }}」后无法恢复。</p>
+        <DialogFooter>
+          <button class="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-card px-3.5 text-[13px] text-muted-foreground transition-all hover:border-primary hover:text-primary" @click="deleteModalOpen = false">取消</button>
+          <button class="inline-flex h-8 items-center gap-1.5 rounded-lg bg-red-500 px-3.5 text-[13px] font-medium text-white transition-all hover:bg-red-600" @click="confirmDelete">删除</button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
 
     <!-- 分组管理 Modal -->
-    <a-modal
-      v-model:open="groupManagerOpen"
-      title="日程分组管理"
-      :footer="null"
-      width="440px"
-      class="group-manager-modal"
-    >
-      <div class="group-manager__create">
-        <div v-if="creatingGroup" class="group-manager__create-row">
-          <a-input
-            ref="newGroupInputRef"
-            v-model:value="newGroupName"
-            placeholder="输入分组名称"
-            size="small"
-            class="group-manager__create-input"
-            @keydown.enter="confirmCreateGroup"
-            @keydown.escape="cancelCreateGroup"
-          />
-          <button class="group-manager__action-btn group-manager__action-btn--confirm" @click="confirmCreateGroup" :disabled="!newGroupName.trim() || savingGroupAction === 'create'" title="确认">
-            <CheckOutlined />
-          </button>
-          <button class="group-manager__action-btn group-manager__action-btn--cancel" @click="cancelCreateGroup" title="取消">
-            <CloseOutlined />
-          </button>
-        </div>
-        <button v-else class="group-manager__add-btn" @click="startCreateGroup">
-          <PlusOutlined /> 新建分组
-        </button>
-      </div>
-      <div class="group-manager__list">
-        <div v-if="!calendarGroups.length" class="group-manager__empty">
-          还没有分组，点击上方新建
-        </div>
-        <div v-for="g in calendarGroups" :key="g.id" class="group-manager__item">
-          <template v-if="renamingGroupId === g.id">
-            <span class="calendar-group-dot" :style="{ background: groupColor(g) }"></span>
-            <a-input
-              ref="renameInputRef"
-              v-model:value="renameGroupName"
-              size="small"
-              class="group-manager__rename-input"
-              @keydown.enter="confirmRenameGroup(g)"
-              @keydown.escape="cancelRenameGroup"
+    <Dialog v-model:open="groupManagerOpen">
+      <DialogContent class="max-w-[440px]">
+        <DialogHeader>
+          <DialogTitle>日程分组管理</DialogTitle>
+        </DialogHeader>
+        <div class="mb-3 border-b border-border/50 pb-3">
+          <div v-if="creatingGroup" class="flex items-center gap-1.5">
+            <input
+              ref="newGroupInputRef"
+              :value="newGroupName"
+              @input="newGroupName = $event.target.value"
+              placeholder="输入分组名称"
+              class="h-8 flex-1 rounded-md border border-border px-2 text-[13px] outline-none focus:border-primary"
+              @keydown.enter="confirmCreateGroup"
+              @keydown.escape="cancelCreateGroup"
             />
-            <button class="group-manager__action-btn group-manager__action-btn--confirm" @click="confirmRenameGroup(g)" :disabled="!renameGroupName.trim() || savingGroupAction === 'rename'" title="确认">
-              <CheckOutlined />
+            <button class="flex size-8 items-center justify-center rounded-md bg-green-500/10 text-green-600 transition-all hover:bg-green-500 hover:text-white disabled:opacity-35" @click="confirmCreateGroup" :disabled="!newGroupName.trim() || savingGroupAction === 'create'" title="确认">
+              <Check class="size-4" />
             </button>
-            <button class="group-manager__action-btn group-manager__action-btn--cancel" @click="cancelRenameGroup" title="取消">
-              <CloseOutlined />
+            <button class="flex size-8 items-center justify-center rounded-md bg-foreground/[0.06] text-muted-foreground transition-all hover:bg-red-500/10 hover:text-red-500" @click="cancelCreateGroup" title="取消">
+              <X class="size-4" />
             </button>
-          </template>
-          <template v-else>
-            <div class="group-color-picker">
-              <span
-                class="calendar-group-dot group-color-picker__current"
-                :style="{ background: groupColor(g) }"
-                @click="toggleColorPicker(g.id)"
-              ></span>
-              <div v-if="colorPickerId === g.id" class="group-color-picker__panel">
-                <button
-                  v-for="c in PRESET_COLORS"
-                  :key="c"
-                  class="group-color-picker__swatch"
-                  :class="{ 'group-color-picker__swatch--active': (g.color || '') === c }"
-                  :style="{ background: c }"
-                  @click="setGroupColor(g, c)"
-                ></button>
-                <label class="group-color-picker__custom">
-                  <input type="color" :value="g.color || '#1677ff'" @input="setGroupColor(g, $event.target.value)" />
-                </label>
-              </div>
-            </div>
-            <span class="group-manager__item-name">{{ g.name }}</span>
-            <button class="group-manager__icon-btn" title="重命名" @click="startRenameGroup(g)">
-              <EditOutlined />
-            </button>
-            <button class="group-manager__icon-btn group-manager__icon-btn--danger" title="删除" @click="requestDeleteGroup(g)">
-              <DeleteOutlined />
-            </button>
-          </template>
+          </div>
+          <button v-else class="flex h-[34px] w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-border text-[13px] text-muted-foreground transition-all hover:border-primary hover:text-primary hover:bg-primary/[0.03]" @click="startCreateGroup">
+            <Plus class="size-4" /> 新建分组
+          </button>
         </div>
-      </div>
-    </a-modal>
+        <div class="flex max-h-[320px] flex-col gap-0.5 overflow-y-auto">
+          <div v-if="!calendarGroups.length" class="py-8 text-center text-[13px] text-muted-foreground">
+            还没有分组，点击上方新建
+          </div>
+          <div v-for="g in calendarGroups" :key="g.id" class="flex h-[38px] items-center gap-2 rounded-md px-1.5 transition-colors hover:bg-primary/[0.04]">
+            <template v-if="renamingGroupId === g.id">
+              <span class="size-2 rounded-full" :style="{ background: groupColor(g) }"></span>
+              <input
+                ref="renameInputRef"
+                :value="renameGroupName"
+                @input="renameGroupName = $event.target.value"
+                class="h-8 flex-1 rounded-md border border-border px-2 text-[13px] outline-none focus:border-primary"
+                @keydown.enter="confirmRenameGroup(g)"
+                @keydown.escape="cancelRenameGroup"
+              />
+              <button class="flex size-8 items-center justify-center rounded-md bg-green-500/10 text-green-600 transition-all hover:bg-green-500 hover:text-white disabled:opacity-35" @click="confirmRenameGroup(g)" :disabled="!renameGroupName.trim() || savingGroupAction === 'rename'" title="确认">
+                <Check class="size-4" />
+              </button>
+              <button class="flex size-8 items-center justify-center rounded-md bg-foreground/[0.06] text-muted-foreground transition-all hover:bg-red-500/10 hover:text-red-500" @click="cancelRenameGroup" title="取消">
+                <X class="size-4" />
+              </button>
+            </template>
+            <template v-else>
+              <div class="relative shrink-0">
+                <span
+                  class="size-4 cursor-pointer rounded-full border-2 border-border/10"
+                  :style="{ background: groupColor(g) }"
+                  @click="toggleColorPicker(g.id)"
+                ></span>
+                <div v-if="colorPickerId === g.id" class="absolute left-full top-1/2 z-50 flex -translate-y-1/2 gap-1 rounded-lg border border-border bg-card p-2 shadow-md ml-1.5">
+                  <button
+                    v-for="c in PRESET_COLORS"
+                    :key="c"
+                    class="size-4 cursor-pointer rounded-[4px] border-2 border-transparent"
+                    :class="{ 'border-foreground': (g.color || '') === c }"
+                    :style="{ background: c }"
+                    @click="setGroupColor(g, c)"
+                  ></button>
+                  <label class="size-4 cursor-pointer overflow-hidden rounded-[4px]" style="background: conic-gradient(red, yellow, lime, aqua, blue, magenta, red)">
+                    <input type="color" :value="g.color || '#1677ff'" @input="setGroupColor(g, $event.target.value)" class="size-full cursor-pointer opacity-0" />
+                  </label>
+                </div>
+              </div>
+              <span class="flex-1 truncate text-[13px] text-foreground">{{ g.name }}</span>
+              <button class="flex size-[26px] items-center justify-center rounded text-muted-foreground opacity-0 transition-all hover:bg-primary/10 hover:text-primary" title="重命名" @click="startRenameGroup(g)">
+                <Pencil class="size-3.5" />
+              </button>
+              <button class="flex size-[26px] items-center justify-center rounded text-muted-foreground opacity-0 transition-all hover:bg-red-500/10 hover:text-red-500" title="删除" @click="requestDeleteGroup(g)">
+                <Trash2 class="size-3.5" />
+              </button>
+            </template>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
 
     <!-- 分组删除确认 -->
-    <a-modal
-      v-model:open="deleteGroupModalOpen"
-      title="确认删除分组"
-      ok-text="删除"
-      cancel-text="取消"
-      ok-type="danger"
-      :ok-button-props="{ loading: savingGroupAction === 'delete' }"
-      @ok="confirmDeleteGroup"
-    >
-      <p>删除「{{ pendingDeleteGroup?.name }}」后无法恢复。</p>
-    </a-modal>
+    <Dialog v-model:open="deleteGroupModalOpen">
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>确认删除分组</DialogTitle>
+        </DialogHeader>
+        <p>删除「{{ pendingDeleteGroup?.name }}」后无法恢复。</p>
+        <DialogFooter>
+          <button class="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-card px-3.5 text-[13px] text-muted-foreground transition-all hover:border-primary hover:text-primary" @click="deleteGroupModalOpen = false">取消</button>
+          <button class="inline-flex h-8 items-center gap-1.5 rounded-lg bg-red-500 px-3.5 text-[13px] font-medium text-white transition-all hover:bg-red-600 disabled:opacity-50" :disabled="savingGroupAction === 'delete'" @click="confirmDeleteGroup">删除</button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
-import { message } from 'ant-design-vue'
+import { useToast } from '@/components/ui/sonner'
 import {
-  LeftOutlined, RightOutlined, UnorderedListOutlined,
-  PlusOutlined, CheckOutlined, CloseOutlined, EditOutlined, DeleteOutlined,
-} from '@ant-design/icons-vue'
+  ChevronLeft, ChevronRight, ListOrdered,
+  Plus, Check, X, Pencil, Trash2,
+} from '@lucide/vue'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
 import { usePlanningStore } from '@/stores/planning'
 import dayjs from 'dayjs'
 
+const toast = useToast()
 const planning = usePlanningStore()
 
 const calendarEvents = computed(() => planning.calendarEvents)
@@ -474,7 +490,7 @@ async function toggleTagFromDropdown(tag) {
   try {
     await planning.updateCalendarEvent({ id: selectedEvent.value.id, tagIds: newIds, expectedUpdatedAt: selectedEvent.value.updatedAt })
   } catch {
-    message.error('保存标签失败')
+    toast.error('保存标签失败')
   }
 }
 
@@ -484,7 +500,7 @@ async function removeTagFromEvent(tag) {
   try {
     await planning.updateCalendarEvent({ id: selectedEvent.value.id, tagIds: newIds, expectedUpdatedAt: selectedEvent.value.updatedAt })
   } catch {
-    message.error('移除标签失败')
+    toast.error('移除标签失败')
   }
 }
 
@@ -496,7 +512,7 @@ async function createAndAddTag() {
     await toggleTagFromDropdown(newTag)
     tagSearchText.value = ''
   } catch {
-    message.error('创建标签失败')
+    toast.error('创建标签失败')
   }
 }
 
@@ -623,7 +639,8 @@ function computeTimedSegments(items) {
   const finishCluster = () => { for (const seg of cluster) seg.laneCount = clusterLaneCount }
   for (const item of items) {
     if (item.startHour >= clusterEndHour) {
-      finishCluster(); active = []; cluster = []; clusterEndHour = -Infinity; clusterLaneCount = 1
+      finishCluster(); active = []; cluster = [];
+      clusterEndHour = -Infinity; clusterLaneCount = 1
     }
     active = active.filter(seg => seg.endHour > item.startHour)
     const occupied = new Set(active.map(seg => seg.lane))
@@ -785,6 +802,16 @@ const detailEndAt = ref(null)
 const detailGroupId = ref('__none__')
 const pendingDelete = ref(null)
 
+// 原生 datetime-local input 桥接
+const detailStartAtInput = computed({
+  get: () => detailStartAt.value ? detailStartAt.value.format('YYYY-MM-DDTHH:mm') : '',
+  set: (v) => { detailStartAt.value = v ? dayjs(v) : null },
+})
+const detailEndAtInput = computed({
+  get: () => detailEndAt.value ? detailEndAt.value.format('YYYY-MM-DDTHH:mm') : '',
+  set: (v) => { detailEndAt.value = v ? dayjs(v) : null },
+})
+
 const deleteModalOpen = computed({
   get: () => !!pendingDelete.value,
   set: (v) => { if (!v) pendingDelete.value = null },
@@ -828,7 +855,7 @@ async function quickCreateEvent(startDate, endDate) {
     })
     selectedEventId.value = event.id
   } catch {
-    message.error('创建日程失败')
+    toast.error('创建日程失败')
   }
 }
 
@@ -854,7 +881,7 @@ async function saveField(field) {
       await planning.updateCalendarEvent({ id: ev.id, groupId, expectedUpdatedAt: ev.updatedAt })
     }
   } catch {
-    message.error('保存日程失败')
+    toast.error('保存日程失败')
   }
 }
 
@@ -890,7 +917,7 @@ async function saveAllDay() {
       })
     }
   } catch {
-    message.error('保存失败')
+    toast.error('保存失败')
   }
 }
 
@@ -900,9 +927,9 @@ async function confirmDelete() {
     await planning.deleteCalendarEvent(pendingDelete.value.id)
     selectedEventId.value = null
     pendingDelete.value = null
-    message.success('日程已删除')
+    toast.success('日程已删除')
   } catch {
-    message.error('删除日程失败')
+    toast.error('删除日程失败')
   }
 }
 
@@ -945,7 +972,7 @@ async function confirmCreateGroup() {
     const group = await planning.createGroup({ scope: 'calendar', name })
     if (group) { creatingGroup.value = false; newGroupName.value = '' }
   } catch {
-    message.error('创建分组失败：名称可能已存在')
+    toast.error('创建分组失败：名称可能已存在')
   } finally {
     savingGroupAction.value = null
   }
@@ -973,7 +1000,7 @@ async function confirmRenameGroup(group) {
     renamingGroupId.value = null
     renameGroupName.value = ''
   } catch {
-    message.error('重命名分组失败：名称可能已存在')
+    toast.error('重命名分组失败：名称可能已存在')
   } finally {
     savingGroupAction.value = null
   }
@@ -988,7 +1015,7 @@ async function confirmDeleteGroup() {
     await planning.deleteGroup('calendar', pendingDeleteGroup.value.id)
     pendingDeleteGroup.value = null
   } catch {
-    message.error('删除分组失败')
+    toast.error('删除分组失败')
   } finally {
     savingGroupAction.value = null
   }
@@ -1002,342 +1029,12 @@ async function setGroupColor(group, color) {
   try {
     await planning.updateGroup({ id: group.id, scope: 'calendar', color })
   } catch {
-    message.error('更新颜色失败')
+    toast.error('更新颜色失败')
   }
 }
 </script>
 
-<style lang="less" scoped>
-.calendar-workspace {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  box-sizing: border-box;
-  background: var(--bg-panel);
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
-  overflow: hidden;
-  position: relative;
-}
-
-.calendar-toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--border-color-light);
-  flex-shrink: 0;
-  &__left { display: flex; align-items: center; gap: 12px; }
-  &__right { display: flex; align-items: center; gap: 4px; }
-  &__nav { display: flex; align-items: center; gap: 12px; }
-  &__title { font-size: 15px; font-weight: 600; color: var(--text-primary); min-width: 180px; text-align: center; }
-}
-
-.calendar-nav-btn {
-  width: 32px; height: 32px; border: 1px solid var(--border-color); border-radius: 8px;
-  background: var(--bg-panel); color: var(--text-secondary); cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  &:hover { color: var(--accent); border-color: var(--accent); }
-}
-
-.calendar-mode-btn {
-  padding: 0 12px; height: 32px; border: 1px solid var(--border-color); border-radius: 8px;
-  background: var(--bg-panel); color: var(--text-secondary); cursor: pointer; font-size: 13px;
-  display: inline-flex; align-items: center; gap: 4px;
-  &:hover { color: var(--accent); }
-  &--active { background: var(--accent); color: #fff; border-color: var(--accent); }
-}
-
-// ===== 月视图 =====
-.calendar-month { flex: 1; display: flex; flex-direction: column; min-height: 0; }
-
-.calendar-weekdays {
-  display: grid; grid-template-columns: repeat(7, 1fr);
-  border-bottom: 1px solid var(--border-color-light); flex-shrink: 0;
-}
-.calendar-weekday { padding: 8px; text-align: center; font-size: 12px; font-weight: 500; color: var(--text-muted); }
-
-.calendar-days {
-  flex: 1; display: grid; grid-template-columns: repeat(7, 1fr);
-  grid-template-rows: repeat(6, minmax(0, 1fr)); overflow-y: auto;
-}
-
-.calendar-day {
-  border-right: 1px solid var(--border-color-light);
-  border-bottom: 1px solid var(--border-color-light);
-  padding: 4px; cursor: pointer; transition: background 0.15s ease;
-  overflow: hidden; display: flex; flex-direction: row; min-height: 0;
-  &:hover { background: rgba(22, 119, 255, 0.03); }
-  &--other { background: rgba(0, 0, 0, 0.02); .calendar-day__num { color: var(--text-muted); } }
-  &--today { .calendar-day__num { color: var(--accent); font-weight: 600; } }
-  &__num { font-size: 12px; color: var(--text-secondary); flex-shrink: 0; width: 18px; text-align: right; line-height: 1.4; }
-  &__events { display: flex; flex-direction: column; gap: 2px; margin-left: 4px; flex: 1; min-width: 0; }
-  &__more { font-size: 10px; color: var(--text-muted); padding: 1px 4px; margin-top: 2px; cursor: pointer; &:hover { color: var(--accent); } }
-  &__auto { font-size: 10px; color: var(--accent); padding: 1px 4px; background: rgba(22, 119, 255, 0.08); border-radius: 3px; margin-top: 2px; }
-}
-
-.calendar-event {
-  font-size: 11px; padding: 2px 4px; border-left: 3px solid var(--accent);
-  background: rgba(22, 119, 255, 0.06); border-radius: 2px;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; color: var(--text-primary);
-  &:hover { filter: brightness(0.95); }
-}
-
-// ===== 周视图 =====
-.calendar-week {
-  flex: 1; display: flex; flex-direction: column; min-height: 0;
-  &__header {
-    display: grid; grid-template-columns: 56px repeat(7, 1fr);
-    border-bottom: 1px solid var(--border-color-light); flex-shrink: 0;
-  }
-  &__time-gutter { width: 56px; flex-shrink: 0; }
-  &__header-day { display: flex; flex-direction: column; align-items: center; padding: 8px; border-right: 1px solid var(--border-color-light); }
-  &__weekday { font-size: 11px; color: var(--text-muted); }
-  &__date { font-size: 16px; font-weight: 600; color: var(--text-primary); margin-top: 2px; &--today { color: var(--accent); } }
-  &__body {
-    flex: 1; overflow-y: auto; display: grid;
-    grid-template-columns: 56px repeat(7, 1fr); position: relative;
-  }
-  &__time-cell { height: 44px; padding-right: 8px; text-align: right; font-size: 11px; color: var(--text-muted); padding-top: 2px; border-bottom: 1px solid var(--border-color-light); }
-  &__day-col {
-    border-right: 1px solid var(--border-color-light); position: relative;
-    user-select: none; cursor: crosshair; touch-action: none;
-    overflow: hidden; min-width: 0; box-sizing: border-box;
-  }
-  &__hour-cell { height: 44px; border-bottom: 1px solid var(--border-color-light); &:hover { background: rgba(22, 119, 255, 0.02); } }
-  &__drag-preview {
-    position: absolute; left: 2px; right: 2px;
-    background: rgba(22, 119, 255, 0.15); border: 1px solid var(--accent); border-left: 2px solid var(--accent);
-    border-radius: 4px; pointer-events: none; z-index: 5; overflow: hidden; padding: 4px 6px;
-  }
-  &__drag-label { display: block; font-size: 11px; font-weight: 500; color: var(--accent); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  &__event {
-    position: absolute; border-left: 3px solid var(--accent); border-radius: 4px;
-    padding: 4px 6px; overflow: hidden; cursor: pointer; z-index: 3;
-    transition: filter 0.15s ease; min-width: 0; box-sizing: border-box;
-    &:hover { filter: brightness(0.92); z-index: 4; }
-  }
-  &__event-title { display: block; font-size: 12px; font-weight: 500; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  &__event-time { display: block; font-size: 10px; color: var(--text-muted); margin-top: 2px; }
-}
-
-// ===== 右侧 Inspector =====
-.calendar-inspector-overlay {
-  position: absolute; inset: 0; z-index: 30; background: rgba(0, 0, 0, 0.02); cursor: pointer;
-}
-
-.calendar-inspector {
-  position: absolute; top: 12px; right: 12px; bottom: 12px;
-  width: min(400px, calc(100% - 24px));
-  background: var(--bg-panel); border: 1px solid var(--border-color-light);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12); border-radius: 12px;
-  z-index: 40; overflow: hidden; display: flex; flex-direction: column;
-
-  &__close {
-    position: absolute; top: 12px; right: 12px; width: 28px; height: 28px;
-    border: none; background: transparent; cursor: pointer; color: var(--text-muted);
-    border-radius: 6px; display: flex; align-items: center; justify-content: center; z-index: 10;
-    &:hover { background: var(--bg-hover); color: var(--text-primary); }
-  }
-  &__header { flex-shrink: 0; padding: 20px 20px 12px; border-bottom: 1px solid var(--border-color-light); }
-  &__title {
-    border: none; background: transparent; font-size: 17px; font-weight: 600;
-    color: var(--text-primary); outline: none; padding: 0; padding-right: 40px;
-    width: 100%; box-sizing: border-box;
-    &:focus { box-shadow: none; }
-  }
-  &__body { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 16px 20px; display: flex; flex-direction: column; gap: 20px; }
-  &__section { display: flex; flex-direction: column; gap: 12px; }
-  &__section-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin: 0; }
-  &__label { display: block; font-size: 11px; font-weight: 500; color: var(--text-muted); margin-bottom: 6px; }
-  &__field { display: flex; flex-direction: column; }
-  &__field-label { font-size: 11px; font-weight: 500; color: var(--text-muted); margin-bottom: 6px; }
-  &__field-row { display: flex; gap: 8px; .calendar-inspector__field { flex: 1; } }
-  &__notes {
-    border: 1px solid var(--border-color-light); border-radius: 8px;
-    background: rgba(22, 119, 255, 0.03); padding: 8px 12px; font-size: 13px;
-    min-height: 80px; resize: vertical; outline: none; color: var(--text-primary);
-    &:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.1); }
-  }
-  &__select { width: 100%; }
-  &__date { width: 100%; }
-  &__footer {
-    flex-shrink: 0; display: flex; justify-content: space-between; align-items: center;
-    padding: 12px 20px; border-top: 1px solid var(--border-color-light); background: var(--bg-panel);
-  }
-  &__delete-btn {
-    display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 14px;
-    border: none; border-radius: 8px; cursor: pointer; font-size: 13px; transition: all 0.2s ease;
-    background: #ff4d4f; color: #fff; font-weight: 500;
-    box-shadow: 0 2px 6px rgba(255, 77, 79, 0.25);
-    &:hover { background: #d9363e; }
-  }
-  &__save-hint { font-size: 11px; color: var(--text-muted); }
-  &__all-day {
-    display: flex; align-items: center; gap: 8px;
-    padding: 8px 12px; border: 1px solid var(--border-color-light); border-radius: 8px;
-    cursor: pointer;
-  }
-  &__all-day-hint { font-size: 11px; color: var(--text-muted); }
-}
-
-// ===== 标签 =====
-.calendar-tag-chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-
-.calendar-tag-chip {
-  display: inline-flex; align-items: center; gap: 4px;
-  padding: 2px 4px 2px 8px; border-radius: 12px; font-size: 12px;
-  background: rgba(0, 0, 0, 0.05); color: var(--text-primary); transition: all 0.15s ease;
-  &:hover { background: rgba(0, 0, 0, 0.08); }
-  &__dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-  &__close {
-    display: inline-flex; align-items: center; justify-content: center;
-    width: 16px; height: 16px; border: none; border-radius: 50%;
-    background: transparent; color: var(--text-muted); cursor: pointer; font-size: 10px;
-    transition: all 0.15s ease;
-    &:hover { background: rgba(220, 38, 38, 0.15); color: #dc2626; }
-  }
-}
-
-.calendar-tag-add { position: relative; display: inline-flex; }
-.calendar-tag-add__btn {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 24px; height: 24px; border: 1px dashed rgba(0, 0, 0, 0.2); border-radius: 6px;
-  background: transparent; color: var(--text-muted); cursor: pointer; transition: all 0.15s ease;
-  font-size: 12px;
-  &:hover { border-color: var(--accent); color: var(--accent); background: rgba(22, 119, 255, 0.06); }
-}
-
-.calendar-tag-dropdown {
-  z-index: 9999;
-  border-radius: 8px; overflow: hidden;
-  background: #fff; box-shadow: 0 6px 24px rgba(0, 0, 0, 0.15);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  &__search { padding: 10px 12px 6px; }
-  &__input {
-    width: 100%; padding: 6px 10px; border: 1px solid rgba(0, 0, 0, 0.12); border-radius: 6px;
-    font-size: 13px; outline: none; background: #f5f5f5; color: #333;
-    box-sizing: border-box;
-    transition: border-color 0.15s ease;
-    &:focus { border-color: #1677ff; }
-  }
-  &__list { max-height: 220px; overflow-y: auto; padding: 4px 8px 8px; }
-  &__item {
-    display: flex; align-items: center; gap: 8px; width: 100%;
-    padding: 7px 8px; border: none; border-radius: 6px;
-    background: transparent; cursor: pointer; font-size: 13px; text-align: left;
-    color: #333; transition: background 0.12s ease;
-    &:hover { background: rgba(0, 0, 0, 0.05); }
-    &--selected { background: rgba(22, 119, 255, 0.08); }
-    &--create { color: #1677ff; font-weight: 500; }
-    &-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    &-check { font-size: 12px; color: #1677ff; flex-shrink: 0; }
-  }
-  &__empty { padding: 12px 8px; text-align: center; font-size: 12px; color: #9ca3af; }
-}
-
-// ===== 分组颜色点 =====
-.calendar-group-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; display: inline-block; }
-.calendar-group-option { display: inline-flex; align-items: center; gap: 6px; }
-
-// ===== 颜色选择器 =====
-.group-color-picker {
-  position: relative; flex-shrink: 0;
-  &__current { cursor: pointer; width: 16px; height: 16px; border: 2px solid rgba(0,0,0,0.1); }
-  &__panel {
-    position: absolute; top: 50%; left: 100%; transform: translateY(-50%); margin-left: 6px; z-index: 50;
-    display: flex; gap: 4px; padding: 8px; background: var(--bg-panel);
-    border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  }
-  &__swatch {
-    width: 18px; height: 18px; border-radius: 4px; border: 2px solid transparent; cursor: pointer;
-    &--active { border-color: var(--text-primary); }
-  }
-  &__custom {
-    width: 18px; height: 18px; border-radius: 4px; overflow: hidden; cursor: pointer;
-    background: conic-gradient(red, yellow, lime, aqua, blue, magenta, red);
-    input { width: 100%; height: 100%; opacity: 0; cursor: pointer; }
-  }
-}
-
-// ===== 分组管理 Modal =====
-.group-manager-modal { .ant-modal-body { padding: 16px 20px 20px; } }
-.group-manager {
-  &__create { margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--border-color-light); }
-  &__create-row { display: flex; align-items: center; gap: 6px; }
-  &__create-input { flex: 1; }
-  &__add-btn {
-    display: flex; align-items: center; justify-content: center; gap: 6px;
-    width: 100%; height: 34px; border: 1px dashed var(--border-color); border-radius: 8px;
-    background: transparent; cursor: pointer; font-size: 13px; color: var(--text-muted); transition: all 0.15s ease;
-    &:hover { border-color: var(--accent); color: var(--accent); background: rgba(22, 119, 255, 0.03); }
-  }
-  &__list { max-height: 320px; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
-  &__empty { padding: 32px 0; text-align: center; font-size: 13px; color: var(--text-muted); }
-  &__item {
-    display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 6px;
-    border-radius: 6px; transition: background 0.15s ease;
-    &:hover { background: rgba(22, 119, 255, 0.04); .group-manager__icon-btn { opacity: 1; } }
-  }
-  &__item-name { flex: 1; font-size: 13px; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  &__rename-input { flex: 1; }
-  &__action-btn {
-    width: 32px; height: 32px; border: none; border-radius: 6px; cursor: pointer;
-    display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 14px; transition: all 0.15s ease;
-    &--confirm {
-      background: rgba(82, 196, 26, 0.12); color: #52c41a;
-      &:hover:not(:disabled) { background: #52c41a; color: #fff; }
-      &:disabled { opacity: 0.35; cursor: not-allowed; }
-    }
-    &--cancel {
-      background: rgba(0, 0, 0, 0.06); color: var(--text-muted);
-      &:hover { background: rgba(255, 77, 79, 0.1); color: #ff4d4f; }
-    }
-  }
-  &__icon-btn {
-    width: 26px; height: 26px; border: none; background: transparent; border-radius: 4px; cursor: pointer;
-    display: flex; align-items: center; justify-content: center; color: var(--text-muted);
-    flex-shrink: 0; opacity: 0; transition: all 0.15s ease; font-size: 13px;
-    &:hover { background: rgba(22, 119, 255, 0.1); color: var(--accent); }
-    &--danger:hover { background: rgba(255, 77, 79, 0.1); color: #ff4d4f; }
-  }
-}
-
-// ===== 公共按钮 =====
-.planning-btn {
-  display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 14px;
-  border: none; border-radius: 8px; cursor: pointer; font-size: 13px; transition: all 0.2s ease;
-  &--primary {
-    background: var(--accent); color: #fff; font-weight: 500;
-    box-shadow: 0 2px 6px rgba(22, 119, 255, 0.25);
-    &:hover { background: var(--accent-hover); }
-  }
-  &--ghost {
-    background: var(--bg-panel); color: var(--text-secondary); border: 1px solid var(--border-color);
-    &:hover { color: var(--accent); border-color: var(--accent); }
-  }
-}
-
-// ===== 日程 hover 详情浮窗 =====
-.calendar-event-tooltip {
-  position: absolute; z-index: 999; min-width: 200px; max-width: 280px;
-  padding: 10px 12px; border-radius: 8px;
-  background: #fff; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  pointer-events: none; animation: tooltipFadeIn 0.12s ease;
-
-  &__header { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
-  &__dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-  &__title { font-size: 13px; font-weight: 600; color: #1f2937; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  &__time { font-size: 12px; color: #6b7280; margin-bottom: 4px; display: flex; gap: 6px; align-items: center; }
-  &__date { color: #9ca3af; }
-  &__group { display: flex; align-items: center; gap: 4px; font-size: 12px; color: #6b7280; margin-bottom: 4px; }
-  &__tags { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 4px; }
-  &__tag { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; color: #6b7280; }
-  &__notes { font-size: 12px; color: #4b5563; margin-top: 4px; line-height: 1.4; max-height: 60px; overflow: hidden; }
-}
-
+<style>
 @keyframes tooltipFadeIn {
   from { opacity: 0; transform: translateY(-4px); }
   to { opacity: 1; transform: translateY(0); }

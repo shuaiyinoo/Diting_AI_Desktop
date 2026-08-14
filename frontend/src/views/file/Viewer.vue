@@ -1,23 +1,19 @@
 <template>
-  <div id="file-viewer-page" class="file-viewer-page">
+  <div id="file-viewer-page" class="w-screen h-screen flex flex-col overflow-hidden bg-card">
     <!-- 顶部信息栏 -->
-    <div class="file-viewer-page__header">
-      <div class="file-viewer-page__title">
-        <file-outlined class="file-viewer-page__icon" />
+    <div class="flex-shrink-0 flex items-center justify-between px-5 py-2.5 bg-card border-b border-border shadow-sm z-10">
+      <div class="flex items-center gap-2 text-[15px] font-medium text-foreground overflow-hidden text-ellipsis whitespace-nowrap">
+        <FileText class="size-4 text-primary" />
         <span>{{ fileInfo.name || '文件查看' }}</span>
       </div>
-      <div class="file-viewer-page__meta">
-        <span v-if="fileInfo.size" class="file-viewer-page__meta-item">
-          {{ formatSize(fileInfo.size) }}
-        </span>
-        <span v-if="fileInfo.type" class="file-viewer-page__meta-item">
-          {{ fileInfo.type }}
-        </span>
+      <div class="flex items-center gap-4 text-xs text-muted-foreground flex-shrink-0">
+        <span v-if="fileInfo.size" class="whitespace-nowrap">{{ formatSize(fileInfo.size) }}</span>
+        <span v-if="fileInfo.type" class="whitespace-nowrap">{{ fileInfo.type }}</span>
       </div>
     </div>
 
     <!-- 文件查看器主体 -->
-    <div class="file-viewer-page__body">
+    <div class="flex-1 overflow-hidden relative">
       <FileViewer
         :file-item-id="fileItemId"
         @loaded="onFileLoaded"
@@ -30,6 +26,7 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { useRoute } from 'vue-router';
+import { FileText } from '@lucide/vue';
 import FileViewer from '@/components/file/FileViewer.vue';
 import { ipcApiRoute } from '@/api';
 import { ipc } from '@/utils/ipcRenderer';
@@ -91,62 +88,3 @@ function onFileError(errMsg) {
 // 页面加载时获取文件信息
 loadFileInfo();
 </script>
-
-<style lang="less" scoped>
-.file-viewer-page {
-  width: 100vw;
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  background: #fff;
-
-  &__header {
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 10px 20px;
-    background: #fff;
-    border-bottom: 1px solid #e8e8e8;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
-    z-index: 10;
-  }
-
-  &__title {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 15px;
-    font-weight: 500;
-    color: #1f1f1f;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  &__icon {
-    color: #1890ff;
-    font-size: 16px;
-  }
-
-  &__meta {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    font-size: 12px;
-    color: #999;
-    flex-shrink: 0;
-  }
-
-  &__meta-item {
-    white-space: nowrap;
-  }
-
-  &__body {
-    flex: 1;
-    overflow: hidden;
-    position: relative;
-  }
-}
-</style>

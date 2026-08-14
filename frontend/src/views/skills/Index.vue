@@ -1,21 +1,28 @@
 <template>
-  <div class="skills-page">
+  <div class="flex h-full w-full min-w-0 flex-1 flex-col overflow-hidden bg-background">
     <!-- ========== 顶部标签栏 ========== -->
-    <div class="topbar">
+    <div class="flex shrink-0 items-center gap-1 px-6 pt-3">
       <div
         v-for="tab in tabs"
         :key="tab.key"
-        class="tab"
-        :class="{ 'tab--active': activeTab === tab.key }"
+        class="cursor-pointer rounded-lg px-4 py-1.5 text-sm font-medium transition-all"
+        :class="activeTab === tab.key
+          ? 'border border-border bg-background text-foreground shadow-sm'
+          : 'text-muted-foreground hover:bg-accent'"
         @click="activeTab = tab.key"
       >
-        <span class="tab__label">{{ tab.label }}</span>
-        <span class="tab__count">{{ tab.count }}</span>
+        {{ tab.label }}
+        <span class="ml-1 text-xs text-muted-foreground">{{ tab.count }}</span>
       </div>
-<!-- 记忆 Tab 激活时显示项目选择器 -->
-<div v-if="activeTab === 'memory'" class="topbar__right">
-<span class="topbar__project-label">项目选择</span>
-<select v-model="selectedWorkspaceSlug" class="topbar__project-select" @change="onWorkspaceChange">
+
+      <!-- 记忆 Tab 激活时显示项目选择器 -->
+      <div v-if="activeTab === 'memory'" class="ml-auto flex items-center gap-1.5">
+        <span class="shrink-0 whitespace-nowrap text-[13px] font-medium text-muted-foreground">项目选择</span>
+        <select
+          v-model="selectedWorkspaceSlug"
+          class="min-w-[220px] cursor-pointer rounded-lg border border-border bg-background px-3 py-1.5 text-sm text-foreground appearance-none bg-[url('data:image/svg+xml;utf8,<svg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%2710%27%20height=%276%27%20viewBox=%270%200%2010%206%27><path%20d=%27M1%201l4%204%204-4%27%20stroke=%27%238A8884%27%20stroke-width=%271.5%27%20fill=%27none%27%20stroke-linecap=%27round%27/></svg>')] bg-[length:10px_6px] bg-no-repeat bg-[position:right_10px_center] pr-7 hover:border-foreground/30 focus:outline-none focus:border-foreground/50"
+          @change="onWorkspaceChange"
+        >
           <option v-for="ws in workspaces" :key="ws.id" :value="ws.id">
             {{ ws.name }}
           </option>
@@ -23,48 +30,71 @@
       </div>
     </div>
 
-    <div class="tab-body">
-      <!-- ===== ===== ===== Skills Tab ===== ===== ===== -->
-      <div v-show="activeTab === 'skills'" class="tab-pane" :class="{ 'tab-pane--active': activeTab === 'skills' }">
-        <div class="section-title">
-          Diting 内置 <span class="section-count">{{ skills.length }}</span>
+    <!-- Tab 内容区 -->
+    <div class="min-h-0 flex-1 overflow-y-auto px-6 pb-6 pt-5">
+      <!-- ===== Skills Tab ===== -->
+      <div v-show="activeTab === 'skills'">
+        <div class="mb-3 text-[13px] font-medium text-muted-foreground">
+          Diting 内置 <span class="text-muted-foreground/70">{{ skills.length }}</span>
         </div>
 
-        <div v-if="skillsLoading" class="loading-state">
-          <a-spin tip="加载中..." />
+        <!-- 加载中 -->
+        <div v-if="skillsLoading" class="flex min-h-[200px] flex-col items-center justify-center gap-2 text-muted-foreground">
+          <Spinner class="size-5" />
+          <span class="text-sm">加载中...</span>
         </div>
 
-        <div v-if="!skillsLoading && skills.length === 0" class="empty-state">
-          <ThunderboltOutlined style="font-size: 40px; opacity: 0.2" />
-          <p>暂无 Skills</p>
-          <p class="empty-hint">Skills 是可复用的 Agent 流程模板，可在 Agent 工作区中通过 / 引用</p>
+        <!-- 空状态 -->
+        <div v-if="!skillsLoading && skills.length === 0" class="flex min-h-[200px] flex-col items-center justify-center gap-2 text-muted-foreground">
+          <Zap class="size-10 opacity-20" />
+          <p class="text-sm">暂无 Skills</p>
+          <p class="max-w-[320px] text-center text-[11px] leading-relaxed">Skills 是可复用的 Agent 流程模板，可在 Agent 工作区中通过 / 引用</p>
         </div>
 
         <!-- 分组渲染 -->
         <template v-for="(groupSkills, groupName) in groupedSkills" :key="groupName">
-          <div class="group" :class="{ 'group--collapsed': collapsedGroups.has(groupName) }">
-            <div class="group-head" @click="toggleGroup(groupName)">
-              <DownOutlined class="chev" />
+          <div class="mb-2">
+            <div
+              class="flex cursor-pointer select-none items-center gap-1.5 py-3 text-[13px] font-medium text-muted-foreground"
+              @click="toggleGroup(groupName)"
+            >
+              <ChevronDown class="size-3.5 text-muted-foreground transition-transform" :class="{ '-rotate-90': collapsedGroups.has(groupName) }" />
               <span>{{ groupName }}</span>
-              <span class="group-count">{{ groupSkills.length }}</span>
+              <span class="font-normal text-muted-foreground/70">{{ groupSkills.length }}</span>
             </div>
-            <div v-show="!collapsedGroups.has(groupName)" class="card-grid">
-              <div v-for="skill in groupSkills" :key="skill.slug" class="skill-card" @click="openSkillDetail(skill)">
-                <div class="card-head">
-                  <div class="card-icon card-icon--skill">
-                    <StarFilled />
+            <div v-show="!collapsedGroups.has(groupName)" class="mb-2 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <div
+                v-for="skill in groupSkills"
+                :key="skill.slug"
+                class="relative cursor-pointer rounded-xl border border-border bg-card p-[18px] pb-4 transition-all hover:shadow-sm"
+                @click="openSkillDetail(skill)"
+              >
+                <!-- 卡片头部 -->
+                <div class="mb-2.5 flex items-start gap-3">
+                  <div class="mt-0.5 flex size-5 shrink-0 items-center justify-center text-[#D97706]">
+                    <Star class="size-5" />
                   </div>
-                  <div class="card-title-row">
-                    <div class="card-title">{{ skill.name }}</div>
-                    <span v-if="skill.version" class="pill pill--version">v{{ skill.version }}</span>
+                  <div class="flex min-w-0 flex-1 items-center gap-2">
+                    <div class="overflow-hidden text-ellipsis whitespace-nowrap text-[15px] font-semibold text-foreground">{{ skill.name }}</div>
+                    <span v-if="skill.version" class="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">v{{ skill.version }}</span>
                   </div>
-                  <div class="toggle" :class="{ 'toggle--on': skill.enabled }" @click.stop="toggleSkill(skill)" />
+                  <!-- Toggle 开关 -->
+                  <button
+                    class="relative h-5 w-9 shrink-0 rounded-full transition-colors"
+                    :class="skill.enabled ? 'bg-primary' : 'bg-border'"
+                    @click.stop="toggleSkill(skill)"
+                  >
+                    <span
+                      class="absolute top-0.5 size-4 rounded-full bg-white shadow-sm transition-transform"
+                      :class="skill.enabled ? 'translate-x-4' : 'translate-x-0.5'"
+                    />
+                  </button>
                 </div>
-                <div class="card-name">{{ skill.slug }}</div>
-                <div class="card-desc">{{ skill.description || '无描述' }}</div>
-                <div class="card-foot">
-                  <span class="tag tag--built">Diting 内置</span>
-                  <span v-if="skill.hasUpdate" class="tag tag--update">有更新</span>
+                <div class="mb-2 -mt-1 font-mono text-xs text-muted-foreground">{{ skill.slug }}</div>
+                <div class="mb-3.5 line-clamp-2 text-[13px] leading-relaxed text-muted-foreground">{{ skill.description || '无描述' }}</div>
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="inline-flex items-center rounded bg-blue-500/10 px-2 py-0.5 text-xs font-medium text-blue-600">Diting 内置</span>
+                  <span v-if="skill.hasUpdate" class="inline-flex items-center rounded bg-yellow-500/10 px-2 py-0.5 text-xs font-medium text-yellow-600">有更新</span>
                 </div>
               </div>
             </div>
@@ -72,82 +102,86 @@
         </template>
       </div>
 
-      <!-- ===== ===== ===== Skill 详情面板（右侧弹出） ===== ===== ===== -->
-      <div v-if="selectedSkill" class="skill-inspector-overlay" @click="closeSkillDetail"></div>
-      <aside v-if="selectedSkill" class="skill-inspector">
+      <!-- ===== Skill 详情面板 ===== -->
+      <div v-if="selectedSkill" class="fixed inset-0 z-30 bg-black/[0.02] cursor-pointer" @click="closeSkillDetail" />
+      <aside
+        v-if="selectedSkill"
+        class="absolute right-3 top-3 bottom-3 z-40 flex w-[calc(66.66%-24px)] min-w-[500px] flex-col overflow-hidden rounded-xl border border-border bg-card shadow-2xl"
+      >
         <!-- 固定头部 -->
-        <div class="skill-inspector__header">
-          <div class="skill-inspector__title-row">
-            <div class="skill-inspector__icon">
-              <StarFilled />
+        <div class="shrink-0 border-b border-border/50 px-5 pb-4 pt-5">
+          <div class="flex items-center gap-3">
+            <div class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-yellow-500/10 text-[#D97706]">
+              <Star class="size-[18px]" />
             </div>
-            <div class="skill-inspector__title-meta">
-              <div class="skill-inspector__title">{{ selectedSkill.name }}</div>
-              <div class="skill-inspector__slug">{{ selectedSkill.slug }}</div>
+            <div class="min-w-0 flex-1">
+              <div class="overflow-hidden text-ellipsis whitespace-nowrap text-[17px] font-semibold text-foreground">{{ selectedSkill.name }}</div>
+              <div class="mt-0.5 font-mono text-xs text-muted-foreground">{{ selectedSkill.slug }}</div>
             </div>
-            <span v-if="selectedSkill.version" class="pill pill--version">v{{ selectedSkill.version }}</span>
-            <span v-if="selectedSkill.group" class="pill pill--group">{{ selectedSkill.group }}</span>
+            <span v-if="selectedSkill.version" class="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">v{{ selectedSkill.version }}</span>
+            <span v-if="selectedSkill.group" class="shrink-0 rounded bg-blue-500/10 px-1.5 py-0.5 text-[11px] font-medium text-blue-600">{{ selectedSkill.group }}</span>
           </div>
         </div>
-        <!-- 可滚动中间内容 -->
-        <div class="skill-inspector__body">
+        <!-- 可滚动内容 -->
+        <div class="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto overflow-x-hidden p-5">
           <!-- 元数据区 -->
-          <div class="skill-inspector__section">
-            <h3 class="skill-inspector__section-title">元数据</h3>
-            <div class="skill-meta-grid">
-              <div class="skill-meta-row">
-                <span class="skill-meta-label">名称</span>
-                <span class="skill-meta-value">{{ selectedSkill.name }}</span>
-              </div>
-              <div class="skill-meta-row">
-                <span class="skill-meta-label">描述</span>
-                <span class="skill-meta-value">{{ selectedSkill.description || '无描述' }}</span>
-              </div>
-              <div class="skill-meta-row">
-                <span class="skill-meta-label">分组</span>
-                <span class="skill-meta-value">{{ selectedSkill.group || '未分组' }}</span>
-              </div>
-              <div class="skill-meta-row">
-                <span class="skill-meta-label">位置</span>
-                <span class="skill-meta-value skill-meta-value--mono">skills/{{ selectedSkill.slug }}</span>
+          <div class="flex flex-col gap-3">
+            <h3 class="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">元数据</h3>
+            <div class="overflow-hidden rounded-lg border border-border">
+              <div
+                v-for="(row, idx) in [
+                  { label: '名称', value: selectedSkill.name },
+                  { label: '描述', value: selectedSkill.description || '无描述' },
+                  { label: '分组', value: selectedSkill.group || '未分组' },
+                  { label: '位置', value: `skills/${selectedSkill.slug}`, mono: true },
+                ]"
+                :key="idx"
+                class="flex items-start gap-3 px-3.5 py-2.5"
+                :class="idx < 3 ? 'border-b border-border' : ''"
+              >
+                <span class="w-[50px] shrink-0 pt-px text-xs font-medium text-muted-foreground">{{ row.label }}</span>
+                <span class="min-w-0 flex-1 break-words text-[13px] leading-relaxed text-foreground" :class="row.mono ? 'font-mono text-xs' : ''">{{ row.value }}</span>
               </div>
             </div>
           </div>
           <!-- 说明 / 资源文件 Tab -->
-          <div class="skill-detail-tabs">
-            <div class="skill-detail-tabs__bar">
+          <div class="flex min-h-0 flex-1 flex-col">
+            <div class="flex shrink-0 gap-1 border-b border-border/50 pb-2">
               <button
-                class="skill-detail-tab"
-                :class="{ 'skill-detail-tab--active': detailTab === 'body' }"
+                class="inline-flex items-center gap-1.5 rounded-md px-3.5 py-1.5 text-[13px] font-medium transition-all"
+                :class="detailTab === 'body' ? 'border border-border bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:bg-accent'"
                 @click="detailTab = 'body'"
               >说明</button>
               <button
-                class="skill-detail-tab"
-                :class="{ 'skill-detail-tab--active': detailTab === 'files' }"
+                class="inline-flex items-center gap-1.5 rounded-md px-3.5 py-1.5 text-[13px] font-medium transition-all"
+                :class="detailTab === 'files' ? 'border border-border bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:bg-accent'"
                 @click="detailTab = 'files'"
-              >资源文件<span v-if="fileCount !== null" class="skill-detail-tab__count">{{ fileCount }}</span></button>
+              >
+                资源文件
+                <span v-if="fileCount !== null" class="inline-flex h-4 min-w-[18px] items-center justify-center rounded bg-muted px-1 text-[10px] font-semibold text-muted-foreground">{{ fileCount }}</span>
+              </button>
             </div>
             <!-- 说明 Tab -->
-            <div v-show="detailTab === 'body'" class="skill-detail-tab-content">
-              <div v-if="loadingSkillContent" class="skill-detail-loading">
-                <a-spin size="small" />
+            <div v-show="detailTab === 'body'" class="mt-3 flex min-h-0 flex-1 flex-col">
+              <div v-if="loadingSkillContent" class="flex items-center justify-center py-10">
+                <Spinner class="size-5" />
               </div>
-              <div v-else class="skill-detail-markdown">
+              <div v-else class="prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed text-foreground">
                 <MarkdownRender :content="skillBody || '暂无说明内容'" :render-code-blocks-as-pre="false" :is-dark="isDark" code-block-dark-theme="vitesse-dark" code-block-light-theme="vitesse-light" :themes="['vitesse-dark', 'vitesse-light']" />
               </div>
             </div>
             <!-- 资源文件 Tab -->
-            <div v-show="detailTab === 'files'" class="skill-detail-tab-content skill-files-panel">
-              <div v-if="loadingFileTree" class="skill-detail-loading">
-                <a-spin size="small" />
+            <div v-show="detailTab === 'files'" class="mt-3 flex min-h-[400px] flex-1 flex-col">
+              <div v-if="loadingFileTree" class="flex items-center justify-center py-10">
+                <Spinner class="size-5" />
               </div>
               <template v-else>
-                <div v-if="skillFileTree.length === 0" class="skill-files-empty">
+                <div v-if="skillFileTree.length === 0" class="flex items-center justify-center py-10 text-[13px] text-muted-foreground">
                   该 Skill 暂无其他资源文件
                 </div>
-                <div v-else class="skill-files-layout">
+                <div v-else class="grid min-h-0 flex-1 grid-cols-1 gap-3 sm:grid-cols-[240px_1fr]">
                   <!-- 左栏：文件树 -->
-                  <div class="skill-file-tree">
+                  <div class="overflow-y-auto rounded-lg border border-border/50 bg-muted/30 p-1.5">
                     <SkillFileTreeNode
                       v-for="node in skillFileTree"
                       :key="node.relativePath"
@@ -160,27 +194,27 @@
                     />
                   </div>
                   <!-- 右栏：文件内容 -->
-                  <div class="skill-file-viewer">
-                    <div v-if="!selectedFilePath" class="skill-file-viewer__empty">
+                  <div class="flex min-h-0 min-w-0 flex-col overflow-hidden rounded-lg border border-border/50">
+                    <div v-if="!selectedFilePath" class="flex flex-1 items-center justify-center p-6 text-[13px] text-muted-foreground">
                       从左侧选择文件查看内容
                     </div>
-                    <div v-else-if="loadingFileContent" class="skill-file-viewer__empty">
-                      <a-spin size="small" />
+                    <div v-else-if="loadingFileContent" class="flex flex-1 items-center justify-center">
+                      <Spinner class="size-5" />
                     </div>
-                    <div v-else-if="!skillFileContent" class="skill-file-viewer__empty">
+                    <div v-else-if="!skillFileContent" class="flex flex-1 items-center justify-center p-6 text-[13px] text-muted-foreground">
                       无法加载该文件
                     </div>
-                    <div v-else-if="!skillFileContent.isText" class="skill-file-viewer__binary">
-                      <FileTextOutlined style="font-size: 24px; opacity: 0.3" />
-                      <div class="skill-file-viewer__binary-path">{{ skillFileContent.relativePath }}</div>
+                    <div v-else-if="!skillFileContent.isText" class="flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center text-[13px] text-muted-foreground">
+                      <FileText class="size-6 opacity-30" />
+                      <div class="font-mono text-xs">{{ skillFileContent.relativePath }}</div>
                       <div>二进制文件（{{ formatFileSize(skillFileContent.size) }}），不支持内置预览</div>
                     </div>
                     <template v-else>
-                      <div class="skill-file-viewer__head">
-                        <span class="skill-file-viewer__path">{{ skillFileContent.relativePath }}</span>
-                        <span class="skill-file-viewer__size">{{ formatFileSize(skillFileContent.size) }}</span>
+                      <div class="flex shrink-0 items-center justify-between gap-2 border-b border-border/50 bg-muted/30 px-3 py-2">
+                        <span class="min-w-0 flex-1 truncate font-mono text-xs text-muted-foreground">{{ skillFileContent.relativePath }}</span>
+                        <span class="shrink-0 font-mono text-[11px] text-muted-foreground/70">{{ formatFileSize(skillFileContent.size) }}</span>
                       </div>
-                      <pre class="skill-file-viewer__content">{{ skillFileContent.content || '' }}</pre>
+                      <pre class="min-h-0 flex-1 overflow-auto bg-transparent p-3.5 font-mono text-xs leading-relaxed text-foreground">{{ skillFileContent.content || '' }}</pre>
                     </template>
                   </div>
                 </div>
@@ -190,128 +224,134 @@
         </div>
       </aside>
 
-      <!-- ===== ===== ===== MCP Tab ===== ===== ===== -->
-      <div v-show="activeTab === 'mcp'" class="tab-pane" :class="{ 'tab-pane--active': activeTab === 'mcp' }">
-        <div class="section-title">
-          Diting 内置 <span class="section-count">{{ mcpServers.length }}</span>
+      <!-- ===== MCP Tab ===== -->
+      <div v-show="activeTab === 'mcp'">
+        <div class="mb-3 text-[13px] font-medium text-muted-foreground">
+          Diting 内置 <span class="text-muted-foreground/70">{{ mcpServers.length }}</span>
         </div>
 
-        <div v-if="mcpLoading" class="loading-state">
-          <a-spin tip="加载中..." />
+        <div v-if="mcpLoading" class="flex min-h-[200px] flex-col items-center justify-center gap-2 text-muted-foreground">
+          <Spinner class="size-5" />
+          <span class="text-sm">加载中...</span>
         </div>
 
-        <div v-if="!mcpLoading && mcpServers.length === 0" class="empty-state">
-          <ApiOutlined style="font-size: 40px; opacity: 0.2" />
-          <p>暂无 MCP 服务器</p>
+        <div v-if="!mcpLoading && mcpServers.length === 0" class="flex min-h-[200px] flex-col items-center justify-center gap-2 text-muted-foreground">
+          <Plug class="size-10 opacity-20" />
+          <p class="text-sm">暂无 MCP 服务器</p>
         </div>
 
-        <div class="card-grid">
-          <div v-for="mcp in mcpServers" :key="mcp.id" class="mcp-card" @click="openMcpDetail(mcp)">
-            <div class="card-head">
-              <div class="card-icon">
-                <ApiOutlined />
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div
+            v-for="mcp in mcpServers"
+            :key="mcp.id"
+            class="cursor-pointer rounded-xl border border-border bg-card p-[18px] pb-4 transition-all hover:shadow-sm"
+            @click="openMcpDetail(mcp)"
+          >
+            <div class="mb-2.5 flex items-start gap-3">
+              <div class="mt-0.5 flex size-5 shrink-0 items-center justify-center text-[#185FA5]">
+                <Plug class="size-5" />
               </div>
-              <div class="card-title-row">
-                <div class="card-title">{{ mcp.displayName }}</div>
-                <span class="pill pill--studio">stdio</span>
+              <div class="flex min-w-0 flex-1 items-center gap-2">
+                <div class="overflow-hidden text-ellipsis whitespace-nowrap text-[15px] font-semibold text-foreground">{{ mcp.displayName }}</div>
+                <span class="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">stdio</span>
               </div>
-              <div
-                class="toggle"
-                :class="{ 'toggle--on': mcp.enabled && mcp.available }"
+              <button
+                class="relative h-5 w-9 shrink-0 rounded-full transition-colors"
+                :class="mcp.enabled && mcp.available ? 'bg-primary' : 'bg-border'"
                 @click.stop="toggleMcp(mcp)"
-              />
-            </div>
-            <div class="card-desc">{{ mcp.description }}</div>
-            <div class="card-foot">
-              <span class="tag tag--built">内置</span>
-              <span
-                :class="['tag', mcp.available ? 'tag--available' : 'tag--unavailable']"
               >
-                {{ mcp.available ? '可用' : '已关闭' }}
-              </span>
-              <span class="tag tag--host">内置托管</span>
+                <span
+                  class="absolute top-0.5 size-4 rounded-full bg-white shadow-sm transition-transform"
+                  :class="mcp.enabled && mcp.available ? 'translate-x-4' : 'translate-x-0.5'"
+                />
+              </button>
             </div>
-            <div v-if="mcp.tools && mcp.tools.length > 0" class="mcp-tools">
-              <span v-for="tool in mcp.tools.slice(0, 4)" :key="tool.name" class="mcp-tool-chip">
+            <div class="mb-3.5 line-clamp-2 text-[13px] leading-relaxed text-muted-foreground">{{ mcp.description }}</div>
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="inline-flex items-center rounded bg-blue-500/10 px-2 py-0.5 text-xs font-medium text-blue-600">内置</span>
+              <span
+                class="inline-flex items-center rounded px-2 py-0.5 text-xs font-medium"
+                :class="mcp.available ? 'bg-green-500/10 text-green-600' : 'bg-muted text-muted-foreground'"
+              >{{ mcp.available ? '可用' : '已关闭' }}</span>
+              <span class="ml-auto inline-flex items-center rounded bg-muted px-2 py-0.5 text-xs text-muted-foreground">内置托管</span>
+            </div>
+            <div v-if="mcp.tools && mcp.tools.length > 0" class="mt-2 flex flex-wrap gap-1">
+              <span
+                v-for="tool in mcp.tools.slice(0, 4)"
+                :key="tool.name"
+                class="inline-flex items-center gap-1 rounded bg-blue-500/5 px-2 py-0.5 text-[11px] text-blue-600"
+              >
                 {{ tool.name }}
-                <span v-if="tool.readOnly" class="mcp-tool-ro">只读</span>
+                <span v-if="tool.readOnly" class="rounded bg-foreground/5 px-1 text-[9px] text-muted-foreground">只读</span>
               </span>
-              <span v-if="mcp.tools.length > 4" class="mcp-tool-more">+{{ mcp.tools.length - 4 }}</span>
+              <span v-if="mcp.tools.length > 4" class="px-1.5 py-0.5 text-[11px] text-muted-foreground">+{{ mcp.tools.length - 4 }}</span>
             </div>
-            <div v-if="!mcp.available && mcp.availabilityReason" class="mcp-warn">
+            <div v-if="!mcp.available && mcp.availabilityReason" class="mt-2 rounded bg-yellow-500/10 px-2 py-1 text-[11px] text-yellow-600">
               {{ mcp.availabilityReason }}
             </div>
           </div>
         </div>
 
-        <!-- ===== ===== ===== MCP 详情面板（右侧弹出） ===== ===== ===== -->
-        <div v-if="selectedMcp" class="skill-inspector-overlay" @click="closeMcpDetail"></div>
-        <aside v-if="selectedMcp" class="skill-inspector">
-          <!-- 固定头部 -->
-          <div class="skill-inspector__header">
-            <div class="skill-inspector__title-row">
-              <div class="skill-inspector__icon skill-inspector__icon--mcp">
-                <ApiOutlined />
+        <!-- MCP 详情面板 -->
+        <div v-if="selectedMcp" class="fixed inset-0 z-30 bg-black/[0.02] cursor-pointer" @click="closeMcpDetail" />
+        <aside
+          v-if="selectedMcp"
+          class="absolute right-3 top-3 bottom-3 z-40 flex w-[calc(66.66%-24px)] min-w-[500px] flex-col overflow-hidden rounded-xl border border-border bg-card shadow-2xl"
+        >
+          <div class="shrink-0 border-b border-border/50 px-5 pb-4 pt-5">
+            <div class="flex items-center gap-3">
+              <div class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-blue-500/10 text-[#185FA5]">
+                <Plug class="size-[18px]" />
               </div>
-              <div class="skill-inspector__title-meta">
-                <div class="skill-inspector__title">{{ selectedMcp.displayName }}</div>
-                <div class="skill-inspector__slug">{{ selectedMcp.id }}</div>
+              <div class="min-w-0 flex-1">
+                <div class="overflow-hidden text-ellipsis whitespace-nowrap text-[17px] font-semibold text-foreground">{{ selectedMcp.displayName }}</div>
+                <div class="mt-0.5 font-mono text-xs text-muted-foreground">{{ selectedMcp.id }}</div>
               </div>
-              <span class="pill pill--studio">stdio</span>
+              <span class="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">stdio</span>
               <span
-                class="pill"
-                :class="selectedMcp.available ? 'pill--available' : 'pill--unavailable'"
+                class="shrink-0 rounded px-1.5 py-0.5 text-[11px] font-medium"
+                :class="selectedMcp.available ? 'bg-green-500/10 text-green-600' : 'bg-muted text-muted-foreground'"
               >{{ selectedMcp.available ? '可用' : '已关闭' }}</span>
             </div>
           </div>
-          <!-- 可滚动中间内容 -->
-          <div class="skill-inspector__body">
-            <!-- 元数据区 -->
-            <div class="skill-inspector__section">
-              <h3 class="skill-inspector__section-title">元数据</h3>
-              <div class="skill-meta-grid">
-                <div class="skill-meta-row">
-                  <span class="skill-meta-label">名称</span>
-                  <span class="skill-meta-value">{{ selectedMcp.displayName }}</span>
-                </div>
-                <div class="skill-meta-row">
-                  <span class="skill-meta-label">描述</span>
-                  <span class="skill-meta-value">{{ selectedMcp.description || '无描述' }}</span>
-                </div>
-                <div class="skill-meta-row">
-                  <span class="skill-meta-label">分类</span>
-                  <span class="skill-meta-value">{{ selectedMcp.category || '-' }}</span>
-                </div>
-                <div class="skill-meta-row">
-                  <span class="skill-meta-label">状态</span>
-                  <span class="skill-meta-value">
-                    {{ selectedMcp.available ? '可用' : '不可用' }}
-                    <span v-if="!selectedMcp.available && selectedMcp.availabilityReason" style="color: var(--text-muted); font-size: 12px;">（{{ selectedMcp.availabilityReason }}）</span>
-                  </span>
-                </div>
-                <div class="skill-meta-row">
-                  <span class="skill-meta-label">可切换</span>
-                  <span class="skill-meta-value">{{ selectedMcp.toggleable ? '是' : '否' }}</span>
-                </div>
-                <div class="skill-meta-row">
-                  <span class="skill-meta-label">工具数</span>
-                  <span class="skill-meta-value">{{ selectedMcp.tools?.length || 0 }} 个</span>
+          <div class="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto overflow-x-hidden p-5">
+            <div class="flex flex-col gap-3">
+              <h3 class="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">元数据</h3>
+              <div class="overflow-hidden rounded-lg border border-border">
+                <div
+                  v-for="(row, idx) in [
+                    { label: '名称', value: selectedMcp.displayName },
+                    { label: '描述', value: selectedMcp.description || '无描述' },
+                    { label: '分类', value: selectedMcp.category || '-' },
+                    { label: '状态', value: selectedMcp.available ? '可用' : '不可用' + (selectedMcp.availabilityReason ? `（${selectedMcp.availabilityReason}）` : '') },
+                    { label: '可切换', value: selectedMcp.toggleable ? '是' : '否' },
+                    { label: '工具数', value: `${selectedMcp.tools?.length || 0} 个` },
+                  ]"
+                  :key="idx"
+                  class="flex items-start gap-3 px-3.5 py-2.5"
+                  :class="idx < 5 ? 'border-b border-border' : ''"
+                >
+                  <span class="w-[50px] shrink-0 pt-px text-xs font-medium text-muted-foreground">{{ row.label }}</span>
+                  <span class="min-w-0 flex-1 break-words text-[13px] leading-relaxed text-foreground">{{ row.value }}</span>
                 </div>
               </div>
             </div>
-            <!-- 工具列表 -->
-            <div class="skill-inspector__section">
-              <h3 class="skill-inspector__section-title">工具列表</h3>
-              <div v-if="!selectedMcp.tools || selectedMcp.tools.length === 0" class="skill-files-empty">
+            <div class="flex flex-col gap-3">
+              <h3 class="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">工具列表</h3>
+              <div v-if="!selectedMcp.tools || selectedMcp.tools.length === 0" class="flex items-center justify-center py-10 text-[13px] text-muted-foreground">
                 此 MCP 服务器暂无工具
               </div>
-              <div v-else class="mcp-tool-list">
-                <div v-for="tool in selectedMcp.tools" :key="tool.name" class="mcp-tool-item">
-                  <div class="mcp-tool-item__head">
-                    <span class="mcp-tool-item__name">{{ tool.name }}</span>
-                    <span v-if="tool.readOnly" class="mcp-tool-item__badge">只读</span>
+              <div v-else class="flex flex-col gap-2">
+                <div
+                  v-for="tool in selectedMcp.tools"
+                  :key="tool.name"
+                  class="rounded-lg border border-border p-3 transition-colors hover:border-primary"
+                >
+                  <div class="mb-1.5 flex items-center gap-2">
+                    <span class="font-mono text-[13px] font-semibold text-foreground">{{ tool.name }}</span>
+                    <span v-if="tool.readOnly" class="inline-flex rounded bg-foreground/5 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">只读</span>
                   </div>
-                  <div class="mcp-tool-item__desc">{{ tool.description || '无描述' }}</div>
+                  <div class="text-xs leading-relaxed text-muted-foreground">{{ tool.description || '无描述' }}</div>
                 </div>
               </div>
             </div>
@@ -319,99 +359,106 @@
         </aside>
       </div>
 
-      <!-- ===== ===== ===== Memory Tab ===== ===== ===== -->
-      <div v-show="activeTab === 'memory'" class="tab-pane tab-pane--memory" :class="{ 'tab-pane--active': activeTab === 'memory' }">
+      <!-- ===== Memory Tab ===== -->
+      <div v-show="activeTab === 'memory'" class="flex h-full flex-col overflow-hidden">
         <!-- 顶部记忆概览卡片 -->
-        <div class="memory-top-grid">
+        <div class="mb-4 grid flex-shrink-0 grid-cols-1 gap-3 sm:grid-cols-2">
           <div
-            class="mem-top-card"
-            :class="{ 'mem-top-card--active': activeMemoryCategory === 'project' }"
+            class="flex cursor-pointer items-center gap-3.5 rounded-xl border border-border bg-card p-4 transition-all hover:border-primary"
+            :class="activeMemoryCategory === 'project' ? 'border-primary bg-primary/5 ring-2 ring-primary/10' : ''"
             @click="selectCategory('project')"
           >
-            <div class="mem-top-icon">
-              <FileTextOutlined />
+            <div class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground" :class="activeMemoryCategory === 'project' ? 'text-primary' : ''">
+              <FileText class="size-5" />
             </div>
-            <div class="mem-top-meta">
-              <div class="mem-top-title">项目指令</div>
-              <div class="mem-top-sub">Diting 工作区 CLAUDE.md</div>
-              <div v-if="memorySummary?.claudeMd?.updatedAt" class="mem-top-sub" style="margin-top: 2px">
+            <div class="min-w-0 flex-1">
+              <div class="text-sm font-semibold text-foreground" :class="activeMemoryCategory === 'project' ? 'text-primary' : ''">项目指令</div>
+              <div class="text-xs text-muted-foreground">Diting 工作区 CLAUDE.md</div>
+              <div v-if="memorySummary?.claudeMd?.updatedAt" class="mt-0.5 text-xs text-muted-foreground">
                 更新于 {{ formatDate(memorySummary.claudeMd.updatedAt) }}
               </div>
             </div>
-            <div class="mem-top-size">
+            <div class="shrink-0 text-xs text-muted-foreground">
               {{ memorySummary?.claudeMd?.exists ? formatFileSize(memorySummary.claudeMd.size) : '未创建' }}
             </div>
           </div>
 
           <div
-            class="mem-top-card"
-            :class="{ 'mem-top-card--active': activeMemoryCategory === 'auto' }"
+            class="flex cursor-pointer items-center gap-3.5 rounded-xl border border-border bg-card p-4 transition-all hover:border-primary"
+            :class="activeMemoryCategory === 'auto' ? 'border-primary bg-primary/5 ring-2 ring-primary/10' : ''"
             @click="selectCategory('auto')"
           >
-            <div class="mem-top-icon">
-              <CloudOutlined />
+            <div class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground" :class="activeMemoryCategory === 'auto' ? 'text-primary' : ''">
+              <Cloud class="size-5" />
             </div>
-            <div class="mem-top-meta">
-              <div class="mem-top-title">自动记忆</div>
-              <div class="mem-top-sub">.claude/memory/ 下的主题文件</div>
-              <div class="mem-top-sub" style="margin-top: 2px">
+            <div class="min-w-0 flex-1">
+              <div class="text-sm font-semibold text-foreground" :class="activeMemoryCategory === 'auto' ? 'text-primary' : ''">自动记忆</div>
+              <div class="text-xs text-muted-foreground">.claude/memory/ 下的主题文件</div>
+              <div class="mt-0.5 text-xs text-muted-foreground">
                 {{ memorySummary?.autoMemory?.fileCount || 0 }} 个文件 · {{ formatFileSize(memorySummary?.autoMemory?.totalSize || 0) }}
               </div>
             </div>
-            <div class="mem-top-size">{{ memorySummary?.autoMemory?.fileCount || 0 }} 个文件</div>
+            <div class="shrink-0 text-xs text-muted-foreground">{{ memorySummary?.autoMemory?.fileCount || 0 }} 个文件</div>
           </div>
         </div>
 
         <!-- 生成记忆条 -->
-        <div class="generate-bar">
-          <div class="generate-info">
-            <div class="generate-title">从历史会话生成项目记忆</div>
-            <div class="generate-desc">
+        <div class="mb-4 flex flex-shrink-0 items-center gap-4 rounded-xl border border-border bg-card p-[18px]">
+          <div class="flex-1">
+            <div class="mb-1 text-[15px] font-semibold text-foreground">从历史会话生成项目记忆</div>
+            <div class="text-xs leading-relaxed text-muted-foreground">
               新建一个 Agent 会话，读取当前项目近期的会话，沉淀并更新工作区中的 CLAUDE.md 与 auto memory 文件。
             </div>
           </div>
-          <select v-model="generateRange" class="gen-select">
+          <select
+            v-model="generateRange"
+            class="cursor-pointer rounded-md border border-border bg-background px-2.5 py-1.5 text-[13px] text-foreground appearance-none bg-[url('data:image/svg+xml;utf8,<svg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%2710%27%20height=%276%27%20viewBox=%270%200%2010%206%27><path%20d=%27M1%201l4%204%204-4%27%20stroke=%27%238A8884%27%20stroke-width=%271.5%27%20fill=%27none%27%20stroke-linecap=%27round%27/></svg>')] bg-[length:10px_6px] bg-no-repeat bg-[position:right_10px_center] pr-7"
+          >
             <option value="1m">近 1 个月</option>
             <option value="1w">近 1 周</option>
             <option value="3m">近 3 个月</option>
             <option value="all">全部</option>
           </select>
-<button class="btn btn--primary" :disabled="generatingMemory" @click="generateMemory">
-<ThunderboltOutlined />
-{{ generatingMemory ? '生成中...' : '生成项目记忆' }}
-</button>
+          <button
+            class="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-[13px] font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:opacity-50"
+            :disabled="generatingMemory"
+            @click="generateMemory"
+          >
+            <Zap class="size-4" />
+            {{ generatingMemory ? '生成中...' : '生成项目记忆' }}
+          </button>
         </div>
 
         <!-- 记忆文件浏览器 + 编辑器 -->
-        <div class="memory-layout">
+        <div class="grid min-h-0 flex-1 grid-cols-1 gap-4 overflow-hidden sm:grid-cols-[280px_1fr]">
           <!-- 左栏：文件列表 -->
-          <div class="file-list-panel">
-            <div class="file-list-head">
+          <div class="min-h-0 min-w-0 overflow-y-auto rounded-xl border border-border bg-card py-2">
+            <div class="flex items-center justify-between px-4 pb-2 pt-2.5 text-[13px] font-medium text-muted-foreground">
               <span>记忆文件</span>
-              <span class="refresh-btn" @click="loadMemoryData">
-                <ReloadOutlined />
-              </span>
+              <button class="cursor-pointer text-muted-foreground transition-colors hover:text-foreground" @click="loadMemoryData">
+                <RefreshCw class="size-3.5" />
+              </button>
             </div>
 
-            <div v-if="memoryLoading" class="file-loading">
-              <a-spin size="small" />
+            <div v-if="memoryLoading" class="py-8 text-center">
+              <Spinner class="size-5" />
             </div>
 
             <template v-else>
               <!-- 项目指令区 -->
-              <div class="file-section-label">项目指令</div>
+              <div class="px-4 pb-1 pt-2.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">项目指令</div>
               <div
-                class="file-item"
-                :class="{ 'file-item--active': selectedMemoryFile === 'CLAUDE.md' }"
+                class="flex cursor-pointer items-center gap-2.5 px-4 py-2 text-[13px] text-foreground transition-colors hover:bg-accent"
+                :class="selectedMemoryFile === 'CLAUDE.md' ? 'bg-accent' : ''"
                 @click="selectMemoryFile('CLAUDE.md')"
               >
-                <FileMarkdownOutlined class="file-item-icon" />
-                <span class="file-item-name">CLAUDE.md</span>
-                <span class="file-item-scope">{{ memorySummary?.claudeMd?.exists ? '已创建' : '未创建' }}</span>
+                <FileText class="size-3.5 shrink-0 text-muted-foreground" />
+                <span class="flex-1 truncate">CLAUDE.md</span>
+                <span class="shrink-0 text-xs text-muted-foreground">{{ memorySummary?.claudeMd?.exists ? '已创建' : '未创建' }}</span>
               </div>
 
-              <!-- Auto Memory 区（树形结构） -->
-              <div v-if="memoryTree.length > 0" class="file-section-label">AUTO MEMORY</div>
+              <!-- Auto Memory 区 -->
+              <div v-if="memoryTree.length > 0" class="px-4 pb-1 pt-2.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">AUTO MEMORY</div>
               <MemoryFileTreeNode
                 v-for="node in memoryTree"
                 :key="node.relativePath"
@@ -421,64 +468,68 @@
                 @select="selectMemoryFile"
               />
 
-              <div v-if="memoryTree.length === 0 && !memorySummary?.claudeMd?.exists" class="file-empty">
+              <div v-if="memoryTree.length === 0 && !memorySummary?.claudeMd?.exists" class="px-3 py-8 text-center text-xs text-muted-foreground">
                 暂无记忆文件
-                <p style="font-size: 11px; margin-top: 4px; color: var(--text-muted)">
-                  Agent 会在对话中自动创建记忆文件
-                </p>
+                <p class="mt-1 text-[11px]">Agent 会在对话中自动创建记忆文件</p>
               </div>
             </template>
           </div>
 
           <!-- 右栏：编辑器 -->
-          <div class="editor-panel">
-            <div class="editor-head">
-              <div>
-                <div class="editor-name">{{ selectedMemoryFile || '(未选择)' }}</div>
-                <div class="editor-path">{{ selectedMemoryFilePath }}</div>
+          <div class="flex min-h-0 min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-card">
+            <div class="flex shrink-0 items-center justify-between gap-3 border-b border-border px-5 py-3.5">
+              <div class="min-w-0">
+                <div class="text-sm font-semibold text-foreground">{{ selectedMemoryFile || '(未选择)' }}</div>
+                <div class="truncate font-mono text-xs text-muted-foreground">{{ selectedMemoryFilePath }}</div>
               </div>
-              <div class="editor-actions">
-                <button class="small-btn" @click="toggleEditMode">
-                  <EyeOutlined v-if="memoryEditMode" />
-                  <EditOutlined v-else />
+              <div class="flex shrink-0 gap-2">
+                <button
+                  class="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent"
+                  @click="toggleEditMode"
+                >
+                  <Eye v-if="memoryEditMode" class="size-3.5" />
+                  <Pencil v-else class="size-3.5" />
                   {{ memoryEditMode ? '预览' : '编辑' }}
                 </button>
-                <button class="small-btn" @click="openInFinder">
-                  <FolderOpenOutlined />
+                <button
+                  class="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent"
+                  @click="openInFinder"
+                >
+                  <FolderOpen class="size-3.5" />
                   打开文件夹
                 </button>
                 <button
-                  class="small-btn small-btn--dark"
+                  class="inline-flex items-center gap-1.5 rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:border disabled:border-border disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
                   :disabled="!memoryEditMode && !hasUnsavedChanges"
                   @click="saveMemoryContent"
                 >
-                  <SaveOutlined />
+                  <Save class="size-3.5" />
                   保存
                 </button>
               </div>
             </div>
-            <div class="editor-body">
-              <div v-if="!selectedMemoryFile" class="editor-empty">
-                <FileTextOutlined style="font-size: 40px; opacity: 0.2" />
-                <p>选择左侧文件查看内容</p>
+            <div class="min-h-[200px] flex-1 overflow-y-auto px-8 py-6">
+              <div v-if="!selectedMemoryFile" class="flex min-h-[200px] flex-col items-center justify-center gap-2 text-muted-foreground">
+                <FileText class="size-10 opacity-20" />
+                <p class="text-sm">选择左侧文件查看内容</p>
               </div>
-              <div v-else-if="memoryLoadingContent" class="editor-empty">
-                <a-spin size="small" />
+              <div v-else-if="memoryLoadingContent" class="flex min-h-[200px] items-center justify-center">
+                <Spinner class="size-5" />
               </div>
               <!-- 编辑模式 -->
               <textarea
                 v-else-if="memoryEditMode"
                 v-model="memoryContent"
-                class="editor-textarea"
+                class="min-h-[400px] w-full resize-y border-none bg-transparent p-0 font-mono text-[13px] leading-relaxed text-foreground outline-none"
                 @input="onContentInput"
-              ></textarea>
-              <!-- 预览模式（Markdown 渲染） -->
-              <div v-else class="editor-markdown">
+              />
+              <!-- 预览模式 -->
+              <div v-else class="prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed text-foreground">
                 <MarkdownRender :content="memoryContent || ''" :render-code-blocks-as-pre="false" :is-dark="isDark" code-block-dark-theme="vitesse-dark" code-block-light-theme="vitesse-light" :themes="['vitesse-dark', 'vitesse-light']" />
               </div>
               <!-- 未保存标记 -->
-              <div v-if="selectedMemoryFile && hasUnsavedChanges" class="editor-unsaved">
-                <span class="unsaved-dot"></span>
+              <div v-if="selectedMemoryFile && hasUnsavedChanges" class="flex items-center gap-1.5 pt-1.5 text-[11px] text-yellow-500">
+                <span class="size-1.5 shrink-0 rounded-full bg-yellow-500" />
                 有未保存的更改
               </div>
             </div>
@@ -490,25 +541,11 @@
 </template>
 
 <script setup>
+import { Spinner } from '@/components/ui/spinner'
+
 import { ref, computed, onMounted, watch } from 'vue'
-import { message } from 'ant-design-vue'
-import {
-  ThunderboltFilled,
-  ThunderboltOutlined,
-  ApiOutlined,
-  FileTextOutlined,
-  ReloadOutlined,
-  EditOutlined,
-  EyeOutlined,
-  SaveOutlined,
-  FolderOpenOutlined,
-  FileMarkdownOutlined,
-  DownOutlined,
-  StarFilled,
-  CloudOutlined,
-  ProjectOutlined,
-  CloseOutlined,
-} from '@ant-design/icons-vue'
+import { toast } from 'vue-sonner'
+import { ChevronDown, Cloud, Eye, FileText, FolderOpen, Pencil, Plug, RefreshCw, Save, Star, X, Zap } from '@lucide/vue'
 import { ipc } from '@/utils/ipcRenderer'
 import { ipcApiRoute } from '@/api'
 import MemoryFileTreeNode from '@/components/skills/MemoryFileTreeNode.vue'
@@ -610,7 +647,6 @@ async function loadSkillContent(skillSlug) {
     })
     if (res.code === 0 && res.data) {
       skillContent.value = res.data
-      // 提取 SKILL.md 的正文（去除 frontmatter）
       skillBody.value = extractSkillBody(res.data)
     }
   } catch (err) {
@@ -618,13 +654,11 @@ async function loadSkillContent(skillSlug) {
   } finally {
     loadingSkillContent.value = false
   }
-  // 同时预加载文件树
   loadSkillFileTree(skillSlug)
 }
 
 /** 从 SKILL.md 内容中提取正文（去除 YAML frontmatter） */
 function extractSkillBody(content) {
-  // 移除 UTF-8 BOM
   if (content.charCodeAt(0) === 0xFEFF) content = content.slice(1)
   const match = content.match(/^---\s*\n[\s\S]*?\n---\s*\n([\s\S]*)$/)
   return match?.[1] ?? content
@@ -704,12 +738,10 @@ function onToggleDir(path) {
 // ========== MCP 详情面板 ==========
 const selectedMcp = ref(null)
 
-/** 打开 MCP 详情面板 */
 function openMcpDetail(mcp) {
   selectedMcp.value = mcp
 }
 
-/** 关闭 MCP 详情面板 */
 function closeMcpDetail() {
   selectedMcp.value = null
 }
@@ -719,12 +751,9 @@ const mcpServers = ref([])
 const mcpLoading = ref(false)
 
 // ========== Memory ==========
-// 工作区列表
 const workspaces = ref([])
 const selectedWorkspaceSlug = ref('default')
-// 摘要数据（CLAUDE.md + Auto Memory 统计）
 const memorySummary = ref(null)
-// Auto Memory 文件树（MemoryFileNode[]）
 const memoryTree = ref([])
 const memoryLoading = ref(false)
 const memoryLoadingContent = ref(false)
@@ -735,7 +764,6 @@ const hasUnsavedChanges = ref(false)
 const generateRange = ref('1m')
 const generatingMemory = ref(false)
 
-// 记忆文件总数（用于 Tab 计数）
 const memoryTotalCount = computed(() => {
   const claudeExists = memorySummary.value?.claudeMd?.exists ? 1 : 0
   const autoCount = memorySummary.value?.autoMemory?.fileCount || 0
@@ -744,7 +772,6 @@ const memoryTotalCount = computed(() => {
 
 const selectedMemoryFilePath = computed(() => {
   if (!selectedMemoryFile.value) return ''
-  // CLAUDE.md 在工作区根目录，auto memory 文件在 .claude/memory/ 下
   if (selectedMemoryFile.value === 'CLAUDE.md') {
     return memorySummary.value?.claudeMd?.path || '~/.diting/pi-agent/workspaces/default/CLAUDE.md'
   }
@@ -755,14 +782,12 @@ const selectedMemoryFilePath = computed(() => {
   return `~/.diting/pi-agent/workspaces/default/.claude/memory/${selectedMemoryFile.value}`
 })
 
-// 当前选中文件所属分类（用于顶部卡片联动高亮）
 const activeMemoryCategory = computed(() => {
   if (!selectedMemoryFile.value) return ''
   if (selectedMemoryFile.value === 'CLAUDE.md') return 'project'
   return 'auto'
 })
 
-/** 从文件树中深度优先查找第一个文件节点 */
 function findFirstFileNode(nodes) {
   for (const node of nodes) {
     if (node.type === 'file') return node
@@ -774,12 +799,10 @@ function findFirstFileNode(nodes) {
   return null
 }
 
-/** 点击顶部概览卡片切换分类 */
 function selectCategory(category) {
   if (category === 'project') {
     selectMemoryFile('CLAUDE.md')
   } else if (category === 'auto') {
-    // 选中 Auto Memory 下的第一个文件
     const first = findFirstFileNode(memoryTree.value)
     if (first) {
       selectMemoryFile(first.relativePath)
@@ -807,14 +830,11 @@ onMounted(async () => {
 })
 
 // ========== 工作区操作 ==========
-
-/** 加载工作区列表 */
 async function loadWorkspaces() {
   try {
     const res = await ipc.invoke(ipcApiRoute.piAgent.workspaceOperation, { action: 'list' })
     if (res.code === 0 && res.data) {
       workspaces.value = res.data
-      // 默认选中第一个工作区
       if (workspaces.value.length > 0) {
         selectedWorkspaceSlug.value = workspaces.value[0].id
       }
@@ -824,16 +844,13 @@ async function loadWorkspaces() {
   }
 }
 
-/** 切换工作区时重置状态并重新加载 */
 function onWorkspaceChange() {
-  // 重置记忆相关状态
   memorySummary.value = null
   memoryTree.value = []
   selectedMemoryFile.value = null
   memoryContent.value = ''
   memoryEditMode.value = false
   hasUnsavedChanges.value = false
-  // 重新加载
   loadMemoryData()
 }
 
@@ -876,7 +893,7 @@ async function toggleSkill(skill) {
     }
   } catch (err) {
     console.error('[Skills] 切换失败:', err)
-    message.error('切换失败')
+    toast.error('切换失败')
   }
 }
 
@@ -911,36 +928,25 @@ async function toggleMcp(mcp) {
     }
   } catch (err) {
     console.error('[MCP] 切换失败:', err)
-    message.error('切换失败')
+    toast.error('切换失败')
   }
 }
 
 // ========== 记忆操作 ==========
-
-/** 加载记忆数据：摘要 + 文件树 */
 async function loadMemoryData() {
   memoryLoading.value = true
   try {
     const slug = selectedWorkspaceSlug.value
     const [summaryRes, treeRes] = await Promise.all([
-      ipc.invoke(ipcApiRoute.piAgent.memoryOperation, {
-        action: 'summary',
-        workspaceSlug: slug,
-      }),
-      ipc.invoke(ipcApiRoute.piAgent.memoryOperation, {
-        action: 'tree',
-        workspaceSlug: slug,
-      }),
+      ipc.invoke(ipcApiRoute.piAgent.memoryOperation, { action: 'summary', workspaceSlug: slug }),
+      ipc.invoke(ipcApiRoute.piAgent.memoryOperation, { action: 'tree', workspaceSlug: slug }),
     ])
-
     if (summaryRes.code === 0 && summaryRes.data) {
       memorySummary.value = summaryRes.data
     }
     if (treeRes.code === 0 && treeRes.data) {
       memoryTree.value = treeRes.data
     }
-
-    // 默认选中 CLAUDE.md
     if (!selectedMemoryFile.value && memorySummary.value?.claudeMd?.exists) {
       selectMemoryFile('CLAUDE.md')
     }
@@ -951,23 +957,12 @@ async function loadMemoryData() {
   }
 }
 
-/** 选择记忆文件 */
 function selectMemoryFile(filePath) {
   if (hasUnsavedChanges.value && filePath !== selectedMemoryFile.value) {
-    // 有未保存更改时确认切换
-    import('ant-design-vue').then(({ Modal }) => {
-      Modal.confirm({
-        title: '未保存的更改',
-        content: '当前文件有未保存的更改，切换后将丢失。是否继续？',
-        okText: '继续切换',
-        cancelText: '取消',
-        okType: 'danger',
-        onOk() {
-          hasUnsavedChanges.value = false
-          doSelectFile(filePath)
-        },
-      })
-    })
+    if (window.confirm('未保存的更改\n\n当前文件有未保存的更改，切换后将丢失。是否继续？')) {
+      hasUnsavedChanges.value = false
+      doSelectFile(filePath)
+    }
     return
   }
   doSelectFile(filePath)
@@ -980,7 +975,6 @@ function doSelectFile(filePath) {
   loadMemoryContent(filePath)
 }
 
-/** 加载记忆文件内容 */
 async function loadMemoryContent(filePath) {
   if (!filePath) return
   memoryLoadingContent.value = true
@@ -991,12 +985,11 @@ async function loadMemoryContent(filePath) {
       filePath,
     })
     if (res.code === 0 && res.data) {
-      // 后端返回 MemoryFileContent 对象 { relativePath, isText, size, content }
       memoryContent.value = res.data.content || ''
       hasUnsavedChanges.value = false
     } else {
       memoryContent.value = ''
-      message.error(res.message || '读取文件失败')
+      toast.error(res.message || '读取文件失败')
     }
   } catch (err) {
     console.error('[Memory] 读取失败:', err)
@@ -1006,17 +999,14 @@ async function loadMemoryContent(filePath) {
   }
 }
 
-/** 切换编辑/预览模式 */
 function toggleEditMode() {
   memoryEditMode.value = !memoryEditMode.value
 }
 
-/** 内容输入时标记未保存 */
 function onContentInput() {
   hasUnsavedChanges.value = true
 }
 
-/** 保存记忆文件内容 */
 async function saveMemoryContent() {
   if (!selectedMemoryFile.value) return
   try {
@@ -1027,20 +1017,18 @@ async function saveMemoryContent() {
       content: memoryContent.value,
     })
     if (res.code === 0) {
-      message.success('已保存')
+      toast.success('已保存')
       hasUnsavedChanges.value = false
-      // 刷新摘要数据（更新文件大小和时间）
       loadMemorySummary()
     } else {
-      message.error(res.message || '保存失败')
+      toast.error(res.message || '保存失败')
     }
   } catch (err) {
     console.error('[Memory] 保存失败:', err)
-    message.error('保存失败')
+    toast.error('保存失败')
   }
 }
 
-/** 仅刷新摘要数据（保存后调用） */
 async function loadMemorySummary() {
   try {
     const res = await ipc.invoke(ipcApiRoute.piAgent.memoryOperation, {
@@ -1055,22 +1043,18 @@ async function loadMemorySummary() {
   }
 }
 
-/** 在系统文件管理器中打开记忆目录 */
 function openInFinder() {
-  // 优先打开 auto memory 目录，否则打开工作区根目录
   const autoDir = memorySummary.value?.autoMemory?.directory
   const wsPath = memorySummary.value?.claudeMd?.path?.replace(/CLAUDE\.md$/, '')
   const dir = autoDir || wsPath
   if (!dir) {
-    message.warning('无法确定记忆目录路径')
+    toast.warning('无法确定记忆目录路径')
     return
   }
   ipc.invoke(ipcApiRoute.os.openDirectory, { id: dir })
 }
 
 // ========== 生成项目记忆 ==========
-
-/** 时间范围映射 */
 const RANGE_MAP = {
   '1w': '近 1 周',
   '1m': '近 1 个月',
@@ -1078,10 +1062,9 @@ const RANGE_MAP = {
   'all': '全部',
 }
 
-/** 构建生成记忆的提示词 */
 function buildMemoryPrompt() {
   const rangeLabel = RANGE_MAP[generateRange.value] || '近 1 个月'
-  return `请为当前项目初始化并沉淀长期记忆。这里的“项目”指系统提示中的“项目根目录”及其关联的 Agent 工作会话；不要把 Diting 工作区笼统当作项目。
+  return `请为当前项目初始化并沉淀长期记忆。这里的"项目"指系统提示中的"项目根目录"及其关联的 Agent 工作会话；不要把 Diting 工作区笼统当作项目。
 
 处理范围：
 
@@ -1091,23 +1074,23 @@ function buildMemoryPrompt() {
 
 路径与职责边界：
 
-系统提示中的“Diting 工作区目录”是 Diting 管理配置与隔离资料的位置，存放 MCP、Skills、Diting 管理的 CLAUDE.md 与 Auto Memory；它不是用户项目根目录。必须按系统提示给出的绝对路径操作，不得猜测或替换路径。
+系统提示中的"Diting 工作区目录"是 Diting 管理配置与隔离资料的位置，存放 MCP、Skills、Diting 管理的 CLAUDE.md 与 Auto Memory；它不是用户项目根目录。必须按系统提示给出的绝对路径操作，不得猜测或替换路径。
 
-“项目根目录”是用户项目资料的边界，并不一定等于实际 cwd：新会话通常从项目根目录运行，历史会话可能仍从会话工作台运行。允许从项目级 Context 及明确关联的长期项目资料读取证据；不要自动读取、创建或修改项目根内的 .claude/、CLAUDE.md、MCP 或 Skills 配置，除非用户明确要求。
+"项目根目录"是用户项目资料的边界，并不一定等于实际 cwd：新会话通常从项目根目录运行，历史会话可能仍从会话工作台运行。允许从项目级 Context 及明确关联的长期项目资料读取证据；不要自动读取、创建或修改项目根内的 .claude/、CLAUDE.md、MCP 或 Skills 配置，除非用户明确要求。
 
-系统提示中的“会话工作台目录”及其 .context/ 是当前会话的 sidecar/workbench：仅承载本次任务的 todo、plan、临时笔记和中间结论，不应作为项目级长期记忆的写入位置。绝不读取、创建或修改其中的 settings.json。
+系统提示中的"会话工作台目录"及其 .context/ 是当前会话的 sidecar/workbench：仅承载本次任务的 todo、plan、临时笔记和中间结论，不应作为项目级长期记忆的写入位置。绝不读取、创建或修改其中的 settings.json。
 
-系统提示中的“项目级 Context”与项目级长期资料用于跨会话保留调研、架构分析和项目知识。先区分它们与会话级临时产物，再决定可作为长期记忆证据的内容。
+系统提示中的"项目级 Context"与项目级长期资料用于跨会话保留调研、架构分析和项目知识。先区分它们与会话级临时产物，再决定可作为长期记忆证据的内容。
 
 沉淀目标：
 
 从允许读取的会话和 Context 中提炼稳定的项目知识：项目结构、常用命令、架构边界、可靠决策、踩坑经验、用户偏好，以及未来 Agent 必须注意的事项。不要把聊天流水账、单次调试过程或当前任务的临时产物当作长期知识。
 
-只更新系统提示明确给出的“Diting 工作区 CLAUDE.md”绝对路径。这里是 Diting 管理的项目指令文件；内容仅限稳定、跨会话有效的项目规则、入口和工作方法，不得混入临时调试、聊天记录或长篇资料。
+只更新系统提示明确给出的"Diting 工作区 CLAUDE.md"绝对路径。这里是 Diting 管理的项目指令文件；内容仅限稳定、跨会话有效的项目规则、入口和工作方法，不得混入临时调试、聊天记录或长篇资料。
 
-只更新系统提示明确给出的“Diting 工作区 Auto Memory 目录”中的 MEMORY.md、必要的主题文件和 user-profile.md，不要在其他目录创建记忆文件。MEMORY.md 保持简短的主题索引与路由，主题细节拆分到主题文件。
+只更新系统提示明确给出的"Diting 工作区 Auto Memory 目录"中的 MEMORY.md、必要的主题文件和 user-profile.md，不要在其他目录创建记忆文件。MEMORY.md 保持简短的主题索引与路由，主题细节拆分到主题文件。
 
-user-profile.md 是持续迭代的用户画像：基于现有内容增量合并，条目化且可追溯地记录有充分证据的角色与技术背景、稳定协作偏好、反复出现的关注点、工具链倾向和明确的“下次请这样做”要求。只出现一次或证据不足的信号标为“待确认”，不要当作稳定结论。
+user-profile.md 是持续迭代的用户画像：基于现有内容增量合并，条目化且可追溯地记录有充分证据的角色与技术背景、稳定协作偏好、反复出现的关注点、工具链倾向和明确的"下次请这样做"要求。只出现一次或证据不足的信号标为"待确认"，不要当作稳定结论。
 
 写入规则：
 
@@ -1120,54 +1103,46 @@ user-profile.md 是持续迭代的用户画像：基于现有内容增量合并�
 完成后必须报告：读取的会话与 Context 范围、更新的文件、关键沉淀主题、用户画像新增或修订，以及仍需用户确认的项目。`
 }
 
-/** 生成项目记忆：创建 Agent 会话并发送提示词 */
 async function generateMemory() {
   if (generatingMemory.value) return
 
-  // 查找当前选中的工作区
   const workspace = workspaces.value.find((w) => w.id === selectedWorkspaceSlug.value)
   if (!workspace) {
-    message.warning('请先选择一个项目')
+    toast.warning('请先选择一个项目')
     return
   }
 
   generatingMemory.value = true
   try {
-    // 在选中项目中创建 Agent 会话
     const session = await agentStore.createSession(
       `生成项目记忆 - ${workspace.name}`,
       workspace.id,
     )
     if (!session) {
-      message.error('创建会话失败')
+      toast.error('创建会话失败')
       return
     }
 
-    // 构建提示词
     const prompt = buildMemoryPrompt()
 
-    // 设置待发送提示词，AgentView 加载后自动消费
     agentStore.pendingPrompt = {
       sessionId: session.id,
       message: prompt,
       workspaceId: workspace.id,
     }
 
-    // 切换到 Agent 模式
     wsStore.selectAgentProject(workspace.id)
     wsStore.setAppMode('agent')
     wsStore.setActiveModule('agent')
 
-    // 通过 selectSession 打开 Tab（避免 router.push 导致的竞态条件）
     await agentStore.selectSession(session.id)
 
-    // 路由跳转到 Agent 页面
     router.push('/agent').catch((err) => console.error('[Skills] 跳转 Agent 失败:', err))
 
-    message.success('已启动 Agent 会话，正在生成项目记忆...')
+    toast.success('已启动 Agent 会话，正在生成项目记忆...')
   } catch (err) {
     console.error('[Memory] 生成项目记忆失败:', err)
-    message.error('生成项目记忆失败: ' + (err?.message || String(err)))
+    toast.error('生成项目记忆失败: ' + (err?.message || String(err)))
   } finally {
     generatingMemory.value = false
   }
@@ -1194,1379 +1169,3 @@ function formatDate(isoStr) {
   return `${pad(d.getMonth() + 1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 </script>
-
-<style lang="less" scoped>
-.skills-page {
-  height: 100%;
-  width: 100%;
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  background: var(--bg-panel);
-  overflow: hidden;
-}
-
-// ===== 顶部标签栏 =====
-.topbar {
-display: flex;
-align-items: center;
-gap: 4px;
-padding: 12px 24px 0;
-flex-shrink: 0;
-}
-
-.topbar__right {
-margin-left: auto;
-display: flex;
-align-items: center;
-gap: 6px;
-}
-
-.topbar__project-label {
-font-size: 13px;
-font-weight: 500;
-color: var(--text-secondary);
-flex-shrink: 0;
-white-space: nowrap;
-}
-
-.topbar__project-select {
-padding: 7px 28px 7px 12px;
-border: 1px solid var(--border-color);
-border-radius: 8px;
-background: var(--bg-panel);
-font-size: 14px;
-color: var(--text-primary);
-cursor: pointer;
-min-width: 220px;
-appearance: none;
-background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' stroke='%238A8884' stroke-width='1.5' fill='none' stroke-linecap='round'/></svg>");
-background-repeat: no-repeat;
-background-position: right 10px center;
-
-&:hover {
-border-color: var(--text-primary);
-}
-
-&:focus {
-outline: none;
-border-color: var(--text-primary);
-}
-}
-
-.tab {
-  padding: 7px 16px;
-  border-radius: 8px;
-  font-size: 14px;
-  color: var(--text-secondary);
-  cursor: pointer;
-  user-select: none;
-  transition: background 120ms, color 120ms;
-  font-weight: 500;
-
-  &:hover {
-    background: var(--bg-hover);
-  }
-
-  &--active {
-    background: var(--bg-panel);
-    color: var(--text-primary);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-    border: 1px solid var(--border-color);
-  }
-
-  &__count {
-    color: var(--text-muted);
-    font-weight: 400;
-    margin-left: 4px;
-    font-size: 13px;
-  }
-}
-
-// ===== Tab 内容区 =====
-.tab-body {
-flex: 1;
-overflow-y: auto;
-padding: 20px 24px 24px;
-min-height: 0;
-}
-
-.tab-pane {
-display: none;
-width: 100%;
-
-&--active {
-display: block;
-width: 100%;
-animation: fadeIn 200ms ease;
-}
-
-// Memory tab 特殊处理：flex 填满可用高度，避免固定高度计算
-&--memory {
-&.tab-pane--active {
-display: flex;
-flex-direction: column;
-height: 100%;
-overflow: hidden;
-}
-}
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(4px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-// ===== Section 标题 =====
-.section-title {
-  font-size: 13px;
-  color: var(--text-secondary);
-  margin-bottom: 12px;
-  font-weight: 500;
-}
-
-.section-count {
-  color: var(--text-muted);
-}
-
-// ===== Card 网格 =====
-.card-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  margin-bottom: 20px;
-
-  @media (max-width: 1100px) {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  @media (max-width: 700px) {
-    grid-template-columns: 1fr;
-  }
-}
-
-// ===== 卡片（通用） =====
-.skill-card,
-.mcp-card {
-  background: var(--bg-panel);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 18px 20px 16px;
-  transition: border-color 120ms, box-shadow 120ms;
-  position: relative;
-  cursor: pointer;
-
-  &:hover {
-    border-color: var(--border-color);
-    box-shadow: var(--shadow-sm);
-  }
-}
-
-.card-head {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  margin-bottom: 10px;
-}
-
-.card-icon {
-  width: 20px;
-  height: 20px;
-  flex-shrink: 0;
-  color: #185FA5;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-top: 1px;
-  font-size: 22px;
-
-  &--skill {
-    color: #D97706;
-  }
-}
-
-.card-title-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex: 1;
-  min-width: 0;
-}
-
-.card-title {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text-primary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.pill {
-  font-size: 11px;
-  padding: 2px 7px;
-  border-radius: 4px;
-  background: var(--bg-hover);
-  color: var(--text-secondary);
-  font-weight: 500;
-  flex-shrink: 0;
-
-  &--studio {
-    background: #EEEAE0;
-    color: #6B6759;
-  }
-
-  &--version {
-    background: #E8E3D4;
-    color: #6B6759;
-  }
-}
-
-// ===== Toggle 开关 =====
-.toggle {
-  flex-shrink: 0;
-  width: 36px;
-  height: 20px;
-  border-radius: 999px;
-  background: var(--border-color);
-  position: relative;
-  cursor: pointer;
-  transition: background 160ms;
-  margin-left: 4px;
-
-  &::after {
-    content: "";
-    position: absolute;
-    top: 2px;
-    left: 2px;
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    background: #fff;
-    transition: transform 160ms;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
-  }
-
-  &--on {
-    background: var(--text-primary);
-
-    &::after {
-      transform: translateX(16px);
-    }
-  }
-}
-
-// ===== Skill 卡片特有 =====
-.card-name {
-  font-size: 12px;
-  color: var(--text-muted);
-  margin-top: -4px;
-  margin-bottom: 8px;
-  font-family: ui-monospace, "SF Mono", Menlo, monospace;
-}
-
-.card-desc {
-  font-size: 13px;
-  color: var(--text-secondary);
-  line-height: 1.55;
-  margin-bottom: 14px;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.card-foot {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 12px;
-  padding: 3px 8px;
-  border-radius: 4px;
-  font-weight: 500;
-
-  &--built {
-    background: #E6F1FB;
-    color: #185FA5;
-  }
-
-  &--available {
-    background: #E1F5EE;
-    color: #0F6E56;
-  }
-
-  &--unavailable {
-    background: var(--bg-hover);
-    color: var(--text-muted);
-  }
-
-  &--update {
-    background: #FAEEDA;
-    color: #854F0B;
-  }
-
-  &--host {
-    background: var(--bg-hover);
-    color: var(--text-secondary);
-    margin-left: auto;
-  }
-}
-
-// ===== MCP 工具列表 =====
-.mcp-tools {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin-top: 8px;
-}
-
-.mcp-tool-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 11px;
-  color: #185FA5;
-  background: rgba(24, 95, 165, 0.06);
-  padding: 2px 8px;
-  border-radius: 4px;
-}
-
-.mcp-tool-ro {
-  font-size: 9px;
-  color: #8A8884;
-  background: rgba(0, 0, 0, 0.06);
-  padding: 1px 4px;
-  border-radius: 3px;
-}
-
-.mcp-tool-more {
-  font-size: 11px;
-  color: #8A8884;
-  padding: 2px 6px;
-}
-
-.mcp-warn {
-  margin-top: 8px;
-  font-size: 11px;
-  color: #854F0B;
-  padding: 4px 8px;
-  background: #FAEEDA;
-  border-radius: 4px;
-}
-
-// ===== 分组折叠 =====
-.group {
-  margin-bottom: 8px;
-}
-
-.group-head {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 12px 4px;
-  font-size: 13px;
-  color: var(--text-secondary);
-  cursor: pointer;
-  user-select: none;
-  font-weight: 500;
-
-  .chev {
-    color: var(--text-muted);
-    transition: transform 120ms;
-    font-size: 12px;
-  }
-}
-
-.group--collapsed {
-  .chev {
-    transform: rotate(-90deg);
-  }
-}
-
-.group-count {
-  color: var(--text-muted);
-  font-weight: 400;
-}
-
-// ===== Loading / Empty =====
-.loading-state,
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 200px;
-  color: var(--text-muted);
-  font-size: 13px;
-  gap: 8px;
-}
-
-.empty-hint {
-  font-size: 11px;
-  max-width: 320px;
-  text-align: center;
-  line-height: 1.5;
-}
-
-.file-loading,
-.file-empty {
-  padding: 32px 12px;
-  text-align: center;
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
-// ===== Memory 页面 =====
-.memory-top-grid {
-display: grid;
-grid-template-columns: 1fr 1fr;
-gap: 12px;
-margin-bottom: 16px;
-flex-shrink: 0;
-
-  @media (max-width: 960px) {
-    grid-template-columns: 1fr;
-  }
-}
-
-.mem-top-card {
-background: var(--bg-panel);
-border: 1px solid var(--border-color);
-border-radius: 12px;
-padding: 16px 20px;
-display: flex;
-align-items: center;
-gap: 14px;
-cursor: pointer;
-transition: border-color 120ms, box-shadow 120ms;
-
-&:hover {
-border-color: var(--accent);
-}
-
-&--active {
-border-color: var(--accent);
-background: rgba(22, 119, 255, 0.06);
-box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.1);
-
-.mem-top-icon {
-color: var(--accent);
-}
-
-.mem-top-title {
-color: var(--accent);
-}
-}
-}
-
-.mem-top-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  background: var(--bg-hover);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-secondary);
-  flex-shrink: 0;
-  font-size: 20px;
-}
-
-.mem-top-meta {
-  flex: 1;
-  min-width: 0;
-}
-
-.mem-top-title {
-  font-size: 14px;
-  font-weight: 600;
-  margin-bottom: 2px;
-  color: var(--text-primary);
-}
-
-.mem-top-sub {
-  font-size: 12px;
-  color: var(--text-secondary);
-}
-
-.mem-top-size {
-  font-size: 12px;
-  color: var(--text-muted);
-  flex-shrink: 0;
-}
-
-// ===== Generate bar =====
-.generate-bar {
-background: var(--bg-panel);
-border: 1px solid var(--border-color);
-border-radius: 12px;
-padding: 18px 20px;
-margin-bottom: 16px;
-flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.generate-info {
-  flex: 1;
-}
-
-.generate-title {
-  font-size: 15px;
-  font-weight: 600;
-  margin-bottom: 4px;
-  color: var(--text-primary);
-}
-
-.generate-desc {
-  font-size: 12px;
-  color: var(--text-secondary);
-  line-height: 1.5;
-}
-
-.gen-select {
-  padding: 6px 26px 6px 10px;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  background: var(--bg-panel);
-  font-size: 13px;
-  color: var(--text-primary);
-  cursor: pointer;
-  appearance: none;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' stroke='%238A8884' stroke-width='1.5' fill='none' stroke-linecap='round'/></svg>");
-  background-repeat: no-repeat;
-  background-position: right 10px center;
-}
-
-// ===== 按钮（仅记忆页面使用） =====
-.btn {
-  padding: 8px 14px;
-  border-radius: 8px;
-  border: 1px solid var(--border-color);
-  background: var(--bg-panel);
-  color: var(--text-primary);
-  font-size: 13px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  transition: background 120ms, border-color 120ms;
-  font-weight: 500;
-  white-space: nowrap;
-
-  &:hover {
-    background: var(--bg-hover);
-    border-color: var(--border-color);
-  }
-
-&--primary {
-background: var(--accent);
-color: #fff;
-font-weight: 500;
-border: none;
-box-shadow: 0 2px 6px rgba(22, 119, 255, 0.25);
-
-&:hover {
-background: var(--accent-hover);
-}
-}
-}
-
-// ===== Memory 布局 =====
-.memory-layout {
-display: grid;
-grid-template-columns: 280px 1fr;
-gap: 16px;
-align-items: stretch;
-width: 100%;
-flex: 1;
-min-height: 0;
-overflow: hidden;
-
-@media (max-width: 960px) {
-grid-template-columns: 1fr;
-flex: 0 1 auto;
-}
-}
-
-.file-list-panel {
-background: var(--bg-panel);
-border: 1px solid var(--border-color);
-border-radius: 12px;
-padding: 8px 0;
-overflow-y: auto;
-min-width: 0;
-min-height: 0;
-}
-
-.file-list-head {
-  padding: 10px 16px 8px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 13px;
-  color: var(--text-secondary);
-  font-weight: 500;
-}
-
-.refresh-btn {
-  color: var(--text-muted);
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-
-  &:hover {
-    color: var(--text-primary);
-  }
-}
-
-.file-section-label {
-  padding: 10px 16px 4px;
-  font-size: 11px;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  font-weight: 500;
-}
-
-.file-item {
-  padding: 8px 16px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
-  font-size: 13px;
-  color: var(--text-primary);
-  transition: background 120ms;
-
-  &:hover {
-    background: var(--bg-hover);
-  }
-
-  &--active {
-    background: var(--bg-active);
-  }
-}
-
-.file-item-icon {
-  font-size: 14px;
-  color: var(--text-secondary);
-  flex-shrink: 0;
-}
-
-.file-item-name {
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.file-item-size,
-.file-item-scope {
-  font-size: 12px;
-  color: var(--text-muted);
-  flex-shrink: 0;
-  font-family: ui-monospace, "SF Mono", Menlo, monospace;
-}
-
-.file-item-scope {
-  margin-left: auto;
-  font-family: inherit;
-}
-
-// ===== Editor =====
-.editor-panel {
-background: var(--bg-panel);
-border: 1px solid var(--border-color);
-border-radius: 12px;
-overflow: hidden;
-box-sizing: border-box;
-min-width: 0;
-min-height: 0;
-display: flex;
-flex-direction: column;
-}
-
-.editor-head {
-  padding: 14px 20px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  border-bottom: 1px solid var(--border-color);
-  flex-shrink: 0;
-}
-
-.editor-name {
-  font-size: 14px;
-  font-weight: 600;
-  margin-bottom: 2px;
-  color: var(--text-primary);
-}
-
-.editor-path {
-  font-size: 12px;
-  color: var(--text-muted);
-  font-family: ui-monospace, "SF Mono", Menlo, monospace;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.editor-actions {
-  display: flex;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
-.small-btn {
-  padding: 5px 10px;
-  font-size: 12px;
-  border-radius: 6px;
-  border: 1px solid var(--border-color);
-  background: var(--bg-panel);
-  color: var(--text-secondary);
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  transition: background 120ms;
-  white-space: nowrap;
-
-  &:hover {
-    background: var(--bg-hover);
-  }
-
-&--dark {
-background: var(--accent);
-color: #fff;
-font-weight: 500;
-border: none;
-box-shadow: 0 2px 6px rgba(22, 119, 255, 0.25);
-
-&:hover {
-background: var(--accent-hover);
-}
-
-&:disabled {
-background: var(--bg-hover);
-color: var(--text-muted);
-border: 1px solid var(--border-color);
-box-shadow: none;
-cursor: not-allowed;
-font-weight: 400;
-}
-}
-}
-
-.editor-body {
-  padding: 24px 32px 32px;
-  flex: 1;
-  overflow-y: auto;
-  min-height: 200px;
-}
-
-.editor-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 200px;
-  gap: 8px;
-  color: var(--text-muted);
-  font-size: 13px;
-}
-
-.editor-textarea {
-  width: 100%;
-  min-height: 400px;
-  border: none;
-  padding: 0;
-  font-size: 13px;
-  line-height: 1.7;
-  color: var(--text-primary);
-  font-family: 'SF Mono', Monaco, monospace;
-  background: transparent;
-  outline: none;
-  resize: vertical;
-}
-
-.editor-markdown {
-  font-size: 14px;
-  line-height: 1.7;
-  color: var(--text-primary);
-
-  :deep(h1), :deep(h2), :deep(h3), :deep(h4), :deep(h5), :deep(h6) {
-    font-weight: 600;
-    margin: 16px 0 8px;
-    color: var(--text-primary);
-  }
-  :deep(h1) { font-size: 20px; }
-  :deep(h2) { font-size: 18px; }
-  :deep(h3) { font-size: 16px; }
-  :deep(h4) { font-size: 14px; }
-
-  :deep(p) { margin: 8px 0; }
-
-  :deep(code) {
-    font-family: 'SF Mono', Monaco, monospace;
-    font-size: 12px;
-    background: var(--bg-hover);
-    padding: 2px 6px;
-    border-radius: 4px;
-  }
-
-  :deep(pre) {
-    background: var(--bg-hover);
-    padding: 12px 16px;
-    border-radius: 8px;
-    overflow-x: auto;
-    margin: 8px 0;
-
-    code { background: transparent; padding: 0; }
-  }
-
-  :deep(table) {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 8px 0;
-
-    th, td {
-      border: 1px solid var(--border-color);
-      padding: 6px 12px;
-      text-align: left;
-    }
-    th { background: var(--bg-hover); font-weight: 600; }
-  }
-
-  :deep(ul), :deep(ol) {
-    padding-left: 20px;
-    margin: 8px 0;
-  }
-
-  :deep(blockquote) {
-    border-left: 3px solid var(--accent);
-    padding-left: 12px;
-    margin: 8px 0;
-    color: var(--text-secondary);
-  }
-}
-
-.editor-unsaved {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 0 0;
-  font-size: 11px;
-  color: #faad14;
-}
-
-.unsaved-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #faad14;
-  flex-shrink: 0;
-}
-
-// ===== Skill 详情面板 =====
-.skill-inspector-overlay {
-  position: absolute;
-  inset: 0;
-  z-index: 30;
-  background: rgba(0, 0, 0, 0.02);
-  cursor: pointer;
-}
-
-.skill-inspector {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  bottom: 12px;
-  width: calc(100% * 2 / 3 - 24px);
-  min-width: 500px;
-  background: var(--bg-panel);
-  border: 1px solid var(--border-color-light);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
-  border-radius: 12px;
-  z-index: 40;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-
-  &__close {
-    position: absolute;
-    top: 12px;
-    right: 12px;
-    width: 28px;
-    height: 28px;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    color: var(--text-muted);
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 10;
-
-    &:hover { background: var(--bg-hover); color: var(--text-primary); }
-  }
-
-  &__header {
-    flex-shrink: 0;
-    padding: 20px 20px 16px;
-    border-bottom: 1px solid var(--border-color-light);
-  }
-
-  &__title-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  &__icon {
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
-    background: rgba(217, 119, 6, 0.1);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #D97706;
-    flex-shrink: 0;
-    font-size: 18px;
-  }
-
-  &__title-meta {
-    flex: 1;
-    min-width: 0;
-  }
-
-  &__title {
-    font-size: 17px;
-    font-weight: 600;
-    color: var(--text-primary);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  &__slug {
-    font-size: 12px;
-    color: var(--text-muted);
-    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
-    margin-top: 2px;
-  }
-
-  &__body {
-    flex: 1;
-    overflow-y: auto;
-    overflow-x: hidden;
-    padding: 16px 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-  }
-
-  &__section {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  &__section-title {
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: var(--text-muted);
-    margin: 0;
-  }
-}
-
-.pill--group {
-  background: #E6F1FB;
-  color: #185FA5;
-}
-
-.pill--available {
-  background: #E1F5EE;
-  color: #0F6E56;
-}
-
-.pill--unavailable {
-  background: var(--bg-hover);
-  color: var(--text-muted);
-}
-
-.skill-inspector__icon--mcp {
-  background: rgba(24, 95, 165, 0.1);
-  color: #185FA5;
-}
-
-// ===== MCP 工具列表 =====
-.mcp-tool-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.mcp-tool-item {
-  background: var(--bg-panel);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 12px 14px;
-  transition: border-color 120ms;
-
-  &:hover {
-    border-color: var(--accent);
-  }
-
-  &__head {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 6px;
-  }
-
-  &__name {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text-primary);
-    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
-  }
-
-  &__badge {
-    display: inline-flex;
-    align-items: center;
-    font-size: 10px;
-    padding: 1px 6px;
-    border-radius: 3px;
-    background: rgba(0, 0, 0, 0.06);
-    color: var(--text-muted);
-    font-weight: 500;
-  }
-
-  &__desc {
-    font-size: 12px;
-    color: var(--text-secondary);
-    line-height: 1.5;
-  }
-}
-
-// ===== 元数据网格 =====
-.skill-meta-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  background: var(--bg-panel);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.skill-meta-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--border-color-light);
-
-  &:last-child {
-    border-bottom: none;
-  }
-}
-
-.skill-meta-label {
-  width: 50px;
-  flex-shrink: 0;
-  font-size: 12px;
-  color: var(--text-muted);
-  font-weight: 500;
-  padding-top: 1px;
-}
-
-.skill-meta-value {
-  flex: 1;
-  min-width: 0;
-  font-size: 13px;
-  color: var(--text-primary);
-  line-height: 1.5;
-  word-break: break-word;
-
-  &--mono {
-    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
-    font-size: 12px;
-  }
-}
-
-// ===== Tab 切换 =====
-.skill-detail-tabs {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0;
-}
-
-.skill-detail-tabs__bar {
-  display: flex;
-  gap: 4px;
-  flex-shrink: 0;
-  border-bottom: 1px solid var(--border-color-light);
-  padding-bottom: 8px;
-}
-
-.skill-detail-tab {
-  padding: 6px 14px;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  font-size: 13px;
-  color: var(--text-secondary);
-  border-radius: 6px;
-  transition: background 120ms, color 120ms;
-  font-weight: 500;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-
-  &:hover {
-    background: var(--bg-hover);
-  }
-
-  &--active {
-    background: var(--bg-panel);
-    color: var(--text-primary);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-    border: 1px solid var(--border-color);
-  }
-
-  &__count {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 18px;
-    height: 16px;
-    padding: 0 4px;
-    border-radius: 8px;
-    background: var(--bg-hover);
-    color: var(--text-muted);
-    font-size: 10px;
-    font-weight: 600;
-  }
-}
-
-.skill-detail-tab-content {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  margin-top: 12px;
-}
-
-.skill-detail-loading {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 40px 0;
-}
-
-// ===== 说明 Tab Markdown =====
-.skill-detail-markdown {
-  font-size: 14px;
-  line-height: 1.7;
-  color: var(--text-primary);
-
-  :deep(h1), :deep(h2), :deep(h3), :deep(h4), :deep(h5), :deep(h6) {
-    font-weight: 600;
-    margin: 16px 0 8px;
-    color: var(--text-primary);
-  }
-  :deep(h1) { font-size: 20px; }
-  :deep(h2) { font-size: 18px; }
-  :deep(h3) { font-size: 16px; }
-  :deep(h4) { font-size: 14px; }
-
-  :deep(p) { margin: 8px 0; }
-
-  :deep(code) {
-    font-family: 'SF Mono', Monaco, monospace;
-    font-size: 12px;
-    background: var(--bg-hover);
-    padding: 2px 6px;
-    border-radius: 4px;
-  }
-
-  :deep(pre) {
-    background: var(--bg-hover);
-    padding: 12px 16px;
-    border-radius: 8px;
-    overflow-x: auto;
-    margin: 8px 0;
-
-    code { background: transparent; padding: 0; }
-  }
-
-  :deep(table) {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 8px 0;
-
-    th, td {
-      border: 1px solid var(--border-color);
-      padding: 6px 12px;
-      text-align: left;
-    }
-    th { background: var(--bg-hover); font-weight: 600; }
-  }
-
-  :deep(ul), :deep(ol) {
-    padding-left: 20px;
-    margin: 8px 0;
-  }
-
-  :deep(blockquote) {
-    border-left: 3px solid var(--accent);
-    padding-left: 12px;
-    margin: 8px 0;
-    color: var(--text-secondary);
-  }
-}
-
-// ===== 资源文件面板 =====
-.skill-files-panel {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 400px;
-}
-
-.skill-files-empty {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 40px 0;
-  font-size: 13px;
-  color: var(--text-muted);
-}
-
-.skill-files-layout {
-  display: grid;
-  grid-template-columns: 240px 1fr;
-  gap: 12px;
-  flex: 1;
-  min-height: 0;
-
-  @media (max-width: 900px) {
-    grid-template-columns: 1fr;
-  }
-}
-
-.skill-file-tree {
-  background: var(--bg-hover);
-  border: 1px solid var(--border-color-light);
-  border-radius: 8px;
-  padding: 8px 6px;
-  overflow-y: auto;
-  min-height: 0;
-}
-
-// ===== 文件查看器 =====
-.skill-file-viewer {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  min-height: 0;
-  background: var(--bg-panel);
-  border: 1px solid var(--border-color-light);
-  border-radius: 8px;
-  overflow: hidden;
-
-  &__empty {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex: 1;
-    color: var(--text-muted);
-    font-size: 13px;
-    padding: 24px;
-  }
-
-  &__binary {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    flex: 1;
-    gap: 8px;
-    color: var(--text-muted);
-    font-size: 13px;
-    padding: 24px;
-    text-align: center;
-  }
-
-  &__binary-path {
-    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
-    font-size: 12px;
-  }
-
-  &__head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    padding: 8px 12px;
-    border-bottom: 1px solid var(--border-color-light);
-    background: var(--bg-hover);
-    flex-shrink: 0;
-  }
-
-  &__path {
-    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
-    font-size: 12px;
-    color: var(--text-secondary);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    flex: 1;
-    min-width: 0;
-  }
-
-  &__size {
-    font-size: 11px;
-    color: var(--text-muted);
-    flex-shrink: 0;
-    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
-  }
-
-  &__content {
-    flex: 1;
-    overflow: auto;
-    margin: 0;
-    padding: 12px 16px;
-    font-size: 12px;
-    line-height: 1.6;
-    font-family: 'SF Mono', Monaco, monospace;
-    color: var(--text-primary);
-    background: transparent;
-    white-space: pre-wrap;
-    word-break: break-word;
-  }
-}
-</style>

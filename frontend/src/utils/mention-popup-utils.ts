@@ -7,7 +7,7 @@
 
 import type { Editor } from '@tiptap/vue-3'
 
-const POPUP_GAP = 4
+const POPUP_GAP = 6
 const VIEWPORT_PADDING = 8
 
 /**

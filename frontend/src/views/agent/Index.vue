@@ -1,569 +1,151 @@
 <template>
-  <div class="agent-workspace" ref="workspaceRef">
+  <div class="flex h-full w-full overflow-hidden bg-background" ref="workspaceRef">
     <!-- ========== Chat 面板 ========== -->
-    <div class="chat-panel">
+    <div class="relative flex min-w-0 flex-1 flex-col">
       <!-- 顶部工具栏 -->
-      <div class="chat-toolbar">
-        <span class="chat-toolbar__title">{{ toolbarTitle }}</span>
-        <div class="chat-toolbar__right">
-          <span v-if="isStreaming" class="stream-status">
-            <span class="stream-dot"></span>运行中
+      <div class="flex h-10 shrink-0 items-center justify-between border-b border-border px-4">
+        <span class="text-[13px] font-medium text-foreground">{{ toolbarTitle }}</span>
+        <div class="flex items-center gap-2">
+          <span v-if="isStreaming" class="flex items-center gap-1.5 text-xs text-primary">
+            <span class="size-1.5 animate-pulse rounded-full bg-primary" />运行中
           </span>
-          <a-tooltip :title="panel4Collapsed ? '展开文件面板' : '收起文件面板'">
-            <button class="panel-toggle-btn" @click="togglePanel4">
+          <Tooltip :title="panel4Collapsed ? '展开文件面板' : '收起文件面板'">
+            <button
+              class="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+              @click="togglePanel4"
+            >
               <component :is="panel4Collapsed ? 'MenuUnfoldOutlined' : 'MenuFoldOutlined'" />
             </button>
-          </a-tooltip>
+          </Tooltip>
         </div>
       </div>
 
-      <!-- 权限确认弹窗（从顶部弹出） -->
-      <Transition name="permission-slide">
-        <div v-if="permissionRequest" class="permission-popup" :class="`permission-popup--${permissionRequest.dangerLevel}`">
-          <!-- 顶部标题区 -->
-          <div class="permission-popup__header-section">
-            <div class="permission-popup__header">
-              <svg v-if="permissionRequest.dangerLevel === 'dangerous'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="permission-popup__icon">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                <path d="M12 8v4" />
-                <path d="M12 16h.01" />
-              </svg>
-              <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="permission-popup__icon">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                <path d="M9 12l2 2 4-4" />
-              </svg>
-              <span class="permission-popup__title">{{ formatToolName(permissionRequest.toolName) }}</span>
-              <span class="permission-popup__level" :class="`permission-popup__level--${permissionRequest.dangerLevel}`">
-                {{ dangerLevelLabel(permissionRequest.dangerLevel) }}
-              </span>
-              <button class="permission-popup__close" @click="resolvePermission(false)" :disabled="permissionResponding">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </button>
-            </div>
-          </div>
+      <!-- 权限确认弹窗 -->
+      <AgentPermissionPopup
+        :request="permissionRequest"
+        :responding="permissionResponding"
+        @resolve="resolvePermission"
+      />
 
-          <!-- 描述区 -->
-          <div class="permission-popup__body">
-            <div class="permission-popup__desc">{{ permissionRequest.description || '请求执行操作' }}</div>
-          </div>
+      <!-- AskUser 问答弹窗 -->
+      <AgentAskUserPopup
+        :request="askUserRequest"
+        :answers="askUserAnswers"
+        :responding="askUserResponding"
+        @toggle="toggleAskUserOption"
+        @submit="submitAskUser"
+        @dismiss="dismissAskUser"
+      />
 
-          <!-- 底部操作区 -->
-          <div class="permission-popup__actions">
-            <a-button size="small" @click="resolvePermission(false)" :disabled="permissionResponding">拒绝</a-button>
-            <a-button v-if="permissionRequest.allowAlways" size="small" type="outline" @click="resolvePermission(true, true)" :disabled="permissionResponding">总是允许</a-button>
-            <a-button size="small" type="primary" @click="resolvePermission(true)" :disabled="permissionResponding" :loading="permissionResponding">允许</a-button>
-          </div>
-        </div>
-      </Transition>
-
-      <!-- AskUser 问答横幅（从底部弹出） -->
-      <Transition name="ask-user-slide">
-        <div v-if="askUserRequest" class="ask-user-popup">
-          <!-- 顶部蓝色标题区 -->
-          <div class="ask-user-popup__question-section">
-            <div class="ask-user-popup__question-header">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ask-user-popup__icon">
-                <circle cx="12" cy="12" r="10" />
-                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-                <path d="M12 17h.01" />
-              </svg>
-              <span class="ask-user-popup__title">Agent 需要你的回答</span>
-              <button class="ask-user-popup__close" @click="dismissAskUser">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </button>
-            </div>
-          </div>
-
-          <!-- 问答区：每个问题下方紧跟其选项 -->
-          <div class="ask-user-popup__body">
-            <div v-for="(q, qIdx) in askUserRequest.questions" :key="qIdx" class="ask-user-popup__qa-item">
-              <div class="ask-user-popup__question-text">{{ q.question }}</div>
-              <div class="ask-user-popup__options">
-                <button
-                  v-for="(opt, oIdx) in q.options"
-                  :key="oIdx"
-                  class="ask-user-popup-option"
-                  :class="{ 'ask-user-popup-option--selected': isAskUserOptionSelected(qIdx, oIdx) }"
-                  @click="toggleAskUserOption(qIdx, oIdx, q.multiSelect)"
-                >
-                  <span class="ask-user-popup-option__check">
-                    <svg v-if="isAskUserOptionSelected(qIdx, oIdx)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                  </span>
-                  <span class="ask-user-popup-option__content">
-                    <span class="ask-user-popup-option__label">{{ opt.label }}</span>
-                    <span v-if="opt.description" class="ask-user-popup-option__desc">{{ opt.description }}</span>
-                  </span>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <!-- 底部操作区 -->
-          <div class="ask-user-popup__actions">
-            <a-button size="small" type="primary" @click="submitAskUser" :disabled="!hasAskUserAnswer" :loading="askUserResponding">提交回答</a-button>
-          </div>
-        </div>
-      </Transition>
-
-      <!-- ========== 消息列表区域 ========== -->
-      <div class="chat-messages" ref="messagesRef" @scroll="onMessagesScroll">
-        <!-- 空状态 -->
-        <div v-if="messages.length === 0 && !isStreaming" class="chat-empty">
-          <div class="chat-empty__icon">
-            <RobotOutlined style="font-size: 28px; color: var(--accent); opacity: 0.6" />
-          </div>
-          <h2 class="chat-empty__title">Agent 工作区</h2>
-          <p class="chat-empty__desc">读写文件 · 执行命令 · MCP 工具 · Skills</p>
-        </div>
-
-        <!-- 消息列表 -->
-        <template v-else>
-          <div
-            v-for="msg in messages"
-            :key="msg.id"
-            :id="'msg-' + msg.id"
-            class="msg-item"
-            :class="msg.role === 'user' ? 'msg-item--user' : 'msg-item--assistant'"
-          >
-            <!-- 消息头部 -->
-            <div class="msg-item__header">
-              <!-- 用户头像 -->
-              <div v-if="msg.role === 'user'" class="msg-item__avatar msg-item__avatar--user">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                  <circle cx="12" cy="7" r="4" />
-                </svg>
-              </div>
-              <!-- AI 头像 -->
-              <div v-else class="msg-item__avatar msg-item__avatar--ai">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M12 3L4 7v5c0 5 3.5 9 8 10 4.5-1 8-5 8-10V7l-8-4z" />
-                  <path d="M9 12l2 2 4-4" />
-                </svg>
-              </div>
-              <div class="msg-item__meta">
-                <span class="msg-item__name">{{ msg.role === 'user' ? '我' : (selectedModel || 'Agent') }}</span>
-                <span v-if="msg.time" class="msg-item__time">{{ msg.time }}</span>
-              </div>
-            </div>
-
-            <!-- 消息内容 -->
-            <div class="msg-item__content" :class="msg.role === 'user' ? 'msg-item__content--user' : 'msg-item__content--assistant'">
-              <!-- 用户消息 -->
-              <template v-if="msg.role === 'user'">
-                <div class="msg-user-bubble" v-html="renderMentionChips(msg.content)"></div>
-              </template>
-
-              <!-- 助手消息 -->
-              <template v-else>
-                <!-- 加载中（等待首个 token） -->
-                <div v-if="msg.pending && !msg.content && (!msg.blocks || msg.blocks.length === 0)" class="msg-loading">
-                  <span class="msg-loading__dot" />
-                  <span class="msg-loading__dot" />
-                  <span class="msg-loading__dot" />
-                  <span class="msg-loading__text">正在思考...</span>
-                </div>
-
-                <!-- 结构化块渲染 -->
-                <template v-else>
-                  <!-- 执行过程折叠区（有 thinking 或 tool 块时显示） -->
-                  <ProcessBlockGroup
-                    v-if="msg.blocks && getProcessBlocks(msg.blocks).length > 0"
-                    :blocks="getProcessBlocks(msg.blocks)"
-                    :is-streaming="msg.pending"
-                  />
-
-                  <!-- 最终文本回答 -->
-                  <div v-if="msg.content" class="msg-markdown">
-                    <MarkdownRender
-                      mode="chat"
-                      :content="msg.content"
-                      :final="!msg.pending"
-                      :fade="false"
-                      smooth-streaming="auto"
-                      :render-code-blocks-as-pre="false"
-                      :is-dark="isDark" code-block-dark-theme="vitesse-dark" code-block-light-theme="vitesse-light" :themes="['vitesse-dark', 'vitesse-light']"
-                    />
-                    <span v-if="msg.pending" class="msg-streaming-dot" />
-                  </div>
-
-                  <!-- 引用证据卡片（SearchKnowledgeBase 工具检索结果） -->
-                  <CitationRail
-                    v-if="!msg.pending && msg.citations && msg.citations.length > 0"
-                    :citations="msg.citations"
-                    @citation-click="onCitationClick"
-                  />
-
-                  <!-- 消息内联统计栏 -->
-                  <div v-if="messageStats[msg.id] && (msg.pending || messageStats[msg.id].elapsed > 0)" class="msg-stats">
-                    <span class="msg-stats-item msg-stats-item--time">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="msg-stats-icon">
-                        <circle cx="12" cy="12" r="10" />
-                        <polyline points="12 6 12 12 16 14" />
-                      </svg>
-                      {{ Math.floor(messageStats[msg.id].elapsed / 60) }}:{{ String(messageStats[msg.id].elapsed % 60).padStart(2, '0') }}
-                    </span>
-                    <template v-if="messageStats[msg.id].inputTokens > 0 || messageStats[msg.id].outputTokens > 0">
-                      <span class="msg-stats-divider">·</span>
-                      <span class="msg-stats-item"><span class="msg-stats-label">输入</span><span class="msg-stats-value">{{ formatTokens(messageStats[msg.id].inputTokens) }}</span></span>
-                      <span class="msg-stats-item"><span class="msg-stats-label">输出</span><span class="msg-stats-value">{{ formatTokens(messageStats[msg.id].outputTokens) }}</span></span>
-                      <span v-if="messageStats[msg.id].cacheReadTokens > 0" class="msg-stats-item"><span class="msg-stats-label">缓存读</span><span class="msg-stats-value">{{ formatTokens(messageStats[msg.id].cacheReadTokens) }}</span></span>
-                      <span v-if="messageStats[msg.id].cacheWriteTokens > 0" class="msg-stats-item"><span class="msg-stats-label">缓存写</span><span class="msg-stats-value">{{ formatTokens(messageStats[msg.id].cacheWriteTokens) }}</span></span>
-                    </template>
-                  </div>
-                </template>
-              </template>
-            </div>
-          </div>
-        </template>
-      </div>
-
-      <!-- ========== 用户消息浮动指示器 ========== -->
-      <div v-if="userMessages.length > 0" class="msg-rail">
-        <button
-          v-for="(um, idx) in userMessages"
-          :key="um.id"
-          class="msg-rail__bar"
-          :class="{ 'msg-rail__bar--hover': railHoverIdx === idx }"
-          @mouseenter="railHoverIdx = idx"
-          @mouseleave="railHoverIdx = -1"
-          @click="jumpToMessage(um.id)"
+      <!-- 消息列表区域 -->
+      <div class="relative min-h-0 flex-1 overflow-y-auto" ref="messagesRef" @scroll="onMessagesScroll">
+        <AgentMessageList
+          :messages="messages"
+          :is-streaming="isStreaming"
+          :model-name="selectedModel || 'Agent'"
+          :message-stats="messageStats"
+          :rail-hover-idx="railHoverIdx"
+          @citation-click="onCitationClick"
+          @rail-hover="railHoverIdx = $event"
+          @jump="jumpToMessage"
         />
-        <!-- 悬浮预览 -->
-        <div
-          v-if="railHoverIdx >= 0"
-          class="msg-rail__preview"
-          :style="{ '--rail-preview-offset': railPreviewOffset + 'px' }"
-        >
-          {{ userMessages[railHoverIdx].content }}
-        </div>
       </div>
 
-      <!-- ========== 底部输入区域（卡片式） ========== -->
-      <div class="chat-input-wrapper">
-        <!-- 浮层容器：仅在流式时显示协作子 Agent + 任务进度 -->
-        <Transition name="task-progress-slide">
-          <div v-if="isStreaming && (delegations.length > 0 || (currentTaskBlocks.length > 0 && hasTaskBlocks(currentTaskBlocks)))" class="task-progress-floating">
-            <DelegationCard
-              v-if="delegations.length > 0"
-              :delegations="delegations"
-            />
-            <TaskProgressCard
-              v-if="currentTaskBlocks.length > 0 && hasTaskBlocks(currentTaskBlocks)"
-              :blocks="currentTaskBlocks"
-              :is-streaming="isStreaming"
-            />
-          </div>
-        </Transition>
-
-        <div class="chat-input-card" :class="{ 'chat-input-card--focused': inputFocused, 'chat-input-card--confirm': permissionMode === 'ask' }">
-          <!-- 输入区：TipTap 富文本编辑器，支持 @文件 /Skill #MCP &会话 引用 -->
-          <RichTextInput
-            v-model="inputText"
-            :placeholder="inputPlaceholder"
-            :disabled="false"
-            :auto-focus-trigger="currentSessionId"
-            :workspace-id="ws.currentAgentProject?.id"
-            :workspace-slug="ws.currentAgentProject?.slug || 'default'"
-            :session-id="currentSessionId"
-            @submit="sendMessage"
-            @focus="inputFocused = true"
-            @blur="inputFocused = false"
-          />
-
-          <!-- 底部工具栏 -->
-          <div class="chat-input-toolbar">
-            <!-- 左侧：权限模式 + 思考深度 -->
-            <div class="chat-input-toolbar__left">
-              <PermissionModeSelector
-                v-model="permissionMode"
-              />
-              <ThinkingDepthPopover
-                v-model="thinkingLevel"
-              />
-            </div>
-
-            <!-- 右侧：模型选择 + 发送/停止按钮 -->
-            <div class="chat-input-toolbar__right">
-              <a-select
-                v-model:value="selectedModel"
-                size="small"
-                style="min-width: 140px; max-width: 200px"
-                :placeholder="availableModels.length === 0 ? '未启用模型' : '选择模型'"
-                :disabled="availableModels.length === 0"
-                :bordered="false"
-              >
-                <a-select-option v-for="m in availableModels" :key="m.id" :value="m.id">{{ m.name }}</a-select-option>
-              </a-select>
-              <button
-                v-if="isStreaming"
-                class="chat-stop-btn"
-                @click="stopGeneration"
-              >
-                <svg viewBox="0 0 24 24" fill="currentColor" stroke="none">
-                  <rect x="6" y="6" width="12" height="12" rx="2" />
-                </svg>
-              </button>
-              <button
-                v-else
-                class="chat-send-btn"
-                :disabled="!inputText.trim()"
-                @click="sendMessage"
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M22 2L11 13" />
-                  <path d="M22 2l-7 20-4-9-9-4 20-7z" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <!-- 底部输入区域 -->
+      <AgentChatInput
+        v-model="inputText"
+        :is-streaming="isStreaming"
+        :focused="inputFocused"
+        :placeholder="inputPlaceholder"
+        :session-id="currentSessionId"
+        :workspace-id="ws.currentAgentProject?.id"
+        :workspace-slug="ws.currentAgentProject?.slug || 'default'"
+        :models="availableModels"
+        v-model:selected-model="selectedModel"
+        v-model:permission-mode="permissionMode"
+        v-model:thinking-level="thinkingLevel"
+        :delegations="delegations"
+        :task-blocks="currentTaskBlocks"
+        :confirm-mode="permissionMode === 'ask'"
+        @submit="sendMessage"
+        @stop="stopGeneration"
+        @focus="inputFocused = true"
+        @blur="inputFocused = false"
+      />
     </div>
 
     <!-- ========== 文件面板 ========== -->
     <template v-if="!panel4Collapsed">
       <PanelDivider @resize="onPanel4Resize" />
-      <div class="panel panel--files" :style="{ width: panel4Width + 'px', flexShrink: 0 }">
-        <!-- 顶部：文件模式切换 -->
-        <div class="file-panel-header">
-          <div class="file-mode-switch">
-            <button
-              type="button"
-              class="file-mode-btn"
-              :class="{ 'file-mode-btn--active': filePanelMode === 'session' }"
-              @click="switchFileMode('session')"
-            >
-              <FileOutlined />
-              <span>会话文件</span>
-            </button>
-            <button
-              type="button"
-              class="file-mode-btn"
-              :class="{ 'file-mode-btn--active': filePanelMode === 'project' }"
-              @click="switchFileMode('project')"
-            >
-              <FolderOutlined />
-              <span>项目文件</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- 文件列表 -->
-        <div class="panel__body">
-          <!-- 会话文件模式：显示当前会话路径 -->
-          <div v-if="filePanelMode === 'session' && sessionPathDisplay" class="file-panel-path" :title="sessionPathDisplay">
-            <FolderOutlined class="file-panel-path__icon" />
-            <span class="file-panel-path__text" :class="{ 'file-panel-path__text--ellipsis': sessionPathNeedsEllipsis }">{{ sessionPathDisplay }}</span>
-            <button class="file-panel-path__open" title="在系统文件管理器中打开" @click="openSessionFolder">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M15 17h5a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-7l-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h5" />
-                <path d="M15 17l-3 3 3 3" />
-                <path d="M12 20H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6l2 2h7a2 2 0 0 1 2 2" />
-              </svg>
-            </button>
-          </div>
-
-          <!-- 项目文件模式：显示当前项目路径 -->
-          <div v-if="filePanelMode === 'project' && projectPathDisplay" class="file-panel-path" :title="projectPathDisplay">
-            <FolderOutlined class="file-panel-path__icon" />
-            <span class="file-panel-path__text" :class="{ 'file-panel-path__text--ellipsis': projectPathNeedsEllipsis }">{{ projectPathDisplay }}</span>
-            <button class="file-panel-path__open" title="在系统文件管理器中打开" @click="openProjectFolder">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M15 17h5a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-7l-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h5" />
-                <path d="M15 17l-3 3 3 3" />
-                <path d="M12 20H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6l2 2h7a2 2 0 0 1 2 2" />
-              </svg>
-            </button>
-          </div>
-
-          <!-- 附加文件夹列表（项目文件模式下显示） -->
-          <div v-if="filePanelMode === 'project' && attachedDirs.length > 0" class="file-tree file-tree--attached">
-            <div
-              v-for="dirPath in attachedDirs"
-              :key="'attached-' + dirPath"
-            >
-              <!-- 附加目录根行 -->
-              <div
-                class="file-tree__item file-tree__item--attached"
-                :class="{ 'file-tree__item--expanded': expandedAttachedDirs.has(dirPath) }"
-                :style="{ paddingLeft: '8px' }"
-                @click="toggleAttachedDir(dirPath)"
-              >
-                <component
-                  :is="expandedAttachedDirs.has(dirPath) ? 'DownOutlined' : 'RightOutlined'"
-                  class="file-tree__arrow"
-                />
-                <FolderOutlined class="file-tree__icon" />
-                <span class="file-tree__name" :title="dirPath">{{ getDirName(dirPath) }}</span>
-                <button
-                  class="file-tree__detach"
-                  title="移除附加文件夹（不删除实际文件）"
-                  @click.stop="onDetachFolder(dirPath)"
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="18" y1="6" x2="6" y2="18" />
-                    <line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
-                </button>
-              </div>
-              <!-- 附加目录子项（支持无限层级展开） -->
-              <template v-if="expandedAttachedDirs.has(dirPath)">
-                <div
-                  v-for="child in flattenAttachedDir(dirPath)"
-                  :key="child.path"
-                  class="file-tree__item"
-                  :class="{
-                    'file-tree__item--dir': child.isDir,
-                    'file-tree__item--expanded': child.isDir && child.expanded,
-                  }"
-                  :style="{ paddingLeft: 8 + child.depth * 16 + 'px' }"
-                  @click="child.isDir ? toggleAttachedDir(child.path) : openAttachedFile(dirPath, child.relativePath)"
-                >
-                  <component
-                    v-if="child.isDir"
-                    :is="child.expanded ? 'DownOutlined' : 'RightOutlined'"
-                    class="file-tree__arrow"
-                  />
-                  <span v-else class="file-tree__arrow-spacer" />
-                  <component :is="child.isDir ? 'FolderOutlined' : 'FileOutlined'" class="file-tree__icon" />
-                  <span class="file-tree__name">{{ child.name }}</span>
-                </div>
-              </template>
-            </div>
-          </div>
-
-          <div v-if="fileTree.length === 0 && attachedDirs.length === 0" class="files-empty">
-            <FolderOutlined style="font-size: 32px" />
-            <p>{{ filePanelMode === 'project' ? '暂无项目文件' : '暂无会话文件' }}</p>
-          </div>
-          <div v-else class="file-tree">
-            <div
-              v-for="node in flatFileTree"
-              :key="node.path"
-              class="file-tree__item"
-              :class="{
-                'file-tree__item--dir': node.isDir,
-                'file-tree__item--expanded': node.isDir && node.expanded,
-              }"
-              :style="{ paddingLeft: 8 + node.depth * 16 + 'px' }"
-              @click="node.isDir ? toggleDir(node) : openFile(node)"
-            >
-              <component
-                v-if="node.isDir"
-                :is="node.expanded ? 'DownOutlined' : 'RightOutlined'"
-                class="file-tree__arrow"
-              />
-              <span v-else class="file-tree__arrow-spacer" />
-              <component :is="node.isDir ? 'FolderOutlined' : 'FileOutlined'" class="file-tree__icon" />
-              <span class="file-tree__name">{{ node.name }}</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- 底部操作区：根据模式显示不同操作 -->
-        <div class="file-panel-footer">
-          <!-- 会话模式：只显示添加文件 -->
-          <div v-if="filePanelMode === 'session'" class="file-drop-zone" @click="onAddFile">
-            <svg class="file-drop-zone__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
-            </svg>
-            <span class="file-drop-zone__label">添加文件到会话</span>
-          </div>
-          <!-- 项目模式：显示添加文件 + 附加文件夹 -->
-          <template v-else>
-            <div class="file-drop-zone" @click="onAddFile">
-              <svg class="file-drop-zone__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
-              </svg>
-              <span class="file-drop-zone__label">添加文件</span>
-            </div>
-            <div class="file-drop-zone" @click="onAttachFolder">
-              <svg class="file-drop-zone__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2a2 2 0 0 0-1.66-.9H8a2 2 0 0 0-2 2v0a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2Z" />
-                <path d="M12 10v6" />
-                <path d="M9 13h6" />
-              </svg>
-              <span class="file-drop-zone__label">附加文件夹</span>
-            </div>
-          </template>
-        </div>
-      </div>
+      <AgentFilePanel
+        :width="panel4Width"
+        :mode="filePanelMode"
+        :file-tree="fileTree"
+        :attached-dirs="attachedDirs"
+        :expanded-attached-dirs="expandedAttachedDirs"
+        :attached-dir-children="attachedDirChildren"
+        :expanded-dirs="expandedDirs"
+        :session-path="sessionPathDisplay"
+        :project-path="projectPathDisplay"
+        @switch-mode="switchFileMode"
+        @add-file="onAddFile"
+        @attach-folder="onAttachFolder"
+        @detach-folder="onDetachFolder"
+        @toggle-dir="toggleDir"
+        @open-file="openFile"
+        @toggle-attached-dir="toggleAttachedDir"
+        @open-attached-file="openAttachedFile"
+        @open-folder="openFolderHandler"
+      />
     </template>
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
-import { message } from 'ant-design-vue'
-import {
-  RobotOutlined,
-  FolderOutlined,
-  FileOutlined,
-  MenuUnfoldOutlined,
-  MenuFoldOutlined,
-  DownOutlined,
-  RightOutlined,
-} from '@ant-design/icons-vue'
+import { toast } from 'vue-sonner'
+import { Tooltip } from '@/components/ui/tooltip'
 import { ipc } from '@/utils/ipcRenderer'
 import { ipcApiRoute } from '@/api'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useAgentStore } from '@/stores/agent'
 import { useTabStore } from '@/stores/tab'
 import { useBrowserStore } from '@/stores/browser'
-import { isDark } from '@/theme'
-import MarkdownRender from 'markstream-vue'
 import PanelDivider from '@/components/layout/PanelDivider.vue'
-import ProcessBlockGroup from '@/components/agent/ProcessBlockGroup.vue'
-import TaskProgressCard from '@/components/agent/TaskProgressCard.vue'
-import DelegationCard from '@/components/agent/DelegationCard.vue'
-import RichTextInput from '@/components/agent/RichTextInput.vue'
-import PermissionModeSelector from '@/components/agent/PermissionModeSelector.vue'
-import ThinkingDepthPopover from '@/components/agent/ThinkingDepthPopover.vue'
-import CitationRail from '@/components/CitationRail.vue'
+import AgentPermissionPopup from '@/components/agent/AgentPermissionPopup.vue'
+import AgentAskUserPopup from '@/components/agent/AgentAskUserPopup.vue'
+import AgentMessageList from '@/components/agent/AgentMessageList.vue'
+import AgentFilePanel from '@/components/agent/AgentFilePanel.vue'
+import AgentChatInput from '@/components/agent/AgentChatInput.vue'
 import { hasTaskBlocks } from '@/utils/task-progress'
 
 const ws = useWorkspaceStore()
 const browserStore = useBrowserStore()
 const agentStore = useAgentStore()
 
-// 接收 sessionId prop（由 TabContent 传入，用于多标签状态隔离）
 const props = defineProps({
   sessionId: { type: String, default: null },
 })
 
-// Tab store（组件顶层声明，供 openFile 等函数使用）
 const tabStore = useTabStore()
 
-// 当 prop.sessionId 存在时，确保 agent store 选中该会话
 watch(() => props.sessionId, (sid) => {
   if (sid && agentStore.currentSessionId !== sid) {
-    // 通过 Tab 激活该会话，触发 store 中 currentSessionId 计算属性更新
     tabStore.activateTab(sid)
   }
 }, { immediate: false })
 
-// ========== 顶部标题：项目名称 / 会话名称 ==========
+// ========== 顶部标题 ==========
 const toolbarTitle = computed(() => {
   const projectName = ws.currentAgentProject?.name
   const sessionId = agentStore.currentSessionId
   const session = agentStore.sessions.find((s) => s.id === sessionId)
   const sessionName = session?.title || agentStore.currentSession?.title
-  if (projectName && sessionName) {
-    return `${projectName} / ${sessionName}`
-  }
+  if (projectName && sessionName) return `${projectName} / ${sessionName}`
   return sessionName || projectName || 'Agent'
 })
 
-// ========== HTTP 服务器地址（动态加载） ==========
+// ========== HTTP 服务器地址 ==========
 const httpServerUrl = ref('http://127.0.0.1:7071')
 
 // ========== 模型选择 ==========
@@ -571,12 +153,10 @@ const selectedModel = ref(null)
 const availableModels = ref([])
 
 // ========== 权限模式 & 思考深度 ==========
-// 权限模式从 agent store 获取（按会话持久化）：bypassPermissions / ask
 const permissionMode = computed({
   get: () => agentStore.permissionMode,
   set: (val) => { agentStore.permissionMode = val },
 })
-// 思考深度：off / low / medium / high / xhigh
 const thinkingLevel = ref('high')
 
 // ========== 面板宽度 & 折叠 ==========
@@ -588,46 +168,32 @@ function togglePanel4() {
   panel4Collapsed.value = !panel4Collapsed.value
 }
 
-// Agent 触发浏览器时自动折叠文件面板，浏览器关闭时自动恢复
 watch(() => browserStore.forceFilePanelCollapsed, (forced) => {
-  if (forced) {
-    // 记忆当前状态并折叠
-    if (!panel4Collapsed.value) {
-      panel4Collapsed.value = true
-    }
+  if (forced && !panel4Collapsed.value) {
+    panel4Collapsed.value = true
   }
 })
-
-// 浏览器关闭后（forceFilePanelCollapsed 变回 false），不自动展开，尊重用户当前操作
 
 function onPanel4Resize(delta) {
   panel4Width.value = Math.min(400, Math.max(240, panel4Width.value - delta))
 }
 
 // ========== 数据 ==========
-// 流式状态（messages / isStreaming / currentSessionId）全部使用 agent store，
-// 组件卸载不中断流式请求
 const sessions = computed(() => agentStore.sessions)
 const currentSessionId = computed(() => agentStore.currentSessionId)
 const currentSession = computed(() => agentStore.currentSession)
 const messages = computed(() => agentStore.messages)
 const isStreaming = computed(() => agentStore.isStreaming)
 
-// ========== 任务进度浮动卡片：从最新助手消息提取任务块 ==========
+// ========== 任务进度 ==========
 const currentTaskBlocks = computed(() => {
-  // 优先取正在流式的助手消息
   for (let i = messages.value.length - 1; i >= 0; i--) {
     const msg = messages.value[i]
-    if (msg.role === 'assistant' && msg.pending) {
-      return msg.blocks || []
-    }
+    if (msg.role === 'assistant' && msg.pending) return msg.blocks || []
   }
-  // 流式结束后仍保留最后一条含任务块的助手消息
   for (let i = messages.value.length - 1; i >= 0; i--) {
     const msg = messages.value[i]
-    if (msg.role === 'assistant' && msg.blocks && msg.blocks.length > 0) {
-      return msg.blocks
-    }
+    if (msg.role === 'assistant' && msg.blocks && msg.blocks.length > 0) return msg.blocks
   }
   return []
 })
@@ -635,171 +201,48 @@ const currentTaskBlocks = computed(() => {
 const inputText = ref('')
 const messagesRef = ref(null)
 const inputFocused = ref(false)
-// 滚动追踪：用户是否处于消息列表底部
 const isAtBottom = ref(true)
-// 会话切换标记：切换后等待消息加载完成再滚动到底部
 let pendingScrollToBottom = false
 
-// 输入框占位文字
 const inputPlaceholder = computed(() =>
   '输入指令... (@ 引用文件, / 调用 Skill, # 使用 MCP, & 引用会话, Enter 发送)'
 )
-const fileTree = ref([])
-const attachedDirs = ref([]) // 附加的外部目录路径列表
-const filePanelMode = ref('session') // 'project' | 'session'
-const fileLoading = ref(false)
-const sessionPathDisplay = ref('') // 会话文件目录路径（后端返回）
 
-// 当前项目路径（项目文件模式下显示在文件列表顶部）
+// ========== 文件面板 ==========
+const fileTree = ref([])
+const attachedDirs = ref([])
+const filePanelMode = ref('session')
+const fileLoading = ref(false)
+const sessionPathDisplay = ref('')
+
 const projectPathDisplay = computed(() => {
   const project = ws.currentAgentProject
   if (!project) return ''
-  // 使用后端返回的 resolvedPath（空白项目为 workspace-files 托管路径）
   return project.resolvedPath || project.projectPath || ''
 })
-
-// 路径层级 > 3 时使用 CSS 左侧省略（direction: rtl），否则完整显示
-const projectPathNeedsEllipsis = computed(() => {
-  const fullPath = projectPathDisplay.value
-  if (!fullPath) return false
-  return fullPath.replace(/\\/g, '/').split('/').filter(Boolean).length > 3
-})
-
-/** 在系统文件管理器中打开项目文件夹 */
-function openProjectFolder() {
-  const dir = projectPathDisplay.value
-  if (!dir) return
-  ipc.invoke(ipcApiRoute.os.openDirectory, { id: dir })
-}
-
-// 会话路径层级 > 3 时使用 CSS 左侧省略
-const sessionPathNeedsEllipsis = computed(() => {
-  const fullPath = sessionPathDisplay.value
-  if (!fullPath) return false
-  return fullPath.replace(/\\/g, '/').split('/').filter(Boolean).length > 3
-})
-
-/** 在系统文件管理器中打开会话文件夹 */
-function openSessionFolder() {
-  const dir = sessionPathDisplay.value
-  if (!dir) return
-  ipc.invoke(ipcApiRoute.os.openDirectory, { id: dir })
-}
 
 const permissionRequest = ref(null)
 const permissionResponding = ref(false)
 const askUserRequest = ref(null)
 const askUserResponding = ref(false)
-const askUserAnswers = reactive(new Map()) // qIdx → Set<optionIdx>
+const askUserAnswers = reactive(new Map())
 
-// ========== 辅助函数 ==========
-
-/**
- * 将用户消息中的引用标记（@file: /skill: #mcp: &session:）渲染为 chip 样式 HTML
- * 非 标记部分做 HTML 转义，防 XSS
- */
-function renderMentionChips(text) {
-  if (!text) return ''
-  // 正则匹配四种引用标记 + 定时任务标记
-  const re = /(@file:([^\s]+))|(\/skill:([^\s]+))|(#mcp:([^\s]+))|(&session:([^\s:]+)(?:::(.+))?)|(<!--DITING_SCHEDULED_RUN-->)/g
-  let result = ''
-  let lastIndex = 0
-  let m
-  while ((m = re.exec(text)) !== null) {
-    // 转义前面的纯文本
-    if (m.index > lastIndex) {
-      result += escapeHtml(text.slice(lastIndex, m.index))
-    }
-    if (m[1]) {
-      // @file:path → 取文件名作为 label
-      const path = m[2]
-      const name = path.split('/').pop() || path
-      result += `<span class="mention-chip" data-prefix="@" title="${escapeAttr(path)}">${escapeHtml(name)}</span>`
-    } else if (m[3]) {
-      // /skill:slug
-      result += `<span class="skill-mention-chip" data-prefix="/">${escapeHtml(m[4])}</span>`
-    } else if (m[5]) {
-      // #mcp:name
-      result += `<span class="mcp-mention-chip" data-prefix="#">${escapeHtml(m[6])}</span>`
-    } else if (m[7]) {
-      // &session:id::title
-      const title = m[9] ? decodeURIComponent(m[9]) : m[8]
-      result += `<span class="session-mention-chip" data-prefix="&">${escapeHtml(title)}</span>`
-    } else if (m[10]) {
-      // <!--DITING_SCHEDULED_RUN--> → 定时任务标记
-      result += `<span class="scheduled-run-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>定时任务</span>`
-    }
-    lastIndex = m.index + m[0].length
-  }
-  // 尾部纯文本
-  if (lastIndex < text.length) {
-    result += escapeHtml(text.slice(lastIndex))
-  }
-  return result
-}
-
-function escapeHtml(s) {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-}
-function escapeAttr(s) {
-  return s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-}
-
-/**
- * 从 AgentMessage.content 中提取纯文本
- *
- * 后端持久化的 content 是 AgentMessageBlock[] 数组：
- *   [{ type: 'text', text: '...' }, { type: 'tool_use', ... }, ...]
- * 前端渲染只需要 text 块的文本内容，拼接为纯字符串。
- */
-function extractTextFromContent(content) {
-  if (typeof content === 'string') return content
-  if (!Array.isArray(content)) return ''
-  return content
-    .filter((block) => block?.type === 'text' && block.text)
-    .map((block) => block.text)
-    .join('\n')
-}
-
-// ========== 协作子 Agent 状态（从 store 按会话过滤） ==========
+// ========== 协作子 Agent ==========
 const delegations = computed(() => {
   const sid = agentStore.currentSessionId
   return sid ? (agentStore.allDelegations[sid] || []) : []
 })
 
-// ========== Token / 时间统计（每条消息独立） ==========
+// ========== Token 统计 ==========
 const messageStats = computed(() => agentStore.messageStats)
 
-/**
- * 从消息 blocks 中筛选“过程块”（thinking + tool_use）
- * 这些块会在 ProcessBlockGroup 折叠区中展示
- */
-function getProcessBlocks(blocks) {
-  if (!blocks || !Array.isArray(blocks)) return []
-  // 排除 TaskCreate / TaskUpdate：这些工具调用由 TaskProgressCard 单独展示
-  return blocks.filter((b) =>
-    b.type === 'thinking'
-    || (b.type === 'tool_use' && b.name !== 'TaskCreate' && b.name !== 'TaskUpdate'),
-  )
-}
-
-// ========== 浮动指示器：用户消息导航 ==========
+// ========== 用户消息导航 ==========
 const railHoverIdx = ref(-1)
 
-/** 只筛选用户消息 */
 const userMessages = computed(() =>
   messages.value.filter((m) => m.role === 'user')
 )
 
-/** 悬浮预览偏移量：跟随当前 bar 垂直位置 */
-const railPreviewOffset = computed(() => {
-  if (railHoverIdx.value < 0) return 0
-  const spacing = 9
-  const padding = 8
-  return padding + railHoverIdx.value * spacing
-})
-
-/** 跳转到指定消息 */
 function jumpToMessage(msgId) {
   const el = document.getElementById('msg-' + msgId)
   if (el && messagesRef.value) {
@@ -810,84 +253,40 @@ function jumpToMessage(msgId) {
   }
 }
 
-// 流式逻辑已移至 agentStore，组件卸载不中断
-
+// ========== 生命周期 ==========
 onMounted(async () => {
   await loadHttpServerUrl()
   await loadEnabledModel()
-  // 使用 store 统一加载会话
   await agentStore.loadSessions()
 
-  // 检查是否有 Todo 启动 Agent 的待发送提示词
   const pending = agentStore.pendingPrompt
   if (pending && pending.sessionId) {
-    // 选中 Todo 创建的会话
     await agentStore.selectSession(pending.sessionId)
-    // 消费提示词
     const promptText = pending.message
     agentStore.pendingPrompt = null
-    // 等待 UI 就绪后自动发送
     await nextTick()
     if (promptText && !isStreaming.value) {
-      await agentStore.sendMessage({
-        text: promptText,
-        model: selectedModel.value,
-        workspaceSlug: ws.currentAgentProject?.slug || undefined,
-        workspaceId: pending.workspaceId || ws.currentAgentProject?.id,
-        httpServerUrl: httpServerUrl.value,
-        permissionMode: permissionMode.value,
-        thinkingLevel: thinkingLevel.value,
-        onScroll: () => scrollToBottom(),
-        onEvent: (eventName, data) => {
-          if (eventName === 'permission_request') {
-            permissionRequest.value = data
-          } else if (eventName === 'ask_user') {
-            askUserRequest.value = data
-            askUserAnswers.clear()
-          }
-        },
-      })
+      await sendMessageWithText(promptText)
     }
   } else if (agentStore.sessions.length > 0 && !agentStore.currentSessionId) {
-    // selectSession 会触发 currentSessionId watch → 设置 pendingScrollToBottom → messages 加载后滚动
     await agentStore.selectSession(agentStore.sessions[0].id)
   } else if (messages.value.length > 0) {
-    // currentSessionId 已存在（如从其他页面切回），消息已加载，直接滚动
     isAtBottom.value = true
     await nextTick()
     scrollToBottom(true)
   }
-
-  // 组件挂载时加载文件列表（:key 切换导致组件重建后，watcher 不会触发，需手动加载）
   loadFileTree()
 })
 
-// onUnmounted 不再 abort，流式请求在 store 中继续运行
-
-// 监听 MenuBar 中项目选中变化：刷新文件列表
-watch(() => ws.currentAgentProjectId, () => {
-  loadFileTree()
-})
-
-// 监听会话变化：刷新文件列表（无论项目文件还是会话文件都刷新）
-watch(() => currentSessionId.value, () => {
-  loadFileTree()
-})
-
-// 监听流式状态变化：LLM 回答完成时刷新文件列表
+// ========== Watchers ==========
+watch(() => ws.currentAgentProjectId, () => loadFileTree())
+watch(() => currentSessionId.value, () => loadFileTree())
 watch(() => isStreaming.value, (streaming, wasStreaming) => {
-  // 仅在从 true → false（流式结束）时刷新
-  if (wasStreaming && !streaming) {
-    loadFileTree()
-  }
+  if (wasStreaming && !streaming) loadFileTree()
 })
-
-// 监听会话切换：设置滚动标记，等待消息加载完成后由 messages watch 执行滚动
 watch(() => agentStore.currentSessionId, () => {
   pendingScrollToBottom = true
 })
-
-// 监听消息变化：会话切换后消息加载完成时，强制滚动到底部
 watch(() => messages.value.length, async () => {
   if (pendingScrollToBottom && messages.value.length > 0) {
     pendingScrollToBottom = false
@@ -897,7 +296,7 @@ watch(() => messages.value.length, async () => {
   }
 })
 
-/** 动态获取 HTTP 服务器地址 */
+// ========== HTTP 服务器 ==========
 async function loadHttpServerUrl() {
   try {
     const data = await ipc.invoke(ipcApiRoute.framework.checkHttpServer)
@@ -905,11 +304,11 @@ async function loadHttpServerUrl() {
       httpServerUrl.value = data.server
     }
   } catch (err) {
-    console.warn('[agent] 获取 HTTP 服务器地址失败，使用默认地址:', err)
+    console.warn('[agent] 获取 HTTP 服务器地址失败:', err)
   }
 }
 
-/** 加载已启用的 LLM 模型 */
+// ========== 模型 ==========
 async function loadEnabledModel() {
   try {
     const res = await ipc.invoke(ipcApiRoute.llm.modelOperation, { action: 'getEnabled' })
@@ -923,31 +322,13 @@ async function loadEnabledModel() {
   }
 }
 
-async function loadSessions() {
-  // 使用 agent store 统一加载
-  await agentStore.loadSessions()
-  if (agentStore.sessions.length > 0 && !agentStore.currentSessionId) {
-    await agentStore.selectSession(agentStore.sessions[0].id)
-  }
-}
-
-// selectSession 委托给 store（含消息加载）
-async function selectSession(sessionId) {
-  await agentStore.selectSession(sessionId)
-  // 切换会话时强制滚动到底部：重置 isAtBottom，等待 DOM 更新后再滚动
-  isAtBottom.value = true
-  await nextTick()
-  scrollToBottom(true)
-}
-
-/** 切换文件面板模式 */
+// ========== 文件面板 ==========
 function switchFileMode(mode) {
   if (filePanelMode.value === mode) return
   filePanelMode.value = mode
   loadFileTree()
 }
 
-/** 加载文件列表 */
 async function loadFileTree() {
   fileTree.value = []
   attachedDirs.value = []
@@ -965,7 +346,6 @@ async function loadFileTree() {
       mode: filePanelMode.value,
     })
     if (res.code === 0) {
-      // 后端返回 { files, attachedDirs, resolvedPath } 结构
       const data = res.data || {}
       fileTree.value = data.files || []
       attachedDirs.value = data.attachedDirs || []
@@ -978,100 +358,73 @@ async function loadFileTree() {
   }
 }
 
-/** 添加文件（根据当前模式决定目标目录） */
 async function onAddFile() {
   const workspaceId = ws.currentAgentProject?.id
-  if (!workspaceId) {
-    message.warning('请先选择一个 Agent 项目')
-    return
-  }
-  if (filePanelMode.value === 'session' && !currentSessionId.value) {
-    message.warning('当前无活动会话')
-    return
-  }
+  if (!workspaceId) { toast.warning('请先选择一个 Agent 项目'); return }
+  if (filePanelMode.value === 'session' && !currentSessionId.value) { toast.warning('当前无活动会话'); return }
   try {
     const res = await ipc.invoke(ipcApiRoute.piAgent.fileOperation, {
-      action: 'add',
-      workspaceId,
-      sessionId: currentSessionId.value,
-      mode: filePanelMode.value,
+      action: 'add', workspaceId, sessionId: currentSessionId.value, mode: filePanelMode.value,
     })
     if (res.code === 0) {
       const data = res.data || {}
       fileTree.value = data.files || []
       attachedDirs.value = data.attachedDirs || []
-      if (res.message && res.message !== '用户取消选择') {
-        message.success(res.message)
-      }
+      if (res.message && res.message !== '用户取消选择') toast.success(res.message)
     } else {
-      message.error(res.message || '添加文件失败')
+      toast.error(res.message || '添加文件失败')
     }
   } catch (err) {
     console.error('[agent] 添加文件失败:', err)
-    message.error('添加文件失败')
+    toast.error('添加文件失败')
   }
 }
 
-/** 附加外部文件夹到工作区（仅添加引用，不覆盖 projectPath） */
 async function onAttachFolder() {
   const workspaceId = ws.currentAgentProject?.id
-  if (!workspaceId) {
-    message.warning('请先选择一个 Agent 项目')
-    return
-  }
+  if (!workspaceId) { toast.warning('请先选择一个 Agent 项目'); return }
   try {
     const folderPath = await ipc.invoke(ipcApiRoute.os.selectFolder)
-    if (!folderPath) return // 用户取消选择
-
-    // 调用 attachFolder：仅添加引用，不修改 projectPath
+    if (!folderPath) return
     const res = await ipc.invoke(ipcApiRoute.piAgent.fileOperation, {
-      action: 'attachFolder',
-      workspaceId,
-      folderPath,
+      action: 'attachFolder', workspaceId, folderPath,
     })
     if (res.code === 0) {
       attachedDirs.value = res.data || []
-      message.success(`已附加文件夹: ${folderPath.split('/').pop()}`)
+      toast.success(`已附加文件夹: ${folderPath.split('/').pop()}`)
     } else {
-      message.error(res.message || '附加文件夹失败')
+      toast.error(res.message || '附加文件夹失败')
     }
   } catch (err) {
     console.error('[agent] 附加文件夹失败:', err)
-    message.error('附加文件夹失败')
+    toast.error('附加文件夹失败')
   }
 }
 
-/** 移除附加文件夹引用（不删除实际文件夹） */
 async function onDetachFolder(dirPath) {
   const workspaceId = ws.currentAgentProject?.id
   if (!workspaceId) return
   try {
     const res = await ipc.invoke(ipcApiRoute.piAgent.fileOperation, {
-      action: 'detachFolder',
-      workspaceId,
-      folderPath: dirPath,
+      action: 'detachFolder', workspaceId, folderPath: dirPath,
     })
     if (res.code === 0) {
       attachedDirs.value = res.data || []
-      // 清除该目录的展开状态
       expandedAttachedDirs.value.delete(dirPath)
       expandedAttachedDirs.value = new Set(expandedAttachedDirs.value)
-      message.success('已移除附加文件夹')
+      toast.success('已移除附加文件夹')
     } else {
-      message.error(res.message || '移除附加文件夹失败')
+      toast.error(res.message || '移除附加文件夹失败')
     }
   } catch (err) {
     console.error('[agent] 移除附加文件夹失败:', err)
-    message.error('移除附加文件夹失败')
+    toast.error('移除附加文件夹失败')
   }
 }
 
-/** 附加目录展开状态：存储所有展开的目录完整路径 */
 const expandedAttachedDirs = ref(new Set())
-/** 附加目录子项缓存：key = 目录完整路径，value = 子项列表 */
 const attachedDirChildren = ref({})
 
-/** 展开/折叠附加目录（支持任意层级） */
 async function toggleAttachedDir(fullDirPath) {
   if (expandedAttachedDirs.value.has(fullDirPath)) {
     expandedAttachedDirs.value.delete(fullDirPath)
@@ -1079,21 +432,16 @@ async function toggleAttachedDir(fullDirPath) {
   } else {
     expandedAttachedDirs.value.add(fullDirPath)
     expandedAttachedDirs.value = new Set(expandedAttachedDirs.value)
-    // 首次展开时加载子项
     if (!attachedDirChildren.value[fullDirPath]) {
       await loadAttachedDirContents(fullDirPath)
     }
   }
 }
 
-/** 加载附加目录内容（支持子目录）
- * @param fullDirPath - 完整目录路径（附加根目录或其子目录的绝对路径）
- */
 async function loadAttachedDirContents(fullDirPath) {
   try {
     const res = await ipc.invoke(ipcApiRoute.piAgent.fileOperation, {
-      action: 'listAttachedDir',
-      folderPath: fullDirPath,
+      action: 'listAttachedDir', folderPath: fullDirPath,
     })
     if (res.code === 0) {
       attachedDirChildren.value = { ...attachedDirChildren.value, [fullDirPath]: res.data || [] }
@@ -1104,180 +452,42 @@ async function loadAttachedDirContents(fullDirPath) {
   }
 }
 
-/** 递归展平附加目录树（支持无限层级展开）
- * @param dirPath - 当前目录的完整路径
- * @param depth - 当前层级（用于缩进）
- * @param attachedRoot - 附加根目录路径（用于计算文件相对路径）
- */
-function flattenAttachedDir(dirPath, depth = 1, attachedRoot = dirPath) {
-  const children = attachedDirChildren.value[dirPath] || []
-  const result = []
-  for (const item of children) {
-    const parts = item.path.split('/')
-    const name = parts[parts.length - 1]
-    // 子目录的完整路径 = 当前目录路径 + '/' + 相对路径
-    const childFullPath = `${dirPath}/${item.path}`
-    // 相对于附加根目录的路径（用于后端读取文件）
-    const rootRelativePath = childFullPath.substring(attachedRoot.length + 1)
-    const isExpanded = expandedAttachedDirs.value.has(childFullPath)
-    result.push({
-      name,
-      path: childFullPath,
-      isDir: item.isDir,
-      size: item.size || 0,
-      depth,
-      isAttached: true,
-      attachedRoot,
-      relativePath: rootRelativePath,
-      expanded: isExpanded,
-    })
-    // 如果子目录已展开，递归展平其子项
-    if (item.isDir && isExpanded) {
-      result.push(...flattenAttachedDir(childFullPath, depth + 1, attachedRoot))
-    }
-  }
-  return result
-}
-
-/** 打开文件：在 Tab 栏中打开文件查看器（全局只保留一个文件 Tab） */
 function openFile(file) {
   tabStore.openFileTab({
-    name: file.name,
-    path: file.path,
+    name: file.name, path: file.path,
     workspaceId: ws.currentAgentProject?.id,
-    sessionId: currentSessionId.value,
-    mode: filePanelMode.value,
+    sessionId: currentSessionId.value, mode: filePanelMode.value,
   })
 }
 
-/** 从完整路径中提取目录名 */
-function getDirName(dirPath) {
-  return dirPath.replace(/\\/g, '/').split('/').filter(Boolean).pop() || dirPath
-}
-
-/** 打开附加目录中的文件 */
 function openAttachedFile(dirPath, relativePath) {
   const fileName = relativePath.split('/').pop() || relativePath
   tabStore.openFileTab({
-    name: fileName,
-    path: relativePath,
+    name: fileName, path: relativePath,
     workspaceId: ws.currentAgentProject?.id,
-    sessionId: currentSessionId.value,
-    mode: 'project',
-    // 附加目录文件需要特殊标记，文件查看器通过 IPC 读取时使用绝对路径
-    attachedDirPath: dirPath,
+    sessionId: currentSessionId.value, mode: 'project', attachedDirPath: dirPath,
   })
 }
 
-// ========== 文件树形结构 ==========
-
-/** 展开的目录集合 */
+// 文件树展开状态
 const expandedDirs = ref(new Set())
 
-/** 将后端返回的扁平文件列表转换为树形结构 */
-function buildFileTreeData(flatList) {
-  const root = []
-  const dirMap = new Map()
-
-  for (const item of flatList) {
-    const parts = item.path.split('/')
-    const name = parts[parts.length - 1]
-    const parentPath = parts.length > 1 ? parts.slice(0, -1).join('/') : ''
-
-    const node = {
-      name,
-      path: item.path,
-      isDir: item.isDir,
-      size: item.size || 0,
-      depth: parts.length - 1,
-      expanded: expandedDirs.value.has(item.path),
-      children: [],
-    }
-
-    if (parentPath && dirMap.has(parentPath)) {
-      dirMap.get(parentPath).children.push(node)
-    } else {
-      root.push(node)
-    }
-
-    if (item.isDir) {
-      dirMap.set(item.path, node)
-    }
-  }
-
-  return root
-}
-
-/** 递归展平树为列表（仅显示已展开目录的子项） */
-function flattenTree(nodes, depth = 0, result = []) {
-  for (const node of nodes) {
-    // 更新 depth 和 expanded 状态
-    node.depth = depth
-    node.expanded = expandedDirs.value.has(node.path)
-    result.push(node)
-    if (node.isDir && node.expanded && node.children.length > 0) {
-      flattenTree(node.children, depth + 1, result)
-    }
-  }
-  return result
-}
-
-/** 展平后的文件树（用于渲染） */
-const flatFileTree = computed(() => {
-  const tree = buildFileTreeData(fileTree.value)
-  return flattenTree(tree)
-})
-
-/** 展开/折叠目录 */
 function toggleDir(node) {
   if (expandedDirs.value.has(node.path)) {
     expandedDirs.value.delete(node.path)
   } else {
     expandedDirs.value.add(node.path)
   }
-  // 触发响应式更新
   expandedDirs.value = new Set(expandedDirs.value)
 }
 
-// ========== 权限横幅：SSE 事件处理 + HTTP 响应回传 ==========
-
-/**
- * 点击引用证据卡片，在 Tab 栏中打开文件查看器（与 Chat 模式一致）。
- */
-function onCitationClick(cite) {
-  const fileId = cite.documentId ?? cite.fileItemId
-  if (fileId === null || fileId === undefined) return
-  tabStore.openFileTab({
-    name: cite.fileName || '文件',
-    fileItemId: fileId,
-  })
+/** 打开文件夹处理器 */
+function openFolderHandler(which) {
+  const dir = which === 'session' ? sessionPathDisplay.value : projectPathDisplay.value
+  if (dir) ipc.invoke(ipcApiRoute.os.openDirectory, { id: dir })
 }
 
-/** 格式化工具显示名称 */
-function formatToolName(toolName) {
-  // MCP 工具名格式: mcp__server__tool → server / tool
-  const parts = toolName.split('__')
-  if (parts[0] === 'mcp' && parts.length >= 3) {
-    return `${parts[1]} / ${parts.slice(2).join('__')}`
-  }
-  return toolName
-}
-
-/** 危险等级标签 */
-function dangerLevelLabel(level) {
-  switch (level) {
-    case 'safe': return '安全'
-    case 'dangerous': return '危险'
-    default: return '需确认'
-  }
-}
-
-/**
- * 响应权限请求：通过 HTTP POST 回传结果到后端
- *
- * 后端 permissionService 收到响应后 resolve Promise，
- * 工具继续执行（allow）或抛出错误（deny）。
- */
+// ========== 权限处理 ==========
 async function resolvePermission(allow, alwaysAllow = false) {
   if (!permissionRequest.value || permissionResponding.value) return
   permissionResponding.value = true
@@ -1294,49 +504,31 @@ async function resolvePermission(allow, alwaysAllow = false) {
     })
   } catch (err) {
     console.error('[agent] 响应权限请求失败:', err)
-    message.error('响应权限请求失败: ' + (err?.message || String(err)))
+    toast.error('响应权限请求失败: ' + (err?.message || String(err)))
   } finally {
     permissionRequest.value = null
     permissionResponding.value = false
   }
 }
 
-// ========== AskUser 横幅：交互式问答 ==========
-
-/** 检查选项是否被选中 */
-function isAskUserOptionSelected(qIdx, oIdx) {
-  const selected = askUserAnswers.get(qIdx)
-  return selected?.has(oIdx) ?? false
-}
-
-/** 切换选项选中状态 */
+// ========== AskUser 处理 ==========
 function toggleAskUserOption(qIdx, oIdx, multiSelect) {
   if (!multiSelect) {
-    // 单选：只选一个
     askUserAnswers.set(qIdx, new Set([oIdx]))
   } else {
-    // 多选：切换选中状态
     const selected = askUserAnswers.get(qIdx) ?? new Set()
-    if (selected.has(oIdx)) {
-      selected.delete(oIdx)
-    } else {
-      selected.add(oIdx)
-    }
+    if (selected.has(oIdx)) selected.delete(oIdx)
+    else selected.add(oIdx)
     askUserAnswers.set(qIdx, selected)
   }
 }
 
-/** 是否有有效答案 */
-const hasAskUserAnswer = computed(() => {
-  if (!askUserRequest.value) return false
-  return askUserRequest.value.questions.some((_, qIdx) =>
+async function submitAskUser() {
+  if (!askUserRequest.value || askUserResponding.value) return
+  const hasAnswer = askUserRequest.value.questions.some((_, qIdx) =>
     (askUserAnswers.get(qIdx)?.size ?? 0) > 0,
   )
-})
-
-/** 提交 AskUser 回答 */
-async function submitAskUser() {
-  if (!askUserRequest.value || !hasAskUserAnswer.value || askUserResponding.value) return
+  if (!hasAnswer) return
   askUserResponding.value = true
   try {
     const answers = {}
@@ -1349,19 +541,15 @@ async function submitAskUser() {
       const key = q.question || String(i)
       answers[key] = selectedLabels.join(', ')
     }
-
     const url = `${httpServerUrl.value}/${ipcApiRoute.piAgent.respondAskUser}`
     await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        requestId: askUserRequest.value.requestId,
-        answers,
-      }),
+      body: JSON.stringify({ requestId: askUserRequest.value.requestId, answers }),
     })
   } catch (err) {
     console.error('[agent] 提交 AskUser 回答失败:', err)
-    message.error('提交回答失败: ' + (err?.message || String(err)))
+    toast.error('提交回答失败: ' + (err?.message || String(err)))
   } finally {
     askUserRequest.value = null
     askUserAnswers.clear()
@@ -1369,22 +557,29 @@ async function submitAskUser() {
   }
 }
 
-/** 关闭 AskUser 横幅（终止会话） */
 function dismissAskUser() {
   askUserRequest.value = null
   askUserAnswers.clear()
-  // 停止生成（委托给 store）
   agentStore.stopGeneration()
 }
 
-/**
- * 发送消息：委托给 agentStore.sendMessage
- * 流式状态保存在 store 中，组件卸载不中断
- */
+// ========== 引用证据 ==========
+function onCitationClick(cite) {
+  const fileId = cite.documentId ?? cite.fileItemId
+  if (fileId === null || fileId === undefined) return
+  tabStore.openFileTab({ name: cite.fileName || '文件', fileItemId: fileId })
+}
+
+// ========== 发送消息 ==========
 async function sendMessage() {
   const text = inputText.value.trim()
   if (!text || isStreaming.value) return
   inputText.value = ''
+  await sendMessageWithText(text)
+}
+
+async function sendMessageWithText(text) {
+  if (!text || isStreaming.value) return
   await agentStore.sendMessage({
     text,
     model: selectedModel.value,
@@ -1401,25 +596,19 @@ async function sendMessage() {
         askUserRequest.value = data
         askUserAnswers.clear()
       }
-      // delegation_update 已在 store 中处理，无需在此重复
     },
   })
 }
 
-/** 停止生成 */
 function stopGeneration() {
   agentStore.stopGeneration()
 }
 
-/**
- * 智能滚动：仅在用户已处于底部时自动滚动
- * 用 requestAnimationFrame 节流，避免频繁 DOM 操作阻塞页面
- * @param force - 强制滚动到底部（切换会话时使用）
- */
+// ========== 滚动 ==========
 let scrollRafId = null
 async function scrollToBottom(force = false) {
   if (!force && !isAtBottom.value) return
-  if (scrollRafId) return  // 已有待执行的 rAF，跳过
+  if (scrollRafId) return
   scrollRafId = requestAnimationFrame(() => {
     scrollRafId = null
     if (messagesRef.value) {
@@ -1428,34 +617,9 @@ async function scrollToBottom(force = false) {
   })
 }
 
-/** 监听消息列表滚动，更新 isAtBottom */
 function onMessagesScroll() {
   if (!messagesRef.value) return
   const el = messagesRef.value
-  // 允许 30px 容差判断是否在底部
   isAtBottom.value = el.scrollHeight - el.scrollTop - el.clientHeight < 30
 }
-
-/** 格式化时间为 YYYY-MM-DD HH:mm:ss */
-function formatTime(date) {
-  const y = date.getFullYear()
-  const mo = String(date.getMonth() + 1).padStart(2, '0')
-  const d = String(date.getDate()).padStart(2, '0')
-  const h = String(date.getHours()).padStart(2, '0')
-  const mi = String(date.getMinutes()).padStart(2, '0')
-  const s = String(date.getSeconds()).padStart(2, '0')
-  return `${y}-${mo}-${d} ${h}:${mi}:${s}`
-}
-
-/** 格式化 Token 数量（1k+ 用 k 显示） */
-function formatTokens(n) {
-  if (!n || n <= 0) return '0'
-  if (n < 1000) return String(n)
-  if (n < 10000) return (n / 1000).toFixed(1) + 'k'
-  return Math.round(n / 1000) + 'k'
-}
 </script>
-
-<style lang="less" scoped>
-@import './agent-styles.less';
-</style>

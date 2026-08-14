@@ -1,68 +1,107 @@
 <template>
-  <div class="file-workspace" ref="workspaceRef">
+  <div class="flex h-full w-full overflow-hidden bg-layout" ref="workspaceRef">
     <!-- ========== 第二部分：文件列表区 ========== -->
-    <div class="panel panel--file-list" :style="{ width: panel2Width + 'px', flexShrink: 0 }">
-      <div class="panel__toolbar">
-        <span class="panel__path" v-if="selectedSubFolder" :title="selectedSubFolder.relative_path">
+    <div class="flex flex-col h-full overflow-hidden bg-panel" :style="{ width: panel2Width + 'px', flexShrink: 0 }">
+      <div class="flex h-10 shrink-0 items-center gap-1.5 border-b border-border px-2">
+        <span
+          v-if="selectedSubFolder"
+          class="max-w-[200px] truncate text-[13px] font-medium text-app-primary"
+          :title="selectedSubFolder.relative_path"
+        >
           {{ selectedSubFolder.name }}
         </span>
-        <span class="panel__path panel__path--placeholder" v-else>文件列表</span>
-        <div class="panel__toolbar-right">
-          <a-tag v-if="ragProcessing || ragQueueSize > 0" color="processing" class="rag-queue-tag">
-            <a-spin v-if="ragProcessing" size="small" style="margin-right: 4px" />
+        <span v-else class="text-[13px] font-normal text-app-muted">文件列表</span>
+        <div class="ml-auto flex items-center gap-1">
+          <!-- RAG 向量化状态标签 -->
+          <Badge v-if="ragProcessing || ragQueueSize > 0" variant="secondary" class="inline-flex items-center gap-1 text-[11px]">
+            <Loader2 v-if="ragProcessing" class="size-3.5 animate-spin" />
             {{ ragProcessing ? `向量化中... 剩余${ragQueueSize}` : `队列 ${ragQueueSize}` }}
-          </a-tag>
-          <a-tooltip title="刷新">
-            <button class="panel-toggle-btn" @click="onRefreshFiles">
-              <reload-outlined />
-            </button>
-          </a-tooltip>
-          <!-- 新建文件 -->
-          <a-popover trigger="click" placement="bottomRight" :open="createPopoverVisible" @open-change="createPopoverVisible = $event">
-            <template #content>
-              <div class="create-menu">
-                <div class="create-menu__item" @click="onCreateFile('docx')">
-                  <file-word-outlined class="create-menu__icon create-menu__icon--word" />
-                  <span>文档</span>
-                </div>
-                <div class="create-menu__item" @click="onCreateFile('xlsx')">
-                  <file-excel-outlined class="create-menu__icon create-menu__icon--excel" />
-                  <span>表格</span>
-                </div>
-                <div class="create-menu__item" @click="onCreateFile('md')">
-                  <file-text-outlined class="create-menu__icon create-menu__icon--md" />
-                  <span>MD</span>
-                </div>
-              </div>
-            </template>
-            <a-tooltip title="新建文件">
-              <button class="panel-toggle-btn">
-                <plus-outlined />
+          </Badge>
+          <Tooltip side="bottom">
+            <TooltipTrigger as-child>
+              <button
+                class="inline-flex size-7 items-center justify-center rounded-md text-app-secondary transition-colors hover:bg-hover hover:text-app-primary"
+                @click="onRefreshFiles"
+              >
+                <RefreshCw class="size-3.5" />
               </button>
-            </a-tooltip>
-          </a-popover>
+            </TooltipTrigger>
+            <TooltipContent>刷新</TooltipContent>
+          </Tooltip>
+          <!-- 新建文件 Popover -->
+          <Popover v-model:open="createPopoverVisible">
+            <PopoverTrigger as-child>
+              <Tooltip side="bottom">
+                <TooltipTrigger as-child>
+                  <button
+                    class="inline-flex size-7 items-center justify-center rounded-md text-app-secondary transition-colors hover:bg-hover hover:text-app-primary"
+                  >
+                    <Plus class="size-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>新建文件</TooltipContent>
+              </Tooltip>
+            </PopoverTrigger>
+            <PopoverContent align="end" side="bottom" class="w-36 p-1">
+              <div class="flex flex-col gap-0.5">
+                <button
+                  class="flex items-center gap-2 rounded px-2 py-1.5 text-[13px] text-app-primary transition-colors hover:bg-hover"
+                  @click="onCreateFile('docx')"
+                >
+                  <FileText class="size-4 text-[#2b579a]" />
+                  <span>文档</span>
+                </button>
+                <button
+                  class="flex items-center gap-2 rounded px-2 py-1.5 text-[13px] text-app-primary transition-colors hover:bg-hover"
+                  @click="onCreateFile('xlsx')"
+                >
+                  <Sheet class="size-4 text-[#217346]" />
+                  <span>表格</span>
+                </button>
+                <button
+                  class="flex items-center gap-2 rounded px-2 py-1.5 text-[13px] text-app-primary transition-colors hover:bg-hover"
+                  @click="onCreateFile('md')"
+                >
+                  <FileCode class="size-4 text-[#6c757d]" />
+                  <span>MD</span>
+                </button>
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
 
-      <div class="panel__body">
-        <div v-if="!selectedSubFolder" class="file-empty">
-          <a-empty :description="fileEmptyText" />
+      <div class="flex-1 min-h-0 overflow-y-auto px-1.5 py-1">
+        <div v-if="!selectedSubFolder" class="flex min-h-[200px] items-center justify-center">
+          <div class="flex flex-col items-center gap-2 text-app-muted">
+            <FolderOpen class="size-10 opacity-40" />
+            <span class="text-sm">{{ fileEmptyText }}</span>
+          </div>
         </div>
-        <div v-else class="file-list" v-loading="fileLoading">
+        <div v-else class="flex flex-col gap-0.5" v-loading="fileLoading">
           <div
             v-for="file in fileList"
             :key="file.id"
-            class="file-item"
-            :class="{ 'file-item--active': ws.selectedFileId === file.id }"
+            class="flex cursor-pointer rounded p-2 transition-colors hover:bg-hover"
+            :class="{
+              'bg-active border-l-2 border-accent-app pl-[7px]': ws.selectedFileId === file.id,
+            }"
             @click="onSelectFile(file)"
           >
-            <div class="file-item__info">
-              <div class="file-item__name" :title="file.name">{{ file.name }}</div>
-              <div class="file-item__desc">{{ formatFileSize(file.size) }} · {{ formatDateTime(file.mtime) }}</div>
+            <div class="min-w-0 flex-1">
+              <div class="line-clamp-2 break-all text-[13px] font-medium leading-tight text-foreground" :title="file.name">
+                {{ file.name }}
+              </div>
+              <div class="mt-1 truncate text-[11px] text-app-muted">
+                {{ formatFileSize(file.size) }} · {{ formatDateTime(file.mtime) }}
+              </div>
             </div>
           </div>
-          <div v-if="!fileLoading && fileList.length === 0" class="file-empty">
-            <a-empty description="该文件夹下暂无文件" />
+          <div v-if="!fileLoading && fileList.length === 0" class="flex min-h-[200px] items-center justify-center">
+            <div class="flex flex-col items-center gap-2 text-app-muted">
+              <Inbox class="size-10 opacity-40" />
+              <span class="text-sm">该文件夹下暂无文件</span>
+            </div>
           </div>
         </div>
       </div>
@@ -72,7 +111,7 @@
     <PanelDivider @resize="onPanel2Resize" />
 
     <!-- ========== 第三部分：文件预览/编辑区 ========== -->
-    <div class="panel panel--preview">
+    <div class="flex flex-1 min-w-[200px] flex-col h-full overflow-hidden">
       <MdEditor
         v-if="editorMode && ws.selectedFile && isMdFile(ws.selectedFile.name)"
         :key="'md-editor-' + ws.selectedFile.id"
@@ -105,7 +144,7 @@
     <!-- ========== 第四部分：文件属性 ========== -->
     <template v-if="!panel4Collapsed">
       <PanelDivider @resize="onPanel4Resize" />
-      <div class="panel panel--info" :style="{ width: panel4Width + 'px', flexShrink: 0 }">
+      <div class="flex flex-col h-full overflow-hidden bg-panel min-w-[240px]" :style="{ width: panel4Width + 'px', flexShrink: 0 }">
         <FileInfoPanel :file="ws.selectedFile" :status-tag="selectedFileStatusTag" />
       </div>
     </template>
@@ -115,7 +154,11 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch, shallowRef } from 'vue'
 import { storeToRefs } from 'pinia'
-import { message } from 'ant-design-vue'
+import { FileCode, FileText, FolderOpen, Inbox, Loader2, Plus, RefreshCw, Sheet } from '@lucide/vue'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Badge } from '@/components/ui/badge'
+import { useToast } from '@/components/ui/sonner'
 import { ipcApiRoute } from '@/api'
 import { ipc } from '@/utils/ipcRenderer'
 import { useWorkspaceStore } from '@/stores/workspace'
@@ -125,6 +168,7 @@ import OnlyOfficeEditor from '@/components/file/OnlyOfficeEditor.vue'
 import MdEditor from '@/components/file/MdEditor.vue'
 import PanelDivider from '@/components/layout/PanelDivider.vue'
 
+const toast = useToast()
 const ws = useWorkspaceStore()
 // 使用 storeToRefs 确保 store 的 ref/computed 在 HMR 后仍保持响应式
 const { selectedFolderId: wsSelectedFolderId, selectedFolder: wsSelectedFolder, selectedFile: wsSelectedFile, selectedFileId: wsSelectedFileId } = storeToRefs(ws)
@@ -235,7 +279,7 @@ const FILE_TYPE_LABELS = {
 async function onCreateFile(ext) {
   createPopoverVisible.value = false
   if (!ws.selectedFolder || !selectedSubFolder.value) {
-    message.warning('请先选择文件夹')
+    toast.warning('请先选择文件夹')
     return
   }
   if (creatingFile.value) return
@@ -252,15 +296,15 @@ async function onCreateFile(ext) {
       fileName,
     })
     if (result.success && result.fileItem) {
-      message.success(`已创建: ${fileName}`)
+      toast.success(`已创建: ${fileName}`)
       await loadFileList()
       onSelectFile(result.fileItem)
     } else {
-      message.error(result.message || '创建文件失败')
+      toast.error(result.message || '创建文件失败')
     }
   } catch (err) {
     console.error('[file] 创建文件失败:', err)
-    message.error('创建文件失败')
+    toast.error('创建文件失败')
   } finally {
     creatingFile.value = false
   }
@@ -295,13 +339,13 @@ async function onEditorRename(newName) {
     if (result.success) {
       ws.selectFile(result.fileItem || { ...ws.selectedFile, name: finalName })
       loadFileList()
-      message.success(`已重命名为: ${finalName}`)
+      toast.success(`已重命名为: ${finalName}`)
     } else {
-      message.error(result.message || '重命名失败')
+      toast.error(result.message || '重命名失败')
     }
   } catch (err) {
     console.error('[file] 重命名失败:', err)
-    message.error('重命名失败')
+    toast.error('重命名失败')
   }
 }
 
@@ -369,7 +413,7 @@ async function loadSubFolderTree(folderId) {
     }
   } catch (err) {
     console.error('[file] 加载子文件夹树失败:', err)
-    message.error('加载子文件夹树失败')
+    toast.error('加载子文件夹树失败')
   } finally {
     subFolderLoading.value = false
   }
@@ -407,7 +451,7 @@ async function loadFileList() {
     }
   } catch (err) {
     console.error('[file] 加载文件列表失败:', err)
-    message.error('加载文件列表失败')
+    toast.error('加载文件列表失败')
   } finally {
     fileLoading.value = false
   }
@@ -455,206 +499,3 @@ function formatFileSize(bytes) {
   return `${size.toFixed(1)} ${units[i]}`
 }
 </script>
-
-<style lang="less" scoped>
-.file-workspace {
-  display: flex;
-  height: 100%;
-  width: 100%;
-  overflow: hidden;
-  background-color: var(--bg-layout);
-}
-
-// ========== 通用面板样式 ==========
-.panel {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-width: 0;
-  overflow: hidden;
-  background-color: var(--bg-panel);
-
-  &__toolbar {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 0 8px;
-    height: 40px;
-    flex-shrink: 0;
-    border-bottom: 1px solid var(--border-color);
-  }
-
-  &__toolbar-right {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    margin-left: auto;
-  }
-
-  &__path {
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--text-primary);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    max-width: 200px;
-
-    &--placeholder {
-      color: var(--text-muted);
-      font-weight: 400;
-    }
-  }
-
-  &__body {
-    flex: 1;
-    overflow-y: auto;
-    padding: 4px 6px;
-    min-height: 0;
-  }
-}
-
-// ========== 文件列表 ==========
-.file-empty {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  min-height: 200px;
-}
-
-.file-list {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.file-item {
-  display: flex;
-  padding: 8px 10px;
-  border-radius: 0;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  border: none;
-
-  &:hover {
-    background-color: var(--bg-hover);
-  }
-
-  &--active {
-    background-color: var(--bg-active);
-    border-left: 2px solid var(--accent);
-    padding-left: 8px;
-  }
-
-  &__info {
-    flex: 1;
-    min-width: 0;
-  }
-
-  &__name {
-    font-size: 13px;
-    font-weight: 500;
-    color: #000;
-    line-height: 1.4;
-    word-break: break-all;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-
-    [data-theme='dark'] & {
-      color: #e0e0e0;
-    }
-  }
-
-  &__desc {
-    font-size: 11px;
-    color: var(--text-muted);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    margin-top: 4px;
-  }
-}
-
-// ========== Panel 3 & 4 ==========
-.panel--preview {
-  flex: 1;
-  min-width: 200px;
-}
-
-.panel--info {
-  min-width: 240px;
-}
-
-.rag-queue-tag {
-  display: inline-flex;
-  align-items: center;
-  font-size: 11px;
-  margin: 0;
-}
-
-// ========== 面板切换按钮 ==========
-.panel-toggle-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border: none;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all 0.15s ease;
-  font-size: 14px;
-
-  &:hover {
-    background-color: var(--bg-hover);
-    color: var(--text-primary);
-  }
-}
-
-// ========== 新建文件菜单 ==========
-.create-menu {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 120px;
-
-  &__item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 12px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 13px;
-    color: var(--text-primary);
-    transition: background-color 0.15s ease;
-
-    &:hover {
-      background-color: var(--bg-hover);
-    }
-  }
-
-  &__icon {
-    font-size: 16px;
-
-    &--word { color: #2b579a; }
-    &--excel { color: #217346; }
-    &--ppt { color: #d24726; }
-    &--pdf { color: #bb0707; }
-    &--md { color: #6c757d; }
-  }
-}
-
-// ========== 响应式 ==========
-@media (max-width: 900px) {
-  .panel--file-list {
-    display: none;
-  }
-}
-</style>

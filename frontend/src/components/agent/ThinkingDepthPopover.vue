@@ -1,11 +1,22 @@
 <template>
-  <a-popover
-    v-model:open="open"
-    placement="top"
-    trigger="click"
-    overlay-class-name="thinking-popover-overlay"
-  >
-    <template #content>
+  <Popover v-model:open="open">
+    <PopoverTrigger as-child>
+      <button
+        type="button"
+        class="toolbar-icon-btn"
+        :class="{ 'toolbar-icon-btn--active': currentLevel !== 'off' }"
+        @click="handleButtonClick"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z" />
+          <path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z" />
+          <path d="M15 13a4.5 4.5 0 0 1-3-4 4.5 4.5 0 0 1-3 4" />
+          <path d="M17 5.5a3 3 0 0 1-2 3" />
+          <path d="M7 5.5a3 3 0 0 0 2 3" />
+        </svg>
+      </button>
+    </PopoverTrigger>
+    <PopoverContent class="w-[220px] p-3" side="top">
       <div class="thinking-popover-content">
         <div class="thinking-popover-header">
           <span class="thinking-popover-label">思考深度</span>
@@ -27,38 +38,14 @@
           </div>
         </div>
       </div>
-    </template>
-
-    <a-tooltip placement="bottom" :mouse-enter-delay="0.5">
-      <template #title>
-        <div>
-          <div style="font-weight: 600">思考深度</div>
-          <div style="font-size: 12px; opacity: 0.8">当前：{{ THINKING_LABELS[currentLevel] }}</div>
-        </div>
-      </template>
-      <button
-        type="button"
-        class="toolbar-icon-btn"
-        :class="{ 'toolbar-icon-btn--active': currentLevel !== 'off' }"
-        @click="handleButtonClick"
-      >
-        <!-- 大脑图标 -->
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z" />
-          <path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z" />
-          <path d="M15 13a4.5 4.5 0 0 1-3-4 4.5 4.5 0 0 1-3 4" />
-          <path d="M17 5.5a3 3 0 0 1-2 3" />
-          <path d="M7 5.5a3 3 0 0 0 2 3" />
-        </svg>
-      </button>
-    </a-tooltip>
-  </a-popover>
+    </PopoverContent>
+  </Popover>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue'
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
 
-// ===== 思考深度等级 =====
 const THINKING_LEVELS = ['off', 'low', 'medium', 'high', 'xhigh']
 
 const THINKING_LABELS = {
@@ -70,9 +57,7 @@ const THINKING_LABELS = {
   max: '最大',
 }
 
-// ===== Props / Emits =====
 const props = defineProps({
-  /** 当前思考深度等级 */
   modelValue: {
     type: String,
     default: 'high',
@@ -81,10 +66,8 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue'])
 
-// ===== 状态 =====
 const open = ref(false)
 
-// ===== 计算属性 =====
 const thinkingLevels = computed(() => THINKING_LEVELS)
 
 const currentLevel = computed(() => {
@@ -94,14 +77,12 @@ const currentLevel = computed(() => {
 
 const currentIndex = computed(() => THINKING_LEVELS.indexOf(currentLevel.value))
 
-// ===== 方法 =====
 function selectLevel(level) {
   emit('update:modelValue', level)
   open.value = false
 }
 
 function handleButtonClick() {
-  // 点击图标时快速在 off 和 high 之间切换
   const next = currentLevel.value === 'off' ? 'high' : 'off'
   emit('update:modelValue', next)
 }
@@ -122,30 +103,21 @@ function handleButtonClick() {
   transition: all 0.15s ease;
   flex-shrink: 0;
   padding: 0;
-
-  svg {
-    width: 18px;
-    height: 18px;
-  }
-
-  &:hover {
-    background: var(--bg-hover);
-    color: var(--text-primary);
-  }
-
-  &--active {
-    color: var(--accent);
-  }
+}
+.toolbar-icon-btn svg {
+  width: 18px;
+  height: 18px;
+}
+.toolbar-icon-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+.toolbar-icon-btn--active {
+  color: var(--accent);
 }
 </style>
 
 <style>
-/* Popover 内容样式（非 scoped，因为需要在 popover overlay 中生效） */
-.thinking-popover-overlay .ant-popover-inner-content {
-  padding: 12px;
-  min-width: 200px;
-}
-
 .thinking-popover-content {
   display: flex;
   flex-direction: column;

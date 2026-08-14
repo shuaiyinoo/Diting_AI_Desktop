@@ -1,263 +1,227 @@
 <template>
-  <div class="llm-model-page">
+  <div class="llm-model-page space-y-4 p-4">
     <!-- 顶部说明 -->
-    <a-card class="header-card" :bordered="false">
-      <div class="header-row">
-        <div class="header-info">
-          <h2 class="header-title">
-            <RobotFilled class="header-icon" />
+    <Card class="p-4">
+      <div class="flex items-start justify-between">
+        <div class="flex-1">
+          <h2 class="mb-1.5 flex items-center gap-2 text-lg font-semibold">
+            <Bot class="text-primary" />
             语义模型配置
           </h2>
-          <p class="header-desc">
+          <p class="m-0 text-sm text-muted-foreground">
             配置大语言模型（LLM）用于智能问答与语义检索。同一时间只能启用一个模型。
           </p>
         </div>
-        <a-button type="primary" @click="openAddModal">
-          <PlusOutlined />
+        <Button @click="openAddModal">
+          <Plus class="mr-1 size-4" />
           添加模型
-        </a-button>
+        </Button>
       </div>
 
       <!-- 当前启用模型状态 -->
-      <div class="active-model-bar" v-if="enabledModel">
-        <a-tag color="success" class="active-tag">
-          <CheckCircleFilled />
+      <div v-if="enabledModel" class="mt-3.5 flex items-center gap-2.5 rounded-md border border-green-200 bg-green-50 px-3.5 py-2.5 dark:border-green-900 dark:bg-green-950">
+        <Badge variant="success" class="gap-1">
+          <CheckCircle2 class="size-3.5" />
           当前启用
-        </a-tag>
-        <span class="active-name">{{ enabledModel.name }}</span>
-        <span class="active-meta">
+        </Badge>
+        <span class="text-sm font-semibold">{{ enabledModel.name }}</span>
+        <span class="text-xs text-muted-foreground">
           {{ providerLabel(enabledModel.provider) }} · {{ enabledModel.model_name }}
         </span>
       </div>
-      <div class="active-model-bar inactive" v-else>
-        <a-tag color="default">
-          <ExclamationCircleFilled />
+      <div v-else class="mt-3.5 flex items-center gap-2.5 rounded-md border border-yellow-200 bg-yellow-50 px-3.5 py-2.5 dark:border-yellow-900 dark:bg-yellow-950">
+        <Badge variant="secondary">
+          <AlertCircle class="mr-1 size-3.5" />
           未启用
-        </a-tag>
-        <span class="active-name" style="color: #999;">尚未启用任何模型，请添加并启用一个模型</span>
+        </Badge>
+        <span class="text-sm text-muted-foreground">尚未启用任何模型，请添加并启用一个模型</span>
       </div>
-    </a-card>
+    </Card>
 
     <!-- 模型列表表格 -->
-    <a-card class="table-card" :bordered="false">
-      <a-table
-        :columns="columns"
-        :data-source="modelList"
-        :pagination="false"
-        :loading="loading"
-        row-key="id"
-        size="middle"
-      >
-        <template #bodyCell="{ column, record }">
-          <!-- 启用状态 -->
-          <template v-if="column.key === 'enabled'">
-            <a-tag v-if="record.enabled === 1" color="success">已启用</a-tag>
-            <a-tag v-else color="default">未启用</a-tag>
-          </template>
-
-          <!-- 提供商 -->
-          <template v-if="column.key === 'provider'">
-            {{ providerLabel(record.provider) }}
-          </template>
-
-          <!-- API 地址 -->
-          <template v-if="column.key === 'base_url'">
-            <a-tooltip :title="record.base_url">
-              <span class="url-cell">{{ record.base_url || '(未设置)' }}</span>
-            </a-tooltip>
-          </template>
-
-          <!-- API Key -->
-          <template v-if="column.key === 'api_key'">
-            <span class="key-cell">{{ maskKey(record.api_key) }}</span>
-          </template>
-
-          <!-- 温度 -->
-          <template v-if="column.key === 'temperature'">
-            {{ record.temperature }}
-          </template>
-
-          <!-- 操作 -->
-          <template v-if="column.key === 'action'">
-            <a-space>
-              <a-button
-                v-if="record.enabled !== 1"
-                type="link"
-                size="small"
-                @click="handleEnable(record)"
-              >
-                启用
-              </a-button>
-              <a-button
-                v-else
-                type="link"
-                size="small"
-                danger
-                @click="handleDisable(record)"
-              >
-                禁用
-              </a-button>
-              <a-button type="link" size="small" @click="handleTest(record)" :loading="testingId === record.id">
-                测试
-              </a-button>
-              <a-button type="link" size="small" @click="openEditModal(record)">编辑</a-button>
-              <a-popconfirm title="确定删除此模型配置吗？" @confirm="handleDelete(record)">
-                <a-button type="link" size="small" danger>删除</a-button>
-              </a-popconfirm>
-            </a-space>
-          </template>
-        </template>
-      </a-table>
-    </a-card>
+    <Card class="p-0">
+      <div v-if="loading" class="flex items-center justify-center py-12">
+        <Spinner class="size-5 text-muted-foreground" />
+        <span class="ml-2 text-sm text-muted-foreground">加载中…</span>
+      </div>
+      <table v-else class="w-full text-sm">
+        <thead>
+          <tr class="border-b bg-muted/50">
+            <th class="px-3 py-2 text-left font-medium">状态</th>
+            <th class="px-3 py-2 text-left font-medium">别名</th>
+            <th class="px-3 py-2 text-left font-medium">提供商</th>
+            <th class="px-3 py-2 text-left font-medium">模型名称</th>
+            <th class="px-3 py-2 text-left font-medium">API 地址</th>
+            <th class="px-3 py-2 text-left font-medium">API Key</th>
+            <th class="px-3 py-2 text-left font-medium">温度</th>
+            <th class="px-3 py-2 text-left font-medium">操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="record in modelList" :key="record.id" class="border-b hover:bg-muted/30">
+            <td class="px-3 py-2">
+              <Badge v-if="record.enabled === 1" variant="success">已启用</Badge>
+              <Badge v-else variant="secondary">未启用</Badge>
+            </td>
+            <td class="px-3 py-2">{{ record.name }}</td>
+            <td class="px-3 py-2">{{ providerLabel(record.provider) }}</td>
+            <td class="px-3 py-2">{{ record.model_name }}</td>
+            <td class="max-w-[200px] truncate px-3 py-2 text-muted-foreground" :title="record.base_url">
+              {{ record.base_url || '(未设置)' }}
+            </td>
+            <td class="px-3 py-2 font-mono text-xs text-muted-foreground">{{ maskKey(record.api_key) }}</td>
+            <td class="px-3 py-2">{{ record.temperature }}</td>
+            <td class="px-3 py-2">
+              <div class="flex items-center gap-1">
+                <Button v-if="record.enabled !== 1" variant="link" size="sm" @click="handleEnable(record)">启用</Button>
+                <Button v-else variant="link" size="sm" @click="handleDisable(record)">禁用</Button>
+                <Button variant="link" size="sm" :disabled="testingId === record.id" @click="handleTest(record)">
+                  {{ testingId === record.id ? '测试中…' : '测试' }}
+                </Button>
+                <Button variant="link" size="sm" @click="openEditModal(record)">编辑</Button>
+                <Button variant="link" size="sm" class="text-destructive" @click="handleDelete(record)">删除</Button>
+              </div>
+            </td>
+          </tr>
+          <tr v-if="modelList.length === 0">
+            <td colspan="8" class="py-8 text-center text-sm text-muted-foreground">暂无数据</td>
+          </tr>
+        </tbody>
+      </table>
+    </Card>
 
     <!-- 添加/编辑模型弹窗 -->
-    <a-modal
-      v-model:open="modalVisible"
-      :title="editingModel ? '编辑模型' : '添加模型'"
-      :confirm-loading="submitting"
-      width="640px"
-      @ok="handleSubmit"
-      @cancel="modalVisible = false"
-    >
-      <a-form
-        ref="formRef"
-        :model="formData"
-        :rules="formRules"
-        layout="vertical"
-      >
-        <a-form-item label="模型别名" name="name" required>
-          <a-input
-            v-model:value="formData.name"
-            placeholder="如：我的GPT-4o、DeepSeek生产环境"
-          />
-        </a-form-item>
+    <Dialog v-model:open="modalVisible">
+      <DialogContent class="max-w-[640px]">
+        <DialogHeader>
+          <DialogTitle>{{ editingModel ? '编辑模型' : '添加模型' }}</DialogTitle>
+        </DialogHeader>
 
-        <a-form-item label="接口提供商" name="provider">
-          <a-select v-model:value="formData.provider" placeholder="选择提供商类型">
-            <a-select-option value="openai">OpenAI 兼容（OpenAI / DeepSeek / Moonshot / Qwen 等）</a-select-option>
-            <a-select-option value="anthropic">Anthropic Claude</a-select-option>
-            <a-select-option value="google">Google Gemini</a-select-option>
-            <a-select-option value="custom">自定义</a-select-option>
-          </a-select>
-        </a-form-item>
+        <div class="space-y-4 py-2">
+          <!-- 模型别名 -->
+          <div class="space-y-1.5">
+            <label class="text-sm font-medium">模型别名 <span class="text-destructive">*</span></label>
+            <Input v-model="formData.name" placeholder="如：我的GPT-4o、DeepSeek生产环境" />
+          </div>
 
-        <a-form-item label="API 地址 (Base URL)" name="base_url">
-          <a-input
-            v-model:value="formData.base_url"
-            placeholder="如：https://api.openai.com/v1"
-          />
-          <template #extra>
-            <span class="form-tip">不含 /chat/completions 后缀。常见地址：</span>
-            <div class="url-presets">
-              <a-button size="small" type="link" @click="formData.base_url = 'https://api.openai.com/v1'">OpenAI</a-button>
-              <a-button size="small" type="link" @click="formData.base_url = 'https://api.deepseek.com/v1'">DeepSeek</a-button>
-              <a-button size="small" type="link" @click="formData.base_url = 'https://api.moonshot.cn/v1'">Moonshot</a-button>
-              <a-button size="small" type="link" @click="formData.base_url = 'https://dashscope.aliyuncs.com/compatible-mode/v1'">通义千问</a-button>
-              <a-button size="small" type="link" @click="formData.base_url = 'https://api.siliconflow.cn/v1'">硅基流动</a-button>
+          <!-- 接口提供商 -->
+          <div class="space-y-1.5">
+            <label class="text-sm font-medium">接口提供商</label>
+            <Select v-model="formData.provider">
+              <SelectTrigger>
+                <SelectValue placeholder="选择提供商类型" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="openai">OpenAI 兼容（OpenAI / DeepSeek / Moonshot / Qwen 等）</SelectItem>
+                <SelectItem value="anthropic">Anthropic Claude</SelectItem>
+                <SelectItem value="google">Google Gemini</SelectItem>
+                <SelectItem value="custom">自定义</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <!-- API 地址 -->
+          <div class="space-y-1.5">
+            <label class="text-sm font-medium">API 地址 (Base URL)</label>
+            <Input v-model="formData.base_url" placeholder="如：https://api.openai.com/v1" />
+            <div class="flex flex-wrap gap-1">
+              <Button variant="link" size="sm" @click="formData.base_url = 'https://api.openai.com/v1'">OpenAI</Button>
+              <Button variant="link" size="sm" @click="formData.base_url = 'https://api.deepseek.com/v1'">DeepSeek</Button>
+              <Button variant="link" size="sm" @click="formData.base_url = 'https://api.moonshot.cn/v1'">Moonshot</Button>
+              <Button variant="link" size="sm" @click="formData.base_url = 'https://dashscope.aliyuncs.com/compatible-mode/v1'">通义千问</Button>
+              <Button variant="link" size="sm" @click="formData.base_url = 'https://api.siliconflow.cn/v1'">硅基流动</Button>
             </div>
-          </template>
-        </a-form-item>
+            <p class="text-xs text-muted-foreground">不含 /chat/completions 后缀</p>
+          </div>
 
-        <a-form-item label="API Key" name="api_key">
-          <a-input-password
-            v-model:value="formData.api_key"
-            placeholder="sk-..."
-            autocomplete="new-password"
-          />
-        </a-form-item>
+          <!-- API Key -->
+          <div class="space-y-1.5">
+            <label class="text-sm font-medium">API Key</label>
+            <Input v-model="formData.api_key" type="password" placeholder="sk-..." autocomplete="new-password" />
+          </div>
 
-        <a-form-item label="模型名称" name="model_name" required>
-          <a-input
-            v-model:value="formData.model_name"
-            placeholder="如：gpt-4o、deepseek-chat、claude-3-5-sonnet-20241022"
-          />
-          <template #extra>
-            <span class="form-tip">常见模型名：</span>
-            <div class="url-presets">
-              <a-button size="small" type="link" @click="formData.model_name = 'gpt-4o'">gpt-4o</a-button>
-              <a-button size="small" type="link" @click="formData.model_name = 'gpt-4o-mini'">gpt-4o-mini</a-button>
-              <a-button size="small" type="link" @click="formData.model_name = 'deepseek-chat'">deepseek-chat</a-button>
-              <a-button size="small" type="link" @click="formData.model_name = 'deepseek-reasoner'">deepseek-reasoner</a-button>
-              <a-button size="small" type="link" @click="formData.model_name = 'moonshot-v1-8k'">moonshot-v1-8k</a-button>
-              <a-button size="small" type="link" @click="formData.model_name = 'qwen-plus'">qwen-plus</a-button>
+          <!-- 模型名称 -->
+          <div class="space-y-1.5">
+            <label class="text-sm font-medium">模型名称 <span class="text-destructive">*</span></label>
+            <Input v-model="formData.model_name" placeholder="如：gpt-4o、deepseek-chat、claude-3-5-sonnet-20241022" />
+            <div class="flex flex-wrap gap-1">
+              <Button variant="link" size="sm" @click="formData.model_name = 'gpt-4o'">gpt-4o</Button>
+              <Button variant="link" size="sm" @click="formData.model_name = 'gpt-4o-mini'">gpt-4o-mini</Button>
+              <Button variant="link" size="sm" @click="formData.model_name = 'deepseek-chat'">deepseek-chat</Button>
+              <Button variant="link" size="sm" @click="formData.model_name = 'deepseek-reasoner'">deepseek-reasoner</Button>
+              <Button variant="link" size="sm" @click="formData.model_name = 'moonshot-v1-8k'">moonshot-v1-8k</Button>
+              <Button variant="link" size="sm" @click="formData.model_name = 'qwen-plus'">qwen-plus</Button>
             </div>
-          </template>
-        </a-form-item>
+          </div>
 
-        <a-row :gutter="16">
-          <a-col :span="12">
-            <a-form-item label="温度 (Temperature)" name="temperature">
-              <a-input-number
-                v-model:value="formData.temperature"
-                :min="0"
-                :max="2"
-                :step="0.1"
-                style="width: 100%"
-              />
-              <template #extra>
-                <span class="form-tip">0=精确，2=创造性，默认 0.7</span>
-              </template>
-            </a-form-item>
-          </a-col>
-          <a-col :span="12">
-            <a-form-item label="最大输出 Token" name="max_tokens">
-              <a-input-number
-                v-model:value="formData.max_tokens"
-                :min="1"
-                :max="128000"
-                :step="256"
-                style="width: 100%"
-              />
-              <template #extra>
-                <span class="form-tip">默认 4096</span>
-              </template>
-            </a-form-item>
-          </a-col>
-        </a-row>
+          <!-- 温度 + 最大 Token -->
+          <div class="flex gap-4">
+            <div class="flex-1 space-y-1.5">
+              <label class="text-sm font-medium">温度 (Temperature)</label>
+              <Input v-model="formData.temperature" type="number" :min="0" :max="2" :step="0.1" />
+              <p class="text-xs text-muted-foreground">0=精确，2=创造性，默认 0.7</p>
+            </div>
+            <div class="flex-1 space-y-1.5">
+              <label class="text-sm font-medium">最大输出 Token</label>
+              <Input v-model="formData.max_tokens" type="number" :min="1" :max="128000" :step="256" />
+              <p class="text-xs text-muted-foreground">默认 4096</p>
+            </div>
+          </div>
 
-        <a-form-item label="备注" name="remark">
-          <a-textarea
-            v-model:value="formData.remark"
-            :rows="2"
-            placeholder="可选，如：用于代码生成 / 用于文档总结"
-          />
-        </a-form-item>
-      </a-form>
-    </a-modal>
+          <!-- 备注 -->
+          <div class="space-y-1.5">
+            <label class="text-sm font-medium">备注</label>
+            <Textarea v-model="formData.remark" :rows="2" placeholder="可选，如：用于代码生成 / 用于文档总结" />
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" @click="modalVisible = false">取消</Button>
+          <Button :disabled="submitting" @click="handleSubmit">
+            {{ submitting ? '提交中…' : '确定' }}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
 
     <!-- 测试结果弹窗 -->
-    <a-modal
-      v-model:open="testResultVisible"
-      title="连通性测试结果"
-      :footer="null"
-      width="480px"
-    >
-      <div class="test-result" v-if="testResult">
-        <a-result
-          :status="testResult.success ? 'success' : 'error'"
-          :title="testResult.success ? '连接成功' : '连接失败'"
-          :sub-title="testResult.message"
-        >
-          <template #extra>
-            <div class="test-latency" v-if="testResult.success">
-              延迟：{{ testResult.latencyMs }}ms
-            </div>
-          </template>
-        </a-result>
-      </div>
-    </a-modal>
+    <Dialog v-model:open="testResultVisible">
+      <DialogContent class="max-w-[480px]">
+        <DialogHeader>
+          <DialogTitle>连通性测试结果</DialogTitle>
+        </DialogHeader>
+        <div v-if="testResult" class="py-4 text-center">
+          <div class="mb-2 flex items-center justify-center gap-2 text-lg font-semibold" :class="testResult.success ? 'text-green-600' : 'text-red-600'">
+            <CheckCircle2 v-if="testResult.success" class="size-5" />
+            <AlertCircle v-else class="size-5" />
+            {{ testResult.success ? '连接成功' : '连接失败' }}
+          </div>
+          <p class="text-sm text-muted-foreground">{{ testResult.message }}</p>
+          <div v-if="testResult.success" class="mt-2 text-sm text-green-600">
+            延迟：{{ testResult.latencyMs }}ms
+          </div>
+        </div>
+        <DialogFooter>
+          <Button @click="testResultVisible = false">关闭</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   </div>
 </template>
 
 <script setup>
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Badge } from '@/components/ui/badge'
+import { Card } from '@/components/ui/card'
+import { Spinner } from '@/components/ui/spinner'
+
 import { ref, reactive, onMounted } from 'vue';
-import { message, Modal } from 'ant-design-vue';
-import {
-  PlusOutlined,
-  CheckCircleFilled,
-  ExclamationCircleFilled,
-  RobotFilled,
-} from '@ant-design/icons-vue';
+import { toast } from 'vue-sonner';
+import { AlertCircle, Bot, CheckCircle2, Plus } from '@lucide/vue';
 import { ipcApiRoute } from '@/api';
 import { ipc } from '@/utils/ipcRenderer';
 
@@ -270,7 +234,6 @@ const editingModel = ref(null);
 const modelList = ref([]);
 const enabledModel = ref(null);
 const testResult = ref(null);
-const formRef = ref();
 
 const formData = reactive({
   name: '',
@@ -282,43 +245,6 @@ const formData = reactive({
   max_tokens: 4096,
   remark: '',
 });
-
-const formRules = {
-  name: [{ required: true, message: '请输入模型别名' }],
-  model_name: [{ required: true, message: '请输入模型名称' }],
-};
-
-const columns = [
-  { title: '状态', key: 'enabled', width: 90 },
-  { title: '别名', dataIndex: 'name', key: 'name', width: 160 },
-  { title: '提供商', key: 'provider', width: 130 },
-  { title: '模型名称', dataIndex: 'model_name', key: 'model_name', width: 200 },
-  { title: 'API 地址', key: 'base_url', ellipsis: true },
-  { title: 'API Key', key: 'api_key', width: 140 },
-  { title: '温度', key: 'temperature', width: 70 },
-  { title: '操作', key: 'action', width: 260, fixed: 'right' },
-];
-
-onMounted(() => {
-  fetchModels();
-});
-
-async function fetchModels() {
-  loading.value = true;
-  try {
-    const res = await ipc.invoke(ipcApiRoute.llm.modelOperation, { action: 'list' });
-    if (res.code === 0) {
-      modelList.value = res.data || [];
-      enabledModel.value = modelList.value.find(m => m.enabled === 1) || null;
-    } else {
-      message.error(res.message || '获取模型列表失败');
-    }
-  } catch (err) {
-    message.error('获取模型列表异常: ' + (err?.message || err));
-  } finally {
-    loading.value = false;
-  }
-}
 
 function providerLabel(provider) {
   const map = {
@@ -336,17 +262,32 @@ function maskKey(key) {
   return key.substring(0, 4) + '****' + key.substring(key.length - 4);
 }
 
+onMounted(() => {
+  fetchModels();
+});
+
+async function fetchModels() {
+  loading.value = true;
+  try {
+    const res = await ipc.invoke(ipcApiRoute.llm.modelOperation, { action: 'list' });
+    if (res.code === 0) {
+      modelList.value = res.data || [];
+      enabledModel.value = modelList.value.find(m => m.enabled === 1) || null;
+    } else {
+      toast.error(res.message || '获取模型列表失败');
+    }
+  } catch (err) {
+    toast.error('获取模型列表异常: ' + (err?.message || err));
+  } finally {
+    loading.value = false;
+  }
+}
+
 function openAddModal() {
   editingModel.value = null;
   Object.assign(formData, {
-    name: '',
-    provider: 'openai',
-    base_url: '',
-    api_key: '',
-    model_name: '',
-    temperature: 0.7,
-    max_tokens: 4096,
-    remark: '',
+    name: '', provider: 'openai', base_url: '', api_key: '',
+    model_name: '', temperature: 0.7, max_tokens: 4096, remark: '',
   });
   modalVisible.value = true;
 }
@@ -354,61 +295,40 @@ function openAddModal() {
 function openEditModal(record) {
   editingModel.value = record;
   Object.assign(formData, {
-    name: record.name,
-    provider: record.provider,
-    base_url: record.base_url,
-    api_key: record.api_key,
-    model_name: record.model_name,
-    temperature: record.temperature,
-    max_tokens: record.max_tokens,
-    remark: record.remark || '',
+    name: record.name, provider: record.provider, base_url: record.base_url,
+    api_key: record.api_key, model_name: record.model_name,
+    temperature: record.temperature, max_tokens: record.max_tokens, remark: record.remark || '',
   });
   modalVisible.value = true;
 }
 
 async function handleSubmit() {
-  try {
-    await formRef.value.validateFields();
-  } catch {
-    return;
-  }
+  if (!formData.name.trim()) { toast.error('请输入模型别名'); return; }
+  if (!formData.model_name.trim()) { toast.error('请输入模型名称'); return; }
 
   submitting.value = true;
   try {
     const params = {
-      name: formData.name,
-      provider: formData.provider,
-      base_url: formData.base_url,
-      api_key: formData.api_key,
-      model_name: formData.model_name,
-      temperature: Number(formData.temperature),
-      max_tokens: Number(formData.max_tokens),
+      name: formData.name, provider: formData.provider, base_url: formData.base_url,
+      api_key: formData.api_key, model_name: formData.model_name,
+      temperature: Number(formData.temperature), max_tokens: Number(formData.max_tokens),
       remark: formData.remark,
     };
-
     let res;
     if (editingModel.value) {
-      res = await ipc.invoke(ipcApiRoute.llm.modelOperation, {
-        action: 'update',
-        id: editingModel.value.id,
-        params,
-      });
+      res = await ipc.invoke(ipcApiRoute.llm.modelOperation, { action: 'update', id: editingModel.value.id, params });
     } else {
-      res = await ipc.invoke(ipcApiRoute.llm.modelOperation, {
-        action: 'add',
-        params,
-      });
+      res = await ipc.invoke(ipcApiRoute.llm.modelOperation, { action: 'add', params });
     }
-
     if (res.code === 0) {
-      message.success(res.message || (editingModel.value ? '更新成功' : '添加成功'));
+      toast.success(res.message || (editingModel.value ? '更新成功' : '添加成功'));
       modalVisible.value = false;
       fetchModels();
     } else {
-      message.error(res.message || '操作失败');
+      toast.error(res.message || '操作失败');
     }
   } catch (err) {
-    message.error('操作异常: ' + (err?.message || err));
+    toast.error('操作异常: ' + (err?.message || err));
   } finally {
     submitting.value = false;
   }
@@ -416,180 +336,43 @@ async function handleSubmit() {
 
 async function handleEnable(record) {
   try {
-    const res = await ipc.invoke(ipcApiRoute.llm.modelOperation, {
-      action: 'enable',
-      id: record.id,
-    });
-    if (res.code === 0) {
-      message.success(`已启用: ${record.name}`);
-      fetchModels();
-    } else {
-      message.error(res.message || '启用失败');
-    }
-  } catch (err) {
-    message.error('启用异常: ' + (err?.message || err));
-  }
+    const res = await ipc.invoke(ipcApiRoute.llm.modelOperation, { action: 'enable', id: record.id });
+    if (res.code === 0) { toast.success(`已启用: ${record.name}`); fetchModels(); }
+    else { toast.error(res.message || '启用失败'); }
+  } catch (err) { toast.error('启用异常: ' + (err?.message || err)); }
 }
 
 async function handleDisable(record) {
   try {
-    const res = await ipc.invoke(ipcApiRoute.llm.modelOperation, {
-      action: 'disable',
-      id: record.id,
-    });
-    if (res.code === 0) {
-      message.success(`已禁用: ${record.name}`);
-      fetchModels();
-    } else {
-      message.error(res.message || '禁用失败');
-    }
-  } catch (err) {
-    message.error('禁用异常: ' + (err?.message || err));
-  }
+    const res = await ipc.invoke(ipcApiRoute.llm.modelOperation, { action: 'disable', id: record.id });
+    if (res.code === 0) { toast.success(`已禁用: ${record.name}`); fetchModels(); }
+    else { toast.error(res.message || '禁用失败'); }
+  } catch (err) { toast.error('禁用异常: ' + (err?.message || err)); }
 }
 
 async function handleDelete(record) {
+  if (!window.confirm(`确定删除模型「${record.name}」吗？`)) return;
   try {
-    const res = await ipc.invoke(ipcApiRoute.llm.modelOperation, {
-      action: 'delete',
-      id: record.id,
-    });
-    if (res.code === 0) {
-      message.success('删除成功');
-      fetchModels();
-    } else {
-      message.error(res.message || '删除失败');
-    }
-  } catch (err) {
-    message.error('删除异常: ' + (err?.message || err));
-  }
+    const res = await ipc.invoke(ipcApiRoute.llm.modelOperation, { action: 'delete', id: record.id });
+    if (res.code === 0) { toast.success('删除成功'); fetchModels(); }
+    else { toast.error(res.message || '删除失败'); }
+  } catch (err) { toast.error('删除异常: ' + (err?.message || err)); }
 }
 
 async function handleTest(record) {
   testingId.value = record.id;
   try {
-    const res = await ipc.invoke(ipcApiRoute.llm.modelOperation, {
-      action: 'test',
-      id: record.id,
-    });
+    const res = await ipc.invoke(ipcApiRoute.llm.modelOperation, { action: 'test', id: record.id });
     if (res.code === 0 && res.testResult) {
       testResult.value = res.testResult;
       testResultVisible.value = true;
     } else {
-      message.error(res.message || '测试失败');
+      toast.error(res.message || '测试失败');
     }
   } catch (err) {
-    message.error('测试异常: ' + (err?.message || err));
+    toast.error('测试异常: ' + (err?.message || err));
   } finally {
     testingId.value = null;
   }
 }
 </script>
-
-<style lang="less" scoped>
-.llm-model-page {
-  height: 100%;
-  overflow: auto;
-  padding: 16px;
-  background: #f5f6f8;
-}
-
-.header-card {
-  margin-bottom: 12px;
-  border-radius: 8px;
-
-  .header-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-  }
-
-  .header-info {
-    flex: 1;
-  }
-
-  .header-title {
-    font-size: 18px;
-    font-weight: 600;
-    margin: 0 0 6px 0;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-
-    .header-icon {
-      color: #1677ff;
-    }
-  }
-
-  .header-desc {
-    color: #888;
-    font-size: 13px;
-    margin: 0;
-  }
-}
-
-.active-model-bar {
-  margin-top: 14px;
-  padding: 10px 14px;
-  background: #f6ffed;
-  border: 1px solid #b7eb8f;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-
-  &.inactive {
-    background: #fffbe6;
-    border-color: #ffe58f;
-  }
-
-  .active-tag {
-    margin: 0;
-  }
-
-  .active-name {
-    font-weight: 600;
-    font-size: 14px;
-  }
-
-  .active-meta {
-    color: #888;
-    font-size: 13px;
-  }
-}
-
-.table-card {
-  border-radius: 8px;
-}
-
-.url-cell,
-.key-cell {
-  color: #666;
-  font-size: 13px;
-  font-family: 'SF Mono', Monaco, monospace;
-}
-
-.form-tip {
-  color: #999;
-  font-size: 12px;
-}
-
-.url-presets {
-  margin-top: 4px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0;
-
-  :deep(.ant-btn) {
-    padding: 0 8px;
-    font-size: 12px;
-    height: 22px;
-  }
-}
-
-.test-latency {
-  color: #52c41a;
-  font-size: 14px;
-  margin-top: 8px;
-}
-</style>

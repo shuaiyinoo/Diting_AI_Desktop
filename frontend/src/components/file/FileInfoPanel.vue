@@ -1,42 +1,42 @@
 <template>
-  <div class="file-info-panel">
-    <div class="file-info-panel__header">
-      <span class="file-info-panel__title">文件信息</span>
+  <div class="flex flex-col h-full bg-card overflow-hidden">
+    <!-- 头部 -->
+    <div class="flex items-center px-3.5 h-10 flex-shrink-0 border-b border-border">
+      <span class="text-[13px] font-semibold text-foreground">文件信息</span>
     </div>
 
-    <div class="file-info-panel__body">
-      <div v-if="!file" class="file-info-panel__empty">
-        <a-empty description="未选择文件" />
-      </div>
-      <div v-else class="file-info-panel__content">
-        <div class="info-row">
-          <span class="info-row__label">文件名</span>
-          <span class="info-row__value" :title="file.name">{{ file.name }}</span>
+    <!-- 内容区 -->
+    <div class="flex-1 overflow-y-auto p-3 px-3.5">
+      <div v-if="!file" class="py-8 text-center text-sm text-muted-foreground">未选择文件</div>
+      <div v-else class="flex flex-col gap-3.5">
+        <div class="flex flex-col gap-1">
+          <span class="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">文件名</span>
+          <span class="text-[13px] text-foreground break-all leading-relaxed" :title="file.name">{{ file.name }}</span>
         </div>
-        <div class="info-row">
-          <span class="info-row__label">大小</span>
-          <span class="info-row__value">{{ formatFileSize(file.size) }}</span>
+        <div class="flex flex-col gap-1">
+          <span class="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">大小</span>
+          <span class="text-[13px] text-foreground">{{ formatFileSize(file.size) }}</span>
         </div>
-        <div class="info-row">
-          <span class="info-row__label">类型</span>
-          <span class="info-row__value">
-            <a-tag v-if="file.type" :bordered="false">{{ file.type }}</a-tag>
+        <div class="flex flex-col gap-1">
+          <span class="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">类型</span>
+          <span class="text-[13px] text-foreground">
+            <Badge v-if="file.type" variant="secondary">{{ file.type }}</Badge>
             <span v-else>-</span>
           </span>
         </div>
-        <div class="info-row">
-          <span class="info-row__label">修改时间</span>
-          <span class="info-row__value">{{ formatDateTime(file.mtime) }}</span>
+        <div class="flex flex-col gap-1">
+          <span class="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">修改时间</span>
+          <span class="text-[13px] text-foreground">{{ formatDateTime(file.mtime) }}</span>
         </div>
-        <div class="info-row">
-          <span class="info-row__label">状态</span>
-          <span class="info-row__value">
-            <a-tag :color="statusTag.color" :bordered="false">{{ statusTag.text }}</a-tag>
+        <div class="flex flex-col gap-1">
+          <span class="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">状态</span>
+          <span class="text-[13px] text-foreground">
+            <Badge :variant="statusTag.color === 'green' ? 'default' : 'secondary'">{{ statusTag.text }}</Badge>
           </span>
         </div>
-        <div class="info-row" v-if="file.path">
-          <span class="info-row__label">路径</span>
-          <span class="info-row__value info-row__value--path" :title="file.path">{{ file.path }}</span>
+        <div v-if="file.path" class="flex flex-col gap-1">
+          <span class="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">路径</span>
+          <span class="text-xs font-mono text-muted-foreground break-all leading-relaxed" :title="file.path">{{ file.path }}</span>
         </div>
       </div>
     </div>
@@ -45,6 +45,7 @@
 
 <script setup>
 import { computed } from 'vue';
+import { Badge } from '@/components/ui/badge';
 
 const props = defineProps({
   file: { type: Object, default: null },
@@ -71,76 +72,3 @@ function formatDateTime(isoStr) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 </script>
-
-<style lang="less" scoped>
-.file-info-panel {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  background-color: var(--bg-panel);
-  border: none;
-  border-radius: 0;
-  overflow: hidden;
-
-  &__header {
-    display: flex;
-    align-items: center;
-    padding: 0 14px;
-    height: 40px;
-    flex-shrink: 0;
-    border-bottom: 1px solid var(--border-color);
-  }
-
-  &__title {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text-primary);
-  }
-
-  &__body {
-    flex: 1;
-    overflow-y: auto;
-    padding: 12px 14px;
-  }
-
-  &__empty {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-  }
-
-  &__content {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-  }
-}
-
-.info-row {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-
-  &__label {
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-  }
-
-  &__value {
-    font-size: 13px;
-    color: var(--text-primary);
-    word-break: break-all;
-    line-height: 1.5;
-
-    &--path {
-      font-family: 'SF Mono', 'Fira Code', monospace;
-      font-size: 12px;
-      color: var(--text-secondary);
-    }
-  }
-}
-</style>

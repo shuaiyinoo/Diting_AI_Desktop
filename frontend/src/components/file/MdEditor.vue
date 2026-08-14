@@ -1,23 +1,33 @@
 <template>
-  <div class="md-editor-wrap">
+  <div class="flex h-full flex-col overflow-hidden bg-panel">
     <!-- 顶部工具栏 -->
-    <div class="md-editor-wrap__toolbar">
-      <div class="md-editor-wrap__title">
-        <edit-outlined class="md-editor-wrap__icon" />
-        <span class="md-editor-wrap__name" :title="fileName">{{ fileName || '文件编辑' }}</span>
+    <div class="flex h-10 shrink-0 items-center justify-between border-b border-border px-2 pl-3.5">
+      <div class="flex min-w-0 flex-1 items-center gap-1.5">
+        <Pencil class="size-3.5 shrink-0 text-accent-app" />
+        <span class="truncate text-[13px] font-medium text-app-primary" :title="fileName">{{ fileName || '文件编辑' }}</span>
       </div>
       <!-- 右侧：折叠第四面板按钮 -->
-      <a-tooltip :title="panel4Collapsed ? '展开信息面板' : '收起信息面板'">
-        <button class="md-toggle-btn" @click="$emit('toggle-panel4')">
-          <component :is="panel4Collapsed ? 'MenuFoldOutlined' : 'MenuUnfoldOutlined'" />
-        </button>
-      </a-tooltip>
+      <Tooltip side="bottom">
+        <TooltipTrigger as-child>
+          <button
+            class="inline-flex size-7 items-center justify-center rounded-md text-app-secondary transition-colors hover:bg-hover hover:text-app-primary"
+            @click="$emit('toggle-panel4')"
+          >
+            <PanelRightClose v-if="!panel4Collapsed" class="size-3.5" />
+            <PanelRightOpen v-else class="size-3.5" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>{{ panel4Collapsed ? '展开信息面板' : '收起信息面板' }}</TooltipContent>
+      </Tooltip>
     </div>
 
     <!-- 编辑器主体 -->
-    <div class="md-editor-wrap__body">
-      <div class="md-editor-loading" v-if="loading">
-        <a-spin tip="正在加载文件..." />
+    <div class="flex-1 min-h-0 overflow-hidden">
+      <div v-if="loading" class="flex h-full items-center justify-center">
+        <div class="flex flex-col items-center gap-3 text-app-muted">
+          <Loader2 class="size-6 animate-spin" />
+          <span class="text-sm">正在加载文件...</span>
+        </div>
       </div>
       <MdEditorV3
         v-else
@@ -38,8 +48,10 @@
 
 <script setup>
 import { ref, watch, onMounted, onBeforeUnmount } from 'vue';
+import { Loader2, PanelRightClose, PanelRightOpen, Pencil } from '@lucide/vue';
 import { MdEditor } from 'md-editor-v3';
 import 'md-editor-v3/lib/style.css';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { ipcApiRoute } from '@/api';
 import { ipc } from '@/utils/ipcRenderer';
 import { isDark } from '@/theme';
@@ -170,80 +182,3 @@ onBeforeUnmount(() => {
   }
 });
 </script>
-
-<style lang="less" scoped>
-.md-editor-wrap {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  background-color: var(--bg-panel);
-  overflow: hidden;
-
-  &__toolbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 8px 0 14px;
-    height: 40px;
-    flex-shrink: 0;
-    border-bottom: 1px solid var(--border-color);
-    background-color: var(--bg-panel);
-  }
-
-  &__title {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    min-width: 0;
-    flex: 1;
-  }
-
-  &__icon {
-    color: var(--accent);
-    font-size: 14px;
-    flex-shrink: 0;
-  }
-
-  &__name {
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--text-primary);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  &__body {
-    flex: 1;
-    min-height: 0;
-    overflow: hidden;
-  }
-}
-
-.md-editor-loading {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-}
-
-.md-toggle-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border: none;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all 0.15s ease;
-  font-size: 14px;
-
-  &:hover {
-    background-color: var(--bg-hover);
-    color: var(--text-primary);
-  }
-}
-</style>

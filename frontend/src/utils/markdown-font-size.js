@@ -4,7 +4,7 @@
  * 三档字号偏好（小/中/大），通过 data 属性 + CSS 变量驱动 markstream-vue 渲染。
  * markstream-vue 使用 --ms-text-body 等 CSS 变量控制各元素字号，
  * 本模块在 <html> 上设置 data-md-font-size 属性，
- * global.less 中的 CSS 规则根据该属性覆盖 markstream-vue 的字号变量。
+ * globals.css 中的 CSS 规则根据该属性覆盖 markstream-vue 的字号变量。
  * 持久化到 localStorage。
  */
 
@@ -24,7 +24,7 @@ const STORAGE_KEY = 'markdown-font-size'
 /**
  * 将字号档位写入 DOM（data 属性）
  *
- * global.less 中的 [data-md-font-size='...'] .markstream-vue 规则
+ * globals.css 中的 [data-md-font-size='...'] .markstream-vue 规则
  * 会覆盖 markstream-vue 默认的 --ms-text-body 等 CSS 变量
  */
 export function applyMarkdownFontSize(size) {

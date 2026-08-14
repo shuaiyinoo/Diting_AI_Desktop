@@ -1,99 +1,99 @@
 <template>
-  <div class="todo-workspace">
+  <div class="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-[10px] border border-border bg-card">
     <!-- 左栏：导航 -->
-    <aside class="todo-sidebar">
-      <div class="todo-sidebar__label">Todo</div>
-      <nav class="todo-sidebar__nav">
+    <aside class="flex w-[200px] shrink-0 flex-col overflow-y-auto border-r border-border/50 bg-primary/[0.02] p-3">
+      <div class="px-2 pb-3 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Todo</div>
+      <nav class="flex flex-col gap-0.5">
         <button
           v-for="item in navItems"
           :key="item.id"
-          class="todo-nav-item"
-          :class="{ 'todo-nav-item--active': view === item.id }"
+          class="flex h-[34px] w-full items-center gap-2 rounded-md border-none px-2 text-left text-[13px] text-muted-foreground transition-all hover:bg-primary/5 hover:text-foreground"
+          :class="view === item.id ? 'bg-card font-semibold text-primary shadow-sm' : 'bg-transparent'"
           @click="setView(item.id)"
         >
-          <component :is="item.icon" class="todo-nav-item__icon" />
-          <span class="todo-nav-item__label">{{ item.label }}</span>
-          <span v-if="item.count !== undefined" class="todo-nav-item__count">{{ item.count }}</span>
+          <component :is="item.icon" class="size-[15px] shrink-0" />
+          <span class="flex-1 truncate">{{ item.label }}</span>
+          <span v-if="item.count !== undefined" class="shrink-0 text-[11px] text-muted-foreground">{{ item.count }}</span>
         </button>
       </nav>
 
-      <div class="todo-sidebar__groups">
-        <div class="todo-sidebar__groups-header">
-          <span class="todo-sidebar__label">Todo 分组</span>
-          <button class="todo-sidebar__manage" @click="groupManagerOpen = true">管理</button>
+      <div class="mt-6">
+        <div class="flex items-center justify-between px-2 pb-2">
+          <span class="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Todo 分组</span>
+          <button class="cursor-pointer border-none bg-transparent text-[11px] text-muted-foreground hover:text-primary" @click="groupManagerOpen = true">管理</button>
         </div>
-        <div class="todo-sidebar__groups-list">
+        <div class="flex flex-col gap-0.5">
           <button
             v-for="g in todoGroups"
             :key="g.id"
-            class="todo-nav-item"
-            :class="{ 'todo-nav-item--active': view === `group:${g.id}` }"
+            class="flex h-[34px] w-full items-center gap-2 rounded-md border-none px-2 text-left text-[13px] text-muted-foreground transition-all hover:bg-primary/5 hover:text-foreground"
+            :class="view === `group:${g.id}` ? 'bg-card font-semibold text-primary shadow-sm' : 'bg-transparent'"
             @click="setView(`group:${g.id}`)"
           >
-            <span class="todo-group-dot" :style="{ background: g.color || 'currentColor' }"></span>
-            <span class="todo-nav-item__label">{{ g.name }}</span>
-            <span class="todo-nav-item__count">{{ getGroupCount(g.id) }}</span>
+            <span class="size-2 shrink-0 rounded-full" :style="{ background: g.color || 'currentColor' }"></span>
+            <span class="flex-1 truncate">{{ g.name }}</span>
+            <span class="shrink-0 text-[11px] text-muted-foreground">{{ getGroupCount(g.id) }}</span>
           </button>
         </div>
       </div>
     </aside>
 
     <!-- 中栏：列表 -->
-    <div class="todo-list-area">
-      <div class="todo-list-header">
-        <h2>{{ viewTitle }}</h2>
-        <span v-if="view !== 'completed'" class="todo-list-count">{{ visibleTodos.length }} 项</span>
+    <div class="flex min-w-0 flex-1 flex-col border-r border-border/50">
+      <div class="flex shrink-0 items-center justify-between border-b border-border/50 px-5 py-4">
+        <h2 class="m-0 text-[15px] font-semibold text-foreground">{{ viewTitle }}</h2>
+        <span v-if="view !== 'completed'" class="text-xs text-muted-foreground">{{ visibleTodos.length }} 项</span>
       </div>
-      <div class="todo-list-body">
+      <div class="min-h-0 flex-1 overflow-y-auto">
         <div
           v-for="todo in visibleTodos"
           :key="todo.id"
-          class="todo-item"
-          :class="{ 'todo-item--selected': selectedId === todo.id, 'todo-item--done': todo.status === 'completed' }"
+          class="flex cursor-pointer items-start gap-3 border-b border-border/50 px-5 py-2.5 transition-colors hover:bg-primary/[0.03]"
+          :class="selectedId === todo.id ? 'bg-primary/[0.06]' : ''"
           @click="selectedId = todo.id"
         >
           <button
-            class="todo-check"
-            :class="{ 'todo-check--done': todo.status === 'completed' }"
+            class="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded border-2 text-[10px] transition-all"
+            :class="todo.status === 'completed' ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-transparent text-transparent hover:border-primary hover:bg-primary hover:text-primary-foreground'"
             @click.stop="toggleTodo(todo)"
           >
-            <CheckOutlined v-if="todo.status === 'completed'" />
+            <Check v-if="todo.status === 'completed'" class="size-2.5" />
           </button>
-          <div class="todo-item__body">
-            <span class="todo-item__title" :class="{ 'todo-item__title--done': todo.status === 'completed' }">{{ todo.title }}</span>
-            <div class="todo-item__meta">
-              <span v-if="todo.dueAt" class="todo-badge" :class="dueBadgeClass(todo)">{{ dueLabel(todo) }}</span>
-              <span class="todo-badge" :class="priorityBadgeClass(todo.priority)">{{ priorityLabel(todo.priority) }}</span>
-              <span v-if="todo.group" class="todo-badge">{{ todo.group.name }}</span>
-              <span v-for="tag in todo.tags" :key="tag.id" class="todo-badge">#{{ tag.name }}</span>
-              <span v-if="pendingReminders(todo)" class="todo-badge">提醒 {{ pendingReminders(todo) }}</span>
-              <span v-if="todo.sessionLinks.length" class="todo-badge">会话 {{ todo.sessionLinks.length }}</span>
+          <div class="min-w-0 flex-1">
+            <span class="block truncate text-[13px] font-medium" :class="todo.status === 'completed' ? 'text-muted-foreground line-through' : 'text-foreground'">{{ todo.title }}</span>
+            <div class="mt-1.5 flex flex-wrap gap-1.5">
+              <span v-if="todo.dueAt" class="inline-flex h-[18px] items-center rounded px-1.5 text-[11px]" :class="dueBadgeClass(todo)">{{ dueLabel(todo) }}</span>
+              <span class="inline-flex h-[18px] items-center rounded px-1.5 text-[11px]" :class="priorityBadgeClass(todo.priority)">{{ priorityLabel(todo.priority) }}</span>
+              <span v-if="todo.group" class="inline-flex h-[18px] items-center rounded bg-foreground/5 px-1.5 text-[11px] text-muted-foreground">{{ todo.group.name }}</span>
+              <span v-for="tag in todo.tags" :key="tag.id" class="inline-flex h-[18px] items-center rounded bg-foreground/5 px-1.5 text-[11px] text-muted-foreground">#{{ tag.name }}</span>
+              <span v-if="pendingReminders(todo)" class="inline-flex h-[18px] items-center rounded bg-foreground/5 px-1.5 text-[11px] text-muted-foreground">提醒 {{ pendingReminders(todo) }}</span>
+              <span v-if="todo.sessionLinks.length" class="inline-flex h-[18px] items-center rounded bg-foreground/5 px-1.5 text-[11px] text-muted-foreground">会话 {{ todo.sessionLinks.length }}</span>
             </div>
           </div>
-          <button class="todo-item__delete" @click.stop="pendingDelete = todo">
-            <DeleteOutlined />
+          <button class="flex size-8 shrink-0 items-center justify-center rounded-md opacity-0 transition-all hover:bg-red-500/10 hover:text-red-500" :class="selectedId === todo.id || true ? 'opacity-0 hover:opacity-100' : ''" @click.stop="pendingDelete = todo">
+            <Trash2 class="size-3.5" />
           </button>
         </div>
-        <div v-if="!visibleTodos.length" class="todo-empty">
+        <div v-if="!visibleTodos.length" class="flex min-h-0 flex-1 items-center justify-center p-6 text-center text-[13px] text-muted-foreground">
           这里还没有任务。点击右上角"新建 Todo"即可添加。
         </div>
       </div>
     </div>
 
     <!-- 右栏：详情 Inspector（浮动覆盖） -->
-    <div v-if="selectedTodo" class="todo-inspector-overlay" @click="selectedId = null"></div>
-    <aside v-if="selectedTodo" class="todo-inspector">
-      <button class="todo-inspector__close" @click="selectedId = null">
-        <CloseOutlined />
+    <div v-if="selectedTodo" class="absolute inset-0 z-30 cursor-pointer bg-black/[0.02]" @click="selectedId = null"></div>
+    <aside v-if="selectedTodo" class="absolute right-3 top-3 bottom-3 z-40 flex w-[min(420px,calc(100%-24px))] flex-col overflow-hidden rounded-xl border border-border/50 bg-card shadow-[0_12px_32px_rgba(0,0,0,0.12)]">
+      <button class="absolute right-3 top-3 z-10 flex size-7 items-center justify-center rounded-md border-none bg-transparent text-muted-foreground transition-colors hover:bg-accent/10 hover:text-foreground" @click="selectedId = null">
+        <X class="size-4" />
       </button>
       <!-- 固定头部：冲突提示 + 标题 -->
-      <div class="todo-inspector__header">
-        <div v-if="todoConflict" class="todo-conflict-banner">
+      <div class="flex shrink-0 flex-col gap-2 border-b border-border/50 px-5 pb-3 pt-5">
+        <div v-if="todoConflict" class="flex items-center justify-between gap-3 rounded-md border border-amber-400/20 bg-amber-500/[0.08] px-3 py-2 text-xs text-amber-700 dark:text-amber-500">
           <span>此 Todo 已在其他窗口更新，请重新加载后再编辑。</span>
-          <button class="todo-conflict-reload" @click="reloadTodoDetail">重新加载</button>
+          <button class="shrink-0 cursor-pointer border-none bg-transparent text-xs text-primary" @click="reloadTodoDetail">重新加载</button>
         </div>
         <textarea
-          class="todo-inspector__title"
+          class="w-full resize-none border-none bg-transparent pr-10 text-[17px] font-semibold leading-relaxed text-foreground outline-none"
           v-model="detailTitle"
           :disabled="todoConflict"
           placeholder="任务标题"
@@ -102,12 +102,12 @@
         ></textarea>
       </div>
       <!-- 可滚动中间内容 -->
-      <div class="todo-inspector__body">
+      <div class="flex flex-1 flex-col gap-5 overflow-y-auto overflow-x-hidden px-5 py-4">
         <!-- 描述 -->
-        <div class="todo-inspector__section">
-          <label class="todo-inspector__label">描述</label>
+        <div class="flex flex-col gap-3">
+          <label class="mb-1.5 block text-[11px] font-medium text-muted-foreground">描述</label>
           <textarea
-            class="todo-inspector__notes"
+            class="min-h-[120px] resize-y rounded-lg border border-border/50 bg-primary/[0.03] px-3 py-2 text-[13px] text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10"
             v-model="detailNotes"
             :disabled="todoConflict"
             placeholder="添加描述…"
@@ -115,212 +115,222 @@
           ></textarea>
         </div>
         <!-- 时间 -->
-        <div class="todo-inspector__section">
-          <h3 class="todo-inspector__section-title">时间</h3>
-          <div class="todo-inspector__field">
-            <label class="todo-inspector__field-label">计划完成时间</label>
-            <a-date-picker
-              v-model:value="detailDueAt"
+        <div class="flex flex-col gap-3">
+          <h3 class="m-0 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">时间</h3>
+          <div class="flex flex-col">
+            <label class="mb-1.5 text-[11px] font-medium text-muted-foreground">计划完成时间</label>
+            <input
+              type="datetime-local"
+              :value="detailDueAtInput"
+              @input="detailDueAtInput = $event.target.value"
               placeholder="选择时间"
-              class="todo-inspector__date"
+              class="w-full rounded-md border border-border/50 bg-transparent px-3 py-1.5 text-[13px] text-foreground outline-none focus:border-primary"
               @change="saveDueAt"
             />
           </div>
         </div>
         <!-- 组织 -->
-        <div class="todo-inspector__section">
-          <h3 class="todo-inspector__section-title">组织</h3>
-          <div class="todo-inspector__field">
-            <label class="todo-inspector__field-label">优先级</label>
-            <a-select v-model:value="detailPriority" class="todo-inspector__select" @change="savePriority">
-              <a-select-option value="high">高优先级</a-select-option>
-              <a-select-option value="medium">中优先级</a-select-option>
-              <a-select-option value="low">低优先级</a-select-option>
-            </a-select>
+        <div class="flex flex-col gap-3">
+          <h3 class="m-0 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">组织</h3>
+          <div class="flex flex-col">
+            <label class="mb-1.5 text-[11px] font-medium text-muted-foreground">优先级</label>
+            <Select v-model="detailPriority" class="w-full" @update:model-value="savePriority">
+              <SelectTrigger class="w-full"><SelectValue placeholder="选择优先级" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="high">高优先级</SelectItem>
+                <SelectItem value="medium">中优先级</SelectItem>
+                <SelectItem value="low">低优先级</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-          <div class="todo-inspector__field">
-            <label class="todo-inspector__field-label">Todo 分组</label>
-            <a-select v-model:value="detailGroupId" class="todo-inspector__select" @change="saveGroup">
-              <a-select-option value="__none__">不分组</a-select-option>
-              <a-select-option v-for="g in todoGroups" :key="g.id" :value="g.id">{{ g.name }}</a-select-option>
-            </a-select>
+          <div class="flex flex-col">
+            <label class="mb-1.5 text-[11px] font-medium text-muted-foreground">Todo 分组</label>
+            <Select v-model="detailGroupId" class="w-full" @update:model-value="saveGroup">
+              <SelectTrigger class="w-full"><SelectValue placeholder="选择分组" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">不分组</SelectItem>
+                <SelectItem v-for="g in todoGroups" :key="g.id" :value="g.id">{{ g.name }}</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-          <div v-if="tags.length" class="todo-inspector__field">
-            <label class="todo-inspector__field-label">标签</label>
-            <div class="todo-tag-list">
+          <div v-if="tags.length" class="flex flex-col">
+            <label class="mb-1.5 text-[11px] font-medium text-muted-foreground">标签</label>
+            <div class="flex flex-wrap gap-1">
               <button
                 v-for="tag in tags"
                 :key="tag.id"
-                class="todo-tag"
-                :class="{ 'todo-tag--active': selectedTodo.tags.some(t => t.id === tag.id) }"
+                class="cursor-pointer rounded border-none px-2 py-0.5 text-xs transition-colors"
+                :class="selectedTodo.tags.some(t => t.id === tag.id) ? 'bg-primary text-primary-foreground' : 'bg-foreground/5 text-muted-foreground hover:bg-primary/10 hover:text-primary'"
                 @click="toggleTag(tag)"
               >#{{ tag.name }}</button>
             </div>
           </div>
         </div>
         <!-- 项目与 Agent -->
-        <div class="todo-inspector__section">
-          <h3 class="todo-inspector__section-title">项目与 Agent</h3>
-          <div class="todo-inspector__field">
-            <label class="todo-inspector__field-label">执行项目</label>
-            <a-select
-              v-model:value="detailWorkspaceId"
-              placeholder="选择项目"
-              class="todo-inspector__select"
-              @change="saveWorkspace"
-            >
-              <a-select-option v-for="p in ws.agentProjects" :key="p.id" :value="p.id">{{ p.name }}</a-select-option>
-            </a-select>
+        <div class="flex flex-col gap-3">
+          <h3 class="m-0 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">项目与 Agent</h3>
+          <div class="flex flex-col">
+            <label class="mb-1.5 text-[11px] font-medium text-muted-foreground">执行项目</label>
+            <Select v-model="detailWorkspaceId" class="w-full" @update:model-value="saveWorkspace">
+              <SelectTrigger class="w-full"><SelectValue placeholder="选择项目" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem v-for="p in ws.agentProjects" :key="p.id" :value="p.id">{{ p.name }}</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <button
-            class="planning-btn planning-btn--primary todo-inspector__run-agent"
+            class="inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-lg bg-primary px-3.5 text-[13px] font-medium text-primary-foreground shadow-[0_2px_6px_rgba(22,119,255,0.25)] transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
             :disabled="!selectedTodo.workspaceId || startingAgent"
             @click="startAgent"
           >
-            <RobotOutlined /> {{ startingAgent ? '启动中…' : '开始运行 Agent' }}
+            <Bot class="size-4" /> {{ startingAgent ? '启动中…' : '开始运行 Agent' }}
           </button>
-          <div class="todo-inspector__field">
-            <label class="todo-inspector__field-label">关联会话</label>
-            <div v-if="validSessionLinks.length" class="todo-session-links">
+          <div class="flex flex-col">
+            <label class="mb-1.5 text-[11px] font-medium text-muted-foreground">关联会话</label>
+            <div v-if="validSessionLinks.length" class="flex flex-col gap-1">
               <div
                 v-for="link in validSessionLinks"
                 :key="link.sessionId"
-                class="todo-session-link"
+                class="flex cursor-pointer items-center justify-between rounded-md bg-primary/[0.04] px-2.5 py-2 text-xs transition-colors hover:bg-primary/10"
                 @click="openSession(link.sessionId)"
               >
-                <span class="todo-session-link__title">{{ getSessionTitle(link.sessionId) }}</span>
-                <span class="todo-session-link__date">{{ formatDate(link.lastTouchedAt) }}</span>
+                <span class="min-w-0 flex-1 truncate font-medium text-foreground">{{ getSessionTitle(link.sessionId) }}</span>
+                <span class="ml-2 shrink-0 text-[11px] text-muted-foreground">{{ formatDate(link.lastTouchedAt) }}</span>
               </div>
             </div>
-            <span v-else class="todo-no-sessions">尚未由 Agent Session 操作</span>
+            <span v-else class="text-xs text-muted-foreground">尚未由 Agent Session 操作</span>
           </div>
         </div>
       </div>
       <!-- 固定底部：操作按钮 -->
-      <div class="todo-inspector__footer">
-        <button class="planning-btn planning-btn--primary todo-inspector__complete-btn" @click="toggleTodo(selectedTodo)">
-          <CheckOutlined />
+      <div class="flex shrink-0 justify-between gap-3 border-t border-border/50 bg-card px-5 py-3">
+        <button class="inline-flex h-8 items-center gap-1.5 rounded-lg bg-primary px-3.5 text-[13px] font-medium text-primary-foreground shadow-[0_2px_6px_rgba(22,119,255,0.25)] transition-colors hover:bg-primary/90" @click="toggleTodo(selectedTodo)">
+          <Check class="size-4" />
           {{ selectedTodo.status === 'completed' ? '恢复任务' : '标记完成' }}
         </button>
-        <button class="planning-btn todo-inspector__delete-btn" @click="pendingDelete = selectedTodo">
-          <DeleteOutlined /> 删除
+        <button class="inline-flex h-8 items-center gap-1.5 rounded-lg border border-red-500/30 bg-red-500/10 px-3.5 text-[13px] text-red-500 transition-colors hover:bg-red-500 hover:text-white hover:border-red-500" @click="pendingDelete = selectedTodo">
+          <Trash2 class="size-4" /> 删除
         </button>
       </div>
     </aside>
 
     <!-- 删除确认 -->
-    <a-modal
-      v-model:open="deleteModalOpen"
-      title="确认删除 Todo"
-      ok-text="删除"
-      cancel-text="取消"
-      ok-type="danger"
-      @ok="confirmDelete"
-    >
-      <p>删除「{{ pendingDelete?.title }}」后无法恢复。</p>
-    </a-modal>
+    <Dialog v-model:open="deleteModalOpen">
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>确认删除 Todo</DialogTitle>
+        </DialogHeader>
+        <p>删除「{{ pendingDelete?.title }}」后无法恢复。</p>
+        <DialogFooter>
+          <button class="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-card px-3.5 text-[13px] text-secondary-foreground transition-colors hover:border-primary hover:text-primary" @click="deleteModalOpen = false">取消</button>
+          <button class="inline-flex h-8 items-center gap-1.5 rounded-lg bg-red-500 px-3.5 text-[13px] text-white transition-colors hover:bg-red-600" @click="confirmDelete">删除</button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
 
     <!-- 分组管理 Modal -->
-    <a-modal
-      v-model:open="groupManagerOpen"
-      title="Todo 分组管理"
-      :footer="null"
-      width="440px"
-      class="group-manager-modal"
-    >
-      <!-- 新建分组 -->
-      <div class="group-manager__create">
-        <div v-if="creatingGroup" class="group-manager__create-row">
-          <a-input
-            ref="newGroupInputRef"
-            v-model:value="newGroupName"
-            placeholder="输入分组名称"
-            size="small"
-            class="group-manager__create-input"
-            @keydown.enter="confirmCreateGroup"
-            @keydown.escape="cancelCreateGroup"
-          />
-          <button class="group-manager__action-btn group-manager__action-btn--confirm" @click="confirmCreateGroup" :disabled="!newGroupName.trim() || savingGroupAction === 'create'" title="确认">
-            <CheckOutlined />
-          </button>
-          <button class="group-manager__action-btn group-manager__action-btn--cancel" @click="cancelCreateGroup" title="取消">
-            <CloseOutlined />
-          </button>
-        </div>
-        <button v-else class="group-manager__add-btn" @click="startCreateGroup">
-          <PlusOutlined /> 新建分组
-        </button>
-      </div>
-
-      <!-- 分组列表 -->
-      <div class="group-manager__list">
-        <div v-if="!todoGroups.length" class="group-manager__empty">
-          还没有分组，点击上方新建
-        </div>
-        <div
-          v-for="g in todoGroups"
-          :key="g.id"
-          class="group-manager__item"
-        >
-          <!-- 重命名模式 -->
-          <template v-if="renamingGroupId === g.id">
-            <span class="todo-group-dot" :style="{ background: g.color || 'currentColor' }"></span>
-            <a-input
-              ref="renameInputRef"
-              v-model:value="renameGroupName"
-              size="small"
-              class="group-manager__rename-input"
-              @keydown.enter="confirmRenameGroup(g)"
-              @keydown.escape="cancelRenameGroup"
+    <Dialog v-model:open="groupManagerOpen">
+      <DialogContent class="max-w-[440px]">
+        <DialogHeader>
+          <DialogTitle>Todo 分组管理</DialogTitle>
+        </DialogHeader>
+        <!-- 新建分组 -->
+        <div class="mb-3 border-b border-border/50 pb-3">
+          <div v-if="creatingGroup" class="flex items-center gap-1.5">
+            <input
+              ref="newGroupInputRef"
+              :value="newGroupName"
+              @input="newGroupName = $event.target.value"
+              placeholder="输入分组名称"
+              class="h-8 flex-1 rounded-md border border-border px-2 text-[13px] outline-none focus:border-primary"
+              @keydown.enter="confirmCreateGroup"
+              @keydown.escape="cancelCreateGroup"
             />
-            <button class="group-manager__action-btn group-manager__action-btn--confirm" @click="confirmRenameGroup(g)" :disabled="!renameGroupName.trim() || savingGroupAction === 'rename'" title="确认">
-              <CheckOutlined />
+            <button class="flex size-8 shrink-0 items-center justify-center rounded-md bg-green-500/12 text-green-500 transition-colors hover:bg-green-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-35" @click="confirmCreateGroup" :disabled="!newGroupName.trim() || savingGroupAction === 'create'" title="确认">
+              <Check class="size-4" />
             </button>
-            <button class="group-manager__action-btn group-manager__action-btn--cancel" @click="cancelRenameGroup" title="取消">
-              <CloseOutlined />
+            <button class="flex size-8 shrink-0 items-center justify-center rounded-md bg-foreground/5 text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-500" @click="cancelCreateGroup" title="取消">
+              <X class="size-4" />
             </button>
-          </template>
-          <!-- 正常显示模式 -->
-          <template v-else>
-            <span class="todo-group-dot" :style="{ background: g.color || 'currentColor' }"></span>
-            <span class="group-manager__item-name">{{ g.name }}</span>
-            <span class="group-manager__item-count">{{ getGroupCount(g.id) }}</span>
-            <button class="group-manager__icon-btn" title="重命名" @click="startRenameGroup(g)">
-              <EditOutlined />
-            </button>
-            <button class="group-manager__icon-btn group-manager__icon-btn--danger" title="删除" @click="requestDeleteGroup(g)">
-              <DeleteOutlined />
-            </button>
-          </template>
+          </div>
+          <button v-else class="flex h-[34px] w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-border bg-transparent text-[13px] text-muted-foreground transition-colors hover:border-primary hover:bg-primary/[0.03] hover:text-primary" @click="startCreateGroup">
+            <Plus class="size-4" /> 新建分组
+          </button>
         </div>
-      </div>
-    </a-modal>
+
+        <!-- 分组列表 -->
+        <div class="flex max-h-[320px] flex-col gap-0.5 overflow-y-auto">
+          <div v-if="!todoGroups.length" class="py-8 text-center text-[13px] text-muted-foreground">
+            还没有分组，点击上方新建
+          </div>
+          <div
+            v-for="g in todoGroups"
+            :key="g.id"
+            class="group flex h-[38px] items-center gap-2 rounded-md px-1.5 transition-colors hover:bg-primary/[0.04]"
+          >
+            <!-- 重命名模式 -->
+            <template v-if="renamingGroupId === g.id">
+              <span class="size-2 shrink-0 rounded-full" :style="{ background: g.color || 'currentColor' }"></span>
+              <input
+                ref="renameInputRef"
+                :value="renameGroupName"
+                @input="renameGroupName = $event.target.value"
+                class="h-8 flex-1 rounded-md border border-border px-2 text-[13px] outline-none focus:border-primary"
+                @keydown.enter="confirmRenameGroup(g)"
+                @keydown.escape="cancelRenameGroup"
+              />
+              <button class="flex size-8 shrink-0 items-center justify-center rounded-md bg-green-500/12 text-green-500 transition-colors hover:bg-green-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-35" @click="confirmRenameGroup(g)" :disabled="!renameGroupName.trim() || savingGroupAction === 'rename'" title="确认">
+                <Check class="size-4" />
+              </button>
+              <button class="flex size-8 shrink-0 items-center justify-center rounded-md bg-foreground/5 text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-500" @click="cancelRenameGroup" title="取消">
+                <X class="size-4" />
+              </button>
+            </template>
+            <!-- 正常显示模式 -->
+            <template v-else>
+              <span class="size-2 shrink-0 rounded-full" :style="{ background: g.color || 'currentColor' }"></span>
+              <span class="min-w-0 flex-1 truncate text-[13px] text-foreground">{{ g.name }}</span>
+              <span class="min-w-[20px] shrink-0 text-right text-[11px] text-muted-foreground">{{ getGroupCount(g.id) }}</span>
+              <button class="group flex size-[26px] shrink-0 items-center justify-center rounded text-muted-foreground opacity-0 transition-all hover:bg-primary/10 hover:text-primary group-hover:opacity-100" title="重命名" @click="startRenameGroup(g)">
+                <Pencil class="size-3.5" />
+              </button>
+              <button class="group flex size-[26px] shrink-0 items-center justify-center rounded text-muted-foreground opacity-0 transition-all hover:bg-red-500/10 hover:text-red-500 group-hover:opacity-100" title="删除" @click="requestDeleteGroup(g)">
+                <Trash2 class="size-3.5" />
+              </button>
+            </template>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
 
     <!-- 分组删除确认 -->
-    <a-modal
-      v-model:open="deleteGroupModalOpen"
-      title="确认删除分组"
-      ok-text="删除"
-      cancel-text="取消"
-      ok-type="danger"
-      :ok-button-props="{ loading: savingGroupAction === 'delete' }"
-      @ok="confirmDeleteGroup"
-    >
-      <p v-if="pendingDeleteGroupCount > 0">
-        删除「{{ pendingDeleteGroup?.name }}」后，其中 {{ pendingDeleteGroupCount }} 个 Todo 会变为未分组，内容不会删除。
-      </p>
-      <p v-else>删除「{{ pendingDeleteGroup?.name }}」后无法恢复。</p>
-    </a-modal>
+    <Dialog v-model:open="deleteGroupModalOpen">
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>确认删除分组</DialogTitle>
+        </DialogHeader>
+        <p v-if="pendingDeleteGroupCount > 0">
+          删除「{{ pendingDeleteGroup?.name }}」后，其中 {{ pendingDeleteGroupCount }} 个 Todo 会变为未分组，内容不会删除。
+        </p>
+        <p v-else>删除「{{ pendingDeleteGroup?.name }}」后无法恢复。</p>
+        <DialogFooter>
+          <button class="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-card px-3.5 text-[13px] text-secondary-foreground transition-colors hover:border-primary hover:text-primary" @click="deleteGroupModalOpen = false">取消</button>
+          <button class="inline-flex h-8 items-center gap-1.5 rounded-lg bg-red-500 px-3.5 text-[13px] text-white transition-colors hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-50" :disabled="savingGroupAction === 'delete'" @click="confirmDeleteGroup">删除</button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, watch, onMounted, nextTick } from 'vue'
-import { message } from 'ant-design-vue'
+import { useToast } from '@/components/ui/sonner'
 import {
-  CheckOutlined, CloseOutlined, DeleteOutlined, RobotOutlined, EditOutlined, PlusOutlined,
-  CalendarOutlined, ClockCircleOutlined, CheckCircleOutlined, UnorderedListOutlined,
-} from '@ant-design/icons-vue'
+  Check, X, Trash2, Bot, Pencil, Plus,
+  Calendar, Clock, CheckCircle, ListOrdered,
+} from '@lucide/vue'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
 import { usePlanningStore } from '@/stores/planning'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useAgentStore } from '@/stores/agent'
@@ -329,6 +339,7 @@ import { ipc } from '@/utils/ipcRenderer'
 import { useRouter } from 'vue-router'
 import dayjs from 'dayjs'
 
+const toast = useToast()
 const planning = usePlanningStore()
 const ws = useWorkspaceStore()
 const agent = useAgentStore()
@@ -349,6 +360,12 @@ const view = ref('all')
 const detailTitle = ref('')
 const detailNotes = ref('')
 const detailDueAt = ref(null)
+
+// 原生 datetime-local input 桥接
+const detailDueAtInput = computed({
+  get: () => detailDueAt.value ? detailDueAt.value.format('YYYY-MM-DDTHH:mm') : '',
+  set: (v) => { detailDueAt.value = v ? dayjs(v) : null },
+})
 const detailPriority = ref('medium')
 const detailGroupId = ref('__none__')
 const detailWorkspaceId = ref(null)
@@ -419,10 +436,10 @@ function setView(v) {
 const navItems = computed(() => {
   const todayEnd = endOfToday()
   return [
-    { id: 'all', label: '全部任务', icon: UnorderedListOutlined, count: openTodos.value.length },
-    { id: 'today', label: '今天', icon: CalendarOutlined, count: openTodos.value.filter(t => t.dueAt && t.dueAt <= todayEnd).length },
-    { id: 'upcoming', label: '未来 7 天', icon: ClockCircleOutlined, count: openTodos.value.filter(t => t.dueAt && t.dueAt > todayEnd && t.dueAt <= todayEnd + 7 * 86400000).length },
-    { id: 'completed', label: '已完成', icon: CheckCircleOutlined, count: undefined },
+    { id: 'all', label: '全部任务', icon: ListOrdered, count: openTodos.value.length },
+    { id: 'today', label: '今天', icon: Calendar, count: openTodos.value.filter(t => t.dueAt && t.dueAt <= todayEnd).length },
+    { id: 'upcoming', label: '未来 7 天', icon: Clock, count: openTodos.value.filter(t => t.dueAt && t.dueAt > todayEnd && t.dueAt <= todayEnd + 7 * 86400000).length },
+    { id: 'completed', label: '已完成', icon: CheckCircle, count: undefined },
   ]
 })
 
@@ -555,10 +572,10 @@ async function startAgent() {
       selectedId.value = null
       // 直接通过 selectSession 打开 Tab（避免 router.push 导致的竞态条件）
       agent.selectSession(result.session.id)
-      message.success('已启动 Agent')
+      toast.success('已启动 Agent')
     }
   } catch {
-    message.error('启动 Agent 失败')
+    toast.error('启动 Agent 失败')
   } finally {
     startingAgent.value = false
   }
@@ -570,7 +587,7 @@ async function confirmDelete() {
     await planning.deleteTodo(pendingDelete.value.id)
     pendingDelete.value = null
   } catch {
-    message.error('删除 Todo 失败')
+    toast.error('删除 Todo 失败')
   }
 }
 
@@ -599,7 +616,7 @@ async function confirmCreateGroup() {
       setView(`group:${group.id}`)
     }
   } catch {
-    message.error('创建分组失败：名称可能已存在')
+    toast.error('创建分组失败：名称可能已存在')
   } finally {
     savingGroupAction.value = null
   }
@@ -633,7 +650,7 @@ async function confirmRenameGroup(group) {
     renamingGroupId.value = null
     renameGroupName.value = ''
   } catch {
-    message.error('重命名分组失败：名称可能已存在')
+    toast.error('重命名分组失败：名称可能已存在')
   } finally {
     savingGroupAction.value = null
   }
@@ -655,7 +672,7 @@ async function confirmDeleteGroup() {
     }
     pendingDeleteGroup.value = null
   } catch {
-    message.error('删除分组失败')
+    toast.error('删除分组失败')
   } finally {
     savingGroupAction.value = null
   }
@@ -676,9 +693,9 @@ function dueLabel(todo) {
 }
 
 function dueBadgeClass(todo) {
-  if (todo.status === 'open' && todo.dueAt < Date.now()) return 'todo-badge--overdue'
-  if (todo.dueAt <= endOfToday()) return 'todo-badge--today'
-  return ''
+  if (todo.status === 'open' && todo.dueAt < Date.now()) return 'bg-red-500/10 text-red-500'
+  if (todo.dueAt <= endOfToday()) return 'bg-amber-500/10 text-amber-600'
+  return 'bg-foreground/5 text-muted-foreground'
 }
 
 function priorityLabel(p) {
@@ -686,9 +703,9 @@ function priorityLabel(p) {
 }
 
 function priorityBadgeClass(p) {
-  if (p === 'high') return 'todo-badge--high'
-  if (p === 'low') return 'todo-badge--low'
-  return 'todo-badge--medium'
+  if (p === 'high') return 'bg-red-500/[0.08] text-red-500'
+  if (p === 'low') return 'bg-foreground/[0.04] text-muted-foreground'
+  return 'bg-amber-500/[0.08] text-amber-600'
 }
 
 function formatDate(ts) {
@@ -714,7 +731,7 @@ function getSessionTitle(sessionId) {
 async function openSession(sessionId) {
   const session = agent.sessions.find(s => s.id === sessionId)
   if (!session) {
-    message.warning('会话不存在或已被删除')
+    toast.warning('会话不存在或已被删除')
     return
   }
   // 选中会话所属的项目
@@ -737,752 +754,3 @@ onMounted(() => {
   }
 })
 </script>
-
-<style lang="less" scoped>
-.todo-workspace {
-  flex: 1;
-  display: flex;
-  min-height: 0;
-  box-sizing: border-box;
-  background: var(--bg-panel);
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
-  overflow: hidden;
-  position: relative;
-}
-
-// ===== 左栏 =====
-.todo-sidebar {
-  width: 200px;
-  flex-shrink: 0;
-  border-right: 1px solid var(--border-color-light);
-  background: rgba(22, 119, 255, 0.02);
-  padding: 12px;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-
-  &__label {
-    font-size: 11px;
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: var(--text-muted);
-    padding: 4px 8px 12px;
-  }
-
-  &__nav {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-
-  &__groups {
-    margin-top: 24px;
-  }
-
-  &__groups-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0 8px 8px;
-  }
-
-  &__manage {
-    border: none;
-    background: transparent;
-    font-size: 11px;
-    color: var(--text-muted);
-    cursor: pointer;
-    &:hover { color: var(--accent); }
-  }
-
-  &__groups-list {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-}
-
-.todo-nav-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  height: 34px;
-  padding: 0 8px;
-  border: none;
-  background: transparent;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 13px;
-  color: var(--text-muted);
-  transition: all 0.15s ease;
-  width: 100%;
-  text-align: left;
-
-  &:hover {
-    background: rgba(22, 119, 255, 0.05);
-    color: var(--text-primary);
-  }
-
-  &--active {
-    background: var(--bg-panel);
-    color: var(--accent);
-    font-weight: 600;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-  }
-
-  &__icon {
-    font-size: 15px;
-    flex-shrink: 0;
-  }
-
-  &__label {
-    flex: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  &__count {
-    font-size: 11px;
-    color: var(--text-muted);
-    flex-shrink: 0;
-  }
-}
-
-.todo-group-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-// ===== 中栏 =====
-.todo-list-area {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  border-right: 1px solid var(--border-color-light);
-}
-
-.todo-list-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--border-color-light);
-  flex-shrink: 0;
-
-  h2 {
-    margin: 0;
-    font-size: 15px;
-    font-weight: 600;
-    color: var(--text-primary);
-  }
-
-  .todo-list-count {
-    font-size: 12px;
-    color: var(--text-muted);
-  }
-}
-
-.todo-list-body {
-  flex: 1;
-  overflow-y: auto;
-}
-
-.todo-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 10px 20px;
-  border-bottom: 1px solid var(--border-color-light);
-  cursor: pointer;
-  transition: background 0.15s ease;
-
-  &:hover {
-    background: rgba(22, 119, 255, 0.03);
-  }
-
-  &--selected {
-    background: rgba(22, 119, 255, 0.06);
-  }
-
-  &--done {
-    .todo-item__title {
-      text-decoration: line-through;
-      color: var(--text-muted);
-    }
-  }
-
-  &__body {
-    flex: 1;
-    min-width: 0;
-  }
-
-  &__title {
-    display: block;
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--text-primary);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  &__meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-top: 6px;
-  }
-
-  &__delete {
-    width: 32px;
-    height: 32px;
-    border: none;
-    background: transparent;
-    color: var(--text-muted);
-    cursor: pointer;
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    opacity: 0;
-    transition: all 0.15s ease;
-
-    &:hover {
-      background: rgba(255, 77, 79, 0.1);
-      color: #ff4d4f;
-    }
-  }
-
-  &:hover &__delete {
-    opacity: 1;
-  }
-}
-
-.todo-check {
-  width: 20px;
-  height: 20px;
-  border: 2px solid var(--border-color);
-  border-radius: 4px;
-  background: transparent;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  margin-top: 2px;
-  transition: all 0.15s ease;
-  font-size: 10px;
-  color: transparent;
-
-  &:hover {
-    border-color: var(--accent);
-    background: var(--accent);
-    color: #fff;
-  }
-
-  &--done {
-    border-color: var(--accent);
-    background: var(--accent);
-    color: #fff;
-  }
-}
-
-.todo-badge {
-  display: inline-flex;
-  align-items: center;
-  height: 18px;
-  padding: 0 6px;
-  border-radius: 4px;
-  font-size: 11px;
-  background: rgba(0, 0, 0, 0.05);
-  color: var(--text-muted);
-
-  &--overdue { background: rgba(245, 34, 45, 0.1); color: #f5222d; }
-  &--today { background: rgba(250, 173, 20, 0.1); color: #fa8c16; }
-  &--high { background: rgba(245, 34, 45, 0.08); color: #f5222d; }
-  &--medium { background: rgba(250, 173, 20, 0.08); color: #fa8c16; }
-  &--low { background: rgba(0, 0, 0, 0.04); color: var(--text-muted); }
-}
-
-.todo-empty {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex: 1;
-  min-height: 0;
-  padding: 24px;
-  font-size: 13px;
-  color: var(--text-muted);
-  text-align: center;
-}
-
-// ===== 右栏 Inspector =====
-.todo-inspector-overlay {
-  position: absolute;
-  inset: 0;
-  z-index: 30;
-  background: rgba(0, 0, 0, 0.02);
-  cursor: pointer;
-}
-
-.todo-inspector {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  bottom: 12px;
-  width: min(420px, calc(100% - 24px));
-  background: var(--bg-panel);
-  border: 1px solid var(--border-color-light);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
-  border-radius: 12px;
-  z-index: 40;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-
-  &__close {
-    position: absolute;
-    top: 12px;
-    right: 12px;
-    width: 28px;
-    height: 28px;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    color: var(--text-muted);
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 10;
-
-    &:hover { background: var(--bg-hover); color: var(--text-primary); }
-  }
-
-  // 固定头部：冲突提示 + 标题
-  &__header {
-    flex-shrink: 0;
-    padding: 20px 20px 12px;
-    border-bottom: 1px solid var(--border-color-light);
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  // 可滚动中间内容
-  &__body {
-    flex: 1;
-    overflow-y: auto;
-    overflow-x: hidden;
-    padding: 16px 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-  }
-
-  &__title {
-    border: none;
-    background: transparent;
-    font-size: 17px;
-    font-weight: 600;
-    color: var(--text-primary);
-    outline: none;
-    padding: 0;
-    padding-right: 40px;
-    width: 100%;
-    box-sizing: border-box;
-    resize: none;
-    line-height: 1.4;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-
-    &:focus {
-      box-shadow: none;
-    }
-  }
-
-  &__section {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  &__section-title {
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: var(--text-muted);
-    margin: 0;
-  }
-
-  &__label {
-    display: block;
-    font-size: 11px;
-    font-weight: 500;
-    color: var(--text-muted);
-    margin-bottom: 6px;
-  }
-
-  &__field {
-    display: flex;
-    flex-direction: column;
-  }
-
-  &__field-label {
-    font-size: 11px;
-    font-weight: 500;
-    color: var(--text-muted);
-    margin-bottom: 6px;
-  }
-
-  &__notes {
-    border: 1px solid var(--border-color-light);
-    border-radius: 8px;
-    background: rgba(22, 119, 255, 0.03);
-    padding: 8px 12px;
-    font-size: 13px;
-    min-height: 120px;
-    resize: vertical;
-    outline: none;
-    color: var(--text-primary);
-
-    &:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.1);
-    }
-  }
-
-  &__select {
-    width: 100%;
-  }
-
-  &__date {
-    width: 100%;
-  }
-
-  &__run-agent {
-    width: 100%;
-    justify-content: center;
-  }
-
-  // 固定底部：操作按钮
-  &__footer {
-    flex-shrink: 0;
-    display: flex;
-    justify-content: space-between;
-    padding: 12px 20px;
-    border-top: 1px solid var(--border-color-light);
-    background: var(--bg-panel);
-  }
-
-  &__delete-btn {
-    background: rgba(255, 77, 79, 0.1); color: #ff4d4f; border: 1px solid rgba(255, 77, 79, 0.3);
-    &:hover { background: #ff4d4f; color: #fff; border-color: #ff4d4f; }
-  }
-}
-
-.todo-conflict-banner {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  padding: 8px 12px;
-  border-radius: 6px;
-  background: rgba(250, 173, 20, 0.08);
-  border: 1px solid rgba(250, 173, 20, 0.2);
-  font-size: 12px;
-  color: #ad6800;
-
-  .todo-conflict-reload {
-    border: none;
-    background: transparent;
-    color: var(--accent);
-    cursor: pointer;
-    font-size: 12px;
-    flex-shrink: 0;
-  }
-}
-
-.todo-tag-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-
-.todo-tag {
-  padding: 2px 8px;
-  border-radius: 4px;
-  border: none;
-  font-size: 12px;
-  cursor: pointer;
-  background: rgba(0, 0, 0, 0.05);
-  color: var(--text-muted);
-  transition: all 0.15s ease;
-
-  &:hover {
-    background: rgba(22, 119, 255, 0.1);
-    color: var(--accent);
-  }
-
-  &--active {
-    background: var(--accent);
-    color: #fff;
-  }
-}
-
-.todo-session-links {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.todo-session-link {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 10px;
-  border-radius: 6px;
-  background: rgba(22, 119, 255, 0.04);
-  font-size: 12px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-
-  &:hover {
-    background: rgba(22, 119, 255, 0.1);
-  }
-
-  &__title {
-    color: var(--text-primary);
-    font-weight: 500;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    flex: 1;
-    min-width: 0;
-  }
-
-  &__date {
-    color: var(--text-muted);
-    font-size: 11px;
-    flex-shrink: 0;
-    margin-left: 8px;
-  }
-}
-
-.todo-no-sessions {
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
-// ===== 规划按钮（公共样式） =====
-.planning-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 32px;
-  padding: 0 14px;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 13px;
-  transition: all 0.2s ease;
-
-  &--primary {
-    background: var(--accent);
-    color: #fff;
-    font-weight: 500;
-    box-shadow: 0 2px 6px rgba(22, 119, 255, 0.25);
-    &:hover { background: var(--accent-hover); }
-    &:disabled { opacity: 0.5; cursor: not-allowed; }
-  }
-
-  &--ghost {
-    background: var(--bg-panel);
-    color: var(--text-secondary);
-    border: 1px solid var(--border-color);
-    &:hover { color: var(--accent); border-color: var(--accent); }
-  }
-}
-
-// ===== 分组管理 Modal =====
-.group-manager-modal {
-  .ant-modal-body {
-    padding: 16px 20px 20px;
-  }
-}
-
-.group-manager {
-  &__create {
-    margin-bottom: 12px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid var(--border-color-light);
-  }
-
-  &__create-row {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  &__create-input {
-    flex: 1;
-  }
-
-  &__add-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    width: 100%;
-    height: 34px;
-    border: 1px dashed var(--border-color);
-    border-radius: 8px;
-    background: transparent;
-    cursor: pointer;
-    font-size: 13px;
-    color: var(--text-muted);
-    transition: all 0.15s ease;
-
-    &:hover {
-      border-color: var(--accent);
-      color: var(--accent);
-      background: rgba(22, 119, 255, 0.03);
-    }
-  }
-
-  &__list {
-    max-height: 320px;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-
-  &__empty {
-    padding: 32px 0;
-    text-align: center;
-    font-size: 13px;
-    color: var(--text-muted);
-  }
-
-  &__item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    height: 38px;
-    padding: 0 6px;
-    border-radius: 6px;
-    transition: background 0.15s ease;
-
-    &:hover {
-      background: rgba(22, 119, 255, 0.04);
-
-      .group-manager__icon-btn {
-        opacity: 1;
-      }
-    }
-  }
-
-  &__item-name {
-    flex: 1;
-    font-size: 13px;
-    color: var(--text-primary);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  &__item-count {
-    font-size: 11px;
-    color: var(--text-muted);
-    flex-shrink: 0;
-    min-width: 20px;
-    text-align: right;
-  }
-
-  &__rename-input {
-    flex: 1;
-  }
-
-  // 确认/取消按钮（新建 & 重命名模式，始终可见）
-  &__action-btn {
-    width: 32px;
-    height: 32px;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    font-size: 14px;
-    transition: all 0.15s ease;
-
-    &--confirm {
-      background: rgba(82, 196, 26, 0.12);
-      color: #52c41a;
-
-      &:hover:not(:disabled) {
-        background: #52c41a;
-        color: #fff;
-      }
-
-      &:disabled {
-        opacity: 0.35;
-        cursor: not-allowed;
-      }
-    }
-
-    &--cancel {
-      background: rgba(0, 0, 0, 0.06);
-      color: var(--text-muted);
-
-      &:hover {
-        background: rgba(255, 77, 79, 0.1);
-        color: #ff4d4f;
-      }
-    }
-  }
-
-  // 列表行内的编辑/删除按钮（hover 时才显示）
-  &__icon-btn {
-    width: 26px;
-    height: 26px;
-    border: none;
-    background: transparent;
-    border-radius: 4px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--text-muted);
-    flex-shrink: 0;
-    opacity: 0;
-    transition: all 0.15s ease;
-    font-size: 13px;
-
-    &:hover {
-      background: rgba(22, 119, 255, 0.1);
-      color: var(--accent);
-    }
-
-    &:disabled {
-      opacity: 0.3;
-      cursor: not-allowed;
-    }
-
-    &--danger:hover {
-      background: rgba(255, 77, 79, 0.1);
-      color: #ff4d4f;
-    }
-  }
-}
-</style>

@@ -1,12 +1,14 @@
 <template>
-  <div class="placeholder">
-    <a-card :title="title" class="placeholder-card">
-      <p class="placeholder-tip">该模块页面待开发。</p>
-    </a-card>
+  <div class="p-6 flex justify-center items-start">
+    <Card :title="title" class="w-[480px]">
+      <p class="text-muted-foreground m-0">该模块页面待开发。</p>
+    </Card>
   </div>
 </template>
 
 <script setup>
+import { Card } from '@/components/ui/card'
+
 defineProps({
   title: {
     type: String,
@@ -14,21 +16,3 @@ defineProps({
   }
 })
 </script>
-
-<style lang="less" scoped>
-.placeholder {
-  padding: 24px;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-}
-
-.placeholder-card {
-  width: 480px;
-}
-
-.placeholder-tip {
-  color: #999999;
-  margin: 0;
-}
-</style>

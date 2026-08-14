@@ -1,126 +1,125 @@
 <template>
-  <div class="qa-page">
+  <div class="flex h-full overflow-hidden bg-secondary/30">
     <!-- 左侧：历史会话列表 -->
-    <div class="qa-sidebar">
-      <div class="qa-sidebar__header">
-        <span class="qa-sidebar__title">历史会话</span>
-        <a-button type="primary" size="small" @click="onNewChat" :disabled="asking">
-          <template #icon><PlusOutlined /></template>
+    <div class="flex w-[280px] shrink-0 flex-col border-r border-border bg-card">
+      <div class="flex shrink-0 items-center justify-between border-b border-border/50 px-3.5 py-3">
+        <span class="text-sm font-semibold text-foreground">历史会话</span>
+        <Button size="sm" @click="onNewChat" :disabled="asking">
+          <Plus class="mr-1 size-3.5" />
           新对话
-        </a-button>
+        </Button>
       </div>
-      <div class="qa-sidebar__folder">
-        <a-select
-          v-model:value="selectedFolderId"
-          style="width: 100%"
-          placeholder="选择授权文件夹"
-          :options="folderOptions"
-          @change="onFolderChange"
-        />
+      <div class="shrink-0 border-b border-border/50 px-3.5 py-2.5">
+        <Select v-model="selectedFolderId" @update:model-value="onFolderChange">
+          <SelectTrigger class="w-full">
+            <SelectValue placeholder="选择授权文件夹" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem v-for="opt in folderOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
-      <div class="qa-sidebar__list">
-        <a-spin :spinning="historyLoading">
-          <div v-if="historyList.length === 0" class="qa-sidebar__empty">
-            <a-empty description="暂无历史记录" :image="Empty.PRESENTED_IMAGE_SIMPLE" />
-          </div>
+      <div class="min-h-0 flex-1 overflow-y-auto p-2">
+        <div v-if="historyLoading" class="flex items-center justify-center py-8">
+          <Spinner class="size-5 text-muted-foreground" />
+        </div>
+        <div v-if="!historyLoading && historyList.length === 0" class="flex justify-center py-10">
+          <div class="py-8 text-center text-sm text-muted-foreground">暂无历史记录</div>
+        </div>
           <div
             v-for="item in historyList"
             :key="item.id"
-            class="history-item"
-            :class="{ 'history-item--active': activeRecordId === item.id }"
+            class="mb-1.5 cursor-pointer rounded-lg border border-transparent px-3 py-2.5 transition-all hover:bg-secondary/60 hover:border-border"
+            :class="activeRecordId === item.id ? 'border-primary bg-primary/[0.06]' : ''"
             @click="onSelectHistory(item)"
           >
-            <div class="history-item__question" :title="item.question">
+            <div class="mb-1.5 line-clamp-2 break-all text-[13px] font-medium leading-snug text-foreground" :title="item.question">
               {{ item.question }}
             </div>
-            <div class="history-item__meta">
-              <a-tag :color="item.answered === 1 ? 'green' : 'default'" class="history-item__tag">
+            <div class="flex items-center justify-between">
+              <Badge :variant="item.answered === 1 ? 'default' : 'secondary'" class="m-0 text-[11px]">
                 {{ item.answered === 1 ? '已回答' : '未回答' }}
-              </a-tag>
-              <span class="history-item__time">{{ formatDateTime(item.created_at) }}</span>
+              </Badge>
+              <span class="text-[11px] text-muted-foreground">{{ formatDateTime(item.created_at) }}</span>
             </div>
           </div>
-        </a-spin>
       </div>
     </div>
 
     <!-- 右侧：对话主区域 -->
-    <div class="qa-main">
+    <div class="flex min-w-0 flex-1 flex-col bg-card">
       <!-- 消息区域 -->
-      <div class="qa-messages" ref="messagesRef">
-        <div v-if="messages.length === 0" class="qa-empty-hero">
-          <div class="qa-empty-hero__icon">
-            <MessageOutlined />
+      <div class="min-h-0 flex-1 overflow-y-auto p-6" ref="messagesRef">
+        <div v-if="messages.length === 0" class="flex h-full flex-col items-center justify-center px-5 py-10 text-center">
+          <div class="mb-4 text-primary">
+            <MessageSquare class="size-10" />
           </div>
-          <h2 class="qa-empty-hero__title">知识库问答</h2>
-          <p class="qa-empty-hero__desc" v-if="selectedFolderId">
+          <h2 class="mb-2 text-[22px] font-bold text-foreground">知识库问答</h2>
+          <p class="m-0 mb-6 max-w-[480px] text-sm text-muted-foreground" v-if="selectedFolderId">
             基于已向量化的文件夹内容进行智能问答，回答仅依据检索到的证据。
           </p>
-          <p class="qa-empty-hero__desc" v-else>
+          <p class="m-0 mb-6 max-w-[480px] text-sm text-muted-foreground" v-else>
             请先在左侧选择一个授权文件夹。
           </p>
-          <div class="qa-empty-hero__starters" v-if="selectedFolderId">
-            <a-button
+          <div class="flex max-w-[600px] flex-wrap justify-center gap-2" v-if="selectedFolderId">
+            <Button
               v-for="prompt in starterPrompts"
               :key="prompt"
-              class="qa-empty-hero__starter"
+              variant="outline"
+              class="rounded-2xl"
               @click="onStarterPick(prompt)"
             >
               {{ prompt }}
-            </a-button>
+            </Button>
           </div>
         </div>
 
         <div
           v-for="msg in messages"
           :key="msg.id"
-          class="message"
-          :class="`message--${msg.role}`"
+          class="mb-6 flex max-w-[900px] gap-3"
         >
-          <div class="message__avatar">
-            <a-avatar
+          <div class="shrink-0">
+            <div
+              class="flex size-8 items-center justify-center rounded-full text-white"
               :style="{ background: msg.role === 'user' ? '#1677ff' : '#52c41a' }"
             >
-              <template #icon>
-                <UserOutlined v-if="msg.role === 'user'" />
-                <RobotOutlined v-else />
-              </template>
-            </a-avatar>
+              <User v-if="msg.role === 'user'" class="size-4" />
+              <Bot v-else class="size-4" />
+            </div>
           </div>
-          <div class="message__body">
-            <div class="message__role">
+          <div class="min-w-0 flex-1">
+            <div class="mb-1.5 flex items-center gap-2 text-[13px] font-semibold text-foreground">
               {{ msg.role === 'user' ? '我' : '助手' }}
-              <a-tag
+              <Badge
                 v-if="msg.role === 'assistant' && msg.evidenceLevel"
-                :color="evidenceLevelColor(msg.evidenceLevel)"
-                size="small"
-                class="message__evidence-tag"
+                :variant="evidenceLevelColor(msg.evidenceLevel) === 'green' ? 'default' : 'secondary'"
+                class="m-0 text-[11px]"
               >
                 {{ evidenceLevelText(msg.evidenceLevel) }}
-              </a-tag>
+              </Badge>
             </div>
-            <div class="message__content">
+            <div class="text-sm leading-relaxed text-foreground">
               <!-- 用户消息 -->
               <template v-if="msg.role === 'user'">
-                <div class="message__text">{{ msg.content }}</div>
+                <div class="whitespace-pre-wrap break-words">{{ msg.content }}</div>
               </template>
 
               <!-- 助手消息 -->
               <template v-else>
                 <!-- 加载中 -->
-                <div v-if="msg.pending && !msg.content" class="message__loading">
-                  <a-spin size="small" />
-                  <span class="message__loading-text">正在检索证据并生成回答...</span>
+                <div v-if="msg.pending && !msg.content" class="flex items-center gap-2 rounded-lg border border-border bg-secondary/50 px-3.5 py-3 text-[13px] text-muted-foreground">
+                  <Spinner class="size-4" />
+                  <span>正在检索证据并生成回答...</span>
                 </div>
 
                 <!-- 错误提示 -->
-                <a-alert
+                <div
                   v-else-if="msg.reasonCode && !msg.content"
-                  :message="msg.reasonMessage || '回答失败'"
-                  type="warning"
-                  show-icon
-                  class="message__alert"
-                />
+                  class="mt-1 rounded-md border border-yellow-200 bg-yellow-50 p-3 text-sm text-yellow-800 dark:border-yellow-900 dark:bg-yellow-950 dark:text-yellow-200"
+                >
+                  {{ msg.reasonMessage || '回答失败' }}
+                </div>
 
                 <!-- 回答正文（markstream-vue 流式 Markdown 渲染） -->
                 <div v-if="msg.content">
@@ -136,48 +135,48 @@
                 </div>
 
                 <!-- 引用来源（参考 ArgusRAG CitationRail 样式） -->
-                <div v-if="msg.citations && msg.citations.length > 0" class="citation-rail">
-                  <div class="citation-rail__head">
-                    <span class="citation-rail__eyebrow">Evidence Chain</span>
-                    <span class="citation-rail__title">
-                      <LinkOutlined />
-                      <strong>引用证据</strong>
-                      <span class="citation-rail__count">{{ msg.citations.length }}</span>
+                <div v-if="msg.citations && msg.citations.length > 0" class="mt-3.5 border-t border-dashed border-foreground/10 pt-3.5 pb-1">
+                  <div class="mb-2.5 flex items-baseline gap-3 pl-0.5">
+                    <span class="text-[11px] font-bold uppercase tracking-[0.16em] text-primary">Evidence Chain</span>
+                    <span class="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground">
+                      <Link class="size-4 text-primary" />
+                      <strong class="font-semibold text-foreground">引用证据</strong>
+                      <span class="rounded-full bg-foreground/15 px-1.5 py-px text-xs font-semibold text-muted-foreground">{{ msg.citations.length }}</span>
                     </span>
                   </div>
-                  <div class="citation-rail__scroll">
+                  <div class="flex gap-2.5 overflow-x-auto px-0.5 pb-2" style="scrollbar-width: thin">
                     <button
                       v-for="(cite, idx) in msg.citations"
                       :key="`${cite.fileItemId ?? 'x'}-${cite.chunkId ?? idx}`"
-                      class="citation-rail__card"
+                      class="citation-card relative w-[260px] shrink-0 overflow-hidden rounded-xl border border-border bg-card p-3.5 text-left transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] shadow-[0_1px_2px_rgba(0,0,0,0.02)] hover:-translate-y-0.5 hover:border-primary hover:shadow-[0_8px_20px_rgba(22,119,255,0.12)] disabled:cursor-not-allowed disabled:opacity-65"
                       type="button"
                       :disabled="cite.fileItemId === null || cite.fileItemId === undefined"
                       @click="onCitationClick(cite)"
                     >
-                      <div class="citation-rail__card-head">
-                        <span class="citation-rail__index">{{ String(idx + 1).padStart(2, '0') }}</span>
-                        <span class="citation-rail__type" :class="citationIconClass(cite.fileName)">
+                      <div class="mb-2 flex items-center gap-2">
+                        <span class="text-xs font-bold tracking-[0.05em] text-muted-foreground">{{ String(idx + 1).padStart(2, '0') }}</span>
+                        <span class="rounded px-1.5 py-0.5 text-[10px] font-bold tracking-[0.06em]" :class="citationIconClass(cite.fileName)">
                           {{ citationFileIcon(cite.fileName) }}
                         </span>
-                        <span class="citation-rail__score">{{ formatScore(cite.score) }}</span>
+                        <span class="ml-auto text-xs font-semibold text-teal-600">{{ formatScore(cite.score) }}</span>
                       </div>
-                      <h4 class="citation-rail__filename" :title="cite.fileName">
+                      <h4 class="m-0 mb-1.5 line-clamp-2 overflow-hidden text-[13px] font-semibold leading-tight text-foreground" :title="cite.fileName">
                         {{ cite.fileName }}
                       </h4>
-                      <p v-if="cite.snippet" class="citation-rail__snippet">
+                      <p v-if="cite.snippet" class="m-0 mb-2.5 line-clamp-3 overflow-hidden text-xs leading-relaxed text-muted-foreground">
                         {{ cite.snippet }}
                       </p>
-                      <p v-else class="citation-rail__snippet citation-rail__snippet--muted">
+                      <p v-else class="m-0 mb-2.5 line-clamp-3 overflow-hidden text-xs italic leading-relaxed text-muted-foreground/50">
                         （未提供摘录片段）
                       </p>
-                      <div class="citation-rail__card-foot">
-                        <div class="citation-rail__meter">
-                          <span class="citation-rail__meter-fill" :style="{ width: `${Math.min(100, (cite.score || 0) * 100)}%` }" />
+                      <div class="flex items-center gap-2.5">
+                        <div class="h-[3px] flex-1 overflow-hidden rounded-sm bg-secondary">
+                          <span class="block h-full rounded-sm bg-gradient-to-r from-primary to-primary/80 transition-all duration-400" :style="{ width: `${Math.min(100, (cite.score || 0) * 100)}%` }" />
                         </div>
-                        <span v-if="cite.chunkIndex !== null && cite.chunkIndex !== undefined" class="citation-rail__chunk">
+                        <span v-if="cite.chunkIndex !== null && cite.chunkIndex !== undefined" class="text-[11px] text-muted-foreground">
                           #chunk {{ cite.chunkIndex }}
                         </span>
-                        <span v-if="cite.fileItemId !== null && cite.fileItemId !== undefined" class="citation-rail__view-hint">
+                        <span v-if="cite.fileItemId !== null && cite.fileItemId !== undefined" class="whitespace-nowrap text-[11px] font-medium text-primary">
                           点击查看 →
                         </span>
                       </div>
@@ -186,11 +185,11 @@
                 </div>
 
                 <!-- 用量信息 -->
-                <div v-if="msg.usage && !msg.pending" class="message__usage">
+                <div v-if="msg.usage && !msg.pending" class="mt-2 flex flex-wrap gap-3 text-xs text-muted-foreground">
                   <span>输入 {{ msg.usage.promptTokens }} token</span>
                   <span>输出 {{ msg.usage.completionTokens }} token</span>
                   <span>共 {{ msg.usage.totalTokens }} token</span>
-                  <span v-if="msg.usage.estimated" class="message__usage-est">（估算）</span>
+                  <span v-if="msg.usage.estimated" class="text-amber-500">（估算）</span>
                   <span>耗时 {{ Math.round(msg.usage.latencyMs) }}ms</span>
                 </div>
               </template>
@@ -200,28 +199,25 @@
       </div>
 
       <!-- 输入区域 -->
-      <div class="qa-composer">
-        <a-textarea
-          v-model:value="inputText"
+      <div class="shrink-0 border-t border-border bg-card px-4 py-3">
+        <Textarea
+          v-model="inputText"
           :placeholder="composerPlaceholder"
-          :auto-size="{ minRows: 1, maxRows: 6 }"
           :disabled="asking || !selectedFolderId"
-          class="qa-composer__input"
+          class="rounded-lg"
           @keydown="onKeydown"
         />
-        <div class="qa-composer__actions">
-          <span class="qa-composer__hint">
+        <div class="mt-2 flex items-center justify-between">
+          <span class="text-xs text-muted-foreground">
             Enter 发送 · Shift+Enter 换行
           </span>
-          <a-button
-            type="primary"
-            :loading="asking"
-            :disabled="!inputText.trim() || !selectedFolderId"
+          <Button
+            :disabled="!inputText.trim() || !selectedFolderId || asking"
             @click="onAsk"
           >
-            <template #icon><SendOutlined /></template>
-            发送
-          </a-button>
+            <Send class="mr-1 size-4" />
+            {{ asking ? '发送中…' : '发送' }}
+          </Button>
         </div>
       </div>
     </div>
@@ -230,15 +226,20 @@
 
 <script setup>
 import { ref, computed, reactive, onMounted, onUnmounted, nextTick } from 'vue';
-import { message, Empty } from 'ant-design-vue';
+import { toast } from 'vue-sonner';
 import {
-  PlusOutlined,
-  UserOutlined,
-  RobotOutlined,
-  MessageOutlined,
-  LinkOutlined,
-  SendOutlined,
-} from '@ant-design/icons-vue';
+  Plus,
+  User,
+  Bot,
+  MessageSquare,
+  Link,
+  Send,
+} from '@lucide/vue';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { Spinner } from '@/components/ui/spinner';
 import { ipcApiRoute } from '@/api';
 import { ipc } from '@/utils/ipcRenderer';
 import { isDark } from '@/theme';
@@ -283,7 +284,7 @@ async function loadFolderList() {
     }
   } catch (err) {
     console.error('[qa] 加载文件夹列表失败:', err);
-    message.error('加载文件夹列表失败');
+    toast.error('加载文件夹列表失败');
   }
 }
 
@@ -314,11 +315,11 @@ async function loadHistory() {
     if (res.code === 0) {
       historyList.value = res.data || [];
     } else {
-      message.error(res.message || '加载历史记录失败');
+      toast.error(res.message || '加载历史记录失败');
     }
   } catch (err) {
     console.error('[qa] 加载历史记录失败:', err);
-    message.error('加载历史记录失败');
+    toast.error('加载历史记录失败');
   } finally {
     historyLoading.value = false;
   }
@@ -362,11 +363,11 @@ async function onSelectHistory(record) {
       ];
       scrollToBottom();
     } else {
-      message.error(res?.message || '加载记录详情失败');
+      toast.error(res?.message || '加载记录详情失败');
     }
   } catch (err) {
     console.error('[qa] 加载记录详情失败:', err);
-    message.error('加载记录详情失败');
+    toast.error('加载记录详情失败');
   }
 }
 
@@ -483,7 +484,7 @@ async function onAsk() {
     assistantMsg.reasonMessage = err?.message || String(err);
     asking.value = false;
     if (err?.name !== 'AbortError') {
-      message.error('请求异常: ' + assistantMsg.reasonMessage);
+      toast.error('请求异常: ' + assistantMsg.reasonMessage);
     }
   }
 
@@ -574,7 +575,7 @@ function dispatchSseEvent(rawEvent, assistantMsg) {
         assistantMsg.reasonCode = 'STREAM_ERROR';
         assistantMsg.reasonMessage = rawData || '流式问答失败';
       }
-      message.error(assistantMsg.reasonMessage);
+      toast.error(assistantMsg.reasonMessage);
       break;
     default:
       break;
@@ -651,12 +652,12 @@ function citationFileIcon(fileName) {
 /** 根据文件扩展名返回图标样式类 */
 function citationIconClass(fileName) {
   const ext = (fileName || '').toLowerCase().split('.').pop() ?? '';
-  if (ext === 'pdf') return 'citation-rail__type--pdf';
-  if (ext === 'md') return 'citation-rail__type--md';
-  if (ext === 'docx' || ext === 'doc') return 'citation-rail__type--doc';
-  if (ext === 'xlsx' || ext === 'xls') return 'citation-rail__type--xls';
-  if (ext === 'pptx' || ext === 'ppt') return 'citation-rail__type--ppt';
-  return 'citation-rail__type--txt';
+  if (ext === 'pdf') return 'bg-red-500/10 text-red-600';
+  if (ext === 'md') return 'bg-primary/10 text-primary';
+  if (ext === 'docx' || ext === 'doc') return 'bg-blue-500/10 text-blue-600';
+  if (ext === 'xlsx' || ext === 'xls') return 'bg-green-500/10 text-green-600';
+  if (ext === 'pptx' || ext === 'ppt') return 'bg-orange-500/10 text-orange-600';
+  return 'bg-muted/15 text-muted-foreground';
 }
 
 /**
@@ -667,7 +668,7 @@ function citationIconClass(fileName) {
  */
 function onCitationClick(cite) {
   if (cite.fileItemId === null || cite.fileItemId === undefined) {
-    message.warning('该引用无关联文件，无法查看');
+    toast.warning('该引用无关联文件，无法查看');
     return;
   }
   const windowName = `file-viewer-${cite.fileItemId}`;
@@ -682,7 +683,7 @@ function onCitationClick(cite) {
     center: true,
   }).catch((err) => {
     console.error('[qa] 打开文件查看窗口失败:', err);
-    message.error('打开文件查看窗口失败');
+    toast.error('打开文件查看窗口失败');
   });
 }
 
@@ -696,499 +697,3 @@ onUnmounted(() => {
   // SSE 流式通信基于 fetch，组件卸载时无需清理 IPC 监听器
 });
 </script>
-
-<style lang="less" scoped>
-.qa-page {
-  display: flex;
-  height: 100%;
-  background: #f5f6f8;
-  overflow: hidden;
-}
-
-// ========== 左侧边栏 ==========
-.qa-sidebar {
-  width: 280px;
-  flex-shrink: 0;
-  background: #fff;
-  border-right: 1px solid #e8e8e8;
-  display: flex;
-  flex-direction: column;
-
-  &__header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px 14px;
-    border-bottom: 1px solid #f0f0f0;
-  }
-
-  &__title {
-    font-size: 14px;
-    font-weight: 600;
-    color: #2c3e50;
-  }
-
-  &__folder {
-    padding: 10px 14px;
-    border-bottom: 1px solid #f0f0f0;
-  }
-
-  &__list {
-    flex: 1;
-    overflow-y: auto;
-    padding: 8px;
-  }
-
-  &__empty {
-    padding: 40px 0;
-    display: flex;
-    justify-content: center;
-  }
-}
-
-.history-item {
-  padding: 10px 12px;
-  margin-bottom: 6px;
-  border-radius: 8px;
-  border: 1px solid transparent;
-  cursor: pointer;
-  transition: all 0.2s ease;
-
-  &:hover {
-    background: #f5f7fa;
-    border-color: #e8e8e8;
-  }
-
-  &--active {
-    background: rgba(22, 119, 255, 0.06);
-    border-color: #1677ff;
-  }
-
-  &__question {
-    font-size: 13px;
-    font-weight: 500;
-    color: #2c3e50;
-    line-height: 1.4;
-    margin-bottom: 6px;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    word-break: break-all;
-  }
-
-  &__meta {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  &__tag {
-    margin: 0;
-    font-size: 11px;
-  }
-
-  &__time {
-    font-size: 11px;
-    color: #999;
-  }
-}
-
-// ========== 右侧主区域 ==========
-.qa-main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  background: #fff;
-}
-
-// ========== 消息区域 ==========
-.qa-messages {
-  flex: 1;
-  overflow-y: auto;
-  padding: 24px;
-}
-
-.qa-empty-hero {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 40px 20px;
-
-  &__icon {
-    font-size: 48px;
-    color: #1677ff;
-    margin-bottom: 16px;
-  }
-
-  &__title {
-    font-size: 22px;
-    font-weight: 700;
-    color: #2c3e50;
-    margin: 0 0 8px 0;
-  }
-
-  &__desc {
-    font-size: 14px;
-    color: #888;
-    margin: 0 0 24px 0;
-    max-width: 480px;
-  }
-
-  &__starters {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    justify-content: center;
-    max-width: 600px;
-  }
-
-  &__starter {
-    border-radius: 16px;
-  }
-}
-
-// ========== 单条消息 ==========
-.message {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 24px;
-  max-width: 900px;
-
-  &__avatar {
-    flex-shrink: 0;
-  }
-
-  &__body {
-    flex: 1;
-    min-width: 0;
-  }
-
-  &__role {
-    font-size: 13px;
-    font-weight: 600;
-    color: #2c3e50;
-    margin-bottom: 6px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  &__evidence-tag {
-    font-size: 11px;
-    margin: 0;
-  }
-
-  &__content {
-    font-size: 14px;
-    color: #333;
-    line-height: 1.6;
-  }
-
-  &__text {
-    white-space: pre-wrap;
-    word-break: break-word;
-  }
-
-  &__text--answer {
-    background: #f6f8fa;
-    padding: 12px 14px;
-    border-radius: 8px;
-    border: 1px solid #e8e8e8;
-    // markstream-vue 渲染结构化 HTML，需要 normal 排版（覆盖父级 pre-wrap）
-    white-space: normal;
-    // 覆盖 #app 的 text-align: center，避免 Markdown 内容居中
-    text-align: left;
-  }
-
-  &__loading {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: #888;
-    font-size: 13px;
-    padding: 12px 14px;
-    background: #f6f8fa;
-    border-radius: 8px;
-    border: 1px solid #e8e8e8;
-  }
-
-  &__alert {
-    margin-top: 4px;
-  }
-
-  &__usage {
-    margin-top: 8px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    font-size: 12px;
-    color: #999;
-
-    &-est {
-      color: #faad14;
-    }
-  }
-}
-
-// ========== 引用证据卡片（参考 ArgusRAG CitationRail） ==========
-.citation-rail {
-  margin-top: 14px;
-  padding: 14px 0 4px;
-  border-top: 1px dashed rgba(15, 23, 42, 0.1);
-
-  &__head {
-    display: flex;
-    align-items: baseline;
-    gap: 12px;
-    margin-bottom: 10px;
-    padding-left: 2px;
-  }
-
-  &__eyebrow {
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    color: #1677ff;
-  }
-
-  &__title {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 13px;
-    color: #666;
-
-    :deep(svg) {
-      color: #1677ff;
-    }
-
-    strong {
-      font-weight: 600;
-      color: #2c3e50;
-    }
-  }
-
-  &__count {
-    font-size: 12px;
-    font-weight: 600;
-    color: #94a3b8;
-    background: rgba(148, 163, 184, 0.14);
-    padding: 1px 7px;
-    border-radius: 100px;
-  }
-
-  &__scroll {
-    display: flex;
-    gap: 10px;
-    overflow-x: auto;
-    padding: 4px 2px 8px;
-    scrollbar-width: thin;
-
-    &::-webkit-scrollbar {
-      height: 6px;
-    }
-
-    &::-webkit-scrollbar-thumb {
-      background: #e8e8e8;
-      border-radius: 3px;
-    }
-  }
-
-  &__card {
-    flex-shrink: 0;
-    width: 260px;
-    padding: 12px 14px;
-    background: #fff;
-    border: 1px solid #e8e8e8;
-    border-radius: 12px;
-    text-align: left;
-    font-family: inherit;
-    cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
-    position: relative;
-    overflow: hidden;
-
-    &::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 2px;
-      height: 100%;
-      background: linear-gradient(to bottom, #1677ff, #4096ff);
-      opacity: 0;
-      transition: opacity 0.2s ease;
-    }
-
-    &:hover:not(:disabled) {
-      transform: translateY(-2px);
-      border-color: #1677ff;
-      box-shadow: 0 8px 20px rgba(22, 119, 255, 0.12);
-    }
-
-    &:hover:not(:disabled)::before {
-      opacity: 1;
-    }
-
-    &:disabled {
-      cursor: not-allowed;
-      opacity: 0.65;
-    }
-  }
-
-  &__card-head {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 8px;
-  }
-
-  &__index {
-    font-size: 12px;
-    font-weight: 700;
-    color: #94a3b8;
-    letter-spacing: 0.05em;
-  }
-
-  &__type {
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    padding: 2px 7px;
-    border-radius: 4px;
-  }
-
-  &__type--pdf {
-    background: rgba(239, 68, 68, 0.1);
-    color: #dc2626;
-  }
-
-  &__type--md {
-    background: rgba(22, 119, 255, 0.1);
-    color: #1677ff;
-  }
-
-  &__type--doc {
-    background: rgba(59, 130, 246, 0.1);
-    color: #2563eb;
-  }
-
-  &__type--xls {
-    background: rgba(34, 197, 94, 0.1);
-    color: #16a34a;
-  }
-
-  &__type--ppt {
-    background: rgba(249, 115, 22, 0.1);
-    color: #ea580c;
-  }
-
-  &__type--txt {
-    background: rgba(148, 163, 184, 0.15);
-    color: #64748b;
-  }
-
-  &__score {
-    margin-left: auto;
-    font-size: 12px;
-    font-weight: 600;
-    color: #0d9488;
-  }
-
-  &__filename {
-    margin: 0 0 6px;
-    font-size: 13px;
-    font-weight: 600;
-    color: #2c3e50;
-    line-height: 1.3;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-    -webkit-box-orient: vertical;
-  }
-
-  &__snippet {
-    margin: 0 0 10px;
-    font-size: 12px;
-    color: #666;
-    line-height: 1.5;
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    line-clamp: 3;
-    -webkit-box-orient: vertical;
-  }
-
-  &__snippet--muted {
-    color: #aaa;
-    font-style: italic;
-  }
-
-  &__card-foot {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  &__meter {
-    flex: 1;
-    height: 3px;
-    background: #f1f5f9;
-    border-radius: 2px;
-    overflow: hidden;
-  }
-
-  &__meter-fill {
-    display: block;
-    height: 100%;
-    background: linear-gradient(90deg, #1677ff, #4096ff);
-    border-radius: 2px;
-    transition: width 0.4s ease;
-  }
-
-  &__chunk {
-    font-size: 11px;
-    color: #94a3b8;
-  }
-
-  &__view-hint {
-    font-size: 11px;
-    color: #1677ff;
-    font-weight: 500;
-    white-space: nowrap;
-  }
-}
-
-// ========== 输入区域 ==========
-.qa-composer {
-  border-top: 1px solid #e8e8e8;
-  padding: 12px 16px;
-  background: #fff;
-
-  &__input {
-    border-radius: 8px;
-  }
-
-  &__actions {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-top: 8px;
-  }
-
-  &__hint {
-    font-size: 12px;
-    color: #999;
-  }
-}
-</style>

@@ -4,15 +4,17 @@
       <div class="feature-card feature-card--full">
         <div class="feature-card__title">1. 登录</div>
         <div class="feature-card__body">
-          <a-space>
-            <a-button @click="loginWindow()">切换为登录窗口</a-button>
-          </a-space>
+          <span>
+            <Button @click="loginWindow()">切换为登录窗口</Button>
+          </span>
         </div>
       </div>
     </div>
   </div>
 </template>
 <script setup>
+import { Button } from '@/components/ui/button'
+
 import { ipcApiRoute } from '@/api';
 import { ipc } from '@/utils/ipcRenderer';
 import { useRouter } from 'vue-router';
@@ -24,5 +26,3 @@ function loginWindow() {
   ipc.invoke(ipcApiRoute.effect.loginWindow, {width: 400, height: 300});
 }
 </script>
-<style lang="less" scoped>
-</style>

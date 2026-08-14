@@ -1,5 +1,5 @@
 <template>
-  <a-tooltip placement="bottom">
+  <Tooltip placement="bottom">
     <template #title>
       <div>
         <div style="font-weight: 600">{{ config.label }}</div>
@@ -23,10 +23,12 @@
         <path d="M9 12l2 2 4-4" />
       </svg>
     </button>
-  </a-tooltip>
+  </Tooltip>
 </template>
 
 <script setup>
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
+
 import { computed } from 'vue'
 
 // ===== 权限模式配置 =====

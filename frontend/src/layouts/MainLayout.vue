@@ -1,12 +1,15 @@
 <template>
-  <div class="main-layout">
+  <div class="flex h-screen flex-col overflow-hidden bg-background">
     <!-- 顶部：拖拽条 + 模式切换 -->
-    <div class="main-layout__topbar">
+    <div
+      class="flex h-10 shrink-0 items-center justify-center border-b border-border bg-background"
+      style="-webkit-app-region: drag"
+    >
       <TopBar />
     </div>
 
     <!-- 中间：菜单栏 + 分隔条 + 内容区 -->
-    <div class="main-layout__middle">
+    <div class="flex min-h-0 flex-1 overflow-hidden">
       <!-- 第一部分：菜单栏 -->
       <MenuBar />
 
@@ -17,12 +20,12 @@
       />
 
       <!-- 第二~四部分：Tab 栏 + 各模块视图 -->
-      <div class="main-layout__content">
+      <div class="flex min-w-0 flex-1 flex-col overflow-hidden">
         <!-- Tab 栏（仅 Tab 模式时显示） -->
         <TabBar v-if="tabStore.tabMode" />
 
         <!-- 内容区：Tab 模式渲染会话视图，路由模式渲染工具页面 -->
-        <div class="main-layout__body">
+        <div class="min-h-0 flex-1 overflow-hidden">
           <TabContent />
         </div>
       </div>
@@ -72,50 +75,3 @@ watch(
   { immediate: true },
 )
 </script>
-
-<style lang="less" scoped>
-.main-layout {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  overflow: hidden;
-  background-color: var(--bg-layout);
-
-  // ===== 顶部拖拽条 =====
-  &__topbar {
-    height: 40px;
-    flex-shrink: 0;
-    -webkit-app-region: drag;
-    background-color: var(--bg-panel);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    border-bottom: 1px solid var(--border-color);
-  }
-
-  // ===== 中间区域：菜单栏 + 内容 =====
-  &__middle {
-    flex: 1;
-    display: flex;
-    min-height: 0;
-    overflow: hidden;
-  }
-
-  // ===== 内容区（Tab 栏 + 视图） =====
-  &__content {
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-  }
-
-  // ===== 视图主体 =====
-  &__body {
-    flex: 1;
-    min-height: 0;
-    overflow: hidden;
-  }
-}
-</style>

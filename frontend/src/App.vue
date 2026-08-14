@@ -1,22 +1,26 @@
 <template>
-  <a-config-provider :theme="themeConfig">
-    <div class="app-shell">
+  <TooltipProvider :delay-duration="300">
+    <div class="flex h-screen overflow-hidden">
       <!-- 左侧：原有全部应用（MainLayout: TopBar + middle + StatusBar） -->
-      <router-view class="app-shell__main" />
+      <router-view class="flex-1 min-w-0" />
 
       <!-- 右侧：内置浏览器面板（仅 panelOpen 时渲染，关闭后 0px 不可见） -->
       <template v-if="browserStore.panelOpen">
         <PanelDivider @resize="browserStore.onPanelResize" />
-        <BrowserSidePanel class="app-shell__browser" :style="{ width: browserStore.panelWidth + 'px' }" />
+        <BrowserSidePanel class="flex-shrink-0 overflow-hidden" :style="{ width: browserStore.panelWidth + 'px' }" />
       </template>
+
+      <!-- Toast 通知（替代 ant-design-vue message） -->
+      <Toaster />
     </div>
-  </a-config-provider>
+  </TooltipProvider>
 </template>
 
 <script setup>
 import { onMounted } from 'vue';
-import { themeConfig } from './theme';
+import { TooltipProvider } from 'reka-ui';
 import { useBrowserStore } from '@/stores/browser';
+import { Toaster } from '@/components/ui/sonner';
 import PanelDivider from '@/components/layout/PanelDivider.vue';
 import BrowserSidePanel from '@/components/browser/BrowserSidePanel.vue';
 
@@ -32,21 +36,3 @@ onMounted(() => {
   browserStore.subscribeStateChanges();
 });
 </script>
-
-<style lang="less">
-.app-shell {
-  display: flex;
-  height: 100vh;
-  overflow: hidden;
-
-  &__main {
-    flex: 1;
-    min-width: 0;
-  }
-
-  &__browser {
-    flex-shrink: 0;
-    overflow: hidden;
-  }
-}
-</style>

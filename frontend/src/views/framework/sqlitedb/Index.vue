@@ -4,117 +4,120 @@
       <div class="feature-card feature-card--full">
         <div class="feature-card__title">1. sqlite本地数据库</div>
         <div class="feature-card__body">
-          <a-row>
-            <a-col :span="8">• 大数据量: 0-1024GB(单库)</a-col>
-            <a-col :span="8">• 高性能</a-col>
-            <a-col :span="8">• 类mysql语法</a-col>
-          </a-row>
+          <div>
+            <div :span="8">• 大数据量: 0-1024GB(单库)</div>
+            <div :span="8">• 高性能</div>
+            <div :span="8">• 类mysql语法</div>
+          </div>
         </div>
       </div>
       <div class="feature-card feature-card--full">
         <div class="feature-card__title">2. 数据目录</div>
         <div class="feature-card__body">
-          <a-row>
-            <a-col :span="12">
-              <a-input v-model="data_dir" :value="data_dir" addon-before="数据目录" />
-            </a-col>
-            <a-col :span="2"></a-col>
-            <a-col :span="5">
-              <a-button @click="selectDir()">修改目录</a-button>
-            </a-col>
-            <a-col :span="5">
-              <a-button @click="openDir()">打开目录</a-button>
-            </a-col>
-          </a-row>
+          <div>
+            <div :span="12">
+              <Input v-model="data_dir" :value="data_dir" addon-before="数据目录" />
+            </div>
+            <div :span="2"></div>
+            <div :span="5">
+              <Button @click="selectDir()">修改目录</Button>
+            </div>
+            <div :span="5">
+              <Button @click="openDir()">打开目录</Button>
+            </div>
+          </div>
         </div>
       </div>
       <div class="feature-card feature-card--full">
         <div class="feature-card__title">3. 测试数据</div>
         <div class="feature-card__body">
-          <a-row>
-            <a-col :span="24">{{ all_list }}</a-col>
-          </a-row>
+          <div>
+            <div :span="24">{{ all_list }}</div>
+          </div>
         </div>
       </div>
       <div class="feature-card feature-card--full">
         <div class="feature-card__title">4. 添加数据</div>
         <div class="feature-card__body">
-          <a-row>
-            <a-col :span="6">
-              <a-input v-model="name" :value="name" addon-before="姓名" />
-            </a-col>
-            <a-col :span="3"></a-col>
-            <a-col :span="6">
-              <a-input v-model="age" :value="age" addon-before="年龄" />
-            </a-col>
-            <a-col :span="3"></a-col>
-            <a-col :span="6">
-              <a-button @click="sqlitedbOperation('add')">添加</a-button>
-            </a-col>
-          </a-row>
+          <div>
+            <div :span="6">
+              <Input v-model="name" :value="name" addon-before="姓名" />
+            </div>
+            <div :span="3"></div>
+            <div :span="6">
+              <Input v-model="age" :value="age" addon-before="年龄" />
+            </div>
+            <div :span="3"></div>
+            <div :span="6">
+              <Button @click="sqlitedbOperation('add')">添加</Button>
+            </div>
+          </div>
         </div>
       </div>
       <div class="feature-card feature-card--full">
         <div class="feature-card__title">4. 获取数据</div>
         <div class="feature-card__body">
-          <a-row>
-            <a-col :span="6">
-              <a-input v-model:value="search_age" addon-before="年龄" />
-            </a-col>
-            <a-col :span="3"></a-col>
-            <a-col :span="6"></a-col>
-            <a-col :span="3"></a-col>
-            <a-col :span="6">
-              <a-button @click="sqlitedbOperation('get')">查找</a-button>
-            </a-col>
-          </a-row>
-          <a-row>
-            <a-col :span="24">{{ userList }}</a-col>
-          </a-row>
+          <div>
+            <div :span="6">
+              <Input v-model="search_age" addon-before="年龄" />
+            </div>
+            <div :span="3"></div>
+            <div :span="6"></div>
+            <div :span="3"></div>
+            <div :span="6">
+              <Button @click="sqlitedbOperation('get')">查找</Button>
+            </div>
+          </div>
+          <div>
+            <div :span="24">{{ userList }}</div>
+          </div>
         </div>
       </div>
       <div class="feature-card feature-card--full">
         <div class="feature-card__title">5. 修改数据</div>
         <div class="feature-card__body">
-          <a-row>
-            <a-col :span="6">
-              <a-input v-model:value="update_name" addon-before="姓名(条件)" />
-            </a-col>
-            <a-col :span="3"></a-col>
-            <a-col :span="6">
-              <a-input v-model:value="update_age" addon-before="年龄" />
-            </a-col>
-            <a-col :span="3"></a-col>
-            <a-col :span="6">
-              <a-button @click="sqlitedbOperation('update')">更新</a-button>
-            </a-col>
-          </a-row>
+          <div>
+            <div :span="6">
+              <Input v-model="update_name" addon-before="姓名(条件)" />
+            </div>
+            <div :span="3"></div>
+            <div :span="6">
+              <Input v-model="update_age" addon-before="年龄" />
+            </div>
+            <div :span="3"></div>
+            <div :span="6">
+              <Button @click="sqlitedbOperation('update')">更新</Button>
+            </div>
+          </div>
         </div>
       </div>
       <div class="feature-card feature-card--full">
         <div class="feature-card__title">6. 删除数据</div>
         <div class="feature-card__body">
-          <a-row>
-            <a-col :span="6">
-              <a-input v-model:value="delete_name" addon-before="姓名" />
-            </a-col>
-            <a-col :span="3"></a-col>
-            <a-col :span="6"></a-col>
-            <a-col :span="3"></a-col>
-            <a-col :span="6">
-              <a-button @click="sqlitedbOperation('del')">删除</a-button>
-            </a-col>
-          </a-row>
+          <div>
+            <div :span="6">
+              <Input v-model="delete_name" addon-before="姓名" />
+            </div>
+            <div :span="3"></div>
+            <div :span="6"></div>
+            <div :span="3"></div>
+            <div :span="6">
+              <Button @click="sqlitedbOperation('del')">删除</Button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   </div>
 </template>
 <script setup>
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+
 import { ipcApiRoute } from '@/api';
 import { ipc } from '@/utils/ipcRenderer';
 import { ref, onMounted } from 'vue';
-import { message } from 'ant-design-vue';
+import { toast } from 'vue-sonner';
 
 const name = ref('李四');
 const age = ref(20);
@@ -136,7 +139,7 @@ function init() {
   }
   ipc.invoke(ipcApiRoute.framework.sqlitedbOperation, params).then(res => {
     if (res.code == -1) {
-      message.error('请检查sqlite是否正确安装', 5);
+      toast.error('请检查sqlite是否正确安装', 5);
       return
     }
 
@@ -192,13 +195,13 @@ function sqlitedbOperation (ac) {
     delete_name: delete_name.value,
   }
   if (ac == 'add' && name.value.length == 0) {
-    message.error(`请填写数据`);
+    toast.error(`请填写数据`);
   }
   ipc.invoke(ipcApiRoute.framework.sqlitedbOperation, params).then(res => {
     console.log('res:', res);
     if (ac == 'get') {
       if (res.result.length == 0) {
-        message.error(`没有数据`);
+        toast.error(`没有数据`);
         return;
       }
       userList.value = res.result;
@@ -208,9 +211,7 @@ function sqlitedbOperation (ac) {
       return;
     }
     all_list.value = res.all_list;
-    message.success(`success`);
+    toast.success(`success`);
   })
 }
 </script>
-<style lang="less" scoped>
-</style>

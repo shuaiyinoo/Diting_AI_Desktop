@@ -1,40 +1,42 @@
 <template>
-  <div class="mode-switcher">
-    <div class="mode-switcher__tabs">
+  <div class="flex flex-col gap-2">
+    <!-- 模式切换 Tab -->
+    <div class="flex gap-1.5 bg-muted rounded-lg p-0.5">
       <button
         v-for="mode in modes"
         :key="mode.value"
         type="button"
-        class="mode-switcher__tab"
-        :class="{ 'mode-switcher__tab--active': modelValue === mode.value }"
+        class="flex-1 inline-flex items-center justify-center gap-1.5 h-7.5 px-2.5 border-none bg-transparent rounded-md text-[13px] text-muted-foreground cursor-pointer transition-all hover:not-disabled:text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
+        :class="modelValue === mode.value ? 'bg-card text-primary font-medium shadow-sm' : ''"
         :disabled="disabled"
         @click="onSwitch(mode.value)"
       >
-        <component :is="mode.icon" class="mode-switcher__icon" />
+        <component :is="mode.icon" class="size-3.5" />
         <span>{{ mode.label }}</span>
       </button>
     </div>
 
     <!-- KB_SEARCH 模式：知识库文件夹选择 -->
-    <div v-if="modelValue === 'KB_SEARCH'" class="mode-switcher__folder">
-      <a-select
-        :value="folderId"
-        style="width: 100%"
-        placeholder="选择知识库文件夹"
-        :options="folderOptions"
+    <div v-if="modelValue === 'KB_SEARCH'" class="w-full">
+      <Select
+        :model-value="folderId"
+        @update:model-value="onFolderChange"
         :disabled="disabled"
-        size="small"
-        @change="onFolderChange"
-      />
+      >
+        <SelectTrigger class="w-full h-8"><SelectValue placeholder="选择知识库文件夹" /></SelectTrigger>
+        <SelectContent>
+          <SelectItem v-for="f in folderList" :key="f.id" :value="f.id">{{ f.path }}</SelectItem>
+        </SelectContent>
+      </Select>
     </div>
 
     <!-- 模式说明 -->
-    <div class="mode-switcher__hint">
+    <div class="text-xs text-muted-foreground leading-relaxed min-h-[18px]">
       <span v-if="modelValue === 'CHAT'">自由对话模式：基于对话记忆进行多轮交流，不检索知识库。</span>
       <span v-else-if="modelValue === 'KB_SEARCH' && folderId">
         知识库检索模式：在所选文件夹的知识库内检索证据并生成带引用的回答。
       </span>
-      <span v-else-if="modelValue === 'KB_SEARCH' && !folderId" class="mode-switcher__warn">
+      <span v-else-if="modelValue === 'KB_SEARCH' && !folderId" class="text-amber-500">
         请选择一个知识库文件夹。
       </span>
     </div>
@@ -43,7 +45,8 @@
 
 <script setup>
 import { computed } from 'vue';
-import { MessageOutlined, FileSearchOutlined } from '@ant-design/icons-vue';
+import { MessageSquare, FileSearch } from '@lucide/vue';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 
 const props = defineProps({
   modelValue: {
@@ -68,16 +71,9 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue', 'update:folderId', 'switch']);
 
 const modes = [
-  { value: 'CHAT', label: 'AI 文档', icon: MessageOutlined },
-  { value: 'KB_SEARCH', label: '文档问答', icon: FileSearchOutlined },
+  { value: 'CHAT', label: 'AI 文档', icon: MessageSquare },
+  { value: 'KB_SEARCH', label: '文档问答', icon: FileSearch },
 ];
-
-const folderOptions = computed(() => {
-  return (props.folderList || []).map((f) => ({
-    value: f.id,
-    label: f.path,
-  }));
-});
 
 function onSwitch(mode) {
   if (props.disabled || mode === props.modelValue) return;
@@ -89,71 +85,3 @@ function onFolderChange(value) {
   emit('update:folderId', value);
 }
 </script>
-
-<style lang="less" scoped>
-.mode-switcher {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-
-  &__tabs {
-    display: flex;
-    gap: 6px;
-    background: #f0f2f5;
-    border-radius: 8px;
-    padding: 3px;
-  }
-
-  &__tab {
-    flex: 1;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    height: 30px;
-    padding: 0 10px;
-    border: none;
-    background: transparent;
-    border-radius: 6px;
-    font-size: 13px;
-    color: #595959;
-    cursor: pointer;
-    transition: all 0.2s;
-
-    &:hover:not(:disabled) {
-      color: #262626;
-    }
-
-    &--active {
-      background: #fff;
-      color: #1677ff;
-      font-weight: 500;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-    }
-
-    &:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-  }
-
-  &__icon {
-    font-size: 14px;
-  }
-
-  &__folder {
-    width: 100%;
-  }
-
-  &__hint {
-    font-size: 12px;
-    color: #8c8c8c;
-    line-height: 1.5;
-    min-height: 18px;
-  }
-
-  &__warn {
-    color: #faad14;
-  }
-}
-</style>

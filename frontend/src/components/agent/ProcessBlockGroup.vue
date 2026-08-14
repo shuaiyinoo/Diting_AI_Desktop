@@ -1,15 +1,15 @@
 <template>
-  <div class="process-block-group">
+  <div class="mb-2">
     <!-- 折叠/展开按钮 -->
     <button
       type="button"
-      class="process-block-group__toggle"
+      class="flex cursor-pointer items-center gap-1.5 border-none bg-transparent p-0 text-left transition-opacity hover:opacity-70"
       @click="toggleExpand"
     >
       <!-- 折叠箭头 -->
       <svg
-        class="process-block-group__chevron"
-        :class="{ 'process-block-group__chevron--expanded': expanded }"
+        class="size-3 shrink-0 text-muted-foreground opacity-50 transition-transform"
+        :class="{ 'rotate-90': expanded }"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
@@ -21,62 +21,61 @@
       </svg>
 
       <!-- 摘要文字 -->
-      <span class="process-block-group__summary">{{ summary }}</span>
+      <span class="truncate text-sm text-muted-foreground">{{ summary }}</span>
 
       <!-- 倒计时 -->
-      <span v-if="collapseCountdown !== null" class="process-block-group__countdown">
+      <span v-if="collapseCountdown !== null" class="shrink-0 text-xs text-muted-foreground opacity-50" style="font-variant-numeric: tabular-nums">
         （{{ collapseCountdown }}）
       </span>
 
       <!-- 工具图标 -->
-      <span v-if="toolNames.length > 0" class="process-block-group__tools">
+      <span v-if="toolNames.length > 0" class="flex shrink-0 items-center gap-1 text-muted-foreground opacity-60">
         <span
           v-for="name in visibleToolNames"
           :key="name"
-          class="process-block-group__tool-icon"
+          class="text-[11px] font-semibold font-mono"
           :title="name"
         >{{ getToolIconLabel(name) }}</span>
-        <span v-if="hiddenToolCount > 0" class="process-block-group__tool-more">
+        <span v-if="hiddenToolCount > 0" class="text-[11px]" style="font-variant-numeric: tabular-nums">
           +{{ hiddenToolCount }}
         </span>
       </span>
     </button>
 
     <!-- 内容区（展开时显示） -->
-    <div v-if="shouldRenderContent" class="process-block-group__content">
+    <div v-if="shouldRenderContent" class="mt-1.5 flex flex-col gap-2" style="animation: process-fade-in 0.2s ease">
       <!-- 逐个渲染块 -->
       <div
         v-for="(block, i) in blocks"
         :key="i"
-        class="process-block-group__item"
-        :class="{ 'process-block-group__item--dimmed': isStreaming && !(isMessageTail && i === blocks.length - 1) }"
+        :class="{ 'opacity-80': isStreaming && !(isMessageTail && i === blocks.length - 1) }"
       >
         <!-- Thinking 块 -->
-        <div v-if="block.type === 'thinking'" class="thinking-block">
-          <div class="thinking-block__header">
-            <svg class="thinking-block__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <div v-if="block.type === 'thinking'" class="mb-2">
+          <div class="mb-1.5 flex items-center gap-1.5">
+            <svg class="size-3.5 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z" />
               <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z" />
             </svg>
-            <span class="thinking-block__label">Thinking</span>
+            <span class="text-sm font-medium uppercase tracking-wide text-muted-foreground">Thinking</span>
           </div>
           <div
             ref="thinkingContentRef"
-            class="thinking-block__body"
-            :class="{ 'thinking-block__body--collapsed': shouldCollapseThinking(block.thinking) && !thinkingExpanded[i] }"
+            class="overflow-hidden rounded-lg border border-dashed border-border bg-sidebar p-2.5 px-3.5"
+            :class="{ 'max-h-[5.6em]': shouldCollapseThinking(block.thinking) && !thinkingExpanded[i] }"
           >
-            <div class="thinking-block__text">{{ block.thinking }}</div>
+            <div class="whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground opacity-90">{{ block.thinking }}</div>
           </div>
           <button
             v-if="shouldCollapseThinking(block.thinking)"
             type="button"
-            class="thinking-block__toggle"
+            class="mt-2 flex cursor-pointer items-center gap-1 border-none bg-transparent p-0 text-xs text-muted-foreground opacity-50 transition-opacity hover:opacity-80"
             @click="toggleThinking(i)"
           >
-            <svg v-if="thinkingExpanded[i]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px">
+            <svg v-if="thinkingExpanded[i]" class="size-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M18 15l-6-6-6 6" />
             </svg>
-            <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px">
+            <svg v-else class="size-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M6 9l6 6 6-6" />
             </svg>
             <span>{{ thinkingExpanded[i] ? '收起' : '展开思考' }}</span>
@@ -84,32 +83,32 @@
         </div>
 
         <!-- Tool Use 块 -->
-        <div v-else-if="block.type === 'tool_use'" class="tool-use-block">
+        <div v-else-if="block.type === 'tool_use'">
           <button
             type="button"
-            class="tool-use-block__header"
+            class="inline-flex max-w-full cursor-pointer items-center gap-1.5 border-none bg-transparent p-0 text-left transition-opacity hover:opacity-70"
             @click="toggleTool(i)"
           >
             <!-- 状态图标 -->
-            <svg v-if="!block.done && isStreaming" class="tool-use-block__spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg v-if="!block.done && isStreaming" class="size-3.5 shrink-0 text-primary opacity-50 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M21 12a9 9 0 1 1-6.219-8.56" />
             </svg>
-            <svg v-else-if="block.isError" class="tool-use-block__error" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg v-else-if="block.isError" class="size-3.5 shrink-0 text-red-500 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="10" />
               <line x1="15" y1="9" x2="9" y2="15" />
               <line x1="9" y1="9" x2="15" y2="15" />
             </svg>
 
             <!-- 工具图标 -->
-            <span class="tool-use-block__icon">{{ getToolIconLabel(block.name) }}</span>
+            <span class="text-sm font-semibold font-mono text-muted-foreground shrink-0">{{ getToolIconLabel(block.name) }}</span>
 
             <!-- 工具名/短语 -->
-            <span class="tool-use-block__label">{{ getToolPhrase(block) }}</span>
+            <span class="truncate text-sm text-muted-foreground">{{ getToolPhrase(block) }}</span>
 
             <!-- 展开箭头 -->
             <svg
-              class="tool-use-block__chevron"
-              :class="{ 'tool-use-block__chevron--expanded': toolExpanded[i] }"
+              class="size-3 shrink-0 text-muted-foreground opacity-40 transition-transform"
+              :class="{ 'rotate-90': toolExpanded[i] }"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -122,8 +121,8 @@
           </button>
 
           <!-- 工具结果（展开时） -->
-          <div v-if="toolExpanded[i] && block.result != null" class="tool-use-block__result">
-            <pre class="tool-use-block__result-text">{{ formatToolResult(block.result) }}</pre>
+          <div v-if="toolExpanded[i] && block.result != null" class="ml-5 mt-1 mb-2 border-l-2 border-border pl-3" style="animation: process-fade-in 0.15s ease">
+            <pre class="m-0 max-h-[400px] overflow-y-auto whitespace-pre-wrap break-words text-xs leading-relaxed text-muted-foreground font-mono">{{ formatToolResult(block.result) }}</pre>
           </div>
         </div>
       </div>
@@ -131,10 +130,10 @@
       <!-- 底部收起按钮 -->
       <button
         type="button"
-        class="process-block-group__collapse-btn"
+        class="flex cursor-pointer items-center gap-1 border-none bg-transparent p-0 text-xs text-muted-foreground opacity-40 transition-opacity hover:opacity-70"
         @click="expanded = false"
       >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;transform:rotate(-90deg)">
+        <svg class="size-3 -rotate-90" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M9 18l6-6-6-6" />
         </svg>
         <span>收起</span>
@@ -402,108 +401,7 @@ function formatToolResult(result) {
 }
 </script>
 
-<style lang="less" scoped>
-.process-block-group {
-  margin-bottom: 8px;
-
-  &__toggle {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 2px 0;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    text-align: left;
-    transition: opacity 0.15s;
-
-    &:hover {
-      opacity: 0.7;
-    }
-  }
-
-  &__chevron {
-    width: 12px;
-    height: 12px;
-    flex-shrink: 0;
-    color: var(--text-muted);
-    opacity: 0.5;
-    transition: transform 0.15s;
-
-    &--expanded {
-      transform: rotate(90deg);
-    }
-  }
-
-  &__summary {
-    font-size: 14px;
-    color: var(--text-muted);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  &__countdown {
-    flex-shrink: 0;
-    font-size: 12px;
-    color: var(--text-muted);
-    opacity: 0.5;
-    font-variant-numeric: tabular-nums;
-  }
-
-  &__tools {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    flex-shrink: 0;
-    color: var(--text-muted);
-    opacity: 0.6;
-  }
-
-  &__tool-icon {
-    font-size: 11px;
-    font-weight: 600;
-    font-family: monospace;
-  }
-
-  &__tool-more {
-    font-size: 11px;
-    font-variant-numeric: tabular-nums;
-  }
-
-  &__content {
-    margin-top: 6px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    animation: process-fade-in 0.2s ease;
-  }
-
-  &__item {
-    &--dimmed {
-      opacity: 0.8;
-    }
-  }
-
-  &__collapse-btn {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    padding: 2px 0;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    font-size: 12px;
-    color: var(--text-muted);
-    opacity: 0.4;
-    transition: opacity 0.15s;
-
-    &:hover {
-      opacity: 0.7;
-    }
-  }
-}
-
+<style>
 @keyframes process-fade-in {
   from {
     opacity: 0;
@@ -515,161 +413,8 @@ function formatToolResult(result) {
   }
 }
 
-// ===== Thinking 块 =====
-.thinking-block {
-  margin-bottom: 8px;
-
-  &__header {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-bottom: 6px;
-  }
-
-  &__icon {
-    width: 14px;
-    height: 14px;
-    color: var(--text-muted);
-  }
-
-  &__label {
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-
-  &__body {
-    border-radius: 8px;
-    padding: 10px 14px;
-    background: var(--bg-sidebar);
-    border: 1px dashed var(--border-color);
-    overflow: hidden;
-
-    &--collapsed {
-      max-height: 5.6em;
-    }
-  }
-
-  &__text {
-    font-size: 14px;
-    line-height: 1.6;
-    color: var(--text-primary);
-    opacity: 0.9;
-    white-space: pre-wrap;
-    word-break: break-word;
-  }
-
-  &__toggle {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    margin-top: 8px;
-    padding: 0;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    font-size: 12px;
-    color: var(--text-muted);
-    opacity: 0.5;
-    transition: opacity 0.15s;
-
-    &:hover {
-      opacity: 0.8;
-    }
-  }
-}
-
-// ===== Tool Use 块 =====
-.tool-use-block {
-  &__header {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 2px 0;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    text-align: left;
-    max-width: 100%;
-    transition: opacity 0.15s;
-
-    &:hover {
-      opacity: 0.7;
-    }
-  }
-
-  &__spinner {
-    width: 14px;
-    height: 14px;
-    flex-shrink: 0;
-    color: var(--accent);
-    opacity: 0.5;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-  }
-
-  &__error {
-    width: 14px;
-    height: 14px;
-    flex-shrink: 0;
-    color: #ef4444;
-    opacity: 0.7;
-  }
-
-  &__icon {
-    font-size: 14px;
-    font-weight: 600;
-    font-family: monospace;
-    color: var(--text-muted);
-    flex-shrink: 0;
-  }
-
-  &__label {
-    font-size: 14px;
-    color: var(--text-muted);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  &__chevron {
-    width: 12px;
-    height: 12px;
-    flex-shrink: 0;
-    color: var(--text-muted);
-    opacity: 0.4;
-    transition: transform 0.15s;
-
-    &--expanded {
-      transform: rotate(90deg);
-    }
-  }
-
-  &__result {
-    margin-left: 20px;
-    margin-top: 4px;
-    margin-bottom: 8px;
-    padding-left: 12px;
-    border-left: 2px solid var(--border-color);
-    animation: process-fade-in 0.15s ease;
-  }
-
-  &__result-text {
-    font-size: 12px;
-    line-height: 1.5;
-    color: var(--text-secondary);
-    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
-    white-space: pre-wrap;
-    word-break: break-word;
-    margin: 0;
-    max-height: 400px;
-    overflow-y: auto;
-  }
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 </style>

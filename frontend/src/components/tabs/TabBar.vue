@@ -1,7 +1,7 @@
 <template>
-  <div class="tab-bar">
+  <div class="flex items-stretch h-9 flex-shrink-0 bg-muted border-b border-border [-webkit-app-region:no-drag]">
     <!-- Tab 列表（可横向滚动） -->
-    <div class="tab-bar__scroll" ref="scrollRef">
+    <div class="flex items-stretch flex-1 min-w-0 overflow-x-auto px-1 gap-px [&::-webkit-scrollbar]:hidden" ref="scrollRef">
       <TabBarItem
         v-for="tab in tabStore.tabs"
         :key="tab.id"
@@ -91,29 +91,3 @@ watch(
   },
 )
 </script>
-
-<style lang="less" scoped>
-.tab-bar {
-  display: flex;
-  align-items: stretch;
-  height: 36px;
-  flex-shrink: 0;
-  background-color: var(--bg-sidebar);
-  border-bottom: 1px solid var(--border-color);
-  -webkit-app-region: no-drag;
-
-  &__scroll {
-    display: flex;
-    align-items: stretch;
-    flex: 1;
-    min-width: 0;
-    overflow-x: auto;
-    padding: 0 4px;
-    gap: 1px;
-
-    &::-webkit-scrollbar {
-      display: none;
-    }
-  }
-}
-</style>

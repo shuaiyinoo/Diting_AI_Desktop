@@ -4,20 +4,22 @@
       <div class="feature-card feature-card--full">
         <div class="feature-card__title">1. 加载本机图片</div>
         <div class="feature-card__body">
-          <a-space>
-            <a-button @click="selectPic(0)">选择图片</a-button>
-          </a-space>
+          <span>
+            <Button @click="selectPic(0)">选择图片</Button>
+          </span>
           <p></p>
-          <a-image
+          <img
             :width="500"
             :src=picPath
-          />
+           />
         </div>
       </div>
     </div>
   </div>
 </template>
 <script setup>
+import { Button } from '@/components/ui/button'
+
 import { ipcApiRoute } from '@/api';
 import { ipc } from '@/utils/ipcRenderer';
 import { ref } from 'vue';
@@ -30,5 +32,3 @@ function selectPic() {
   })
 }
 </script>
-<style lang="less" scoped>
-</style>

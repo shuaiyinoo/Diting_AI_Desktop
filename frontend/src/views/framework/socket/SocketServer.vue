@@ -4,28 +4,30 @@
       <div class="feature-card feature-card--full">
         <div class="feature-card__title">1. 使用socket与主进程通信</div>
         <div class="feature-card__body">
-          <a-space>
+          <span>
             <p>* 状态：{{ currentStatus }}</p>
-          </a-space>
+          </span>
           <p>* 地址：{{ servicAddress }}</p>
         </div>
       </div>
       <div class="feature-card feature-card--full">
         <div class="feature-card__title">2. 发送请求</div>
         <div class="feature-card__body">
-          <a-space>
-            <a-button @click="sendRequest('downloads')"> 打开【我的下载】 </a-button>
-          </a-space>
+          <span>
+            <Button @click="sendRequest('downloads')"> 打开【我的下载】 </Button>
+          </span>
         </div>
       </div>
     </div>
   </div>
 </template>
 <script setup>
+import { Button } from '@/components/ui/button'
+
 import { ipcApiRoute } from '@/api';
 import { io } from 'socket.io-client';
 import { ref, onMounted } from 'vue';
-import { message } from 'ant-design-vue';
+import { toast } from 'vue-sonner';
 
 const currentStatus = ref('关闭');
 const servicAddress = ref('ws://localhost:7070');
@@ -47,7 +49,7 @@ function init() {
 
 function sendRequest(id) {
   if (currentStatus.value == '关闭') {
-    message.error('socketio服务未开启');
+    toast.error('socketio服务未开启');
     return;
   }
 
@@ -57,5 +59,3 @@ function sendRequest(id) {
   });
 }
 </script>
-<style lang="less" scoped>
-</style>

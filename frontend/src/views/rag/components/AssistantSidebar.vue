@@ -1,84 +1,90 @@
 <template>
-  <div class="assistant-sidebar">
-    <div class="assistant-sidebar__header">
-      <span class="assistant-sidebar__title">会话列表</span>
-      <a-button type="primary" size="small" :disabled="disabled" @click="$emit('create')">
-        <template #icon><PlusOutlined /></template>
+  <div class="w-[260px] flex-shrink-0 bg-card border-r border-border flex flex-col h-full">
+    <!-- 头部 -->
+    <div class="flex items-center justify-between px-3.5 py-3 border-b border-border">
+      <span class="text-sm font-semibold text-foreground">会话列表</span>
+      <Button size="sm" :disabled="disabled" @click="$emit('create')">
+        <Plus class="mr-1 size-3.5" />
         新会话
-      </a-button>
+      </Button>
     </div>
 
-    <div class="assistant-sidebar__list">
-      <a-spin :spinning="loading">
-        <div v-if="sessions.length === 0" class="assistant-sidebar__empty">
-          <a-empty description="暂无会话" :image="Empty.PRESENTED_IMAGE_SIMPLE" />
-        </div>
-        <div
-          v-for="session in sessions"
-          :key="session.sessionId"
-          class="session-item"
-          :class="{ 'session-item--active': activeSessionId === session.sessionId }"
-          @click="$emit('select', session.sessionId)"
-        >
-          <div class="session-item__main">
-            <div class="session-item__title" :title="session.title">
-              {{ session.title || '新会话' }}
-            </div>
-            <div class="session-item__time">
-              {{ formatDateTime(session.lastMessageAt) }}
-            </div>
+    <!-- 会话列表 -->
+    <div class="flex-1 overflow-y-auto p-1.5 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-thumb]:rounded-sm">
+      <div v-if="loading" class="flex items-center justify-center py-8">
+        <Spinner class="size-5 text-muted-foreground" />
+      </div>
+      <div v-if="!loading && sessions.length === 0" class="py-8 text-center text-sm text-muted-foreground">暂无会话</div>
+      <div
+        v-for="session in sessions"
+        :key="session.sessionId"
+        class="group flex items-center gap-1.5 px-2.5 py-2 rounded-lg cursor-pointer transition-colors mb-0.5 hover:bg-muted"
+        :class="activeSessionId === session.sessionId ? 'bg-primary/10' : ''"
+        @click="$emit('select', session.sessionId)"
+      >
+        <div class="flex-1 min-w-0">
+          <div
+            class="text-[13px] truncate leading-tight"
+            :class="activeSessionId === session.sessionId ? 'text-primary font-medium' : 'text-foreground'"
+            :title="session.title"
+          >
+            {{ session.title || '新会话' }}
           </div>
-          <div class="session-item__actions" @click.stop>
-            <a-dropdown placement="bottomRight" :trigger="['click']">
-              <button type="button" class="session-item__btn" @click.stop>
-                <MoreOutlined />
+          <div class="text-[11px] text-muted-foreground mt-0.5">{{ formatDateTime(session.lastMessageAt) }}</div>
+        </div>
+        <div class="opacity-0 transition-opacity flex-shrink-0 group-hover:opacity-100" @click.stop>
+          <Popover v-model:open="menuOpen[session.sessionId]">
+            <PopoverTrigger as-child>
+              <button type="button" class="inline-flex items-center justify-center size-6 border-none bg-transparent rounded text-muted-foreground cursor-pointer transition-colors hover:bg-muted hover:text-foreground" @click.stop>
+                <MoreHorizontal class="size-4" />
               </button>
-              <template #overlay>
-                <a-menu @click="(e) => onMenuClick(e.key, session)">
-                  <a-menu-item key="rename">
-                    <EditOutlined />
-                    <span>重命名</span>
-                  </a-menu-item>
-                  <a-menu-divider />
-                  <a-menu-item key="delete" danger>
-                    <DeleteOutlined />
-                    <span>删除</span>
-                  </a-menu-item>
-                </a-menu>
-              </template>
-            </a-dropdown>
-          </div>
+            </PopoverTrigger>
+            <PopoverContent class="w-auto p-1" align="end" side-offset="4">
+              <button class="flex w-full items-center rounded-sm px-2 py-1.5 text-sm hover:bg-accent" @click="onMenuClick('rename', session); menuOpen[session.sessionId] = false">
+                <Pencil class="mr-2 size-4" />
+                <span>重命名</span>
+              </button>
+              <div class="my-1 h-px bg-border"></div>
+              <button class="flex w-full items-center rounded-sm px-2 py-1.5 text-sm text-destructive hover:bg-accent" @click="onMenuClick('delete', session); menuOpen[session.sessionId] = false">
+                <Trash2 class="mr-2 size-4" />
+                <span>删除</span>
+              </button>
+            </PopoverContent>
+          </Popover>
         </div>
-      </a-spin>
+      </div>
     </div>
 
     <!-- 重命名弹窗 -->
-    <a-modal
-      v-model:open="renameVisible"
-      title="重命名会话"
-      :confirm-loading="renameLoading"
-      @ok="onRenameConfirm"
-      @cancel="onRenameCancel"
-    >
-      <a-input
-        v-model:value="renameText"
-        placeholder="请输入会话名称"
-        :maxlength="50"
-        @pressEnter="onRenameConfirm"
-      />
-    </a-modal>
+    <Dialog v-model:open="renameVisible">
+      <DialogContent class="max-w-[420px]">
+        <DialogHeader>
+          <DialogTitle>重命名会话</DialogTitle>
+        </DialogHeader>
+        <Input
+          v-model="renameText"
+          placeholder="请输入会话名称"
+          :maxlength="50"
+          @keydown.enter="onRenameConfirm"
+        />
+        <DialogFooter>
+          <Button variant="outline" @click="onRenameCancel">取消</Button>
+          <Button :disabled="renameLoading" @click="onRenameConfirm">确定</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue';
-import { Empty, message } from 'ant-design-vue';
-import {
-  PlusOutlined,
-  MoreOutlined,
-  EditOutlined,
-  DeleteOutlined,
-} from '@ant-design/icons-vue';
+import { ref, reactive } from 'vue';
+import { toast } from 'vue-sonner';
+import { Plus, MoreHorizontal, Pencil, Trash2 } from '@lucide/vue';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import { Spinner } from '@/components/ui/spinner';
 
 defineProps({
   sessions: {
@@ -101,11 +107,11 @@ defineProps({
 
 const emit = defineEmits(['create', 'select', 'rename', 'delete']);
 
-// 重命名状态
 const renameVisible = ref(false);
 const renameText = ref('');
 const renameLoading = ref(false);
 const renameTarget = ref(null);
+const menuOpen = reactive({});
 
 function onMenuClick(key, session) {
   if (key === 'rename') {
@@ -121,7 +127,7 @@ function onRenameConfirm() {
   if (!renameTarget.value) return;
   const title = renameText.value.trim();
   if (!title) {
-    message.warning('会话名称不能为空');
+    toast.warning('会话名称不能为空');
     return;
   }
   renameLoading.value = true;
@@ -138,8 +144,6 @@ function onRenameCancel() {
 }
 
 function onDelete(session) {
-  // 简单确认：使用 Modal.confirm
-  // 注意：此处不直接弹窗，由父组件处理确认逻辑
   emit('delete', session.sessionId);
 }
 
@@ -156,122 +160,3 @@ function formatDateTime(time) {
   return `${d.getMonth() + 1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 </script>
-
-<style lang="less" scoped>
-.assistant-sidebar {
-  width: 260px;
-  flex-shrink: 0;
-  background: #fff;
-  border-right: 1px solid #e8e8e8;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-
-  &__header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px 14px;
-    border-bottom: 1px solid #f0f0f0;
-  }
-
-  &__title {
-    font-size: 14px;
-    font-weight: 600;
-    color: #2c3e50;
-  }
-
-  &__list {
-    flex: 1;
-    overflow-y: auto;
-    padding: 6px;
-
-    &::-webkit-scrollbar {
-      width: 6px;
-    }
-    &::-webkit-scrollbar-thumb {
-      background: #d9d9d9;
-      border-radius: 3px;
-    }
-  }
-
-  &__empty {
-    padding: 40px 0;
-    display: flex;
-    justify-content: center;
-  }
-}
-
-.session-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 10px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background 0.2s;
-  margin-bottom: 2px;
-
-  &:hover {
-    background: #f5f6f8;
-
-    .session-item__actions {
-      opacity: 1;
-    }
-  }
-
-  &--active {
-    background: #e6f4ff;
-
-    .session-item__title {
-      color: #1677ff;
-      font-weight: 500;
-    }
-  }
-
-  &__main {
-    flex: 1;
-    min-width: 0;
-  }
-
-  &__title {
-    font-size: 13px;
-    color: #262626;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    line-height: 1.4;
-  }
-
-  &__time {
-    font-size: 11px;
-    color: #bfbfbf;
-    margin-top: 2px;
-  }
-
-  &__actions {
-    opacity: 0;
-    transition: opacity 0.2s;
-    flex-shrink: 0;
-  }
-
-  &__btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 24px;
-    height: 24px;
-    border: none;
-    background: transparent;
-    border-radius: 4px;
-    color: #8c8c8c;
-    cursor: pointer;
-    transition: all 0.2s;
-
-    &:hover {
-      background: #e8e8e8;
-      color: #595959;
-    }
-  }
-}
-</style>

@@ -48,7 +48,7 @@
                   :is="fileExpandedFolders.has(item.togglePath) ? 'DownOutlined' : 'RightOutlined'"
                   class="mention-popup__arrow"
                 />
-                <FolderOutlined class="mention-popup__icon mention-popup__icon--folder" />
+                <Folder class="mention-popup__icon mention-popup__icon--folder" :size="14" />
                 <span class="mention-popup__label">{{ item.name }}</span>
                 <span v-if="item.source === 'session'" class="mention-popup__tag">会话</span>
                 <span v-else-if="item.source === 'workspace'" class="mention-popup__tag">项目</span>
@@ -57,7 +57,7 @@
               <!-- 文件项 -->
               <template v-else>
                 <span class="mention-popup__indent" />
-                <FileOutlined class="mention-popup__icon mention-popup__icon--file" />
+                <File class="mention-popup__icon mention-popup__icon--file" :size="14" />
                 <span class="mention-popup__label">{{ item.name }}</span>
                 <span v-if="item.source === 'session'" class="mention-popup__tag">会话</span>
                 <span v-else-if="item.source === 'workspace'" class="mention-popup__tag">项目</span>
@@ -67,21 +67,21 @@
 
             <!-- / Skill 引用 -->
             <template v-else-if="popupState.char === '/'">
-              <ThunderboltOutlined class="mention-popup__icon mention-popup__icon--skill" />
+              <Zap class="mention-popup__icon mention-popup__icon--skill" :size="14" />
               <span class="mention-popup__label">{{ item.name }}</span>
               <span v-if="item.description" class="mention-popup__desc">{{ item.description }}</span>
             </template>
 
             <!-- # MCP 引用 -->
             <template v-else-if="popupState.char === '#'">
-              <ApiOutlined class="mention-popup__icon mention-popup__icon--mcp" />
+              <Plug class="mention-popup__icon mention-popup__icon--mcp" :size="14" />
               <span class="mention-popup__label">{{ item.displayName || item.name }}</span>
               <span v-if="item.description" class="mention-popup__desc">{{ item.description }}</span>
             </template>
 
             <!-- & 会话引用 -->
             <template v-else-if="popupState.char === '&'">
-              <MessageOutlined class="mention-popup__icon mention-popup__icon--session" />
+              <MessageSquare class="mention-popup__icon mention-popup__icon--session" :size="14" />
               <span class="mention-popup__label">{{ item.title }}</span>
             </template>
           </button>
@@ -99,7 +99,7 @@ import Placeholder from '@tiptap/extension-placeholder'
 import Underline from '@tiptap/extension-underline'
 import Link from '@tiptap/extension-link'
 import Mention from '@tiptap/extension-mention'
-import { FileOutlined, FolderOutlined, ThunderboltOutlined, ApiOutlined, MessageOutlined, DownOutlined, RightOutlined } from '@ant-design/icons-vue'
+import { File, Folder, Zap, Plug, MessageSquare, ChevronDown, ChevronRight } from '@lucide/vue'
 import { htmlToMarkdown } from '@/utils/htmlToMarkdown'
 import {
   isSuggestionTriggerPresent,
@@ -879,7 +879,8 @@ onBeforeUnmount(() => {
 })
 </script>
 
-<style lang="less">
+<style>
+/* RichTextInput 全局样式（ProseMirror 编辑器 + Mention Chip + 弹窗） */
 .rich-text-input {
   position: relative;
   width: 100%;
@@ -887,71 +888,55 @@ onBeforeUnmount(() => {
   overflow-y: auto;
   overscroll-behavior: contain;
   transition: max-height 0.2s ease;
-
-  &--disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  &__editor {
-    width: 100%;
-  }
-
-  // ProseMirror 编辑器基础样式
-  .ProseMirror {
-    outline: none;
-    padding: 12px 16px 4px;
-    font-size: 14px;
-    line-height: 1.5;
-    font-family: inherit;
-    min-height: 42px;
-
-    p {
-      margin: 0;
-    }
-
-    ul, ol {
-      margin: 0;
-      padding-left: 1.5em;
-    }
-
-    li {
-      margin: 0;
-    }
-
-    p.is-editor-empty:first-child::before {
-      content: attr(data-placeholder);
-      float: left;
-      color: var(--text-muted, #999);
-      pointer-events: none;
-      height: 0;
-      max-width: 100%;
-      white-space: normal;
-      overflow-wrap: anywhere;
-      opacity: 0.6;
-    }
-
-    code {
-      background: var(--bg-hover, rgba(0,0,0,0.06));
-      border-radius: 3px;
-      padding: 1px 4px;
-      font-size: 13px;
-    }
-
-    pre {
-      border-radius: 6px;
-      padding: 12px;
-      code {
-        background: none;
-        padding: 0;
-      }
-    }
-  }
+}
+.rich-text-input--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.rich-text-input__editor {
+  width: 100%;
 }
 
-// ===== Mention Chip 样式（编辑器内 + 消息列表通用） =====
-// 结构：<span class="xxx-chip" data-prefix="@">label</span>
-// CSS 用 ::before 渲染左侧符号色块，正文为右侧浅色区
+/* ProseMirror 编辑器基础样式 */
+.rich-text-input .ProseMirror {
+  outline: none;
+  padding: 12px 16px 4px;
+  font-size: 14px;
+  line-height: 1.5;
+  font-family: inherit;
+  min-height: 42px;
+}
+.rich-text-input .ProseMirror p { margin: 0; }
+.rich-text-input .ProseMirror ul,
+.rich-text-input .ProseMirror ol { margin: 0; padding-left: 1.5em; }
+.rich-text-input .ProseMirror li { margin: 0; }
+.rich-text-input .ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: hsl(var(--muted-foreground));
+  pointer-events: none;
+  height: 0;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  opacity: 0.6;
+}
+.rich-text-input .ProseMirror code {
+  background: hsl(var(--muted) / 0.4);
+  border-radius: 3px;
+  padding: 1px 4px;
+  font-size: 13px;
+}
+.rich-text-input .ProseMirror pre {
+  border-radius: 6px;
+  padding: 12px;
+}
+.rich-text-input .ProseMirror pre code {
+  background: none;
+  padding: 0;
+}
+
+/* ===== Mention Chip 样式 ===== */
 .mention-chip,
 .skill-mention-chip,
 .mcp-mention-chip,
@@ -967,168 +952,153 @@ onBeforeUnmount(() => {
   cursor: default;
   line-height: 1.6;
   padding: 0 6px 0 0;
-
-  &::before {
-    content: attr(data-prefix);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0 5px;
-    margin-right: 5px;
-    font-weight: 700;
-    font-size: 12px;
-    height: 100%;
-  }
+}
+.mention-chip::before,
+.skill-mention-chip::before,
+.mcp-mention-chip::before,
+.session-mention-chip::before {
+  content: attr(data-prefix);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+  margin-right: 5px;
+  font-weight: 700;
+  font-size: 12px;
+  height: 100%;
 }
 
-// @ 文件引用：蓝色系
+/* @ 文件引用：蓝色系 */
 .mention-chip {
   background: rgba(24, 95, 165, 0.12);
   color: #185FA5;
-  &::before { background: #185FA5; color: #fff; }
 }
+.mention-chip::before { background: #185FA5; color: #fff; }
 
-// / Skill 引用：紫色系
+/* / Skill 引用：紫色系 */
 .skill-mention-chip {
   background: rgba(124, 58, 237, 0.12);
   color: #7C3AED;
-  &::before { background: #7C3AED; color: #fff; }
 }
+.skill-mention-chip::before { background: #7C3AED; color: #fff; }
 
-// # MCP 引用：绿色系
+/* # MCP 引用：绿色系 */
 .mcp-mention-chip {
   background: rgba(5, 150, 105, 0.12);
   color: #059669;
-  &::before { background: #059669; color: #fff; }
 }
+.mcp-mention-chip::before { background: #059669; color: #fff; }
 
-// & 会话引用：橙色系
+/* & 会话引用：橙色系 */
 .session-mention-chip {
   background: rgba(234, 88, 12, 0.12);
   color: #EA580C;
-  &::before { background: #EA580C; color: #fff; }
 }
+.session-mention-chip::before { background: #EA580C; color: #fff; }
 
-// ===== Mention 弹出选择框样式 =====
+/* ===== Mention 弹出选择框样式 ===== */
 .mention-popup {
   position: fixed;
   border-radius: 8px;
-  border: 1px solid var(--border-color, #e0e0e0);
-  background: var(--bg-panel, #fff);
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--card));
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
   overflow: hidden;
   width: 280px;
-
-  &__header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    padding: 6px 10px;
-    font-size: 11px;
-    font-weight: 500;
-    background: rgba(24, 95, 165, 0.08);
-    color: var(--accent, #185FA5);
-    border-bottom: 1px solid var(--border-color, rgba(0, 0, 0, 0.06));
-  }
-
-  &__hint {
-    font-weight: 400;
-    color: var(--text-muted, #999);
-  }
-
-  &__empty {
-    padding: 8px 10px;
-    font-size: 11px;
-    color: var(--text-muted, #999);
-  }
-
-  &__list {
-    max-height: 240px;
-    overflow-y: auto;
-
-    &::-webkit-scrollbar {
-      width: 3px;
-    }
-    &::-webkit-scrollbar-thumb {
-      background: var(--border-color, #ccc);
-      border-radius: 2px;
-    }
-  }
-
-  &__item {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    width: 100%;
-    padding: 6px 10px;
-    border: none;
-    background: transparent;
-    text-align: left;
-    font-size: 12px;
-    cursor: pointer;
-    transition: background 0.1s;
-    color: var(--text-primary, #333);
-
-    &:hover {
-      background: var(--bg-hover, rgba(0, 0, 0, 0.04));
-    }
-
-    &--active {
-      background: var(--bg-hover, rgba(0, 0, 0, 0.06));
-    }
-  }
-
-  &__icon {
-    font-size: 14px;
-    flex-shrink: 0;
-
-    &--file { color: #185FA5; }
-    &--folder { color: #E8A838; }
-    &--skill { color: #8A2BE2; }
-    &--mcp { color: #006400; }
-    &--session { color: #1E90FF; }
-  }
-
-  &__arrow {
-    font-size: 10px;
-    color: var(--text-muted, #999);
-    flex-shrink: 0;
-    width: 12px;
-    text-align: center;
-  }
-
-  &__indent {
-    width: 12px;
-    flex-shrink: 0;
-  }
-
-  &__label {
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-weight: 500;
-  }
-
-  &__desc {
-    font-size: 10px;
-    color: var(--text-muted, #999);
-    max-width: 120px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    flex-shrink: 0;
-  }
-
-  &__tag {
-    font-size: 9px;
-    padding: 1px 4px;
-    border-radius: 3px;
-    background: var(--bg-hover, rgba(0, 0, 0, 0.06));
-    color: var(--text-muted, #999);
-    flex-shrink: 0;
-  }
+}
+.mention-popup__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 500;
+  background: hsl(var(--primary) / 0.08);
+  color: hsl(var(--primary));
+  border-bottom: 1px solid hsl(var(--border));
+}
+.mention-popup__hint {
+  font-weight: 400;
+  color: hsl(var(--muted-foreground));
+}
+.mention-popup__empty {
+  padding: 8px 10px;
+  font-size: 11px;
+  color: hsl(var(--muted-foreground));
+}
+.mention-popup__list {
+  max-height: 240px;
+  overflow-y: auto;
+}
+.mention-popup__list::-webkit-scrollbar { width: 3px; }
+.mention-popup__list::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 2px;
+}
+.mention-popup__item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 6px 10px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.1s;
+  color: hsl(var(--foreground));
+}
+.mention-popup__item:hover {
+  background: hsl(var(--muted) / 0.4);
+}
+.mention-popup__item--active {
+  background: hsl(var(--muted) / 0.6);
+}
+.mention-popup__icon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+.mention-popup__icon--file { color: #185FA5; }
+.mention-popup__icon--folder { color: #E8A838; }
+.mention-popup__icon--skill { color: #8A2BE2; }
+.mention-popup__icon--mcp { color: #006400; }
+.mention-popup__icon--session { color: #1E90FF; }
+.mention-popup__arrow {
+  font-size: 10px;
+  color: hsl(var(--muted-foreground));
+  flex-shrink: 0;
+  width: 12px;
+  text-align: center;
+}
+.mention-popup__indent {
+  width: 12px;
+  flex-shrink: 0;
+}
+.mention-popup__label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+.mention-popup__desc {
+  font-size: 10px;
+  color: hsl(var(--muted-foreground));
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.mention-popup__tag {
+  font-size: 9px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: hsl(var(--muted) / 0.4);
+  color: hsl(var(--muted-foreground));
+  flex-shrink: 0;
 }
 </style>

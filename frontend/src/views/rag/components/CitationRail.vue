@@ -1,40 +1,49 @@
 <template>
-  <div v-if="citations && citations.length > 0" class="citation-rail">
-    <div class="citation-rail__head">
-      <span class="citation-rail__eyebrow">Evidence Chain</span>
-      <span class="citation-rail__title">
-        <LinkOutlined />
-        <strong>引用证据</strong>
-        <span class="citation-rail__count">{{ citations.length }}</span>
+  <div v-if="citations && citations.length > 0" class="mt-3 px-3.5 py-3 bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20 rounded-lg">
+    <!-- 头部 -->
+    <div class="flex items-center gap-2.5 mb-2.5">
+      <span class="text-[10px] font-semibold tracking-[1.5px] uppercase text-purple-600 dark:text-purple-400">Evidence Chain</span>
+      <span class="inline-flex items-center gap-1.5 text-[13px] text-foreground">
+        <Link class="size-3.5 text-purple-600 dark:text-purple-400" />
+        <strong class="font-semibold">引用证据</strong>
+        <span class="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1.5 bg-primary text-primary-foreground rounded-full text-[11px] font-semibold">{{ citations.length }}</span>
       </span>
     </div>
-    <div class="citation-rail__scroll">
+
+    <!-- 卡片滚动列表 -->
+    <div class="flex gap-2.5 overflow-x-auto pb-1 [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:bg-primary/20 [&::-webkit-scrollbar-thumb]:rounded-sm">
       <button
         v-for="(cite, idx) in citations"
         :key="`${cite.fileItemId ?? 'x'}-${cite.chunkId ?? idx}`"
-        class="citation-rail__card"
         type="button"
         :disabled="cite.fileItemId === null || cite.fileItemId === undefined"
+        class="flex-shrink-0 w-[220px] flex flex-col gap-1.5 p-2.5 px-3 bg-card border border-border rounded-lg cursor-pointer transition-all text-left hover:not-disabled:border-primary hover:not-disabled:shadow-[0_2px_8px_hsl(var(--primary)/0.12)] hover:not-disabled:-translate-y-px disabled:cursor-default disabled:opacity-70"
         @click="$emit('citation-click', cite)"
       >
-        <div class="citation-rail__card-head">
-          <span class="citation-rail__index">{{ String(idx + 1).padStart(2, '0') }}</span>
-          <span class="citation-rail__type" :class="iconClass(cite.fileName)">
-            {{ fileIcon(cite.fileName) }}
-          </span>
-          <span class="citation-rail__score">{{ formatScore(cite.score) }}</span>
+        <!-- 卡片头部 -->
+        <div class="flex items-center gap-2">
+          <span class="text-[11px] font-bold text-primary font-mono">{{ String(idx + 1).padStart(2, '0') }}</span>
+          <span
+            class="inline-flex items-center justify-center min-w-[32px] h-[18px] px-1.5 rounded text-[10px] font-bold tracking-wide"
+            :class="iconClass(cite.fileName)"
+          >{{ fileIcon(cite.fileName) }}</span>
+          <span class="ml-auto text-[11px] text-muted-foreground font-medium">{{ formatScore(cite.score) }}</span>
         </div>
-        <h4 class="citation-rail__filename" :title="cite.fileName">
+
+        <!-- 文件名 -->
+        <h4 class="m-0 text-[13px] font-medium text-foreground truncate" :title="cite.fileName">
           {{ cite.fileName }}
         </h4>
-        <p v-if="cite.snippet" class="citation-rail__snippet">{{ cite.snippet }}</p>
+
+        <!-- 摘录 -->
+        <p v-if="cite.snippet" class="m-0 text-xs text-muted-foreground leading-relaxed line-clamp-2">{{ cite.snippet }}</p>
       </button>
     </div>
   </div>
 </template>
 
 <script setup>
-import { LinkOutlined } from '@ant-design/icons-vue';
+import { Link } from '@lucide/vue';
 
 defineProps({
   citations: {
@@ -74,174 +83,17 @@ function fileIcon(fileName) {
   }
 }
 
+/** 根据扩展名返回 Tailwind 类名 */
 function iconClass(fileName) {
-  if (!fileName) return 'citation-rail__type--txt';
+  if (!fileName) return 'bg-muted text-muted-foreground';
   const ext = fileName.split('.').pop()?.toLowerCase();
-  return `citation-rail__type--${ext || 'txt'}`;
+  const map = {
+    pdf: 'bg-red-500/10 text-red-600 dark:text-red-400',
+    doc: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
+    docx: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
+    txt: 'bg-green-500/10 text-green-600 dark:text-green-400',
+    md: 'bg-purple-500/10 text-purple-600 dark:text-purple-400',
+  };
+  return map[ext] || 'bg-muted text-muted-foreground';
 }
 </script>
-
-<style lang="less" scoped>
-.citation-rail {
-  margin-top: 12px;
-  padding: 12px 14px;
-  background: linear-gradient(135deg, #f8faff 0%, #f0f5ff 100%);
-  border: 1px solid #d6e4ff;
-  border-radius: 10px;
-
-  &__head {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 10px;
-  }
-
-  &__eyebrow {
-    font-size: 10px;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    color: #722ed1;
-    font-weight: 600;
-  }
-
-  &__title {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 13px;
-    color: #262626;
-
-    strong {
-      font-weight: 600;
-    }
-  }
-
-  &__count {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 18px;
-    height: 18px;
-    padding: 0 6px;
-    background: #1677ff;
-    color: #fff;
-    border-radius: 9px;
-    font-size: 11px;
-    font-weight: 600;
-  }
-
-  &__scroll {
-    display: flex;
-    gap: 10px;
-    overflow-x: auto;
-    padding-bottom: 4px;
-
-    &::-webkit-scrollbar {
-      height: 6px;
-    }
-    &::-webkit-scrollbar-thumb {
-      background: #d6e4ff;
-      border-radius: 3px;
-    }
-  }
-
-  &__card {
-    flex: 0 0 220px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    padding: 10px 12px;
-    background: #fff;
-    border: 1px solid #e8e8e8;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s;
-    text-align: left;
-
-    &:hover:not(:disabled) {
-      border-color: #1677ff;
-      box-shadow: 0 2px 8px rgba(22, 119, 255, 0.12);
-      transform: translateY(-1px);
-    }
-
-    &:disabled {
-      cursor: default;
-      opacity: 0.7;
-    }
-  }
-
-  &__card-head {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  &__index {
-    font-size: 11px;
-    font-weight: 700;
-    color: #1677ff;
-    font-family: 'SF Mono', 'Consolas', monospace;
-  }
-
-  &__type {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 32px;
-    height: 18px;
-    padding: 0 6px;
-    background: #f0f2f5;
-    border-radius: 4px;
-    font-size: 10px;
-    font-weight: 700;
-    color: #595959;
-    letter-spacing: 0.5px;
-
-    &--pdf {
-      background: #fff1f0;
-      color: #cf1322;
-    }
-    &--doc,
-    &--docx {
-      background: #e6f4ff;
-      color: #0958d9;
-    }
-    &--txt {
-      background: #f6ffed;
-      color: #389e0d;
-    }
-    &--md {
-      background: #f9f0ff;
-      color: #722ed1;
-    }
-  }
-
-  &__score {
-    margin-left: auto;
-    font-size: 11px;
-    color: #8c8c8c;
-    font-weight: 500;
-  }
-
-  &__filename {
-    margin: 0;
-    font-size: 13px;
-    font-weight: 500;
-    color: #262626;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  &__snippet {
-    margin: 0;
-    font-size: 12px;
-    color: #8c8c8c;
-    line-height: 1.5;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-}
-</style>

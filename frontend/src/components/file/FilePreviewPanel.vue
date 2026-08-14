@@ -1,34 +1,50 @@
 <template>
-  <div class="file-preview-panel">
+  <div class="flex h-full flex-col overflow-hidden bg-panel">
     <!-- 顶部工具栏 -->
-    <div class="file-preview-panel__toolbar">
-      <div class="file-preview-panel__title">
-        <file-outlined class="file-preview-panel__icon" />
-        <span class="file-preview-panel__name" :title="file ? file.name : ''">
+    <div class="flex h-10 shrink-0 items-center justify-between border-b border-border px-2 pl-3.5">
+      <div class="flex min-w-0 flex-1 items-center gap-1.5">
+        <File class="size-3.5 shrink-0 text-accent-app" />
+        <span class="truncate text-[13px] font-medium text-app-primary" :title="file ? file.name : ''">
           {{ file ? file.name : '文件预览' }}
         </span>
       </div>
       <!-- 右侧按钮组 -->
-      <div class="file-preview-panel__actions">
+      <div class="flex shrink-0 items-center gap-0.5">
         <!-- 编辑按钮：仅可编辑文件显示 -->
-        <a-tooltip v-if="showEditButton" title="编辑">
-          <button class="panel-toggle-btn" @click="$emit('edit')">
-            <edit-outlined />
-          </button>
-        </a-tooltip>
+        <Tooltip v-if="showEditButton" side="bottom">
+          <TooltipTrigger as-child>
+            <button
+              class="inline-flex size-7 items-center justify-center rounded-md text-app-secondary transition-colors hover:bg-hover hover:text-app-primary"
+              @click="$emit('edit')"
+            >
+              <Pencil class="size-3.5" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>编辑</TooltipContent>
+        </Tooltip>
         <!-- 折叠第四面板按钮 -->
-        <a-tooltip :title="panel4Collapsed ? '展开信息面板' : '收起信息面板'">
-          <button class="panel-toggle-btn" @click="$emit('toggle-panel4')">
-            <component :is="panel4Collapsed ? 'MenuFoldOutlined' : 'MenuUnfoldOutlined'" />
-          </button>
-        </a-tooltip>
+        <Tooltip side="bottom">
+          <TooltipTrigger as-child>
+            <button
+              class="inline-flex size-7 items-center justify-center rounded-md text-app-secondary transition-colors hover:bg-hover hover:text-app-primary"
+              @click="$emit('toggle-panel4')"
+            >
+              <PanelRightClose v-if="!panel4Collapsed" class="size-3.5" />
+              <PanelRightOpen v-else class="size-3.5" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>{{ panel4Collapsed ? '展开信息面板' : '收起信息面板' }}</TooltipContent>
+        </Tooltip>
       </div>
     </div>
 
     <!-- 预览主体 -->
-    <div class="file-preview-panel__body">
-      <div v-if="!file" class="file-preview-panel__empty">
-        <a-empty description="请从左侧选择文件" />
+    <div class="flex-1 min-h-0 overflow-hidden bg-panel">
+      <div v-if="!file" class="flex h-full items-center justify-center">
+        <div class="flex flex-col items-center gap-2 text-app-muted">
+          <FileQuestion class="size-10 opacity-40" />
+          <span class="text-sm">请从左侧选择文件</span>
+        </div>
       </div>
       <FileViewer
         v-else
@@ -44,6 +60,8 @@
 </template>
 
 <script setup>
+import { File, FileQuestion, PanelRightClose, PanelRightOpen, Pencil } from '@lucide/vue';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import FileViewer from '@/components/file/FileViewer.vue';
 import { isDark } from '@/theme';
 
@@ -63,90 +81,3 @@ function onError(err) {
   console.error('[FilePreviewPanel] 文件加载失败:', err);
 }
 </script>
-
-<style lang="less" scoped>
-.file-preview-panel {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  background-color: var(--bg-panel);
-  border: none;
-  border-radius: 0;
-  overflow: hidden;
-
-  &__toolbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 8px 0 14px;
-    height: 40px;
-    flex-shrink: 0;
-    border-bottom: 1px solid var(--border-color);
-    background-color: var(--bg-panel);
-  }
-
-  &__actions {
-    display: flex;
-    align-items: center;
-    gap: 2px;
-    flex-shrink: 0;
-  }
-
-  &__title {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    min-width: 0;
-    flex: 1;
-  }
-
-  &__icon {
-    color: var(--accent);
-    font-size: 14px;
-    flex-shrink: 0;
-  }
-
-  &__name {
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--text-primary);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  &__body {
-    flex: 1;
-    min-height: 0;
-    overflow: hidden;
-    background: var(--bg-panel);
-  }
-
-  &__empty {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-  }
-}
-
-.panel-toggle-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border: none;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all 0.15s ease;
-  font-size: 14px;
-
-  &:hover {
-    background-color: var(--bg-hover);
-    color: var(--text-primary);
-  }
-}
-</style>

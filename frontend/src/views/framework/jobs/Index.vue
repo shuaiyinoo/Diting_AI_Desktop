@@ -4,56 +4,58 @@
       <div class="feature-card feature-card--full">
         <div class="feature-card__title">1. 任务 / 并发任务</div>
         <div class="feature-card__body">
-          <a-space>
-            <a-button @click="runJob(1, 'create')">执行任务1</a-button>
+          <span>
+            <Button @click="runJob(1, 'create')">执行任务1</Button>
             进度: {{ progress1 }} , 进程pid: {{ progress1_pid }}
-            <a-button @click="runJob(1, 'pause')">暂停</a-button>
-            <a-button @click="runJob(1, 'resume')">恢复</a-button>
-            <a-button @click="runJob(1, 'close')">关闭</a-button>
-          </a-space>
+            <Button @click="runJob(1, 'pause')">暂停</Button>
+            <Button @click="runJob(1, 'resume')">恢复</Button>
+            <Button @click="runJob(1, 'close')">关闭</Button>
+          </span>
           <p></p>
-          <a-space>
-            <a-button @click="runJob(2, 'create')">执行任务2</a-button>
+          <span>
+            <Button @click="runJob(2, 'create')">执行任务2</Button>
             进度: {{ progress2 }} , 进程pid: {{ progress2_pid }}
-            <a-button @click="runJob(2, 'pause')">暂停</a-button>
-            <a-button @click="runJob(2, 'resume')">恢复</a-button>
-            <a-button @click="runJob(2, 'close')">关闭</a-button>
-          </a-space>
+            <Button @click="runJob(2, 'pause')">暂停</Button>
+            <Button @click="runJob(2, 'resume')">恢复</Button>
+            <Button @click="runJob(2, 'close')">关闭</Button>
+          </span>
         </div>
       </div>
       <div class="feature-card feature-card--full">
         <div class="feature-card__title">2. 任务池 / 并发任务</div>
         <div class="feature-card__body">
-          <a-space>
-            <a-button @click="createPool()">创建进程池</a-button>
+          <span>
+            <Button @click="createPool()">创建进程池</Button>
             进程pids: {{ processPids }}
-          </a-space>
+          </span>
           <p></p>
-          <a-space>
-            <a-button @click="runJobByPool(3, 'run')">执行任务3</a-button>
+          <span>
+            <Button @click="runJobByPool(3, 'run')">执行任务3</Button>
             进度: {{ progress3 }} , 进程pid: {{ progress3_pid }}
-          </a-space>
+          </span>
           <p></p>
-          <a-space>
-            <a-button @click="runJobByPool(4, 'run')">执行任务4</a-button>
+          <span>
+            <Button @click="runJobByPool(4, 'run')">执行任务4</Button>
             进度: {{ progress4 }} , 进程pid: {{ progress4_pid }}
-          </a-space>
+          </span>
           <p></p>
-          <a-space>
-            <a-button @click="runJobByPool(5, 'run')">执行任务5</a-button>
+          <span>
+            <Button @click="runJobByPool(5, 'run')">执行任务5</Button>
             进度: {{ progress5 }} , 进程pid: {{ progress5_pid }}
-          </a-space>
+          </span>
           <p></p>
-          <a-space>
-            <a-button @click="runJobByPool(6, 'run')">执行任务6</a-button>
+          <span>
+            <Button @click="runJobByPool(6, 'run')">执行任务6</Button>
             进度: {{ progress6 }} , 进程pid: {{ progress6_pid }}
-          </a-space>
+          </span>
         </div>
       </div>
     </div>
   </div>
 </template>
 <script setup>
+import { Button } from '@/components/ui/button'
+
 import { ipcApiRoute } from '@/api';
 import { ipc } from '@/utils/ipcRenderer';
 import { ref, onMounted } from 'vue';
@@ -166,5 +168,3 @@ function runJobByPool(jobId, operation) {
   })
 }
 </script>
-<style lang="less" scoped>
-</style>

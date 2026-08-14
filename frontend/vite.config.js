@@ -28,9 +28,8 @@ export default defineConfig(({ command, mode }) => {
       alias: {
         '@': path.resolve(__dirname, 'src'),
       },
-      // 强制 dayjs 解析为同一实例，避免 ant-design-vue 预打包的 dayjs
-      // 与应用代码 import 的 dayjs 产生多实例问题
-      dedupe: ['dayjs', 'vue'],
+      // 强制 vue 解析为同一实例
+      dedupe: ['vue'],
     },
     server: {
       watch: {
@@ -39,16 +38,6 @@ export default defineConfig(({ command, mode }) => {
         ignored: [
           '**/public/file-viewer/**',
         ],
-      },
-    },
-    css: {
-      preprocessorOptions: {
-        less: {
-          modifyVars: {
-            '@border-color-base': '#d9d9d9',
-          },
-          javascriptEnabled: true,
-        },
       },
     },
     build: {

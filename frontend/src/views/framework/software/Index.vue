@@ -9,30 +9,30 @@
           </div>
         </div>
         <div class="feature-card__body">
-          <a-space>
+          <span>
             {{ soft }}
-            <a-button @click="openSoft">执行</a-button>
-          </a-space>
+            <Button @click="openSoft">执行</Button>
+          </span>
         </div>
       </div>
     </div>
   </div>
 </template>
 <script setup>
+import { Button } from '@/components/ui/button'
+
 import { ipcApiRoute } from '@/api';
 import { ipc } from '@/utils/ipcRenderer';
 import { ref } from 'vue';
-import { message } from 'ant-design-vue';
+import { toast } from 'vue-sonner';
 
 const soft = ref('powershell.exe');
 
 function openSoft() {
   ipc.invoke(ipcApiRoute.framework.openSoftware, {softName: soft.value}).then(result => {
     if (!result) {
-      message.error('程序不存在');
+      toast.error('程序不存在');
     }
   })
 }
 </script>
-<style lang="less" scoped>
-</style>

@@ -4,32 +4,34 @@
       <div class="feature-card feature-card--full">
         <div class="feature-card__title">1. 基础控制</div>
         <div class="feature-card__body">
-          <a-space>
-            <a-button @click="create()"> 启动 </a-button>
-            <a-button @click="getUrl()"> 获取地址 </a-button>
-            <a-button @click="kill()"> kill </a-button>
-            <a-button @click="info()"> test </a-button>
-          </a-space>
+          <span>
+            <Button @click="create()"> 启动 </Button>
+            <Button @click="getUrl()"> 获取地址 </Button>
+            <Button @click="kill()"> kill </Button>
+            <Button @click="info()"> test </Button>
+          </span>
         </div>
       </div>
       <div class="feature-card feature-card--full">
         <div class="feature-card__title">2. 发送http请求</div>
         <div class="feature-card__body">
-          <a-space>
-            <a-button @click="request(1)"> 前端发送 </a-button>
-            <a-button @click="request(2)"> 主进程发送 </a-button>
-          </a-space>
+          <span>
+            <Button @click="request(1)"> 前端发送 </Button>
+            <Button @click="request(2)"> 主进程发送 </Button>
+          </span>
         </div>
       </div>
     </div>
   </div>
 </template>
 <script setup>
+import { Button } from '@/components/ui/button'
+
 import { ipcApiRoute } from '@/api';
 import { ipc } from '@/utils/ipcRenderer';
 import axios from 'axios';
 import { ref } from 'vue';
-import { message } from 'ant-design-vue';
+import { toast } from 'vue-sonner';
 
 const serverUrl = ref('');
 
@@ -42,7 +44,7 @@ function info() {
 function getUrl() {
   ipc.invoke(ipcApiRoute.cross.getCrossUrl, {name: 'goapp'}).then(url => {
     serverUrl.value = url;
-    message.info(`服务地址: ${url}`);
+    toast.info(`服务地址: ${url}`);
   })
 }
 
@@ -56,7 +58,7 @@ function create() {
 
 function request(type) {
   if (type == 1 && serverUrl.value == "") {
-    message.info("请先获取服务地址");
+    toast.info("请先获取服务地址");
     return
   }
   if (type == 1) {
@@ -70,20 +72,18 @@ function request(type) {
     axios(cfg).then(res => {
       console.log('res:', res);
       const data = res.data.data || null;
-      message.info(`服务返回: ${data}`);
+      toast.info(`服务返回: ${data}`);
     })
   } else {
     ipc.invoke(ipcApiRoute.cross.requestApi, {name: 'goapp', urlPath: '/api/hello'}).then(res => {
       console.log('res:', res);
       if (res) {
         const { data} = res;
-        message.info(`服务返回: ${data}`);
+        toast.info(`服务返回: ${data}`);
       } else {
-        message.info(`服务无返回`);
+        toast.info(`服务无返回`);
       }
     })
   }
 }
 </script>
-<style lang="less" scoped>
-</style>

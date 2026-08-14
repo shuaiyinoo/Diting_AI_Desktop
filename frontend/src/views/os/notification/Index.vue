@@ -4,22 +4,24 @@
       <div class="feature-card feature-card--full">
         <div class="feature-card__title">1. 弹出桌面通知</div>
         <div class="feature-card__body">
-          <a-space>
-            <a-button @click="sendNotification(0)">默认</a-button>
-            <a-button @click="sendNotification(1)">发出提示音</a-button>
-            <a-button @click="sendNotification(2)">点击通知触发事件</a-button>
-            <a-button @click="sendNotification(3)">关闭通知触发事件</a-button>
-          </a-space>
+          <span>
+            <Button @click="sendNotification(0)">默认</Button>
+            <Button @click="sendNotification(1)">发出提示音</Button>
+            <Button @click="sendNotification(2)">点击通知触发事件</Button>
+            <Button @click="sendNotification(3)">关闭通知触发事件</Button>
+          </span>
         </div>
       </div>
     </div>
   </div>
 </template>
 <script setup>
+import { Button } from '@/components/ui/button'
+
 import { ipcApiRoute } from '@/api';
 import { ipc } from '@/utils/ipcRenderer';
 import { onMounted } from 'vue';
-import { message } from 'ant-design-vue';
+import { toast } from 'vue-sonner';
 
 const views = [
   {
@@ -60,7 +62,7 @@ function init() {
   ipc.removeAllListeners(ipcApiRoute.os.sendNotification);
   ipc.on(ipcApiRoute.os.sendNotification, (event, result) => {
     if (Object.prototype.toString.call(result) == '[object Object]') {
-      message.info(result.msg);
+      toast.info(result.msg);
     }
   })
 }
@@ -69,5 +71,3 @@ function sendNotification (index) {
   ipc.send(ipcApiRoute.os.sendNotification, views[index]);
 }
 </script>
-<style lang="less" scoped>
-</style>

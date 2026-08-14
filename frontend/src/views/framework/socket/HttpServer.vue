@@ -7,7 +7,7 @@
           <p>* 状态：{{ currentStatus }}</p>
           <p>* 地址：{{ servicAddress }}</p>
           <p>* 发送请求：
-            <a-button @click="sendRequest('pictures')"> 打开【我的图片】 </a-button>
+            <Button @click="sendRequest('pictures')"> 打开【我的图片】 </Button>
           </p>
         </div>
       </div>
@@ -15,7 +15,7 @@
         <div class="feature-card__title">2. 使用http与服务端通信</div>
         <div class="feature-card__body">
           <p>
-            <a-button @click="backendRequest()"> 发送请求 </a-button>
+            <Button @click="backendRequest()"> 发送请求 </Button>
             （请自行创建服务）
           </p>
         </div>
@@ -24,12 +24,14 @@
   </div>
 </template>
 <script setup>
+import { Button } from '@/components/ui/button'
+
 import { ipcApiRoute } from '@/api';
 import { ipc } from '@/utils/ipcRenderer';
 import axios from 'axios';
 import storage from 'store2';
 import { ref, onMounted } from 'vue';
-import { message } from 'ant-design-vue';
+import { toast } from 'vue-sonner';
 
 const currentStatus = ref('关闭');
 const servicAddress = ref('无');
@@ -50,7 +52,7 @@ function init() {
 
 function sendRequest(id) {
   if (currentStatus.value == '关闭') {
-    message.error('http服务未开启');
+    toast.error('http服务未开启');
     return;
   }
 
@@ -82,9 +84,7 @@ function backendRequest() {
   axios(cfg).then(res => {
     console.log('res:', res);
     const data = res.data || null;
-    message.info(`go服务返回: ${data}`, );
+    toast.info(`go服务返回: ${data}`, );
   })
 }
 </script>
-<style lang="less" scoped>
-</style>

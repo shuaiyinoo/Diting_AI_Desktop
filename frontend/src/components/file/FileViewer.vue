@@ -1,21 +1,22 @@
 <template>
-  <div class="file-viewer-wrapper">
+  <div class="w-full h-full relative bg-muted/30">
     <!-- 加载中 -->
-    <div v-if="loading" class="file-viewer-wrapper__state">
-      <a-spin size="large" tip="正在加载文件..." />
+    <div v-if="loading" class="w-full h-full flex items-center justify-center flex-col">
+      <Spinner class="size-5 text-muted-foreground" />
+      <span class="mt-2 text-sm text-muted-foreground">正在加载文件...</span>
     </div>
 
     <!-- 加载失败 -->
-    <div v-else-if="error" class="file-viewer-wrapper__state">
-      <a-result status="error" :title="error">
-        <template #extra>
-          <a-button type="primary" @click="loadFile">重试</a-button>
-        </template>
-      </a-result>
+    <div v-else-if="error" class="w-full h-full flex items-center justify-center">
+      <div class="text-center">
+        <AlertCircle class="mx-auto size-12 text-destructive" />
+        <p class="mt-2 text-sm font-medium">{{ error }}</p>
+        <Button class="mt-3" @click="loadFile">重试</Button>
+      </div>
     </div>
 
     <!-- 文件查看器 -->
-    <div v-else-if="fileData" class="file-viewer-wrapper__viewer">
+    <div v-else-if="fileData" class="w-full h-full">
       <FileViewerFull
         :file="fileData"
         :name="fileName"
@@ -30,6 +31,9 @@
 <script setup>
 import { ref, watch, computed, onMounted } from 'vue';
 import { FileViewer } from '@file-viewer/vue3-full';
+import { AlertCircle } from '@lucide/vue';
+import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import { ipcApiRoute } from '@/api';
 import { ipc } from '@/utils/ipcRenderer';
 
@@ -139,26 +143,3 @@ onMounted(() => {
   }
 });
 </script>
-
-<style lang="less" scoped>
-.file-viewer-wrapper {
-  width: 100%;
-  height: 100%;
-  position: relative;
-  background: var(--bg-panel, #f5f7fa);
-
-  &__state {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-  }
-
-  &__viewer {
-    width: 100%;
-    height: 100%;
-  }
-}
-</style>

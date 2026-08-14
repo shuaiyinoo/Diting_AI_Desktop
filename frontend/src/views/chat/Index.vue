@@ -1,22 +1,22 @@
 <template>
-  <div class="chat-workspace">
-    <div class="chat-panel">
+  <div class="relative flex h-full w-full overflow-hidden bg-layout">
+    <div class="flex h-full w-full min-w-0 flex-col overflow-hidden bg-card">
       <!-- ========== 顶部工具栏 ========== -->
-      <div class="chat-toolbar">
-        <span class="chat-toolbar__title">{{ currentSessionTitle }}</span>
+      <div class="flex h-11 shrink-0 items-center gap-1.5 border-b border-border px-4">
+        <span class="truncate text-sm font-semibold text-foreground">{{ currentSessionTitle }}</span>
       </div>
 
       <!-- ========== 消息列表区域 ========== -->
-      <div class="chat-messages" ref="messagesRef" @scroll="onMessagesScroll">
+      <div class="min-h-0 flex-1 overflow-y-auto py-2" ref="messagesRef" @scroll="onMessagesScroll">
         <!-- 空状态 -->
-        <div v-if="messages.length === 0 && !isStreaming" class="chat-empty">
-          <div class="chat-empty__icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <div v-if="messages.length === 0 && !isStreaming" class="flex min-h-[300px] flex-col items-center justify-center px-5 py-10 text-center">
+          <div class="mb-5 flex size-14 items-center justify-center rounded-2xl bg-primary/[0.08]">
+            <svg class="size-7 text-primary opacity-60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
             </svg>
           </div>
-          <h2 class="chat-empty__title">开始一个新的对话</h2>
-          <p class="chat-empty__desc">输入消息，开始与 AI 助手交流</p>
+          <h2 class="mb-2 text-lg font-semibold text-foreground">开始一个新的对话</h2>
+          <p class="m-0 text-sm text-muted-foreground">输入消息，开始与 AI 助手交流</p>
         </div>
 
         <!-- 消息列表 -->
@@ -25,50 +25,49 @@
             v-for="msg in messages"
             :key="msg.id"
             :id="'msg-' + msg.id"
-            class="msg-item"
-            :class="msg.role === 'user' ? 'msg-item--user' : 'msg-item--assistant'"
+            class="msg-fade-in mx-auto flex w-full max-w-[860px] flex-col gap-1.5 px-6 py-2.5"
           >
             <!-- 消息头部 -->
-            <div class="msg-item__header">
+            <div class="mb-0.5 flex items-center gap-2.5" :class="msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'">
               <!-- 用户头像 -->
-              <div v-if="msg.role === 'user'" class="msg-item__avatar msg-item__avatar--user">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <div v-if="msg.role === 'user'" class="flex size-[30px] shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-green-500 to-green-400 text-white shadow-[0_2px_8px_rgba(82,196,26,0.2)]">
+                <svg class="size-[15px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                   <circle cx="12" cy="7" r="4" />
                 </svg>
               </div>
               <!-- AI 头像 -->
-              <div v-else class="msg-item__avatar msg-item__avatar--ai">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <div v-else class="flex size-[30px] shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary/80 text-white shadow-[0_2px_8px_rgba(22,119,255,0.2)]">
+                <svg class="size-[15px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M12 3L4 7v5c0 5 3.5 9 8 10 4.5-1 8-5 8-10V7l-8-4z" />
                   <path d="M9 12l2 2 4-4" />
                 </svg>
               </div>
-              <div class="msg-item__meta">
-                <span class="msg-item__name">{{ msg.role === 'user' ? '我' : (selectedModel || 'AI') }}</span>
-                <span v-if="msg.time" class="msg-item__time">{{ msg.time }}</span>
+              <div class="flex flex-col gap-px" :class="msg.role === 'user' ? 'items-end' : 'items-start'">
+                <span class="text-[13px] font-semibold leading-tight text-secondary-foreground">{{ msg.role === 'user' ? '我' : (selectedModel || 'AI') }}</span>
+                <span v-if="msg.time" class="text-[11px] leading-tight tabular-nums text-muted-foreground">{{ msg.time }}</span>
               </div>
             </div>
 
             <!-- 消息内容 -->
-            <div class="msg-item__content" :class="msg.role === 'user' ? 'msg-item__content--user' : 'msg-item__content--assistant'">
+            <div class="flex min-w-0 max-w-full flex-col box-border" :class="msg.role === 'user' ? 'items-end pr-10' : 'w-full pl-10 overflow-x-hidden'">
               <!-- 用户消息 -->
               <template v-if="msg.role === 'user'">
-                <div class="msg-user-bubble">{{ msg.content }}</div>
+                <div class="inline-block max-w-[85%] break-words whitespace-pre-wrap rounded-xl bg-foreground/5 px-3.5 py-2.5 text-sm leading-relaxed text-foreground shadow-[0_1px_3px_rgba(0,0,0,0.06)]">{{ msg.content }}</div>
               </template>
 
               <!-- 助手消息 -->
               <template v-else>
                 <!-- 加载中（等待首个 token） -->
-                <div v-if="msg.pending && !msg.content" class="msg-loading">
-                  <span class="msg-loading__dot" />
-                  <span class="msg-loading__dot" />
-                  <span class="msg-loading__dot" />
-                  <span class="msg-loading__text">正在思考...</span>
+                <div v-if="msg.pending && !msg.content" class="inline-flex items-center gap-1 rounded-full border border-border/50 bg-secondary px-3.5 py-2">
+                  <span class="loading-dot inline-block size-1.5 rounded-full bg-primary" />
+                  <span class="loading-dot inline-block size-1.5 rounded-full bg-primary" style="animation-delay: 0.15s" />
+                  <span class="loading-dot inline-block size-1.5 rounded-full bg-primary" style="animation-delay: 0.3s" />
+                  <span class="ml-1.5 text-[13px] text-secondary-foreground">正在思考...</span>
                 </div>
 
                 <!-- 流式/最终 Markdown 内容 -->
-                <div v-else class="msg-markdown">
+                <div v-else class="block min-w-0 max-w-full break-words text-sm leading-relaxed text-foreground">
                   <MarkdownRender
                     mode="chat"
                     :content="msg.content"
@@ -79,7 +78,7 @@
                     :is-dark="isDark" code-block-dark-theme="vitesse-dark" code-block-light-theme="vitesse-light" :themes="['vitesse-dark', 'vitesse-light']"
                   />
                   <!-- 流式呼吸脉冲点 -->
-                  <span v-if="msg.pending" class="msg-streaming-dot" />
+                  <span v-if="msg.pending" class="streaming-dot ml-1 inline-block size-[7px] rounded-full bg-primary align-text-bottom" />
                 </div>
 
                 <!-- 引用证据卡片（KB_SEARCH 模式，回答完成后展示） -->
@@ -95,12 +94,12 @@
       </div>
 
       <!-- ========== 底部输入区域（卡片式） ========== -->
-      <div class="chat-input-wrapper">
-        <div class="chat-input-card" :class="{ 'chat-input-card--focused': inputFocused }">
+      <div class="shrink-0 bg-card px-4 pb-4 pt-2">
+        <div class="overflow-hidden rounded-[17px] border border-border bg-card transition-colors" :class="inputFocused ? 'border-primary shadow-[0_0_0_3px_rgba(22,119,255,0.08)]' : ''">
           <!-- 输入区 -->
           <textarea
             v-model="inputText"
-            class="chat-input-field"
+            class="block w-full resize-none border-none bg-transparent px-4 pb-1 pt-3 text-sm leading-relaxed text-foreground outline-none placeholder:text-muted-foreground"
             placeholder="输入消息... (Enter 发送, Shift+Enter 换行)"
             @keydown.enter.prevent="onEnterKey"
             @focus="inputFocused = true"
@@ -109,48 +108,51 @@
           ></textarea>
 
           <!-- 底部工具栏 -->
-          <div class="chat-input-toolbar">
+          <div class="flex items-center justify-between gap-2 px-2.5 pb-2 pt-1.5">
             <!-- 左侧：模型选择 + 知识库文件夹选择 -->
-            <div class="chat-input-toolbar__left">
-              <a-select
-                v-model:value="selectedModel"
-                size="small"
-                style="min-width: 140px; max-width: 200px"
-                :placeholder="availableModels.length === 0 ? '未启用模型' : '选择模型'"
+            <div class="flex min-w-0 items-center gap-1.5">
+              <Select
+                v-model="selectedModel"
                 :disabled="availableModels.length === 0"
-                :bordered="false"
               >
-                <a-select-option v-for="m in availableModels" :key="m.id" :value="m.id">{{ m.name }}</a-select-option>
-              </a-select>
-              <a-select
-                v-model:value="selectedFolderId"
-                size="small"
-                style="min-width: 120px; max-width: 180px"
-                placeholder="知识库（可选）"
-                allow-clear
-                :bordered="false"
-                :options="folderOptions"
-              />
+                <SelectTrigger class="min-w-[140px] max-w-[200px]">
+                  <SelectValue :placeholder="availableModels.length === 0 ? '未启用模型' : '选择模型'" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem v-for="m in availableModels" :key="m.id" :value="m.id">{{ m.name }}</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select
+                v-model="selectedFolderId"
+              >
+                <SelectTrigger class="min-w-[120px] max-w-[180px]">
+                  <SelectValue placeholder="知识库（可选）" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem :value="null">不使用知识库</SelectItem>
+                  <SelectItem v-for="f in folderList" :key="f.id" :value="f.id">{{ f.path || f.name }}</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <!-- 右侧：发送/停止按钮 -->
-            <div class="chat-input-toolbar__right">
+            <div class="flex shrink-0 items-center gap-1.5">
               <button
                 v-if="isStreaming"
-                class="chat-stop-btn"
+                class="flex size-[34px] shrink-0 items-center justify-center rounded-lg bg-red-500 text-white transition-all hover:bg-red-600 hover:scale-105"
                 @click="stopGeneration"
               >
-                <svg viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                <svg class="size-3.5" viewBox="0 0 24 24" fill="currentColor" stroke="none">
                   <rect x="6" y="6" width="12" height="12" rx="2" />
                 </svg>
               </button>
               <button
                 v-else
-                class="chat-send-btn"
+                class="flex size-[34px] shrink-0 items-center justify-center rounded-lg bg-primary text-white transition-all hover:bg-primary/90 hover:scale-105 disabled:cursor-not-allowed disabled:bg-border disabled:text-muted-foreground"
                 :disabled="!inputText.trim()"
                 @click="sendMessage"
               >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M22 2L11 13" />
                   <path d="M22 2l-7 20-4-9-9-4 20-7z" />
                 </svg>
@@ -162,12 +164,12 @@
     </div>
 
     <!-- ========== 用户消息浮动指示器 ========== -->
-    <div v-if="userMessages.length > 0" class="msg-rail">
+    <div v-if="userMessages.length > 0" class="absolute right-3 top-1/2 z-10 flex -translate-y-1/2 flex-col items-end gap-1.5 px-1 py-2">
       <button
         v-for="(um, idx) in userMessages"
         :key="um.id"
-        class="msg-rail__bar"
-        :class="{ 'msg-rail__bar--hover': railHoverIdx === idx }"
+        class="h-[3px] w-5 cursor-pointer rounded-sm border-none bg-border p-0 transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] hover:h-[5px] hover:w-7 hover:bg-primary hover:shadow-[0_0_8px_rgba(22,119,255,0.3)]"
+        :class="railHoverIdx === idx ? 'h-[5px] w-7 bg-primary shadow-[0_0_8px_rgba(22,119,255,0.3)]' : ''"
         @mouseenter="railHoverIdx = idx"
         @mouseleave="railHoverIdx = -1"
         @click="jumpToMessage(um.id)"
@@ -175,8 +177,8 @@
       <!-- 悬浮预览 -->
       <div
         v-if="railHoverIdx >= 0"
-        class="msg-rail__preview"
-        :style="{ '--rail-preview-offset': railPreviewOffset + 'px' }"
+        class="pointer-events-none absolute right-full top-0 mr-2.5 w-[200px] max-w-[200px] break-words rounded-lg border border-border bg-card px-3 py-2 text-xs leading-relaxed text-foreground shadow-[0_4px_16px_rgba(0,0,0,0.1)]"
+        :style="{ transform: `translateY(${railPreviewOffset}px)` }"
       >
         {{ userMessages[railHoverIdx].content }}
       </div>
@@ -185,6 +187,8 @@
 </template>
 
 <script setup>
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
+
 import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { ipc } from '@/utils/ipcRenderer'
 import { ipcApiRoute } from '@/api'
@@ -440,513 +444,28 @@ function onMessagesScroll() {
 }
 </script>
 
-<style lang="less" scoped>
-// ===== 主容器 =====
-.chat-workspace {
-  display: flex;
-  height: 100%;
-  width: 100%;
-  overflow: hidden;
-  background-color: var(--bg-layout);
-  position: relative; // 供浮动指示器绝对定位
-}
-
-.chat-panel {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  width: 100%;
-  min-width: 0;
-  overflow: hidden;
-  background-color: var(--bg-panel);
-}
-
-// ===== 顶部工具栏 =====
-.chat-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0 16px;
-  height: 44px;
-  flex-shrink: 0;
-  border-bottom: 1px solid var(--border-color);
-
-  &__title {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--text-primary);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-}
-
-// ===== 消息列表 =====
-.chat-messages {
-  flex: 1;
-  overflow-y: auto;
-  min-height: 0;
-  padding: 8px 0;
-
-  // 自定义滚动条
-  &::-webkit-scrollbar {
-    width: 6px;
-  }
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  &::-webkit-scrollbar-thumb {
-    background: var(--border-color);
-    border-radius: 3px;
-    &:hover {
-      background: var(--text-muted);
-    }
-  }
-}
-
-// ===== 空状态 =====
-.chat-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  min-height: 300px;
-  padding: 40px 20px;
-  text-align: center;
-
-  &__icon {
-    width: 56px;
-    height: 56px;
-    border-radius: 16px;
-    background: linear-gradient(135deg, rgba(22, 119, 255, 0.08), rgba(22, 119, 255, 0.04));
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 20px;
-
-    svg {
-      width: 28px;
-      height: 28px;
-      color: var(--accent);
-      opacity: 0.6;
-    }
-  }
-
-  &__title {
-    font-size: 18px;
-    font-weight: 600;
-    color: var(--text-primary);
-    margin: 0 0 8px 0;
-  }
-
-  &__desc {
-    font-size: 14px;
-    color: var(--text-muted);
-    margin: 0;
-  }
-}
-
-// ===== 消息项（全宽线程式，对齐 Proma 风格） =====
-.msg-item {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 10px 24px;
-  max-width: 860px;
-  margin: 0 auto;
-  width: 100%;
-  box-sizing: border-box;
-
-  // 入场动画
-  animation: msg-fade-in 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-
-  &--user {
-    align-items: stretch;
-  }
-
-  &--assistant {
-    align-items: stretch;
-  }
-}
-
+<style>
 @keyframes msg-fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
 }
-
-// ===== 消息头部 =====
-.msg-item__header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 2px;
-
-  // 用户消息头部右对齐
-  .msg-item--user & {
-    flex-direction: row-reverse;
-  }
-}
-
-.msg-item__avatar {
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-
-  svg {
-    width: 15px;
-    height: 15px;
-  }
-
-  &--ai {
-    background: linear-gradient(135deg, var(--accent), var(--accent-hover));
-    color: white;
-    box-shadow: 0 2px 8px rgba(22, 119, 255, 0.2);
-  }
-
-  &--user {
-    background: linear-gradient(135deg, #52c41a, #73d13d);
-    color: white;
-    box-shadow: 0 2px 8px rgba(82, 196, 26, 0.2);
-  }
-}
-
-.msg-item__meta {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-
-  // 用户消息 meta 右对齐
-  .msg-item--user & {
-    align-items: flex-end;
-  }
-
-  .msg-item--assistant & {
-    align-items: flex-start;
-  }
-}
-
-.msg-item__name {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  line-height: 1.2;
-}
-
-.msg-item__time {
-  font-size: 11px;
-  color: var(--text-muted);
-  line-height: 1.2;
-  font-variant-numeric: tabular-nums;
-}
-
-// ===== 消息内容 =====
-.msg-item__content {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  max-width: 100%;
-  box-sizing: border-box;
-
-  &--user {
-    align-items: flex-end;
-    padding-right: 40px; // 与头像对齐，保持左右对称
-  }
-
-  &--assistant {
-    width: 100%;
-    padding-left: 40px; // 与头像对齐
-    overflow-x: hidden; // 防止 markdown 内部宽元素撑出滚动条
-  }
-}
-
-// ===== 用户消息气泡（灰色） =====
-.msg-user-bubble {
-  display: inline-block;
-  max-width: 85%;
-  padding: 10px 14px;
-  font-size: 14px;
-  line-height: 1.6;
-  color: var(--text-primary);
-  background: var(--bg-hover, #f0f0f0);
-  border-radius: 12px;
-  word-break: break-word;
-  white-space: pre-wrap;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-}
-
-// ===== 助手 Markdown 内容 =====
-.msg-markdown {
-  font-size: 14px;
-  line-height: 1.7;
-  color: var(--text-primary);
-  word-break: break-word;
-  display: block;
-  min-width: 0;
-  max-width: 100%;
-  overflow-wrap: break-word;
-}
-
-// ===== 加载动画（等待首个 token） =====
-.msg-loading {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 8px 14px;
-  background: var(--bg-sidebar);
-  border: 1px solid var(--border-color-light);
-  border-radius: 100px;
-
-  &__dot {
-    display: inline-block;
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--accent);
-    animation: loading-bounce 1.3s ease-in-out infinite;
-
-    &:nth-child(2) { animation-delay: 0.15s; }
-    &:nth-child(3) { animation-delay: 0.3s; }
-  }
-
-  &__text {
-    margin-left: 6px;
-    font-size: 13px;
-    color: var(--text-secondary);
-  }
+.msg-fade-in {
+  animation: msg-fade-in 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes loading-bounce {
   0%, 80%, 100% { transform: scale(0.5); opacity: 0.4; }
   40% { transform: scale(1); opacity: 1; }
 }
-
-// ===== 流式呼吸脉冲点 =====
-.msg-streaming-dot {
-  display: inline-block;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--accent);
-  margin-left: 3px;
-  vertical-align: text-bottom;
-  animation: streaming-pulse 1s ease-in-out infinite;
+.loading-dot {
+  animation: loading-bounce 1.3s ease-in-out infinite;
 }
 
 @keyframes streaming-pulse {
   0%, 100% { opacity: 0.4; transform: scale(0.8); }
   50% { opacity: 1; transform: scale(1.1); }
 }
-
-// ===== 底部输入区域（卡片式，对齐 Proma 风格） =====
-.chat-input-wrapper {
-  flex-shrink: 0;
-  padding: 8px 16px 16px;
-  background: var(--bg-panel);
-}
-
-.chat-input-card {
-  border-radius: 17px;
-  border: 0.5px solid var(--border-color);
-  background: var(--bg-panel);
-  transition: border-color 0.2s ease;
-  overflow: hidden;
-
-  &--focused {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.08);
-  }
-}
-
-// ===== 输入框 =====
-.chat-input-field {
-  display: block;
-  width: 100%;
-  border: none;
-  outline: none;
-  resize: none;
-  padding: 12px 16px 4px;
-  font-size: 14px;
-  line-height: 1.5;
-  font-family: inherit;
-  color: var(--text-primary);
-  background: transparent;
-  box-sizing: border-box;
-
-  &::placeholder {
-    color: var(--text-muted);
-  }
-}
-
-// ===== 输入区底部工具栏 =====
-.chat-input-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 6px 10px 8px;
-  gap: 8px;
-
-  &__left {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    min-width: 0;
-  }
-
-  &__right {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    flex-shrink: 0;
-  }
-}
-
-// ===== 模型选择器（嵌入输入卡片底部） =====
-.chat-input-toolbar__left {
-  :deep(.ant-select) {
-    font-size: 12px;
-
-    .ant-select-selector {
-      padding: 0 8px !important;
-      background: var(--bg-sidebar) !important;
-      border-radius: 6px !important;
-    }
-
-    .ant-select-selection-item {
-      color: var(--text-secondary) !important;
-    }
-  }
-}
-
-// ===== 发送按钮 =====
-.chat-send-btn {
-  width: 34px;
-  height: 34px;
-  border: none;
-  border-radius: 8px;
-  background: var(--accent);
-  color: white;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-  flex-shrink: 0;
-
-  svg {
-    width: 16px;
-    height: 16px;
-  }
-
-  &:hover:not(:disabled) {
-    background: var(--accent-hover);
-    transform: scale(1.05);
-  }
-
-  &:disabled {
-    background: var(--border-color);
-    color: var(--text-muted);
-    cursor: not-allowed;
-  }
-}
-
-// ===== 停止按钮 =====
-.chat-stop-btn {
-  width: 34px;
-  height: 34px;
-  border: none;
-  border-radius: 8px;
-  background: #ef4444;
-  color: white;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-  flex-shrink: 0;
-
-  svg {
-    width: 14px;
-    height: 14px;
-  }
-
-  &:hover {
-    background: #dc2626;
-    transform: scale(1.05);
-  }
-}
-
-// ===== 用户消息浮动指示器 =====
-.msg-rail {
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 6px;
-  z-index: 10;
-  padding: 8px 4px;
-
-  &__bar {
-    width: 20px;
-    height: 3px;
-    border: none;
-    border-radius: 2px;
-    background: var(--border-color);
-    cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-    padding: 0;
-
-    &:hover {
-      width: 28px;
-      height: 5px;
-      background: var(--accent);
-      border-radius: 3px;
-      box-shadow: 0 0 8px rgba(22, 119, 255, 0.3);
-    }
-
-    &--hover {
-      width: 28px;
-      height: 5px;
-      background: var(--accent);
-      border-radius: 3px;
-      box-shadow: 0 0 8px rgba(22, 119, 255, 0.3);
-    }
-  }
-
-  &__preview {
-    position: absolute;
-    right: 100%;
-    top: 0;
-    margin-right: 10px;
-    width: 200px;
-    max-width: 200px;
-    padding: 8px 12px;
-    background: var(--bg-panel);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-    font-size: 12px;
-    line-height: 1.5;
-    color: var(--text-primary);
-    white-space: pre-wrap;
-    word-break: break-all;
-    overflow-wrap: break-word;
-    pointer-events: none;
-    // 跟随当前悬停的 bar 垂直定位
-    transform: translateY(var(--rail-preview-offset, 0px));
-  }
+.streaming-dot {
+  animation: streaming-pulse 1s ease-in-out infinite;
 }
 </style>

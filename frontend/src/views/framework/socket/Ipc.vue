@@ -4,15 +4,15 @@
       <div class="feature-card feature-card--full">
         <div class="feature-card__title">1. 发送异步消息</div>
         <div class="feature-card__body">
-          <a-space>
-            <a-button @click="handleInvoke">发送 - 回调</a-button>
+          <span>
+            <Button @click="handleInvoke">发送 - 回调</Button>
             结果：{{ message1 }}
-          </a-space>
+          </span>
           <p></p>
-          <a-space>
-            <a-button @click="handleInvoke2">发送 - async/await</a-button>
+          <span>
+            <Button @click="handleInvoke2">发送 - async/await</Button>
             结果：{{ message2 }}
-          </a-space>
+          </span>
         </div>
       </div>
       <div class="feature-card feature-card--full">
@@ -20,39 +20,41 @@
           2. 同步消息（不推荐，阻塞执行）
         </div>
         <div class="feature-card__body">
-          <a-space>
-            <a-button @click="handleSendSync">同步消息</a-button>
+          <span>
+            <Button @click="handleSendSync">同步消息</Button>
             结果：{{ message3 }}
-          </a-space>
+          </span>
         </div>
       </div>
       <div class="feature-card feature-card--full">
         <div class="feature-card__title">3. 长消息： 服务端持续向前端页面发消息</div>
         <div class="feature-card__body">
-          <a-space>
-            <a-button @click="sendMsgStart">开始</a-button>
-            <a-button @click="sendMsgStop">结束</a-button>
+          <span>
+            <Button @click="sendMsgStart">开始</Button>
+            <Button @click="sendMsgStop">结束</Button>
             结果：{{ messageString }}
-          </a-space>
+          </span>
         </div>
       </div>
       <div class="feature-card feature-card--full">
         <div class="feature-card__title">4. 多窗口通信：子窗口与主进程通信，子窗口互相通信</div>
         <div class="feature-card__body">
-          <a-space>
-            <a-button @click="createWindow()">打开新窗口2</a-button>
-            <a-button @click="sendTosubWindow()">向新窗口2发消息</a-button>
-          </a-space>
+          <span>
+            <Button @click="createWindow()">打开新窗口2</Button>
+            <Button @click="sendTosubWindow()">向新窗口2发消息</Button>
+          </span>
         </div>
       </div>
     </div>
   </div>
 </template>
 <script setup>
+import { Button } from '@/components/ui/button'
+
 import { ipcApiRoute } from '@/api';
 import { ipc } from '@/utils/ipcRenderer';
 import { ref, onMounted } from 'vue';
-import { message } from 'ant-design-vue';
+import { toast } from 'vue-sonner';
 
 const messageString = ref('');
 const message1 = ref('');
@@ -81,7 +83,7 @@ function init() {
 
   ipc.removeAllListeners(ipcApiRoute.os.window2ToWindow1);
   ipc.on(ipcApiRoute.os.window2ToWindow1, (event, arg) => {
-    message.info(arg);
+    toast.info(arg);
   })
 }
 
@@ -133,5 +135,3 @@ async function sendTosubWindow() {
   ipc.invoke(ipcApiRoute.os.window1ToWindow2, params)
 }
 </script>
-<style lang="less" scoped>
-</style>
