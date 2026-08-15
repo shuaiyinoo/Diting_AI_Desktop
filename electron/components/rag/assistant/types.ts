@@ -17,6 +17,15 @@ import type { Citation, EvidenceLevel, LlmUsageInfo } from '../types';
 /** 助手工具模式 */
 export type AssistantToolMode = 'CHAT' | 'KB_SEARCH';
 
+/**
+ * 知识库检索范围
+ * - NONE：不使用知识库（纯 CHAT 模式）
+ * - ALL：全部知识库（跨所有文件夹 + OCR 归档）
+ * - FOLDER：指定文件夹知识库
+ * - INVOICE：仅 OCR 归档票据
+ */
+export type KbScope = 'NONE' | 'ALL' | 'FOLDER' | 'INVOICE';
+
 /** 消息角色 */
 export type AssistantMessageRole = 'USER' | 'ASSISTANT' | 'TOOL';
 
@@ -89,6 +98,15 @@ export interface AssistantChatRequest {
   message: string;
   toolMode: AssistantToolMode;
   folderId?: number | null;
+  /**
+   * 知识库检索范围（KB_SEARCH 模式下生效）
+   * - NONE：不检索（与 CHAT 模式等效）
+   * - ALL：跨全部知识库检索（文件夹 + OCR 归档）
+   * - FOLDER：仅检索 folderId 指定的文件夹
+   * - INVOICE：仅检索 OCR 归档票据
+   * 默认为 FOLDER（向后兼容）
+   */
+  kbScope?: KbScope | null;
 }
 
 /** Agent 执行结果 */

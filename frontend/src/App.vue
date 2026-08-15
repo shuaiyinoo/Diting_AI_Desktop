@@ -9,10 +9,10 @@
         <PanelDivider @resize="browserStore.onPanelResize" />
         <BrowserSidePanel class="flex-shrink-0 overflow-hidden" :style="{ width: browserStore.panelWidth + 'px' }" />
       </template>
-
-      <!-- Toast 通知（替代 ant-design-vue message） -->
-      <Toaster />
     </div>
+
+    <!-- Toast 通知（放在 overflow-hidden 容器外部，确保 fixed 定位不受裁剪） -->
+    <Toaster />
   </TooltipProvider>
 </template>
 

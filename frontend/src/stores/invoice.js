@@ -31,6 +31,14 @@ export const useInvoiceStore = defineStore('invoice', () => {
   const ocrProcessing = ref(false)
   const ocrProgressInfo = ref(null) // { fileId, status, fileName, text?, error? }
 
+  // ===== 票据类型定义（用于字段中文化映射） =====
+  const receiptTypes = ref([])
+
+  // ===== 归档记录（归集查阅页面） =====
+  const archiveRecords = ref([])
+  const archiveStats = ref({ total: 0, needsReview: 0, totalAmount: 0, categoryCounts: [] })
+  const archiveLoading = ref(false)
+
   // ===== Getters =====
   const selectedFolder = computed(() =>
     folderList.value.find((f) => f.id === selectedFolderId.value),
@@ -202,6 +210,51 @@ export const useInvoiceStore = defineStore('invoice', () => {
     ipc.invoke(ipcApiRoute.invoice.registerSyncCallback).catch(() => {})
   }
 
+  /** 加载票据类型定义（含 example_define 用于字段中文化） */
+  async function loadReceiptTypes() {
+    try {
+      const result = await ipc.invoke(ipcApiRoute.invoice.getReceiptTypes)
+      if (result?.types) {
+        receiptTypes.value = result.types
+      }
+    } catch (err) {
+      console.error('[invoice] 加载票据类型定义失败:', err)
+    }
+  }
+
+  /** 加载归档记录列表（归集查阅页面） */
+  async function loadArchiveRecords(options = {}) {
+    archiveLoading.value = true
+    try {
+      const result = await ipc.invoke(ipcApiRoute.invoice.getArchiveRecords, {
+        keyword: options.keyword || '',
+        category: options.category || '',
+        typeCode: options.typeCode || '',
+        limit: options.limit || 200,
+        offset: options.offset || 0,
+      })
+      if (result?.success) {
+        archiveRecords.value = result.records || []
+      }
+    } catch (err) {
+      console.error('[invoice] 加载归档记录失败:', err)
+    } finally {
+      archiveLoading.value = false
+    }
+  }
+
+  /** 加载归档统计 */
+  async function loadArchiveStats() {
+    try {
+      const result = await ipc.invoke(ipcApiRoute.invoice.getArchiveStats)
+      if (result?.success && result.stats) {
+        archiveStats.value = result.stats
+      }
+    } catch (err) {
+      console.error('[invoice] 加载归档统计失败:', err)
+    }
+  }
+
   /** 监听文件变化事件 */
   function onSyncChange(callback) {
     const handler = (_event, result) => {
@@ -245,6 +298,10 @@ export const useInvoiceStore = defineStore('invoice', () => {
     selectedFile,
     ocrProcessing,
     ocrProgressInfo,
+    receiptTypes,
+    archiveRecords,
+    archiveStats,
+    archiveLoading,
     // Getters
     selectedFolder,
     stats,
@@ -260,6 +317,9 @@ export const useInvoiceStore = defineStore('invoice', () => {
     reRecognize,
     extractInvoice,
     registerSyncCallback,
+    loadReceiptTypes,
+    loadArchiveRecords,
+    loadArchiveStats,
     onSyncChange,
     onOcrProgress,
   }

@@ -3,6 +3,8 @@ import { TooltipContent, TooltipPortal } from 'reka-ui'
 import { cn } from '@/lib/utils'
 
 const props = defineProps({
+  side: { type: String, default: 'top' },
+  align: { type: String, default: 'center' },
   sideOffset: { type: Number, default: 4 },
   class: { type: String, default: null },
 })

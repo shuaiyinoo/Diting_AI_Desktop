@@ -17,7 +17,7 @@
 
       <!-- 记忆 Tab 激活时显示项目选择器 -->
       <div v-if="activeTab === 'memory'" class="ml-auto flex items-center gap-1.5">
-        <span class="shrink-0 whitespace-nowrap text-[13px] font-medium text-muted-foreground">项目选择</span>
+        <span class="shrink-0 whitespace-nowrap text-xs font-medium text-muted-foreground">项目选择</span>
         <select
           v-model="selectedWorkspaceSlug"
           class="min-w-[220px] cursor-pointer rounded-lg border border-border bg-background px-3 py-1.5 text-sm text-foreground appearance-none bg-[url('data:image/svg+xml;utf8,<svg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%2710%27%20height=%276%27%20viewBox=%270%200%2010%206%27><path%20d=%27M1%201l4%204%204-4%27%20stroke=%27%238A8884%27%20stroke-width=%271.5%27%20fill=%27none%27%20stroke-linecap=%27round%27/></svg>')] bg-[length:10px_6px] bg-no-repeat bg-[position:right_10px_center] pr-7 hover:border-foreground/30 focus:outline-none focus:border-foreground/50"
@@ -34,7 +34,7 @@
     <div class="min-h-0 flex-1 overflow-y-auto px-6 pb-6 pt-5">
       <!-- ===== Skills Tab ===== -->
       <div v-show="activeTab === 'skills'">
-        <div class="mb-3 text-[13px] font-medium text-muted-foreground">
+        <div class="mb-3 text-xs font-medium text-muted-foreground">
           Diting 内置 <span class="text-muted-foreground/70">{{ skills.length }}</span>
         </div>
 
@@ -55,7 +55,7 @@
         <template v-for="(groupSkills, groupName) in groupedSkills" :key="groupName">
           <div class="mb-2">
             <div
-              class="flex cursor-pointer select-none items-center gap-1.5 py-3 text-[13px] font-medium text-muted-foreground"
+              class="flex cursor-pointer select-none items-center gap-1.5 py-3 text-xs font-medium text-muted-foreground"
               @click="toggleGroup(groupName)"
             >
               <ChevronDown class="size-3.5 text-muted-foreground transition-transform" :class="{ '-rotate-90': collapsedGroups.has(groupName) }" />
@@ -75,7 +75,7 @@
                     <Star class="size-5" />
                   </div>
                   <div class="flex min-w-0 flex-1 items-center gap-2">
-                    <div class="overflow-hidden text-ellipsis whitespace-nowrap text-[15px] font-semibold text-foreground">{{ skill.name }}</div>
+                    <div class="overflow-hidden text-ellipsis whitespace-nowrap text-sm font-semibold text-foreground">{{ skill.name }}</div>
                     <span v-if="skill.version" class="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">v{{ skill.version }}</span>
                   </div>
                   <!-- Toggle 开关 -->
@@ -86,7 +86,7 @@
                   />
                 </div>
                 <div class="mb-2 -mt-1 font-mono text-xs text-muted-foreground">{{ skill.slug }}</div>
-                <div class="mb-3.5 line-clamp-2 text-[13px] leading-relaxed text-muted-foreground">{{ skill.description || '无描述' }}</div>
+                <div class="mb-3.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground">{{ skill.description || '无描述' }}</div>
                 <div class="flex flex-wrap items-center gap-2">
                   <span class="inline-flex items-center rounded bg-blue-500/10 px-2 py-0.5 text-xs font-medium text-blue-600">Diting 内置</span>
                   <span v-if="skill.hasUpdate" class="inline-flex items-center rounded bg-yellow-500/10 px-2 py-0.5 text-xs font-medium text-yellow-600">有更新</span>
@@ -110,7 +110,7 @@
               <Star class="size-[18px]" />
             </div>
             <div class="min-w-0 flex-1">
-              <div class="overflow-hidden text-ellipsis whitespace-nowrap text-[17px] font-semibold text-foreground">{{ selectedSkill.name }}</div>
+              <div class="overflow-hidden text-ellipsis whitespace-nowrap text-[15px] font-semibold text-foreground">{{ selectedSkill.name }}</div>
               <div class="mt-0.5 font-mono text-xs text-muted-foreground">{{ selectedSkill.slug }}</div>
             </div>
             <span v-if="selectedSkill.version" class="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">v{{ selectedSkill.version }}</span>
@@ -135,15 +135,15 @@
                 :class="idx < 3 ? 'border-b border-border' : ''"
               >
                 <span class="w-[50px] shrink-0 pt-px text-xs font-medium text-muted-foreground">{{ row.label }}</span>
-                <span class="min-w-0 flex-1 break-words text-[13px] leading-relaxed text-foreground" :class="row.mono ? 'font-mono text-xs' : ''">{{ row.value }}</span>
+                <span class="min-w-0 flex-1 break-words text-xs leading-relaxed text-foreground" :class="row.mono ? 'font-mono' : ''">{{ row.value }}</span>
               </div>
             </div>
           </div>
           <!-- 说明 / 资源文件 Tab -->
           <div class="flex min-h-0 flex-1 flex-col">
             <div class="flex shrink-0 gap-1 border-b border-border/50 pb-2">
-              <Button variant="ghost" size="sm" class="inline-flex items-center gap-1.5 rounded-md px-3.5 py-1.5 text-[13px] font-medium" :class="detailTab === 'body' ? 'border border-border bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:bg-accent'" @click="detailTab = 'body'">说明</Button>
-              <Button variant="ghost" size="sm" class="inline-flex items-center gap-1.5 rounded-md px-3.5 py-1.5 text-[13px] font-medium" :class="detailTab === 'files' ? 'border border-border bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:bg-accent'" @click="detailTab = 'files'">
+              <Button variant="ghost" size="sm" class="inline-flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-medium" :class="detailTab === 'body' ? 'border border-border bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:bg-accent'" @click="detailTab = 'body'">说明</Button>
+              <Button variant="ghost" size="sm" class="inline-flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-medium" :class="detailTab === 'files' ? 'border border-border bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:bg-accent'" @click="detailTab = 'files'">
                 资源文件
                 <span v-if="fileCount !== null" class="inline-flex h-4 min-w-[18px] items-center justify-center rounded bg-muted px-1 text-[10px] font-semibold text-muted-foreground">{{ fileCount }}</span>
               </Button>
@@ -163,7 +163,7 @@
                 <Spinner class="size-5" />
               </div>
               <template v-else>
-                <div v-if="skillFileTree.length === 0" class="flex items-center justify-center py-10 text-[13px] text-muted-foreground">
+                <div v-if="skillFileTree.length === 0" class="flex items-center justify-center py-10 text-xs text-muted-foreground">
                   该 Skill 暂无其他资源文件
                 </div>
                 <div v-else class="grid min-h-0 flex-1 grid-cols-1 gap-3 sm:grid-cols-[240px_1fr]">
@@ -182,16 +182,16 @@
                   </div>
                   <!-- 右栏：文件内容 -->
                   <div class="flex min-h-0 min-w-0 flex-col overflow-hidden rounded-lg border border-border/50">
-                    <div v-if="!selectedFilePath" class="flex flex-1 items-center justify-center p-6 text-[13px] text-muted-foreground">
+                    <div v-if="!selectedFilePath" class="flex flex-1 items-center justify-center p-6 text-xs text-muted-foreground">
                       从左侧选择文件查看内容
                     </div>
                     <div v-else-if="loadingFileContent" class="flex flex-1 items-center justify-center">
                       <Spinner class="size-5" />
                     </div>
-                    <div v-else-if="!skillFileContent" class="flex flex-1 items-center justify-center p-6 text-[13px] text-muted-foreground">
+                    <div v-else-if="!skillFileContent" class="flex flex-1 items-center justify-center p-6 text-xs text-muted-foreground">
                       无法加载该文件
                     </div>
-                    <div v-else-if="!skillFileContent.isText" class="flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center text-[13px] text-muted-foreground">
+                    <div v-else-if="!skillFileContent.isText" class="flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center text-xs text-muted-foreground">
                       <FileText class="size-6 opacity-30" />
                       <div class="font-mono text-xs">{{ skillFileContent.relativePath }}</div>
                       <div>二进制文件（{{ formatFileSize(skillFileContent.size) }}），不支持内置预览</div>
@@ -213,7 +213,7 @@
 
       <!-- ===== MCP Tab ===== -->
       <div v-show="activeTab === 'mcp'">
-        <div class="mb-3 text-[13px] font-medium text-muted-foreground">
+        <div class="mb-3 text-xs font-medium text-muted-foreground">
           Diting 内置 <span class="text-muted-foreground/70">{{ mcpServers.length }}</span>
         </div>
 
@@ -239,7 +239,7 @@
                 <Plug class="size-5" />
               </div>
               <div class="flex min-w-0 flex-1 items-center gap-2">
-                <div class="overflow-hidden text-ellipsis whitespace-nowrap text-[15px] font-semibold text-foreground">{{ mcp.displayName }}</div>
+                <div class="overflow-hidden text-ellipsis whitespace-nowrap text-sm font-semibold text-foreground">{{ mcp.displayName }}</div>
                 <span class="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">stdio</span>
               </div>
               <Switch
@@ -248,7 +248,7 @@
                 @click.stop
               />
             </div>
-            <div class="mb-3.5 line-clamp-2 text-[13px] leading-relaxed text-muted-foreground">{{ mcp.description }}</div>
+            <div class="mb-3.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground">{{ mcp.description }}</div>
             <div class="flex flex-wrap items-center gap-2">
               <span class="inline-flex items-center rounded bg-blue-500/10 px-2 py-0.5 text-xs font-medium text-blue-600">内置</span>
               <span
@@ -286,7 +286,7 @@
                 <Plug class="size-[18px]" />
               </div>
               <div class="min-w-0 flex-1">
-                <div class="overflow-hidden text-ellipsis whitespace-nowrap text-[17px] font-semibold text-foreground">{{ selectedMcp.displayName }}</div>
+                <div class="overflow-hidden text-ellipsis whitespace-nowrap text-[15px] font-semibold text-foreground">{{ selectedMcp.displayName }}</div>
                 <div class="mt-0.5 font-mono text-xs text-muted-foreground">{{ selectedMcp.id }}</div>
               </div>
               <span class="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">stdio</span>
@@ -314,13 +314,13 @@
                   :class="idx < 5 ? 'border-b border-border' : ''"
                 >
                   <span class="w-[50px] shrink-0 pt-px text-xs font-medium text-muted-foreground">{{ row.label }}</span>
-                  <span class="min-w-0 flex-1 break-words text-[13px] leading-relaxed text-foreground">{{ row.value }}</span>
+                  <span class="min-w-0 flex-1 break-words text-xs leading-relaxed text-foreground">{{ row.value }}</span>
                 </div>
               </div>
             </div>
             <div class="flex flex-col gap-3">
               <h3 class="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">工具列表</h3>
-              <div v-if="!selectedMcp.tools || selectedMcp.tools.length === 0" class="flex items-center justify-center py-10 text-[13px] text-muted-foreground">
+              <div v-if="!selectedMcp.tools || selectedMcp.tools.length === 0" class="flex items-center justify-center py-10 text-xs text-muted-foreground">
                 此 MCP 服务器暂无工具
               </div>
               <div v-else class="flex flex-col gap-2">
@@ -330,10 +330,10 @@
                   class="rounded-lg border border-border p-3 transition-colors hover:border-primary"
                 >
                   <div class="mb-1.5 flex items-center gap-2">
-                    <span class="font-mono text-[13px] font-semibold text-foreground">{{ tool.name }}</span>
+                    <span class="font-mono text-xs font-semibold text-foreground">{{ tool.name }}</span>
                     <span v-if="tool.readOnly" class="inline-flex rounded bg-foreground/5 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">只读</span>
                   </div>
-                  <div class="text-xs leading-relaxed text-muted-foreground">{{ tool.description || '无描述' }}</div>
+                  <div class="text-[11px] leading-relaxed text-muted-foreground">{{ tool.description || '无描述' }}</div>
                 </div>
               </div>
             </div>
@@ -387,21 +387,21 @@
         <!-- 生成记忆条 -->
         <div class="mb-4 flex flex-shrink-0 items-center gap-4 rounded-xl border border-border bg-card p-[18px]">
           <div class="flex-1">
-            <div class="mb-1 text-[15px] font-semibold text-foreground">从历史会话生成项目记忆</div>
+            <div class="mb-1 text-sm font-semibold text-foreground">从历史会话生成项目记忆</div>
             <div class="text-xs leading-relaxed text-muted-foreground">
               新建一个 Agent 会话，读取当前项目近期的会话，沉淀并更新工作区中的 CLAUDE.md 与 auto memory 文件。
             </div>
           </div>
           <select
             v-model="generateRange"
-            class="cursor-pointer rounded-md border border-border bg-background px-2.5 py-1.5 text-[13px] text-foreground appearance-none bg-[url('data:image/svg+xml;utf8,<svg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%2710%27%20height=%276%27%20viewBox=%270%200%2010%206%27><path%20d=%27M1%201l4%204%204-4%27%20stroke=%27%238A8884%27%20stroke-width=%271.5%27%20fill=%27none%27%20stroke-linecap=%27round%27/></svg>')] bg-[length:10px_6px] bg-no-repeat bg-[position:right_10px_center] pr-7"
+            class="cursor-pointer rounded-md border border-border bg-background px-2.5 py-1.5 text-xs text-foreground appearance-none bg-[url('data:image/svg+xml;utf8,<svg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%2710%27%20height=%276%27%20viewBox=%270%200%2010%206%27><path%20d=%27M1%201l4%204%204-4%27%20stroke=%27%238A8884%27%20stroke-width=%271.5%27%20fill=%27none%27%20stroke-linecap=%27round%27/></svg>')] bg-[length:10px_6px] bg-no-repeat bg-[position:right_10px_center] pr-7"
           >
             <option value="1m">近 1 个月</option>
             <option value="1w">近 1 周</option>
             <option value="3m">近 3 个月</option>
             <option value="all">全部</option>
           </select>
-          <Button class="inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-[13px] font-medium shadow-sm disabled:opacity-50" :disabled="generatingMemory" @click="generateMemory">
+          <Button class="inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-xs font-medium shadow-sm disabled:opacity-50" :disabled="generatingMemory" @click="generateMemory">
             <Zap class="size-4" />
             {{ generatingMemory ? '生成中...' : '生成项目记忆' }}
           </Button>
@@ -411,7 +411,7 @@
         <div class="grid min-h-0 flex-1 grid-cols-1 gap-4 overflow-hidden sm:grid-cols-[280px_1fr]">
           <!-- 左栏：文件列表 -->
           <div class="min-h-0 min-w-0 overflow-y-auto rounded-xl border border-border bg-card py-2">
-            <div class="flex items-center justify-between px-4 pb-2 pt-2.5 text-[13px] font-medium text-muted-foreground">
+            <div class="flex items-center justify-between px-4 pb-2 pt-2.5 text-xs font-medium text-muted-foreground">
               <span>记忆文件</span>
               <Button variant="ghost" size="icon" class="cursor-pointer text-muted-foreground hover:text-foreground" @click="loadMemoryData">
                 <RefreshCw class="size-3.5" />
@@ -426,7 +426,7 @@
               <!-- 项目指令区 -->
               <div class="px-4 pb-1 pt-2.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">项目指令</div>
               <div
-                class="flex cursor-pointer items-center gap-2.5 px-4 py-2 text-[13px] text-foreground transition-colors hover:bg-accent"
+                class="flex cursor-pointer items-center gap-2.5 px-4 py-2 text-xs text-foreground transition-colors hover:bg-accent"
                 :class="selectedMemoryFile === 'CLAUDE.md' ? 'bg-accent' : ''"
                 @click="selectMemoryFile('CLAUDE.md')"
               >
@@ -488,7 +488,7 @@
               <Textarea
                 v-else-if="memoryEditMode"
                 v-model="memoryContent"
-                class="min-h-[400px] w-full resize-y border-none bg-transparent p-0 font-mono text-[13px] leading-relaxed focus-visible:ring-0"
+                class="min-h-[400px] w-full resize-y border-none bg-transparent p-0 font-mono text-xs leading-relaxed focus-visible:ring-0"
                 @input="onContentInput"
               />
               <!-- 预览模式 -->

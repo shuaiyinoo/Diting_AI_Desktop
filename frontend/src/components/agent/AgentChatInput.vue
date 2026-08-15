@@ -10,11 +10,12 @@
 
     <!-- 输入卡片 -->
     <div
-      class="overflow-hidden rounded-2xl border bg-card shadow-lg transition-all"
+      class="overflow-hidden border bg-card shadow-lg transition-all"
       :class="[
         focused ? 'border-primary/40 shadow-primary/5' : 'border-border',
         confirmMode ? 'ring-2 ring-amber-400/30' : '',
       ]"
+      :style="{ borderRadius: 'var(--radius)' }"
     >
       <!-- 富文本输入区 -->
       <RichTextInput
@@ -30,7 +31,7 @@
       />
 
       <!-- 底部工具栏 -->
-      <div class="flex items-center justify-between gap-2 border-t border-border px-3 py-2">
+      <div class="flex items-center justify-between gap-2 border-t border-border px-3 py-1.5">
         <!-- 左侧 -->
         <div class="flex items-center gap-2">
           <PermissionModeSelector v-model="permissionMode" />
@@ -40,7 +41,7 @@
         <!-- 右侧 -->
         <div class="flex items-center gap-2">
           <Select v-model="selectedModel" :disabled="models.length === 0">
-            <SelectTrigger class="min-w-[140px] max-w-[200px]">
+            <SelectTrigger class="h-8 min-w-[140px] max-w-[200px]">
               <SelectValue :placeholder="models.length === 0 ? '未启用模型' : '选择模型'" />
             </SelectTrigger>
             <SelectContent>
@@ -51,7 +52,7 @@
           <!-- 停止按钮 -->
           <button
             v-if="isStreaming"
-            class="flex size-8 items-center justify-center rounded-lg bg-destructive text-destructive-foreground transition-all hover:bg-destructive/90"
+            class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-destructive text-destructive-foreground transition-all hover:bg-destructive/90"
             @click="$emit('stop')"
           >
             <svg viewBox="0 0 24 24" fill="currentColor" stroke="none" class="size-3.5">
@@ -62,7 +63,7 @@
           <!-- 发送按钮 -->
           <button
             v-else
-            class="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground transition-all hover:bg-primary/90 disabled:opacity-40"
+            class="flex size-8 shrink-0 aspect-square items-center justify-center rounded-lg bg-primary text-primary-foreground transition-all hover:bg-primary/90 disabled:opacity-40"
             :disabled="!modelValue.trim()"
             @click="$emit('submit')"
           >

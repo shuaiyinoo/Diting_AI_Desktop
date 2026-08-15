@@ -9,11 +9,13 @@
  *   2. **队列串行处理**：主进程维护任务队列，逐个处理，确保一次只处理 1 个文件。
  *   3. **哈希变化检测**：文件 hash 未变化且已 READY → 跳过；hash 变化 → 先删旧数据再重做。
  *   4. **断点续传**：启动时将 PROCESSING 状态重置为 PENDING，自动入队待处理文件。
+ *   5. **多来源支持**：FILE 来源从文件解析向量化；INVOICE 来源从 OCR 归档文本向量化。
  *
  * 主进程职责：
  *   - 管理任务队列
  *   - 从 filedb 读取文件信息
  *   - 执行文档解析 → 清理 → 切片 → embedding → zvec 存储 → SQLite → MiniSearch
+ *   - 对 OCR 归档记录：跳过解析，直接对 ocr_text 切片 → embedding → 存储
  *   - 更新 filedb 状态
  *   - 通知前端进度
  */
@@ -38,6 +40,7 @@ import { parseDocument, isSupportedFormat } from '../parser/parser';
 import { cleanText } from '../processor/text-cleanup';
 import { chunkText } from '../processor/chunker';
 import { DEFAULT_CHUNKING_CONFIG } from '../types';
+import type { DataSource } from '../types';
 
 // ═══════════════════════════════════════════
 // 常量
@@ -51,7 +54,9 @@ const EMBED_BATCH_SIZE = 9;
 
 type QueueTask =
   | { type: 'ingest'; fileItemId: number; folderId: number; folderPath: string }
-  | { type: 'delete'; fileItemId: number };
+  | { type: 'delete'; fileItemId: number }
+  | { type: 'ingestInvoice'; recordId: number; ocrText: string; aiData: string; fileName: string; folderId: number }
+  | { type: 'deleteInvoice'; recordId: number };
 
 /** 队列进度回调 */
 type ProgressCallback = (info: {
@@ -200,6 +205,60 @@ class RagService {
     this.processQueue();
   }
 
+  // ── OCR 归档相关队列方法 ──
+
+  /**
+   * 将 OCR 归档记录入队（向量化）
+   *
+   * 归档成功后调用此方法，将 OCR 文本 + 结构化数据送入 RAG 管道。
+   * 不需要解析文件，直接从纯文本切片。
+   *
+   * @param recordId   归档记录 ID（invoice_record.id）
+   * @param ocrText    OCR 识别全文
+   * @param aiData     AI 结构化提取结果 JSON 字符串
+   * @param fileName   原始文件名（用于展示和关键词索引）
+   * @param folderId   授权文件夹 ID
+   */
+  enqueueInvoiceIngest(
+    recordId: number,
+    ocrText: string,
+    aiData: string,
+    fileName: string,
+    folderId: number
+  ): void {
+    const exists = this.queue.some(
+      t => t.type === 'ingestInvoice' && t.recordId === recordId
+    );
+    if (exists) return;
+
+    this.queue.push({ type: 'ingestInvoice', recordId, ocrText, aiData, fileName, folderId });
+    logger.info(`[RagService] 入队 OCR 归档向量化任务 recordId=${recordId}, fileName=${fileName}, 队列长度=${this.queue.length}`);
+    this.processQueue();
+  }
+
+  /**
+   * 将 OCR 归档记录删除清理任务入队
+   *
+   * 取消归档时调用此方法，清理该归档记录的所有 RAG 数据。
+   *
+   * @param recordId  归档记录 ID（invoice_record.id）
+   */
+  enqueueInvoiceDelete(recordId: number): void {
+    const exists = this.queue.some(
+      t => t.type === 'deleteInvoice' && t.recordId === recordId
+    );
+    if (exists) return;
+
+    // 从队列中移除同 recordId 的 ingestInvoice 任务（还没开始处理就删了）
+    this.queue = this.queue.filter(
+      t => !(t.type === 'ingestInvoice' && t.recordId === recordId)
+    );
+
+    this.queue.push({ type: 'deleteInvoice', recordId });
+    logger.info(`[RagService] 入队 OCR 归档删除任务 recordId=${recordId}, 队列长度=${this.queue.length}`);
+    this.processQueue();
+  }
+
   /**
    * 处理队列：确保初始化完成后逐个处理任务
    */
@@ -243,13 +302,18 @@ class RagService {
     this.taskRunning = true;
 
     const task = this.queue.shift()!;
-    logger.info(`[RagService] 派发任务: ${task.type} fileItemId=${task.fileItemId} (队列剩余 ${this.queue.length})`);
+    const taskLabel = 'fileItemId' in task ? `fileItemId=${task.fileItemId}` : `recordId=${task.recordId}`;
+    logger.info(`[RagService] 派发任务: ${task.type} ${taskLabel} (队列剩余 ${this.queue.length})`);
 
     try {
       if (task.type === 'ingest') {
         await this.executeIngest(task);
       } else if (task.type === 'delete') {
         await this.executeDelete(task);
+      } else if (task.type === 'ingestInvoice') {
+        await this.executeInvoiceIngest(task);
+      } else if (task.type === 'deleteInvoice') {
+        await this.executeInvoiceDelete(task);
       }
     } catch (error: any) {
       const errMsg = error instanceof Error ? error.message : String(error);
@@ -285,11 +349,11 @@ class RagService {
   }
 
   // ═══════════════════════════════════════════
-  // 任务执行
+  // 任务执行 — 文件模块
   // ═══════════════════════════════════════════
 
   /**
-   * 执行向量化任务
+   * 执行向量化任务（文件模块）
    */
   private async executeIngest(task: QueueTask & { type: 'ingest' }): Promise<void> {
     const { fileItemId, folderId, folderPath } = task;
@@ -369,6 +433,7 @@ class RagService {
       }
 
       // 4. 写入切片到 SQLite
+      const source: DataSource = 'FILE';
       logger.info(`[RagService] 写入切片到DB: ${fileName}`);
       this.ragDb!.createChunks(chunkResults.map((chunk, index) => ({
         fileItemId,
@@ -384,9 +449,10 @@ class RagService {
           fileName,
           fileHash: newFileHash,
         }),
-      })));
+        source,
+      })), source);
 
-      const savedChunks = this.ragDb!.getChunksByFileItemId(fileItemId);
+      const savedChunks = this.ragDb!.getChunksByFileItemId(fileItemId, source);
       logger.info(`[RagService] DB切片查询完成: ${fileName}, savedChunks=${savedChunks.length}`);
 
       // 5. 向量化 + zvec 存储 + SQLite vector_store（内部有 yieldToEventLoop）
@@ -403,7 +469,8 @@ class RagService {
           text: c.chunk_text,
         })),
         EMBED_BATCH_SIZE,
-        this.ragDb!
+        this.ragDb!,
+        source
       );
       logger.info(`[RagService] 向量化完成: ${fileName}`);
 
@@ -417,6 +484,7 @@ class RagService {
         fileName,
         chunkText: c.chunk_text,
         status: 'READY',
+        source,
       })));
       await this.kwService!.saveToFileAsync(this.keywordIndexPath);
       logger.info(`[RagService] 关键词索引完成: ${fileName}`);
@@ -440,7 +508,7 @@ class RagService {
   }
 
   /**
-   * 执行删除清理任务
+   * 执行删除清理任务（文件模块）
    */
   private async executeDelete(task: QueueTask & { type: 'delete' }): Promise<void> {
     await this.cleanupFileRagData(task.fileItemId);
@@ -452,17 +520,220 @@ class RagService {
    * 清理文件的所有 RAG 数据（zvec + SQLite + MiniSearch）
    */
   private async cleanupFileRagData(fileItemId: number): Promise<void> {
-    const chunks = this.ragDb!.getChunksByFileItemId(fileItemId);
+    const source: DataSource = 'FILE';
+    const chunks = this.ragDb!.getChunksByFileItemId(fileItemId, source);
     const chunkIds = chunks.map((c: any) => c.id);
     if (chunks.length > 0) {
-      deleteVectorsByFileItemId(this.collection!, fileItemId, chunks.length);
+      deleteVectorsByFileItemId(this.collection!, fileItemId, chunks.length, source);
     }
     if (chunkIds.length > 0) {
       this.kwService!.deleteDocumentChunks(chunkIds);
     }
-    this.ragDb!.deleteVectorStoreByFileItemId(fileItemId);
-    this.ragDb!.deleteChunksByFileItemId(fileItemId);
+    this.ragDb!.deleteVectorStoreByFileItemId(fileItemId, source);
+    this.ragDb!.deleteChunksByFileItemId(fileItemId, source);
     await this.kwService!.saveToFileAsync(this.keywordIndexPath);
+  }
+
+  // ═══════════════════════════════════════════
+  // 任务执行 — OCR 票据归档模块
+  // ═══════════════════════════════════════════
+
+  /**
+   * 执行 OCR 归档向量化任务
+   *
+   * 与文件模块的 executeIngest 不同：
+   *   - 跳过文档解析步骤（OCR 文本已有）
+   *   - 将 ocr_text + 结构化 AI 数据拼合为统一文本
+   *   - 切片、embedding、存储流程完全复用
+   *   - source='INVOICE'，sourceId=recordId
+   */
+  private async executeInvoiceIngest(task: QueueTask & { type: 'ingestInvoice' }): Promise<void> {
+    const { recordId, ocrText, aiData, fileName, folderId } = task;
+    const source: DataSource = 'INVOICE';
+
+    logger.info(`[RagService] 开始处理 OCR 归档: ${fileName} (recordId=${recordId})`);
+
+    if (!ocrText || ocrText.trim().length === 0) {
+      logger.warn(`[RagService] OCR 文本为空，跳过: ${fileName} (recordId=${recordId})`);
+      return;
+    }
+
+    // 先清理旧数据（重新归档场景）
+    await this.cleanupInvoiceRagData(recordId);
+
+    try {
+      // 1. 拼合文本：OCR 全文 + 结构化数据摘要
+      const fullText = this.buildInvoiceText(ocrText, aiData, fileName);
+      logger.info(`[RagService] OCR 归档文本拼合完成: ${fileName}, 文本长度=${fullText.length}`);
+
+      // 2. 文本清理
+      const cleanedText = cleanText(fullText);
+      logger.info(`[RagService] 文本清理完成: ${fileName}, 长度=${cleanedText.length}`);
+
+      // 3. 切片
+      const chunkResults = chunkText(cleanedText, DEFAULT_CHUNKING_CONFIG);
+      logger.info(`[RagService] 切片完成: ${fileName}, 切片数=${chunkResults.length}`);
+
+      if (chunkResults.length === 0) {
+        logger.warn(`[RagService] 切片结果为空: ${fileName} (recordId=${recordId})`);
+        return;
+      }
+
+      // 4. 写入切片到 SQLite
+      logger.info(`[RagService] 写入切片到DB: ${fileName} (INVOICE)`);
+      this.ragDb!.createChunks(chunkResults.map((chunk, index) => ({
+        fileItemId: recordId,
+        folderId,
+        chunkIndex: index,
+        chunkText: chunk.text,
+        chunkSummary: chunk.text.substring(0, 100).trim(),
+        charStart: chunk.charStart,
+        charEnd: chunk.charEnd,
+        metadataJson: JSON.stringify({
+          fileName,
+          source: 'INVOICE',
+          recordId,
+        }),
+        source,
+      })), source);
+
+      const savedChunks = this.ragDb!.getChunksByFileItemId(recordId, source);
+      logger.info(`[RagService] DB切片查询完成: ${fileName} (INVOICE), savedChunks=${savedChunks.length}`);
+
+      // 5. 向量化 + zvec 存储 + SQLite vector_store
+      logger.info(`[RagService] 开始向量化: ${fileName} (INVOICE)`);
+      await embedAndStore(
+        this.collection!,
+        this.embedder!,
+        savedChunks.map((c: any) => ({
+          fileItemId: c.file_item_id,
+          chunkId: c.id,
+          chunkIndex: c.chunk_index,
+          folderId: c.folder_id,
+          fileName,
+          text: c.chunk_text,
+        })),
+        EMBED_BATCH_SIZE,
+        this.ragDb!,
+        source
+      );
+      logger.info(`[RagService] 向量化完成: ${fileName} (INVOICE)`);
+
+      // 6. MiniSearch 关键词索引
+      logger.info(`[RagService] 开始关键词索引: ${fileName} (INVOICE), chunks=${savedChunks.length}`);
+      this.kwService!.indexReadyChunks(fileName, savedChunks.map((c: any) => ({
+        fileItemId: c.file_item_id,
+        chunkId: c.id,
+        chunkIndex: c.chunk_index,
+        folderId: c.folder_id,
+        fileName,
+        chunkText: c.chunk_text,
+        status: 'READY',
+        source,
+      })));
+      await this.kwService!.saveToFileAsync(this.keywordIndexPath);
+      logger.info(`[RagService] 关键词索引完成: ${fileName} (INVOICE)`);
+
+      // 更新统计
+      this.statsCache.vectorizedFiles = this.ragDb!.countVectorizedFiles();
+      this.statsCache.keywordDocs = this.kwService!.documentCount;
+
+      this.progressCallback?.({ type: 'ingest', fileItemId: recordId, fileName, queueSize: this.queue.length, status: 'READY' });
+      logger.info(`[RagService] OCR 归档处理完成: ${fileName} (recordId=${recordId})`);
+
+    } catch (error: any) {
+      const reason = error instanceof Error ? error.message : String(error);
+      logger.error(`[RagService] OCR 归档处理失败: ${fileName} (recordId=${recordId}) - ${reason}`);
+      this.progressCallback?.({ type: 'ingest', fileItemId: recordId, fileName, queueSize: this.queue.length, status: 'FAILED' });
+    }
+  }
+
+  /**
+   * 执行 OCR 归档删除清理任务
+   */
+  private async executeInvoiceDelete(task: QueueTask & { type: 'deleteInvoice' }): Promise<void> {
+    await this.cleanupInvoiceRagData(task.recordId);
+    this.progressCallback?.({ type: 'delete', fileItemId: task.recordId, queueSize: this.queue.length, status: 'DELETED' });
+    logger.info(`[RagService] OCR 归档 RAG 数据已删除: (recordId=${task.recordId})`);
+  }
+
+  /**
+   * 清理 OCR 归档记录的所有 RAG 数据（zvec + SQLite + MiniSearch）
+   *
+   * @param recordId  归档记录 ID（invoice_record.id）
+   */
+  private async cleanupInvoiceRagData(recordId: number): Promise<void> {
+    const source: DataSource = 'INVOICE';
+    const chunks = this.ragDb!.getChunksByFileItemId(recordId, source);
+    const chunkIds = chunks.map((c: any) => c.id);
+    if (chunks.length > 0) {
+      deleteVectorsByFileItemId(this.collection!, recordId, chunks.length, source);
+    }
+    if (chunkIds.length > 0) {
+      this.kwService!.deleteDocumentChunks(chunkIds);
+    }
+    this.ragDb!.deleteVectorStoreByFileItemId(recordId, source);
+    this.ragDb!.deleteChunksByFileItemId(recordId, source);
+    await this.kwService!.saveToFileAsync(this.keywordIndexPath);
+  }
+
+  /**
+   * 拼合 OCR 文本和结构化数据为统一文本
+   *
+   * 将 OCR 全文和 AI 提取的结构化字段拼合为一段完整的文本，
+   * 使向量化后检索时既能命中 OCR 原文，也能命中结构化字段。
+   */
+  private buildInvoiceText(ocrText: string, aiData: string, fileName: string): string {
+    const parts: string[] = [`文件名：${fileName}`];
+
+    // 添加结构化数据摘要（如果存在）
+    if (aiData) {
+      try {
+        const ai = JSON.parse(aiData);
+        const structuredLines: string[] = [];
+
+        // 添加类型信息
+        if (ai.type_name) {
+          structuredLines.push(`票据类型：${ai.type_name}`);
+        }
+        if (ai.category_display) {
+          structuredLines.push(`大类：${ai.category_display}`);
+        }
+
+        // 添加归一化字段
+        const sd = ai.structured_data;
+        if (sd) {
+          const fieldLabels: Record<string, string> = {
+            invoice_number: '票据号码',
+            invoice_code: '票据代码',
+            issue_date: '开票日期',
+            amount_total: '总金额',
+            amount_tax: '税额',
+            payer_name: '购买方',
+            payee_name: '销售方',
+            province: '省份',
+            city: '城市',
+          };
+          for (const [key, label] of Object.entries(fieldLabels)) {
+            const value = sd[key];
+            if (value !== null && value !== undefined && value !== '') {
+              structuredLines.push(`${label}：${value}`);
+            }
+          }
+        }
+
+        if (structuredLines.length > 0) {
+          parts.push(structuredLines.join('\n'));
+        }
+      } catch {
+        // AI 数据解析失败，仅使用 OCR 文本
+      }
+    }
+
+    // 添加 OCR 全文
+    parts.push(ocrText);
+
+    return parts.join('\n\n');
   }
 
   // ═══════════════════════════════════════════
@@ -530,6 +801,13 @@ class RagService {
    */
   async deleteFileRagData(fileItemId: number): Promise<void> {
     this.enqueueDelete(fileItemId);
+  }
+
+  /**
+   * 删除 OCR 归档记录的所有 RAG 数据（对外公开，用于取消归档时同步清理）
+   */
+  async deleteInvoiceRagData(recordId: number): Promise<void> {
+    this.enqueueInvoiceDelete(recordId);
   }
 
   /**

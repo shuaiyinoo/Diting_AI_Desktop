@@ -331,7 +331,7 @@ function buildContextPrompt(sessionId: string, currentUserMessage: string): stri
 
 // ========== 提示词构建 ==========
 
-function buildSystemPrompt(workspace?: WorkspaceMeta): string {
+function buildSystemPrompt(workspace?: WorkspaceMeta, sessionId?: string): string {
   const parts: string[] = []
 
   // 基础身份
@@ -377,6 +377,36 @@ function buildSystemPrompt(workspace?: WorkspaceMeta): string {
 
     if (workspace.description) parts.push(workspace.description)
     if (workspace.projectPath) parts.push(`项目根目录: ${workspace.projectPath}`)
+
+    // 注入会话工作目录路径（@file 引用的会话文件位于此目录）
+    if (sessionId) {
+      const sessionDir = join(getAgentWorkspacePath(workspace.id), sessionId)
+      parts.push(`\n## 会话工作目录\n- 会话文件目录: ${sessionDir}（用户通过 @ 引用的会话文件存放在此目录，路径为相对于该目录的相对路径）`)
+    }
+
+    // 注入附加文件夹路径（@file 引用的附加文件使用绝对路径）
+    const attachedDirs = workspace.attachedDirectories ?? []
+    if (attachedDirs.length > 0) {
+      parts.push(`\n## 附加文件夹\n用户通过 @ 引用的附加文件位于以下目录（路径为绝对路径）：`)
+      for (const dir of attachedDirs) {
+        parts.push(`- ${dir}`)
+      }
+    }
+
+    // 注入 @file 引用解析指南
+    const fileRefParts: string[] = [`\n## 文件引用（@file:标记）\n用户消息中的 @file:path 标记表示引用文件。根据路径类型解析：`]
+    if (workspace.projectPath) {
+      fileRefParts.push(`- 相对路径（如 @file:src/index.ts）：相对于项目根目录 ${workspace.projectPath} 解析`)
+    }
+    if (sessionId) {
+      const sessionDir = join(getAgentWorkspacePath(workspace.id), sessionId)
+      fileRefParts.push(`- 会话文件（如 @file:report.pdf，无目录前缀或路径不在项目根下时）：从会话工作目录 ${sessionDir} 解析`)
+    }
+    if (attachedDirs.length > 0) {
+      fileRefParts.push(`- 绝对路径（如 @file:/Users/xxx/Project/file.ts）：直接使用，通常位于上述附加文件夹中`)
+    }
+    fileRefParts.push(`- 查找顺序：先用 Read 工具按绝对路径读取；若失败，尝试拼接到项目根目录；仍失败则拼接到会话工作目录。`)
+    parts.push(fileRefParts.join('\n'))
 
     // 注入 CLAUDE.md 内容
     if (existsSync(claudeMdPath)) {
@@ -609,7 +639,7 @@ export async function sendAgentMessage(
   }
 
   // 构建系统提示词（Skills 列表由 SDK 自动注入，不再手动列出）
-  const systemPrompt = buildSystemPrompt(workspace)
+  const systemPrompt = buildSystemPrompt(workspace, sessionId)
 
   // 获取工作区 cwd
   const cwd = workspace ? getWorkspaceCwd(workspace) : process.cwd()
@@ -1149,6 +1179,11 @@ ${output}` }],
           chunkIndex: doc.metadata.chunkIndex,
           score: doc.metadata.score,
           snippet: doc.text.replace(/^文件名：.+\n/, '').slice(0, 200),
+          source: doc.metadata.source,
+          invoiceNumber: doc.metadata.invoiceNumber ?? null,
+          typeName: doc.metadata.typeName ?? null,
+          issueDate: doc.metadata.issueDate ?? null,
+          amountTotal: doc.metadata.amountTotal ?? null,
         }))
         onEvent('rag_citations', { citations })
 

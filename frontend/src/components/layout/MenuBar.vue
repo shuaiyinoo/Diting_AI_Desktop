@@ -42,8 +42,8 @@
       <!-- 导航区 -->
       <nav class="flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden px-1.5 [&::-webkit-scrollbar]:hidden">
         <!-- ===== 工具分组 ===== -->
-        <div class="mb-1">
-          <div class="flex items-center gap-1.5 px-2 pb-1 pt-2.5">
+        <div class="mb-0">
+          <div class="flex h-[28px] shrink-0 items-center gap-1.5 px-2 mt-2">
             <span class="flex-1 text-xs font-medium text-muted-foreground">工具</span>
           </div>
           <div
@@ -93,34 +93,34 @@
 
         <!-- ===== OCR 子菜单 ===== -->
         <div v-if="ws.activeModule === 'invoice'" class="mb-1">
-          <div class="flex items-center gap-1.5 px-2 pb-1 pt-2.5">
+          <div class="flex h-[28px] shrink-0 items-center gap-1.5 px-2 mt-2">
             <span class="flex-1 text-xs font-medium text-muted-foreground">OCR</span>
           </div>
           <div
-            class="mb-0.5 flex h-[30px] cursor-pointer items-center gap-2 rounded-[7px] px-2.5 pl-7 text-[13px] transition-colors duration-150"
+            class="relative mb-0.5 flex h-[34px] cursor-pointer items-center gap-2 rounded-[7px] px-2.5 text-sm transition-colors duration-150"
             :class="isOcrSubActive('recognize')
               ? 'bg-muted font-semibold text-primary'
               : 'text-muted-foreground hover:bg-accent hover:text-foreground'"
             @click="navigateOcrSub('recognize')"
           >
-            <FileText class="size-3.5 shrink-0 text-muted-foreground" />
+            <FileText class="size-3.5 shrink-0" :class="isOcrSubActive('recognize') ? 'text-primary' : 'text-muted-foreground'" />
             <span class="flex-1 min-w-0 truncate">录入识读</span>
           </div>
           <div
-            class="mb-0.5 flex h-[30px] cursor-pointer items-center gap-2 rounded-[7px] px-2.5 pl-7 text-[13px] transition-colors duration-150"
+            class="relative mb-0.5 flex h-[34px] cursor-pointer items-center gap-2 rounded-[7px] px-2.5 text-sm transition-colors duration-150"
             :class="isOcrSubActive('archive')
               ? 'bg-muted font-semibold text-primary'
               : 'text-muted-foreground hover:bg-accent hover:text-foreground'"
             @click="navigateOcrSub('archive')"
           >
-            <Inbox class="size-3.5 shrink-0 text-muted-foreground" />
+            <Inbox class="size-3.5 shrink-0" :class="isOcrSubActive('archive') ? 'text-primary' : 'text-muted-foreground'" />
             <span class="flex-1 min-w-0 truncate">归集查阅</span>
           </div>
         </div>
 
         <!-- ===== 文件分组 ===== -->
         <div v-if="ws.activeModule === 'file'" class="flex min-h-0 flex-1 flex-col">
-          <div class="flex items-center gap-1.5 px-2 pb-1 pt-2.5">
+          <div class="flex h-[28px] shrink-0 items-center gap-1.5 px-2 mt-2">
             <span class="flex-1 text-xs font-medium text-muted-foreground">文件</span>
             <span class="text-[11px] text-muted-foreground">{{ ws.folderList.length }}</span>
             <Button variant="ghost" size="icon" class="h-5 w-5 text-muted-foreground hover:text-primary" @click="onAddFolder">
@@ -151,7 +151,7 @@
 
         <!-- ===== 对话分组 ===== -->
         <div v-if="ws.activeModule === 'chat'" class="flex min-h-0 flex-1 flex-col">
-          <div class="flex items-center gap-1.5 px-2 pb-1 pt-2.5">
+          <div class="flex h-[28px] shrink-0 items-center gap-1.5 px-2 mt-2">
             <span class="flex-1 text-xs font-medium text-muted-foreground">对话</span>
             <Button variant="ghost" size="icon" class="h-5 w-5 text-muted-foreground hover:text-primary" @click="onCreateChat">
               <Plus class="size-3.5" />
@@ -180,7 +180,7 @@
 
         <!-- ===== 项目分组 ===== -->
         <div v-if="ws.activeModule === 'agent'" class="flex min-h-0 flex-1 flex-col">
-          <div class="flex items-center gap-1.5 px-2 pb-1 pt-2.5">
+          <div class="flex h-[28px] shrink-0 items-center gap-1.5 px-2 mt-2">
             <span class="flex-1 text-xs font-medium text-muted-foreground">项目</span>
             <Button variant="ghost" size="icon" class="h-5 w-5 text-muted-foreground hover:text-primary" @click="onCreateProject">
               <Plus class="size-3.5" />
@@ -326,8 +326,30 @@
 
       <div class="mx-2 my-1 h-px shrink-0 bg-border" />
 
-      <!-- 最近列表 -->
+      <!-- 最近列表 / OCR 子菜单 -->
       <div class="flex flex-col items-center py-1">
+        <!-- OCR 子菜单图标（收缩模式） -->
+        <template v-if="ws.activeModule === 'invoice'">
+          <Button
+            variant="ghost"
+            size="icon"
+            class="mx-auto my-0.5 h-9 w-9 shrink-0 rounded-lg border border-transparent bg-muted text-muted-foreground transition-all hover:border-border hover:text-primary"
+            :class="isOcrSubActive('recognize') ? 'border-primary bg-primary text-primary-foreground hover:border-primary hover:text-primary-foreground' : ''"
+            @click="navigateOcrSub('recognize')"
+          >
+            <FileText class="size-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            class="mx-auto my-0.5 h-9 w-9 shrink-0 rounded-lg border border-transparent bg-muted text-muted-foreground transition-all hover:border-border hover:text-primary"
+            :class="isOcrSubActive('archive') ? 'border-primary bg-primary text-primary-foreground hover:border-primary hover:text-primary-foreground' : ''"
+            @click="navigateOcrSub('archive')"
+          >
+            <Inbox class="size-4" />
+          </Button>
+        </template>
+        <!-- 其他模块的最近列表 -->
         <div
           v-for="item in recentItems"
           :key="item.id"
@@ -343,7 +365,7 @@
     </template>
 
     <!-- ===================== 底部：设置 ===================== -->
-    <div class="shrink-0 border-t border-border px-1.5 pb-2 pt-1">
+    <div class="shrink-0 px-1.5 pb-1 pt-1">
       <div
         v-if="!ws.menuCollapsed"
         class="relative mb-0.5 flex h-[34px] cursor-pointer items-center gap-2 rounded-[7px] px-2.5 text-sm transition-colors duration-150"

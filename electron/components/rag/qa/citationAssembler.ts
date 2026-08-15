@@ -25,21 +25,28 @@ const DEFAULT_COVERAGE_MODE = 'RELEVANCE_ONLY';
  */
 export function assembleCitations(documents: EvidenceDocument[]): Citation[] {
   if (!documents || documents.length === 0) return [];
-  const citationsByFileName = new Map<string, Citation>();
+  // 按 source + fileName 去重，避免不同来源同名文档被合并
+  const citationsByKey = new Map<string, Citation>();
   for (const doc of documents) {
     const fileName = doc.metadata.fileName;
     if (!fileName) continue;
-    if (citationsByFileName.has(fileName)) continue;
-    citationsByFileName.set(fileName, {
+    const dedupKey = `${doc.metadata.source}:${fileName}`;
+    if (citationsByKey.has(dedupKey)) continue;
+    citationsByKey.set(dedupKey, {
       fileItemId: doc.metadata.fileItemId,
       chunkId: doc.metadata.chunkId,
       chunkIndex: doc.metadata.chunkIndex,
       fileName,
       score: doc.metadata.score,
       snippet: summarize(doc.text),
+      source: doc.metadata.source,
+      invoiceNumber: doc.metadata.invoiceNumber ?? null,
+      typeName: doc.metadata.typeName ?? null,
+      issueDate: doc.metadata.issueDate ?? null,
+      amountTotal: doc.metadata.amountTotal ?? null,
     });
   }
-  return Array.from(citationsByFileName.values());
+  return Array.from(citationsByKey.values());
 }
 
 /**

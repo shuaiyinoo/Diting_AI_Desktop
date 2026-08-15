@@ -7,23 +7,31 @@
  *   - 融合算法：RRF（Reciprocal Rank Fusion，k=0）
  *   - 评分归一化：指数饱和函数 1 - e^(-x)，映射到 [0, 1)
  *
+ * 支持双来源检索：
+ *   - FILE 来源：文件模块向量化文档
+ *   - INVOICE 来源：OCR 票据归档向量化文档
+ * 两种来源的数据在同一个向量库和关键词索引中，检索时自动融合。
+ *
  * 检索流程：
  *   1. 双通道检索（向量 + 关键词）
  *   2. RRF 融合排序
  *   3. 按 topK 截取
  *   4. 从 SQLite 拉取切片文本，组装证据文档
- *   5. 评估证据充分度等级
+ *   5. 对 INVOICE 来源附加票据元数据（类型、发票号、日期、金额）
+ *   6. 评估证据充分度等级
  */
 
 import { logger } from 'ee-core/log';
 import { ragService } from '../core/ragService';
 import { searchVectors } from '../database/vector-store';
+import { invoicedbService } from '../../../service/database/invoicedb';
 import type {
   EvidenceDocument,
   EvidenceMetadata,
   RetrievalCandidate,
   RetrievalSource,
   RetrievedEvidenceBundle,
+  DataSource,
 } from '../types';
 import { EvidenceLevel } from '../types';
 
@@ -81,19 +89,43 @@ class HybridRetrievalService {
   }
 
   /**
+   * 按数据来源检索（仅检索指定 source 的切片）
+   *
+   * 用于 Chat 模式下「仅 OCR 归档」选项：
+   *   source='INVOICE' 时仅检索 OCR 票据归档的切片，不检索文件模块的切片。
+   *
+   * @param question 用户问题
+   * @param source   数据来源（FILE / INVOICE）
+   * @param topK     返回的最大文档数（默认 5）
+   */
+  async retrieveBySource(
+    question: string,
+    source: DataSource,
+    topK: number = DEFAULT_TOP_K
+  ): Promise<RetrievedEvidenceBundle> {
+    return this.doRetrieve(question, topK, undefined, source);
+  }
+
+  /**
    * 混合检索核心实现。
    *
    * @param question  用户问题
    * @param topK      返回的最大文档数
    * @param folderId  可选，限定检索范围；不传则全库搜索
+   * @param sourceFilter 可选，按数据来源过滤（FILE / INVOICE）；不传则不过滤
    */
   private async doRetrieve(
     question: string,
     topK: number,
-    folderId?: number
+    folderId?: number,
+    sourceFilter?: DataSource
   ): Promise<RetrievedEvidenceBundle> {
     const startNano = process.hrtime.bigint();
-    const scopeLabel = folderId ? `folderId=${folderId}` : 'ALL';
+    const scopeLabel = folderId
+      ? `folderId=${folderId}`
+      : sourceFilter
+        ? `source=${sourceFilter}`
+        : 'ALL';
     const normalizedQuestion = (question || '').trim();
     if (!normalizedQuestion) {
       return emptyBundle();
@@ -117,9 +149,13 @@ class HybridRetrievalService {
       normalizedQuestion,
       CHANNEL_TOP_K
     );
-    const filteredVectorHits = folderId
+    let filteredVectorHits = folderId
       ? vectorHits.filter(h => h.folderId === folderId)
       : vectorHits;
+    // 按来源过滤（仅 OCR 或仅文件）
+    if (sourceFilter) {
+      filteredVectorHits = filteredVectorHits.filter(h => h.source === sourceFilter);
+    }
     filteredVectorHits.forEach((hit, index) => {
       const candidate = candidates.get(hit.chunkId) ?? createCandidate(hit);
       candidate.vectorMatched = true;
@@ -129,9 +165,13 @@ class HybridRetrievalService {
     });
 
     // 关键词检索（MiniSearch 支持 folderId 过滤）
-    const keywordHits = folderId
+    let keywordHits = folderId
       ? ctx.kwService.search(folderId, normalizedQuestion, CHANNEL_TOP_K)
       : ctx.kwService.searchAll(normalizedQuestion, CHANNEL_TOP_K);
+    // 按来源过滤
+    if (sourceFilter) {
+      keywordHits = keywordHits.filter(h => h.source === sourceFilter);
+    }
     keywordHits.forEach((hit, index) => {
       const candidate = candidates.get(hit.chunkId) ?? createCandidateFromKeyword(hit);
       candidate.keywordMatched = true;
@@ -190,7 +230,19 @@ class HybridRetrievalService {
         vectorScore: candidate.vectorScore,
         keywordScore: candidate.keywordScore,
         hybridScore: candidate.rankingScore,
+        source: candidate.source,
       };
+
+      // 对 INVOICE 来源，附加票据归档特有元数据
+      if (candidate.source === 'INVOICE') {
+        const record = invoicedbService.getRecordById(candidate.fileItemId);
+        if (record) {
+          metadata.invoiceNumber = record.invoice_number;
+          metadata.typeName = record.type_name;
+          metadata.issueDate = record.issue_date;
+          metadata.amountTotal = record.amount_total;
+        }
+      }
 
       const evidenceText = `文件名：${candidate.fileName}\n${chunkRow.chunk_text.trim()}`;
       documents.push({ evidenceId, text: evidenceText, metadata });
@@ -224,6 +276,7 @@ function createCandidate(hit: {
   folderId: number;
   fileName: string;
   score: number;
+  source: DataSource;
 }): RetrievalCandidate {
   return {
     fileItemId: hit.fileItemId,
@@ -231,6 +284,7 @@ function createCandidate(hit: {
     chunkIndex: hit.chunkIndex,
     folderId: hit.folderId,
     fileName: hit.fileName,
+    source: hit.source,
     vectorScore: 0,
     keywordScore: 0,
     rankingScore: 0,
@@ -245,6 +299,7 @@ function createCandidateFromKeyword(hit: {
   chunkIndex: number;
   fileName: string;
   normalizedScore: number;
+  source: DataSource;
 }): RetrievalCandidate {
   return {
     fileItemId: hit.fileItemId,
@@ -252,6 +307,7 @@ function createCandidateFromKeyword(hit: {
     chunkIndex: hit.chunkIndex,
     folderId: 0,
     fileName: hit.fileName,
+    source: hit.source,
     vectorScore: 0,
     keywordScore: 0,
     rankingScore: 0,

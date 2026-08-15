@@ -6,19 +6,25 @@
       <div class="flex h-10 shrink-0 items-center gap-1.5 border-b border-border px-2">
         <span class="text-sm font-semibold text-foreground">录入识读</span>
         <div class="ml-auto flex items-center gap-1">
-          <Badge v-if="store.ocrProcessing" color="processing" class="inline-flex items-center text-[11px]">
-            <Spinner size="small" class="mr-1" />
+          <Badge v-if="store.ocrProcessing" variant="secondary" class="inline-flex items-center gap-1 text-[11px]">
+            <Spinner size="sm" class="size-3" />
             识别中
           </Badge>
-          <Tooltip title="刷新">
-            <Button variant="ghost" size="icon" class="size-7 text-muted-foreground hover:text-foreground" @click="onRefresh">
-              <RefreshCw class="size-3.5" />
-            </Button>
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button variant="ghost" size="icon" class="size-7 text-muted-foreground hover:text-foreground" @click="onRefresh">
+                <RefreshCw class="size-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>刷新</TooltipContent>
           </Tooltip>
-          <Tooltip title="添加授权文件夹">
-            <Button variant="ghost" size="icon" class="size-7 text-muted-foreground hover:text-foreground" @click="onAddFolder">
-              <Plus class="size-3.5" />
-            </Button>
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button variant="ghost" size="icon" class="size-7 text-muted-foreground hover:text-foreground" @click="onAddFolder">
+                <Plus class="size-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>添加授权文件夹</TooltipContent>
           </Tooltip>
         </div>
       </div>
@@ -30,7 +36,7 @@
           <span class="inline-flex h-4 items-center rounded-lg bg-accent px-1.5 text-[11px] text-muted-foreground">{{ store.folderList.length }}</span>
         </div>
         <div class="overflow-y-auto px-1 pb-1">
-          <Spinner v-if="store.folderLoading" size="small" />
+          <Spinner v-if="store.folderLoading" size="sm" class="mx-auto py-3" />
           <div
             v-for="folder in store.folderList"
             :key="folder.id"
@@ -74,7 +80,7 @@
         </div>
 
         <div class="min-h-0 flex-1 overflow-y-auto px-1 py-1">
-          <Spinner v-if="store.fileLoading" size="small" />
+          <Spinner v-if="store.fileLoading" size="sm" class="mx-auto py-3" />
           <div v-else-if="flatFileTree.length === 0" class="flex flex-col items-center justify-center gap-2 px-4 py-10 text-xs text-muted-foreground">
             <Folder class="size-7 opacity-40" />
             <p>{{ store.folderList.length === 0 ? '请先添加授权文件夹' : '该文件夹下暂无文件' }}</p>
@@ -151,21 +157,22 @@
               {{ store.selectedFile.archived === 1 ? '已归档' : '未归档' }}
             </span>
           </div>
-          <div class="flex shrink-0 items-center gap-1">
-            <Button size="small" :loading="reRecognizing" @click="onReRecognize">
-              <template #icon><RefreshCw /></template>
+          <div class="flex shrink-0 items-center gap-1.5">
+            <Button variant="outline" size="sm" class="h-7 gap-1.5 text-xs" :disabled="reRecognizing" @click="onReRecognize">
+              <RefreshCw v-if="!reRecognizing" class="size-3.5" />
+              <Spinner v-else size="sm" class="size-3.5" />
               重新识别
             </Button>
-            <Button size="small" :type="store.selectedFile.archived === 1 ? 'default' : 'primary'" @click="onToggleArchived">
+            <Button :variant="store.selectedFile.archived === 1 ? 'outline' : 'default'" size="sm" class="h-7 gap-1.5 text-xs" :disabled="store.selectedFile.archived === 0 && !aiData" @click="onToggleArchived">
               {{ store.selectedFile.archived === 1 ? '取消归档' : '归档' }}
             </Button>
           </div>
         </div>
 
         <!-- 双栏内容区：左图片 + 右结构化数据 -->
-        <div class="grid min-h-0 flex-1 overflow-hidden bg-border" style="grid-template-columns: 1fr 380px; gap: 1px">
+        <div class="flex min-h-0 flex-1 overflow-hidden bg-border">
           <!-- 左栏：图片查看器 / PDF 查看器 + 识别区域浮层 -->
-          <div class="flex min-w-0 flex-col overflow-hidden bg-[#fafaf8] dark:bg-black/20">
+          <div class="flex min-w-0 flex-1 flex-col overflow-hidden bg-[#fafaf8] dark:bg-black/20">
             <!-- PDF 连续渲染模式 -->
             <PdfAnnotationViewer
               v-if="pdfUrl"
@@ -202,8 +209,9 @@
                 ref="imageContainerRef"
                 @wheel="onWheel"
               >
-                <div v-if="detailLoading" class="flex h-full w-full items-center justify-center">
-                  <Spinner tip="加载中..." />
+                <div v-if="detailLoading" class="flex h-full w-full flex-col items-center justify-center gap-2">
+                  <Spinner size="sm" />
+                  <span class="text-xs text-muted-foreground">加载中...</span>
                 </div>
                 <div v-else-if="currentImageData" class="relative inline-block max-w-full transition-transform" :style="{ transform: `scale(${zoom})`, transformOrigin: 'center' }">
                   <img
@@ -247,8 +255,11 @@
             </template>
           </div>
 
+          <!-- 右栏拖拽分隔条 -->
+          <PanelDivider @resize="onRightPanelResize" />
+
           <!-- 右栏：结构化内容 -->
-          <div class="flex min-h-0 flex-col overflow-hidden bg-card">
+          <div class="flex min-h-0 flex-col overflow-hidden bg-card" :style="{ width: rightPanelWidth + 'px', flexShrink: 0 }">
             <!-- 标签页 -->
             <div class="flex shrink-0 gap-1 border-b border-border p-1.5">
               <Button variant="ghost" size="sm" class="rounded-md px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent" :class="resultTab === 'fields' ? 'bg-accent font-semibold text-primary' : ''" @click="resultTab = 'fields'">
@@ -288,8 +299,8 @@
             <!-- 全文文本 -->
             <div v-if="resultTab === 'text'" class="min-h-0 flex-1 overflow-y-auto">
               <div class="flex justify-end px-3 py-1.5">
-                <Button size="small" type="text" @click="copyOcrText">
-                  <Copy />
+                <Button variant="ghost" size="sm" class="h-7 gap-1.5 text-xs text-muted-foreground hover:text-foreground" @click="copyOcrText">
+                  <Copy class="size-3.5" />
                   <span>复制全文</span>
                 </Button>
               </div>
@@ -297,20 +308,21 @@
             </div>
 
             <!-- AI 结构化结果 -->
-            <div v-if="resultTab === 'ai'" class="min-h-0 flex-1 overflow-y-auto">
+            <div v-if="resultTab === 'ai'" class="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
               <div v-if="aiLoading" class="flex h-[200px] flex-col items-center justify-center gap-3">
-                <Spinner tip="AI 提取中..." />
-                <p class="text-xs text-muted-foreground">步骤 1: 文档分类 → 步骤 2: 结构化提取</p>
+                <Spinner size="sm" />
+                <p class="text-xs text-muted-foreground">AI 提取中...</p>
+                <p class="text-[11px] text-muted-foreground">步骤 1: 文档分类 → 步骤 2: 结构化提取</p>
               </div>
               <div v-else-if="aiData" class="pb-4">
                 <!-- 操作按钮 -->
                 <div class="sticky top-0 z-[1] flex justify-end gap-1 bg-card px-3 pb-2 pt-1">
-                  <Button size="small" type="text" @click="copyAiData">
-                    <Copy />
+                  <Button variant="ghost" size="sm" class="h-7 gap-1.5 text-xs text-muted-foreground hover:text-foreground" @click="copyAiData">
+                    <Copy class="size-3.5" />
                     <span>复制 JSON</span>
                   </Button>
-                  <Button size="small" type="text" :disabled="aiLoading" @click="onExtractInvoice">
-                    <RefreshCw />
+                  <Button variant="ghost" size="sm" class="h-7 gap-1.5 text-xs text-muted-foreground hover:text-foreground" :disabled="aiLoading" @click="onExtractInvoice">
+                    <RefreshCw class="size-3.5" />
                     <span>重新提取</span>
                   </Button>
                 </div>
@@ -337,34 +349,34 @@
                   <span class="flex-1 break-all text-foreground">{{ aiData.type_code || '-' }}</span>
                 </div>
 
-                <!-- 结构化数据：递归渲染 -->
-                <template v-if="aiData.structured_data">
-                  <template v-for="(val, key) in aiData.structured_data" :key="key">
+                <!-- 结构化数据：递归渲染（可编辑） -->
+                <template v-if="editableAiData && Object.keys(editableAiData).length > 0">
+                  <template v-for="(val, key) in editableAiData" :key="key">
                     <!-- 嵌套对象 -->
                     <div v-if="isObject(val)" class="mt-1 border-t border-border pt-1">
-                      <div class="px-3 pb-0.5 pt-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{{ key }}</div>
-                      <div class="flex gap-2 border-b border-black/5 px-3 py-1 text-xs" v-for="(subVal, subKey) in val" :key="subKey">
-                        <span class="min-w-[80px] shrink-0 text-muted-foreground">{{ subKey }}</span>
-                        <span class="flex-1 break-all text-foreground">{{ formatValue(subVal) }}</span>
+                      <div class="px-3 pb-0.5 pt-1.5 text-[11px] font-semibold tracking-wide text-muted-foreground">{{ getFieldLabel(key) }}</div>
+                      <div class="flex items-center gap-2 border-b border-black/5 px-3 py-1 text-xs" v-for="(subVal, subKey) in val" :key="subKey">
+                        <span class="min-w-[80px] shrink-0 text-muted-foreground">{{ getFieldLabel(subKey) }}</span>
+                        <Input v-model="val[subKey]" class="h-7 min-w-0 flex-1 overflow-hidden border-0 bg-transparent px-1 text-xs focus-visible:ring-1" :placeholder="'-'" />
                       </div>
                     </div>
                     <!-- 数组（明细项） -->
                     <div v-else-if="isArray(val) && val.length > 0" class="mt-1 border-t border-border pt-1">
-                      <div class="px-3 pb-0.5 pt-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{{ key }} ({{ val.length }})</div>
+                      <div class="px-3 pb-0.5 pt-1.5 text-[11px] font-semibold tracking-wide text-muted-foreground">{{ getFieldLabel(key) }} ({{ val.length }})</div>
                       <div class="flex gap-1.5 border-b border-black/5 px-3 py-1" v-for="(item, idx) in val" :key="idx">
                         <span class="min-w-[18px] shrink-0 pt-1 text-right text-[11px] text-muted-foreground">{{ idx + 1 }}</span>
                         <div class="min-w-0 flex-1">
-                          <div class="flex gap-2 border-b border-black/5 px-0 py-1 text-xs" v-for="(itemVal, itemKey) in item" :key="itemKey">
-                            <span class="min-w-[80px] shrink-0 text-muted-foreground">{{ itemKey }}</span>
-                            <span class="flex-1 break-all text-foreground">{{ formatValue(itemVal) }}</span>
+                          <div class="flex items-center gap-2 border-b border-black/5 px-0 py-1 text-xs" v-for="(itemVal, itemKey) in item" :key="itemKey">
+                            <span class="min-w-[80px] shrink-0 text-muted-foreground">{{ getFieldLabel(itemKey) }}</span>
+                            <Input v-model="item[itemKey]" class="h-7 min-w-0 flex-1 overflow-hidden border-0 bg-transparent px-1 text-xs focus-visible:ring-1" :placeholder="'-'" />
                           </div>
                         </div>
                       </div>
                     </div>
                     <!-- 简单值 -->
-                    <div v-else class="flex gap-2 border-b border-black/5 px-3 py-1 text-xs">
-                      <span class="min-w-[80px] shrink-0 text-muted-foreground">{{ key }}</span>
-                      <span class="flex-1 break-all text-foreground">{{ formatValue(val) }}</span>
+                    <div v-else class="flex items-center gap-2 border-b border-black/5 px-3 py-1 text-xs">
+                      <span class="min-w-[80px] shrink-0 text-muted-foreground">{{ getFieldLabel(key) }}</span>
+                      <Input v-model="editableAiData[key]" class="h-7 min-w-0 flex-1 overflow-hidden border-0 bg-transparent px-1 text-xs focus-visible:ring-1" :placeholder="'-'" />
                     </div>
                   </template>
                 </template>
@@ -372,8 +384,8 @@
               <div v-else class="flex flex-col items-center justify-center gap-1 px-4 py-10 text-[13px] text-muted-foreground">
                 <p>暂未进行 AI 提取</p>
                 <p class="text-[11px] opacity-70">点击下方按钮进行 AI 结构化提取</p>
-                <Button type="primary" size="small" class="mt-3" :disabled="!ocrText || aiLoading" @click="onExtractInvoice">
-                  <template #icon><Bot /></template>
+                <Button variant="default" size="sm" class="mt-3 gap-1.5" :disabled="!ocrText || aiLoading" @click="onExtractInvoice">
+                  <Bot class="size-4" />
                   AI 提取
                 </Button>
                 <p v-if="!ocrText" class="mt-2 text-[11px] opacity-70">需先完成 OCR 识别</p>
@@ -398,32 +410,32 @@
           <!-- 核心优势 -->
           <div class="mb-7">
             <h3 class="m-0 mb-3.5 border-l-[3px] border-primary pl-2.5 text-[15px] font-semibold text-foreground">核心优势</h3>
-            <div class="flex flex-col gap-3">
-              <div class="flex gap-3.5 rounded-lg border border-border bg-card px-4 py-3 transition-shadow hover:shadow-md">
-                <div class="flex size-[38px] shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <BadgeCheck class="size-[19px]" />
+            <div class="grid grid-cols-3 gap-3">
+              <div class="flex flex-col gap-2.5 rounded-lg border border-border bg-card px-3.5 py-3 transition-shadow hover:shadow-md">
+                <div class="flex size-[34px] shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <BadgeCheck class="size-[18px]" />
                 </div>
                 <div class="min-w-0 flex-1">
-                  <div class="mb-1 text-sm font-semibold text-foreground">本地识别，数据不出电脑</div>
-                  <p class="m-0 text-xs leading-relaxed text-muted-foreground">所有图片的识别、文字提取、结构化解析都在本地完成，原始图片和识别结果不会上传到任何外部服务器，从根本上保障数据安全与隐私合规。</p>
+                  <div class="mb-1 text-[13px] font-semibold text-foreground">本地识别，数据不出电脑</div>
+                  <p class="m-0 text-[11px] leading-relaxed text-muted-foreground">所有图片的识别、文字提取、结构化解析都在本地完成，原始图片和识别结果不会上传到任何外部服务器，从根本上保障数据安全与隐私合规。</p>
                 </div>
               </div>
-              <div class="flex gap-3.5 rounded-lg border border-border bg-card px-4 py-3 transition-shadow hover:shadow-md">
-                <div class="flex size-[38px] shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <LayoutGrid class="size-[19px]" />
+              <div class="flex flex-col gap-2.5 rounded-lg border border-border bg-card px-3.5 py-3 transition-shadow hover:shadow-md">
+                <div class="flex size-[34px] shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <LayoutGrid class="size-[18px]" />
                 </div>
                 <div class="min-w-0 flex-1">
-                  <div class="mb-1 text-sm font-semibold text-foreground">覆盖全面，一机通识</div>
-                  <p class="m-0 text-xs leading-relaxed text-muted-foreground">支持 40+ 种主流票据与证件的高精度识别，涵盖财务报销、交通出行、资质证照等核心业务场景。</p>
+                  <div class="mb-1 text-[13px] font-semibold text-foreground">覆盖全面，一机通识</div>
+                  <p class="m-0 text-[11px] leading-relaxed text-muted-foreground">支持 40+ 种主流票据与证件的高精度识别，涵盖财务报销、交通出行、资质证照等核心业务场景。</p>
                 </div>
               </div>
-              <div class="flex gap-3.5 rounded-lg border border-border bg-card px-4 py-3 transition-shadow hover:shadow-md">
-                <div class="flex size-[38px] shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <Bot class="size-[19px]" />
+              <div class="flex flex-col gap-2.5 rounded-lg border border-border bg-card px-3.5 py-3 transition-shadow hover:shadow-md">
+                <div class="flex size-[34px] shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <Bot class="size-[18px]" />
                 </div>
                 <div class="min-w-0 flex-1">
-                  <div class="mb-1 text-sm font-semibold text-foreground">智能提取，识用一体</div>
-                  <p class="m-0 text-xs leading-relaxed text-muted-foreground">识别结果自动映射为结构化字段（金额、日期、票号、销方/购方等），异构数据归一为统一视图，支持跨类型检索、统计与多格式导出。</p>
+                  <div class="mb-1 text-[13px] font-semibold text-foreground">智能提取，识用一体</div>
+                  <p class="m-0 text-[11px] leading-relaxed text-muted-foreground">识别结果自动映射为结构化字段（金额、日期、票号、销方/购方等），异构数据归一为统一视图，支持跨类型检索、统计与多格式导出。</p>
                 </div>
               </div>
             </div>
@@ -432,27 +444,27 @@
           <!-- 识别能力 -->
           <div class="mb-7">
             <h3 class="m-0 mb-3.5 border-l-[3px] border-primary pl-2.5 text-[15px] font-semibold text-foreground">识别能力</h3>
-            <div class="flex flex-col gap-2">
-              <div class="rounded-lg border border-border bg-card px-4 py-3">
+            <div class="grid grid-cols-3 gap-3">
+              <div class="flex flex-col rounded-lg border border-border bg-card px-3.5 py-3 transition-shadow hover:shadow-md">
                 <div class="mb-1.5 flex items-center gap-2">
-                  <span class="rounded-md bg-blue-500/10 px-2.5 py-0.5 text-xs font-semibold text-blue-600">财税报销</span>
-                  <span class="rounded-lg bg-accent px-2 py-px text-[11px] text-muted-foreground">13 种</span>
+                  <span class="rounded-md bg-blue-500/10 px-2 py-0.5 text-[11px] font-semibold text-blue-600">财税报销</span>
+                  <span class="rounded-lg bg-accent px-1.5 py-px text-[10px] text-muted-foreground">13 种</span>
                 </div>
-                <p class="m-0 text-xs leading-relaxed text-muted-foreground">增值税发票（专用/普通/电子/卷票/区块链）、定额发票、通用机打发票、火车票、出租车票、飞机行程单、汽车票、过路过桥费发票、船票、网约车行程单、购物小票、银行回单、智能票据混贴。</p>
+                <p class="m-0 text-[11px] leading-relaxed text-muted-foreground">增值税发票（专用/普通/电子/卷票/区块链）、定额发票、通用机打发票、火车票、出租车票、飞机行程单、汽车票、过路过桥费发票、船票、网约车行程单、购物小票、银行回单、智能票据混贴。</p>
               </div>
-              <div class="rounded-lg border border-border bg-card px-4 py-3">
+              <div class="flex flex-col rounded-lg border border-border bg-card px-3.5 py-3 transition-shadow hover:shadow-md">
                 <div class="mb-1.5 flex items-center gap-2">
-                  <span class="rounded-md bg-purple-500/10 px-2.5 py-0.5 text-xs font-semibold text-purple-600">资质证照</span>
-                  <span class="rounded-lg bg-accent px-2 py-px text-[11px] text-muted-foreground">11 种</span>
+                  <span class="rounded-md bg-purple-500/10 px-2 py-0.5 text-[11px] font-semibold text-purple-600">资质证照</span>
+                  <span class="rounded-lg bg-accent px-1.5 py-px text-[10px] text-muted-foreground">11 种</span>
                 </div>
-                <p class="m-0 text-xs leading-relaxed text-muted-foreground">身份证、银行卡、营业执照、护照、社保卡、港澳台证件、户口本、出生证明、结婚证、离婚证、房产证。</p>
+                <p class="m-0 text-[11px] leading-relaxed text-muted-foreground">身份证、银行卡、营业执照、护照、社保卡、港澳台证件、户口本、出生证明、结婚证、离婚证、房产证。</p>
               </div>
-              <div class="rounded-lg border border-border bg-card px-4 py-3">
+              <div class="flex flex-col rounded-lg border border-border bg-card px-3.5 py-3 transition-shadow hover:shadow-md">
                 <div class="mb-1.5 flex items-center gap-2">
-                  <span class="rounded-md bg-teal-500/10 px-2.5 py-0.5 text-xs font-semibold text-teal-600">交通出行</span>
-                  <span class="rounded-lg bg-accent px-2 py-px text-[11px] text-muted-foreground">7 种</span>
+                  <span class="rounded-md bg-teal-500/10 px-2 py-0.5 text-[11px] font-semibold text-teal-600">交通出行</span>
+                  <span class="rounded-lg bg-accent px-1.5 py-px text-[10px] text-muted-foreground">7 种</span>
                 </div>
-                <p class="m-0 text-xs leading-relaxed text-muted-foreground">车牌识别、VIN码识别、驾驶证、行驶证、机动车销售发票、车辆合格证、二手车销售发票。</p>
+                <p class="m-0 text-[11px] leading-relaxed text-muted-foreground">车牌识别、VIN码识别、驾驶证、行驶证、机动车销售发票、车辆合格证、二手车销售发票。</p>
               </div>
             </div>
           </div>
@@ -467,6 +479,7 @@ import { Spinner } from '@/components/ui/spinner'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
 
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { toast } from 'vue-sonner'
@@ -479,9 +492,16 @@ const store = useInvoiceStore()
 
 // ========== 面板宽度 ==========
 const panelWidth = ref(280)
+const rightPanelWidth = ref(280)
+const RIGHT_PANEL_MIN = 200
+const RIGHT_PANEL_MAX = 380
 
 function onPanelResize(delta) {
   panelWidth.value = Math.max(200, panelWidth.value + delta)
+}
+
+function onRightPanelResize(delta) {
+  rightPanelWidth.value = Math.min(RIGHT_PANEL_MAX, Math.max(RIGHT_PANEL_MIN, rightPanelWidth.value - delta))
 }
 
 // ========== 支持的文件格式 ==========
@@ -594,11 +614,24 @@ const imageNaturalSize = ref({ width: 0, height: 0 })
 const imageContainerRef = ref(null)
 const ocrImageRef = ref(null)
 const aiData = ref(null)
+const editableAiData = ref(null)
 const aiLoading = ref(false)
 const reRecognizing = ref(false)
 const pageImages = ref([])
 const pdfUrl = ref('')
 const currentPageIdx = ref(0)
+
+// ========== 票据类型定义（用于字段中文化） ==========
+const currentTypeDef = computed(() => {
+  if (!aiData.value?.type_code) return null
+  return store.receiptTypes.find((t) => t.type_code === aiData.value.type_code) || null
+})
+
+/** 根据 example_define 将英文 key 映射为中文标签 */
+function getFieldLabel(key) {
+  if (!currentTypeDef.value?.example_define) return key
+  return currentTypeDef.value.example_define[key] || key
+}
 
 const currentImageData = computed(() => {
   if (pageImages.value.length > 0) {
@@ -646,6 +679,7 @@ async function onSelectFile(file) {
   activeBoxIdx.value = -1
   zoom.value = 1
   aiData.value = null
+  editableAiData.value = null
   pageImages.value = []
   if (pdfUrl.value) {
     URL.revokeObjectURL(pdfUrl.value)
@@ -671,6 +705,12 @@ async function onSelectFile(file) {
       }
     }
     aiData.value = result.aiData || null
+    // 创建可编辑的深拷贝
+    if (result.aiData?.structured_data) {
+      editableAiData.value = JSON.parse(JSON.stringify(result.aiData.structured_data))
+    } else {
+      editableAiData.value = null
+    }
     if (result.pageImages && result.pageImages.length > 0) {
       pageImages.value = result.pageImages
     }
@@ -730,6 +770,10 @@ async function onExtractInvoice() {
     const result = await store.extractInvoice(store.selectedFile.id)
     if (result.success && result.data) {
       aiData.value = result.data
+      // 创建可编辑的深拷贝
+      if (result.data.structured_data) {
+        editableAiData.value = JSON.parse(JSON.stringify(result.data.structured_data))
+      }
       toast.success('AI 提取成功')
     } else {
       toast.error(result.error || 'AI 提取失败')
@@ -742,9 +786,11 @@ async function onExtractInvoice() {
 }
 
 async function copyAiData() {
-  if (!aiData.value) return
+  if (!editableAiData.value) return
   try {
-    await navigator.clipboard.writeText(JSON.stringify(aiData.value, null, 2))
+    // 复制编辑后的数据
+    const fullData = { ...aiData.value, structured_data: editableAiData.value }
+    await navigator.clipboard.writeText(JSON.stringify(fullData, null, 2))
     toast.success('已复制到剪贴板')
   } catch {
     toast.error('复制失败')
@@ -779,6 +825,11 @@ async function onReRecognize() {
 
 async function onToggleArchived() {
   if (!store.selectedFile) return
+  // 未归档时必须先完成 AI 提取
+  if (store.selectedFile.archived !== 1 && !aiData.value) {
+    toast.warning('请先进行 AI 识别后再归档')
+    return
+  }
   const result = await store.toggleArchived(store.selectedFile.id)
   if (result?.success) {
     toast.success(result.file.archived === 1 ? '已归档' : '已取消归档')
@@ -808,6 +859,9 @@ let ocrCleanup = null
 onMounted(async () => {
   await store.loadFolderList()
   store.registerSyncCallback()
+
+  // 加载票据类型定义（用于字段中文化映射）
+  await store.loadReceiptTypes()
 
   syncCleanup = store.onSyncChange((folderId) => {
     if (store.selectedFolderId === folderId) {

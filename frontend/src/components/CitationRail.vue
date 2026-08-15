@@ -26,17 +26,45 @@
         <!-- 卡片头部 -->
         <div class="flex items-center gap-2 mb-2">
           <span class="text-xs font-bold text-muted-foreground tracking-wider">{{ String(idx + 1).padStart(2, '0') }}</span>
+          <!-- 来源标签 -->
           <span
+            v-if="isInvoice(cite)"
+            class="text-[10px] font-bold tracking-wider px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400"
+          >票据</span>
+          <span
+            v-else
             class="text-[10px] font-bold tracking-wider px-1.5 py-0.5 rounded"
             :class="citationTypeClass(cite.fileName)"
           >{{ citationFileIcon(cite.fileName) }}</span>
           <span class="ml-auto text-xs font-semibold text-teal-600 dark:text-teal-400">{{ formatScore(cite.score) }}</span>
         </div>
 
-        <!-- 文件名 -->
-        <h4 class="m-0 mb-1.5 text-[13px] font-semibold text-foreground leading-tight line-clamp-2" :title="cite.fileName">
-          {{ cite.fileName || '未知文件' }}
-        </h4>
+        <!-- 标题区域：票据来源显示类型+发票号，文件来源显示文件名 -->
+        <template v-if="isInvoice(cite)">
+          <h4 class="m-0 mb-1.5 text-[13px] font-semibold text-foreground leading-tight line-clamp-2" :title="cite.typeName || cite.fileName">
+            {{ cite.typeName || '未知票据类型' }}
+          </h4>
+          <!-- 票据关键信息 -->
+          <div v-if="cite.invoiceNumber || cite.issueDate || cite.amountTotal != null" class="flex flex-wrap gap-x-3 gap-y-0.5 mb-2 text-[11px] text-muted-foreground">
+            <span v-if="cite.invoiceNumber" class="inline-flex items-center gap-0.5">
+              <span class="text-muted-foreground/60">号码</span>
+              <span class="font-medium text-foreground/80">{{ cite.invoiceNumber }}</span>
+            </span>
+            <span v-if="cite.issueDate" class="inline-flex items-center gap-0.5">
+              <span class="text-muted-foreground/60">日期</span>
+              <span class="font-medium text-foreground/80">{{ cite.issueDate }}</span>
+            </span>
+            <span v-if="cite.amountTotal != null" class="inline-flex items-center gap-0.5">
+              <span class="text-muted-foreground/60">金额</span>
+              <span class="font-medium text-foreground/80">¥{{ Number(cite.amountTotal).toFixed(2) }}</span>
+            </span>
+          </div>
+        </template>
+        <template v-else>
+          <h4 class="m-0 mb-1.5 text-[13px] font-semibold text-foreground leading-tight line-clamp-2" :title="cite.fileName">
+            {{ cite.fileName || '未知文件' }}
+          </h4>
+        </template>
 
         <!-- 摘录片段 -->
         <p v-if="cite.snippet" class="m-0 mb-2 text-xs text-muted-foreground leading-relaxed line-clamp-2">
@@ -78,6 +106,11 @@ defineProps({
 })
 
 defineEmits(['citation-click'])
+
+/** 判断引用是否来自 OCR 票据归档 */
+function isInvoice(cite) {
+  return cite.source === 'INVOICE'
+}
 
 /** 判断引用是否可以打开文件 */
 function canOpenFile(cite) {

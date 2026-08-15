@@ -93,66 +93,80 @@
         </template>
       </div>
 
-      <!-- ========== 底部输入区域（卡片式） ========== -->
-      <div class="shrink-0 bg-card px-4 pb-4 pt-2">
-        <div class="overflow-hidden rounded-[17px] border border-border bg-card transition-colors" :class="inputFocused ? 'border-primary shadow-[0_0_0_3px_rgba(22,119,255,0.08)]' : ''">
-          <!-- 输入区 -->
-          <textarea
+      <!-- ========== 底部输入区域（卡片式，与 Agent 风格一致） ========== -->
+      <div class="shrink-0 px-4 pb-3 pt-1">
+        <div
+          class="overflow-hidden border bg-card shadow-lg transition-all"
+          :class="inputFocused ? 'border-primary/40 shadow-primary/5' : 'border-border'"
+          :style="{ borderRadius: 'var(--radius)' }"
+        >
+          <!-- 输入区：复用 Agent 的 RichTextInput 组件，行为完全一致 -->
+          <RichTextInput
             v-model="inputText"
-            class="block w-full resize-none border-none bg-transparent px-4 pb-1 pt-3 text-sm leading-relaxed text-foreground outline-none placeholder:text-muted-foreground"
             placeholder="输入消息... (Enter 发送, Shift+Enter 换行)"
-            @keydown.enter.prevent="onEnterKey"
+            :auto-focus-trigger="currentSessionId"
+            :session-id="currentSessionId"
+            @submit="sendMessage"
             @focus="inputFocused = true"
             @blur="inputFocused = false"
-            rows="2"
-          ></textarea>
+          />
 
           <!-- 底部工具栏 -->
-          <div class="flex items-center justify-between gap-2 px-2.5 pb-2 pt-1.5">
-            <!-- 左侧：模型选择 + 知识库文件夹选择 -->
-            <div class="flex min-w-0 items-center gap-1.5">
+          <div class="flex items-center justify-between gap-2 border-t border-border px-3 py-1.5">
+            <!-- 左侧：知识库选择 -->
+            <div class="flex min-w-0 items-center gap-2">
+              <Select v-model="selectedKbOption">
+                <SelectTrigger class="h-8 min-w-[120px] max-w-[180px]">
+                  <SelectValue placeholder="知识库" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="NONE">不使用知识库</SelectItem>
+                  <SelectItem value="ALL">全部知识库</SelectItem>
+                  <SelectLabel>文件夹</SelectLabel>
+                  <SelectItem
+                    v-for="f in folderList"
+                    :key="f.id"
+                    :value="`FOLDER:${f.id}`"
+                  >{{ folderDisplayName(f) }}</SelectItem>
+                  <SelectLabel>OCR 识别</SelectLabel>
+                  <SelectItem value="INVOICE">OCR 归档票据</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <!-- 右侧：模型选择 + 发送/停止按钮 -->
+            <div class="flex shrink-0 items-center gap-2">
               <Select
                 v-model="selectedModel"
                 :disabled="availableModels.length === 0"
               >
-                <SelectTrigger class="min-w-[140px] max-w-[200px]">
+                <SelectTrigger class="h-8 min-w-[140px] max-w-[200px]">
                   <SelectValue :placeholder="availableModels.length === 0 ? '未启用模型' : '选择模型'" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem v-for="m in availableModels" :key="m.id" :value="m.id">{{ m.name }}</SelectItem>
                 </SelectContent>
               </Select>
-              <Select
-                v-model="selectedFolderId"
-              >
-                <SelectTrigger class="min-w-[120px] max-w-[180px]">
-                  <SelectValue placeholder="知识库（可选）" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem :value="null">不使用知识库</SelectItem>
-                  <SelectItem v-for="f in folderList" :key="f.id" :value="f.id">{{ f.path || f.name }}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
 
-            <!-- 右侧：发送/停止按钮 -->
-            <div class="flex shrink-0 items-center gap-1.5">
+              <!-- 停止按钮 -->
               <button
                 v-if="isStreaming"
-                class="flex size-[34px] shrink-0 items-center justify-center rounded-lg bg-red-500 text-white transition-all hover:bg-red-600 hover:scale-105"
+                class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-destructive text-destructive-foreground transition-all hover:bg-destructive/90"
                 @click="stopGeneration"
               >
-                <svg class="size-3.5" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                <svg viewBox="0 0 24 24" fill="currentColor" stroke="none" class="size-3.5">
                   <rect x="6" y="6" width="12" height="12" rx="2" />
                 </svg>
               </button>
+
+              <!-- 发送按钮 -->
               <button
                 v-else
-                class="flex size-[34px] shrink-0 items-center justify-center rounded-lg bg-primary text-white transition-all hover:bg-primary/90 hover:scale-105 disabled:cursor-not-allowed disabled:bg-border disabled:text-muted-foreground"
+                class="flex size-8 shrink-0 aspect-square items-center justify-center rounded-lg bg-primary text-primary-foreground transition-all hover:bg-primary/90 disabled:opacity-40"
                 :disabled="!inputText.trim()"
                 @click="sendMessage"
               >
-                <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-4">
                   <path d="M22 2L11 13" />
                   <path d="M22 2l-7 20-4-9-9-4 20-7z" />
                 </svg>
@@ -187,7 +201,7 @@
 </template>
 
 <script setup>
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem, SelectLabel } from '@/components/ui/select'
 
 import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { ipc } from '@/utils/ipcRenderer'
@@ -198,6 +212,7 @@ import { useTabStore } from '@/stores/tab'
 import { isDark } from '@/theme'
 import MarkdownRender from 'markstream-vue'
 import CitationRail from '@/components/CitationRail.vue'
+import RichTextInput from '@/components/agent/RichTextInput.vue'
 
 const props = defineProps({
   /** 会话 ID，由 TabContent 传入 */
@@ -229,16 +244,52 @@ const availableModels = ref([])
 // ========== 知识库文件夹选择 ==========
 const folderList = ref([])
 
-/** 当前会话的 folderId：从 chat store 读写，实现会话级记忆 */
-const selectedFolderId = computed({
+/**
+ * 知识库选择值：编码了范围和 folderId
+ * - 'NONE'：不使用知识库
+ * - 'ALL'：全部知识库
+ * - 'INVOICE'：仅 OCR 归档票据
+ * - 'FOLDER:{id}'：指定文件夹
+ */
+const selectedKbOption = ref('NONE')
+
+/** 当前会话的 selectedKbOption：从 chat store 读写，实现会话级记忆 */
+const kbOptionForSession = computed({
   get() {
     const sid = currentSessionId.value
-    if (!sid) return null
-    return chatStore.getSessionFolderId(sid)
+    if (!sid) return 'NONE'
+    const scope = chatStore.getSessionKbScope(sid)
+    const folderId = chatStore.getSessionFolderId(sid)
+    if (scope === 'ALL') return 'ALL'
+    if (scope === 'INVOICE') return 'INVOICE'
+    if (scope === 'FOLDER' && folderId) return `FOLDER:${folderId}`
+    return 'NONE'
   },
   set(val) {
-    chatStore.setSessionFolderId(val)
+    if (val === 'NONE') {
+      chatStore.setSessionKbScope('NONE')
+      chatStore.setSessionFolderId(null)
+    } else if (val === 'ALL') {
+      chatStore.setSessionKbScope('ALL')
+      chatStore.setSessionFolderId(null)
+    } else if (val === 'INVOICE') {
+      chatStore.setSessionKbScope('INVOICE')
+      chatStore.setSessionFolderId(null)
+    } else if (val.startsWith('FOLDER:')) {
+      const fid = parseInt(val.split(':')[1], 10)
+      chatStore.setSessionKbScope('FOLDER')
+      chatStore.setSessionFolderId(fid)
+    }
   },
+})
+
+// 同步 selectedKbOption 到 computed（用于 Select v-model）
+watch(kbOptionForSession, (val) => {
+  selectedKbOption.value = val
+}, { immediate: true })
+
+watch(selectedKbOption, (val) => {
+  kbOptionForSession.value = val
 })
 
 /** 加载授权文件夹列表 */
@@ -259,18 +310,34 @@ async function loadFolderList() {
   }
 }
 
-/** 文件夹选项：显示文件夹名而非完整路径 */
-const folderOptions = computed(() =>
-  folderList.value.map((f) => ({
-    value: f.id,
-    label: f.path?.split('/').pop() || f.path || `文件夹 ${f.id}`,
-  }))
+/** 文件夹显示名称：只取路径最后一段 */
+function folderDisplayName(f) {
+  return f.path?.split('/').pop() || f.path || f.name || `文件夹 ${f.id}`
+}
+
+/** 当前 toolMode：选了知识库则为 KB_SEARCH，否则为 CHAT */
+const currentToolMode = computed(() =>
+  selectedKbOption.value !== 'NONE' ? 'KB_SEARCH' : 'CHAT'
 )
 
-/** 当前 toolMode：选了文件夹则为 KB_SEARCH，否则为 CHAT */
-const currentToolMode = computed(() =>
-  selectedFolderId.value ? 'KB_SEARCH' : 'CHAT'
-)
+/** 当前 kbScope */
+const currentKbScope = computed(() => {
+  const val = selectedKbOption.value
+  if (val === 'NONE') return 'NONE'
+  if (val === 'ALL') return 'ALL'
+  if (val === 'INVOICE') return 'INVOICE'
+  if (val.startsWith('FOLDER:')) return 'FOLDER'
+  return 'NONE'
+})
+
+/** 当前 folderId（仅 FOLDER 模式有值） */
+const currentFolderId = computed(() => {
+  const val = selectedKbOption.value
+  if (val.startsWith('FOLDER:')) {
+    return parseInt(val.split(':')[1], 10)
+  }
+  return null
+})
 
 // ========== 会话消息（全部使用 chat store） ==========
 const messages = computed(() => chatStore.messages)
@@ -319,13 +386,15 @@ const currentSessionTitle = computed(() => {
   return 'Chat'
 })
 
-// 监听会话切换：加载消息 + 设置滚动标记
+// 监听会话切换：加载消息 + 设置滚动标记 + 恢复知识库选择
 watch(() => currentSessionId.value, async (sessionId) => {
   if (sessionId) {
     // 如果 store 中没有该会话的消息，则从后端加载
     if (!chatStore.messagesBySession[sessionId]) {
       await chatStore.loadMessages(sessionId)
     }
+    // 恢复该会话的知识库选择
+    selectedKbOption.value = kbOptionForSession.value
     pendingScrollToBottom = true
     await nextTick()
     scrollToBottom(true)
@@ -346,6 +415,8 @@ onMounted(async () => {
   await loadHttpServerUrl()
   await loadEnabledModel()
   await loadFolderList()
+  // 恢复会话级知识库选择
+  selectedKbOption.value = kbOptionForSession.value
   if (currentSessionId.value) {
     // 如果 store 中没有该会话的消息，则从后端加载
     if (!chatStore.messagesBySession[currentSessionId.value]) {
@@ -383,15 +454,6 @@ async function loadEnabledModel() {
   }
 }
 
-/** Enter 发送 / Shift+Enter 换行 */
-function onEnterKey(e) {
-  if (e.shiftKey) {
-    return
-  }
-  e.preventDefault()
-  sendMessage()
-}
-
 /** 发送消息：委托给 chatStore.sendMessage */
 async function sendMessage() {
   const text = inputText.value.trim()
@@ -401,7 +463,8 @@ async function sendMessage() {
     text,
     httpServerUrl: httpServerUrl.value,
     toolMode: currentToolMode.value,
-    folderId: selectedFolderId.value || undefined,
+    folderId: currentFolderId.value || undefined,
+    kbScope: currentKbScope.value,
     onScroll: () => scrollToBottom(),
   })
 }

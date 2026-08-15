@@ -1,5 +1,5 @@
 <template>
-  <div class="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-[10px] border border-border bg-card">
+  <div ref="containerRef" class="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-[10px] border border-border bg-card">
     <!-- 工具栏 -->
     <div class="flex shrink-0 items-center justify-between border-b border-border/50 px-5 py-4">
       <div class="flex items-center gap-3">
@@ -519,15 +519,23 @@ function closeTagDropdown(e) {
 }
 
 // ===== 日程 hover 详情浮窗 =====
+const containerRef = ref(null)
 const hoveredEvent = ref(null)
 const tooltipStyle = ref({})
 
 function showEventTooltip(ev, e) {
   hoveredEvent.value = ev
   const rect = e.currentTarget.getBoundingClientRect()
-  const containerRect = e.currentTarget.closest('.calendar-workspace')?.getBoundingClientRect()
-  const left = containerRect ? rect.left - containerRect.left + rect.width + 8 : rect.left + rect.width + 8
-  const top = containerRect ? rect.top - containerRect.top : rect.top
+  const containerRect = containerRef.value?.getBoundingClientRect()
+  if (!containerRect) return
+  let left = rect.left - containerRect.left + rect.width + 8
+  const top = rect.top - containerRect.top
+  // 防止超出右边界
+  const tooltipWidth = 280
+  if (left + tooltipWidth > containerRect.width) {
+    left = rect.left - containerRect.left - tooltipWidth - 8
+    if (left < 0) left = rect.left - containerRect.left + rect.width + 8
+  }
   tooltipStyle.value = { left: left + 'px', top: top + 'px' }
 }
 

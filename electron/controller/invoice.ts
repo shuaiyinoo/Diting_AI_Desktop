@@ -16,11 +16,13 @@ import type { IpcMainEvent } from 'electron';
 import { logger } from 'ee-core/log';
 import chokidar from 'chokidar';
 import { invoicedbService } from '../service/database/invoicedb';
-import type { InvoiceFileRecord, InvoiceFolderRecord } from '../service/database/invoicedb';
+import type { InvoiceFileRecord, InvoiceFolderRecord, InvoiceRecordEntity } from '../service/database/invoicedb';
+import { ragService } from '../components/rag';
 import { invoiceOcrService } from '../components/invoice/InvoiceOcrService';
 import { invoiceAiService } from '../components/invoice/InvoiceAiService';
 import { pdfToImageService } from '../components/invoice/PdfToImageService';
 import { RECEIPT_TYPES, getCategories } from '../components/invoice/ReceiptTypes';
+import { extractNormalizedFields } from '../components/invoice/FieldMapping';
 
 // 文件变化通知通道
 const SYNC_CHANGE_CHANNEL = 'controller/invoice/onSyncChange';
@@ -482,14 +484,109 @@ class InvoiceController {
     return { success: true, files, folderPath: folder.path };
   }
 
-  /**
-   * 切换文件归档状态
-   */
-  async toggleArchived(args: { fileId: number }): Promise<{ success: boolean; file?: InvoiceFileRecord }> {
-    await this.ensureDb();
-    const file = invoicedbService.toggleArchived(args.fileId);
-    return { success: !!file, file };
+/**
+ * 切换文件归档状态
+ *
+ * 归档时：从 AI 提取结果中提取归一化字段，写入 invoice_record 表
+ * 取消归档时：从 invoice_record 表中删除对应记录
+ */
+async toggleArchived(args: { fileId: number }): Promise<{ success: boolean; file?: InvoiceFileRecord; record?: InvoiceRecordEntity | null }> {
+  await this.ensureDb();
+  const file = invoicedbService.getFileById(args.fileId);
+  if (!file) {
+    return { success: false };
   }
+
+  // 判断当前状态：archived=1 则取消归档，archived=0 则归档
+  if (file.archived === 1) {
+    // ===== 取消归档 =====
+    // 先获取归档记录 ID，用于清理 RAG 数据
+    const existingRecord = invoicedbService.getRecordByFileId(args.fileId);
+    invoicedbService.deleteRecord(args.fileId);
+    const updated = invoicedbService.toggleArchived(args.fileId);
+    // 清理该归档记录的 RAG 向量数据
+    if (existingRecord) {
+      ragService.enqueueInvoiceDelete(existingRecord.id);
+      logger.info(`[InvoiceController] 取消归档，清理 RAG 数据: recordId=${existingRecord.id}`);
+    }
+    return { success: true, file: updated ?? undefined, record: null };
+  }
+
+  // ===== 执行归档 =====
+  const folder = invoicedbService.getFolderById(file.folder_id);
+  const fullPath = folder ? path.join(folder.path, file.relative_path) : file.relative_path;
+  const now = new Date().toISOString();
+
+  // 解析 AI 数据
+  let aiData: any = null;
+  try {
+    if (file.ai_data) {
+      aiData = JSON.parse(file.ai_data);
+    }
+  } catch {
+    // 解析失败
+  }
+
+  // 提取归一化字段
+  const normalized = aiData?.structured_data ? extractNormalizedFields(aiData.structured_data) : {};
+
+  // 构建归档记录
+  const recordData = {
+    file_id: args.fileId,
+    folder_id: file.folder_id,
+    file_name: file.name,
+    file_path: fullPath,
+    file_hash: file.file_hash,
+    type_code: aiData?.type_code ?? null,
+    type_name: aiData?.type_name ?? null,
+    category: aiData?.category ?? null,
+    category_display: aiData?.category_display ?? null,
+    invoice_number: (normalized.invoice_number as string) ?? null,
+    invoice_code: (normalized.invoice_code as string) ?? null,
+    issue_date: (normalized.issue_date as string) ?? null,
+    amount_total: (normalized.amount_total as number) ?? null,
+    amount_tax: (normalized.amount_tax as number) ?? null,
+    payer_name: (normalized.payer_name as string) ?? null,
+    payee_name: (normalized.payee_name as string) ?? null,
+    province: (normalized.province as string) ?? null,
+    city: (normalized.city as string) ?? null,
+    ocr_text: file.ocr_text ?? null,
+    ai_data: file.ai_data ?? null,
+    ai_confidence: aiData?.confidence ?? null,
+    ai_needs_review: aiData?.needs_review ? 1 : 0,
+    archived_at: now,
+    ocr_at: file.processed_at ?? null,
+    ai_at: aiData ? now : null,
+  };
+
+  // 如果已有归档记录则更新，否则插入
+  const existingRecord = invoicedbService.getRecordByFileId(args.fileId);
+  let record: InvoiceRecordEntity | undefined;
+  if (existingRecord) {
+    invoicedbService.updateRecord(existingRecord.id, recordData);
+    record = invoicedbService.getRecordById(existingRecord.id);
+  } else {
+    record = invoicedbService.insertRecord(recordData);
+  }
+
+  // 同步 invoice_file.archived = 1
+  const updated = invoicedbService.toggleArchived(args.fileId);
+  logger.info(`[InvoiceController] 文件归档成功: ${file.name}, record_id=${record?.id}`);
+
+  // 触发 RAG 向量化：将 OCR 文本 + AI 结构化数据送入向量管道
+  if (record) {
+    ragService.enqueueInvoiceIngest(
+      record.id,
+      record.ocr_text ?? '',
+      record.ai_data ?? '',
+      record.file_name,
+      record.folder_id
+    );
+    logger.info(`[InvoiceController] 触发 RAG 向量化: recordId=${record.id}, fileName=${record.file_name}`);
+  }
+
+  return { success: true, file: updated ?? undefined, record: record ?? null };
+}
 
   /**
    * 重新识别：清除旧 OCR/AI 数据，重新执行 OCR 识别
@@ -676,6 +773,38 @@ class InvoiceController {
       types: RECEIPT_TYPES,
       categories: getCategories(),
     };
+  }
+
+  /**
+   * 获取归档记录列表（归集查阅页面）
+   *
+   * 支持按关键词搜索、按大类过滤、分页
+   */
+  async getArchiveRecords(args: {
+    keyword?: string;
+    category?: string;
+    typeCode?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<{ success: boolean; records?: any[]; total?: number }> {
+    await this.ensureDb();
+    const result = invoicedbService.queryRecords({
+      keyword: args.keyword,
+      category: args.category,
+      typeCode: args.typeCode,
+      limit: args.limit,
+      offset: args.offset,
+    });
+    return { success: true, records: result.records, total: result.total };
+  }
+
+  /**
+   * 获取归档统计信息（归集查阅页面顶部统计卡片）
+   */
+  async getArchiveStats(): Promise<{ success: boolean; stats?: any }> {
+    await this.ensureDb();
+    const stats = invoicedbService.getArchiveStats();
+    return { success: true, stats };
   }
 
   /**

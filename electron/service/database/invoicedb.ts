@@ -5,8 +5,9 @@ import { logger } from 'ee-core/log';
  * 票据识别数据库 service（独立模块）
  *
  * 表结构：
- *   - invoice_folder: 授权文件夹
- *   - invoice_file: 文件记录（含 processed / archived 字段）
+ *   - invoice_folder:  授权文件夹
+ *   - invoice_file:    文件记录（含 processed / archived 字段）
+ *   - invoice_record:  归档业务记录（从 AI 提取的结构化数据 + 归一化字段）
  */
 export interface InvoiceFolderRecord {
   id: number;
@@ -41,9 +42,65 @@ export interface InvoiceFileRecord {
   file_hash: string | null;
 }
 
+/** 归档业务记录实体（对应 invoice_record 表） */
+export interface InvoiceRecordEntity {
+  id: number;
+  file_id: number;
+  folder_id: number;
+  /** 原始文件名 */
+  file_name: string;
+  /** 归档时的完整路径 */
+  file_path: string | null;
+  /** 文件 SHA-256 哈希 */
+  file_hash: string | null;
+  /** 票据类型编码（ReceiptTypes.type_code） */
+  type_code: string | null;
+  /** 票据类型显示名 */
+  type_name: string | null;
+  /** 大类编码 */
+  category: string | null;
+  /** 大类显示名 */
+  category_display: string | null;
+  /** 归一化：票据号码 */
+  invoice_number: string | null;
+  /** 归一化：票据代码 */
+  invoice_code: string | null;
+  /** 归一化：开票日期（YYYY-MM-DD） */
+  issue_date: string | null;
+  /** 归一化：总金额（数值） */
+  amount_total: number | null;
+  /** 归一化：税额（数值） */
+  amount_tax: number | null;
+  /** 归一化：付款方/购方/乘客姓名 */
+  payer_name: string | null;
+  /** 归一化：收款方/销方名称 */
+  payee_name: string | null;
+  /** 归一化：省份 */
+  province: string | null;
+  /** 归一化：城市 */
+  city: string | null;
+  /** OCR 全文 */
+  ocr_text: string | null;
+  /** AI 提取的完整 JSON */
+  ai_data: string | null;
+  /** AI 分类置信度 */
+  ai_confidence: number | null;
+  /** 是否需复核 */
+  ai_needs_review: number;
+  /** 归档时间 */
+  archived_at: string | null;
+  /** OCR 识别时间 */
+  ocr_at: string | null;
+  /** AI 提取时间 */
+  ai_at: string | null;
+  created_at: string;
+  updated_at: string | null;
+}
+
 class InvoicedbService extends BasedbService {
   private folderTableName = 'invoice_folder';
   private fileTableName = 'invoice_file';
+  private recordTableName = 'invoice_record';
 
   constructor() {
     super({ dbname: 'invoice-manager.db' });
@@ -98,6 +155,50 @@ class InvoicedbService extends BasedbService {
 
     // 表结构迁移
     this._migrateTable();
+
+    // 归档业务记录表
+    if (!masterStmt.get('table', this.recordTableName)) {
+      this.db.exec(`
+        CREATE TABLE ${this.recordTableName}
+        (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          file_id INTEGER NOT NULL,
+          folder_id INTEGER NOT NULL,
+          file_name TEXT NOT NULL,
+          file_path TEXT,
+          file_hash TEXT,
+          type_code TEXT,
+          type_name TEXT,
+          category TEXT,
+          category_display TEXT,
+          invoice_number TEXT,
+          invoice_code TEXT,
+          issue_date TEXT,
+          amount_total REAL,
+          amount_tax REAL,
+          payer_name TEXT,
+          payee_name TEXT,
+          province TEXT,
+          city TEXT,
+          ocr_text TEXT,
+          ai_data TEXT,
+          ai_confidence REAL,
+          ai_needs_review INTEGER DEFAULT 0,
+          archived_at TEXT,
+          ocr_at TEXT,
+          ai_at TEXT,
+          created_at TEXT DEFAULT (datetime('now')),
+          updated_at TEXT
+        );
+      `);
+      this.db.exec(`CREATE INDEX idx_invoice_record_file ON ${this.recordTableName} (file_id);`);
+      this.db.exec(`CREATE INDEX idx_invoice_record_folder ON ${this.recordTableName} (folder_id);`);
+      this.db.exec(`CREATE INDEX idx_invoice_record_type ON ${this.recordTableName} (type_code);`);
+      this.db.exec(`CREATE INDEX idx_invoice_record_category ON ${this.recordTableName} (category);`);
+      this.db.exec(`CREATE INDEX idx_invoice_record_date ON ${this.recordTableName} (issue_date);`);
+      this.db.exec(`CREATE INDEX idx_invoice_record_amount ON ${this.recordTableName} (amount_total);`);
+    }
+    this._migrateRecordTable();
   }
 
   /** 迁移：补充缺失字段 */
@@ -153,6 +254,172 @@ class InvoicedbService extends BasedbService {
   deleteFolder(folderId: number): void {
     this.db.prepare(`DELETE FROM ${this.fileTableName} WHERE folder_id = ?`).run(folderId);
     this.db.prepare(`DELETE FROM ${this.folderTableName} WHERE id = ?`).run(folderId);
+  }
+
+  // ========== 归档记录操作 ==========
+
+  /** 根据 file_id 查找归档记录 */
+  getRecordByFileId(fileId: number): InvoiceRecordEntity | undefined {
+    return this.db.prepare(`SELECT * FROM ${this.recordTableName} WHERE file_id = ?`).get(fileId) as InvoiceRecordEntity | undefined;
+  }
+
+  /** 根据 ID 获取归档记录 */
+  getRecordById(id: number): InvoiceRecordEntity | undefined {
+    return this.db.prepare(`SELECT * FROM ${this.recordTableName} WHERE id = ?`).get(id) as InvoiceRecordEntity | undefined;
+  }
+
+  /** 查询归档记录列表（支持搜索 + 分类过滤 + 分页） */
+  queryRecords(options: {
+    keyword?: string;
+    category?: string;
+    typeCode?: string;
+    limit?: number;
+    offset?: number;
+  }): { total: number; records: InvoiceRecordEntity[] } {
+    const conditions: string[] = [];
+    const params: any[] = [];
+
+    if (options.keyword) {
+      conditions.push(`(file_name LIKE ? OR invoice_number LIKE ? OR invoice_code LIKE ? OR payer_name LIKE ? OR payee_name LIKE ? OR type_name LIKE ?)`);
+      const kw = `%${options.keyword}%`;
+      params.push(kw, kw, kw, kw, kw, kw);
+    }
+    if (options.category) {
+      conditions.push(`category = ?`);
+      params.push(options.category);
+    }
+    if (options.typeCode) {
+      conditions.push(`type_code = ?`);
+      params.push(options.typeCode);
+    }
+
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+    const limit = options.limit ?? 50;
+    const offset = options.offset ?? 0;
+
+    const total = (this.db.prepare(`SELECT COUNT(*) as count FROM ${this.recordTableName} ${whereClause}`).get(...params) as { count: number }).count;
+    const records = this.db.prepare(
+      `SELECT * FROM ${this.recordTableName} ${whereClause} ORDER BY archived_at DESC LIMIT ? OFFSET ?`
+    ).all(...params, limit, offset) as InvoiceRecordEntity[];
+
+    return { total, records };
+  }
+
+  /** 获取归档统计 */
+  getArchiveStats(): {
+    total: number;
+    needsReview: number;
+    totalAmount: number;
+    categoryCounts: { category: string; category_display: string; count: number }[];
+  } {
+    const total = (this.db.prepare(`SELECT COUNT(*) as count FROM ${this.recordTableName}`).get() as { count: number }).count;
+    const needsReview = (this.db.prepare(`SELECT COUNT(*) as count FROM ${this.recordTableName} WHERE ai_needs_review = 1`).get() as { count: number }).count;
+    const totalAmountRow = this.db.prepare(`SELECT COALESCE(SUM(amount_total), 0) as sum FROM ${this.recordTableName}`).get() as { sum: number };
+    const categoryRows = this.db.prepare(`
+      SELECT category, category_display, COUNT(*) as count
+      FROM ${this.recordTableName}
+      GROUP BY category, category_display
+      ORDER BY count DESC
+    `).all() as { category: string; category_display: string; count: number }[];
+
+    return {
+      total,
+      needsReview,
+      totalAmount: totalAmountRow.sum,
+      categoryCounts: categoryRows,
+    };
+  }
+
+  /** 插入归档记录 */
+  insertRecord(record: Omit<InvoiceRecordEntity, 'id' | 'created_at' | 'updated_at'>): InvoiceRecordEntity | undefined {
+    this.db.prepare(`
+      INSERT INTO ${this.recordTableName}
+      (file_id, folder_id, file_name, file_path, file_hash,
+       type_code, type_name, category, category_display,
+       invoice_number, invoice_code, issue_date, amount_total, amount_tax,
+       payer_name, payee_name, province, city,
+       ocr_text, ai_data, ai_confidence, ai_needs_review,
+       archived_at, ocr_at, ai_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      record.file_id, record.folder_id, record.file_name, record.file_path, record.file_hash,
+      record.type_code, record.type_name, record.category, record.category_display,
+      record.invoice_number, record.invoice_code, record.issue_date, record.amount_total, record.amount_tax,
+      record.payer_name, record.payee_name, record.province, record.city,
+      record.ocr_text, record.ai_data, record.ai_confidence, record.ai_needs_review,
+      record.archived_at, record.ocr_at, record.ai_at,
+    );
+    const id = this.db.prepare(`SELECT last_insert_rowid() as id`).get() as { id: number };
+    return this.getRecordById(id.id);
+  }
+
+  /** 更新归档记录（重新归档时使用） */
+  updateRecord(id: number, record: Partial<Omit<InvoiceRecordEntity, 'id' | 'created_at'>>): void {
+    const fields: string[] = [];
+    const values: any[] = [];
+    const allowedFields = [
+      'file_name', 'file_path', 'file_hash',
+      'type_code', 'type_name', 'category', 'category_display',
+      'invoice_number', 'invoice_code', 'issue_date', 'amount_total', 'amount_tax',
+      'payer_name', 'payee_name', 'province', 'city',
+      'ocr_text', 'ai_data', 'ai_confidence', 'ai_needs_review',
+      'archived_at', 'ocr_at', 'ai_at',
+    ];
+    for (const [key, value] of Object.entries(record)) {
+      if (allowedFields.includes(key)) {
+        fields.push(`${key} = ?`);
+        values.push(value);
+      }
+    }
+    if (fields.length === 0) return;
+    fields.push(`updated_at = ?`);
+    values.push(new Date().toISOString());
+    values.push(id);
+    this.db.prepare(`UPDATE ${this.recordTableName} SET ${fields.join(', ')} WHERE id = ?`).run(...values);
+  }
+
+  /** 删除归档记录（取消归档时使用） */
+  deleteRecord(fileId: number): void {
+    this.db.prepare(`DELETE FROM ${this.recordTableName} WHERE file_id = ?`).run(fileId);
+  }
+
+  /** 迁移：invoice_record 表补充缺失字段（幂等检测） */
+  private _migrateRecordTable(): void {
+    const columns = this.db.prepare(`PRAGMA table_info(${this.recordTableName})`).all() as { name: string }[];
+    const colNames = new Set(columns.map(c => c.name));
+
+    const migrations: Record<string, string> = {
+      file_id: 'INTEGER NOT NULL',
+      folder_id: 'INTEGER NOT NULL',
+      file_name: 'TEXT NOT NULL',
+      file_path: 'TEXT',
+      file_hash: 'TEXT',
+      type_code: 'TEXT',
+      type_name: 'TEXT',
+      category: 'TEXT',
+      category_display: 'TEXT',
+      invoice_number: 'TEXT',
+      invoice_code: 'TEXT',
+      issue_date: 'TEXT',
+      amount_total: 'REAL',
+      amount_tax: 'REAL',
+      payer_name: 'TEXT',
+      payee_name: 'TEXT',
+      province: 'TEXT',
+      city: 'TEXT',
+      ocr_text: 'TEXT',
+      ai_data: 'TEXT',
+      ai_confidence: 'REAL',
+      ai_needs_review: 'INTEGER DEFAULT 0',
+      archived_at: 'TEXT',
+      ocr_at: 'TEXT',
+      ai_at: 'TEXT',
+    };
+    for (const [col, type] of Object.entries(migrations)) {
+      if (!colNames.has(col)) {
+        this.db.exec(`ALTER TABLE ${this.recordTableName} ADD COLUMN ${col} ${type};`);
+      }
+    }
   }
 
   // ========== 文件操作 ==========

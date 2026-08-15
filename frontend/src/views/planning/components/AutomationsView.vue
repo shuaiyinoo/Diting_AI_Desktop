@@ -156,7 +156,7 @@
 
         <!-- 右栏：配置 -->
         <div class="flex w-[340px] shrink-0 flex-col min-h-0">
-          <div class="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
+          <div class="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-1 py-1">
           <!-- 启用状态 -->
           <div class="flex flex-col gap-1.5">
             <Label class="text-xs font-medium text-muted-foreground">状态</Label>

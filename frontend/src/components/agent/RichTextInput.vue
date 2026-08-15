@@ -45,7 +45,7 @@
               <!-- 文件夹项 -->
               <template v-if="item.isDir">
                 <component
-                  :is="fileExpandedFolders.has(item.togglePath) ? 'DownOutlined' : 'RightOutlined'"
+                  :is="fileExpandedFolders.has(item.togglePath) ? ChevronDown : ChevronRight"
                   class="mention-popup__arrow"
                 />
                 <Folder class="mention-popup__icon mention-popup__icon--folder" :size="14" />

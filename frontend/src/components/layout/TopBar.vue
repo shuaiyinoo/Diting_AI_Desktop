@@ -10,7 +10,7 @@
         <img src="/favicon-32x32.png" alt="谛听AI" draggable="false" class="h-[22px] w-[22px] rounded" />
       </div>
 
-      <!-- 模式切换 -->
+      <!-- 模式切换（已隐藏）
       <div class="inline-flex h-7 items-center rounded-md bg-[var(--bg-hover)] p-0.5">
         <button
           class="inline-flex h-6 items-center justify-center rounded px-3 text-xs font-medium transition-all duration-150"
@@ -35,6 +35,7 @@
           <Plus class="size-3.5" />
         </button>
       </div>
+      -->
     </div>
 
     <!-- 右侧：软件名称 + 副标题 -->
@@ -75,7 +76,7 @@
       </button>
     </div>
 
-    <!-- 远程地址编辑弹窗 -->
+    <!-- 远程地址编辑弹窗（已隐藏）
     <Dialog v-model:open="modalVisible">
       <DialogContent class="max-w-[420px]">
         <DialogHeader>
@@ -92,6 +93,7 @@
         </DialogFooter>
       </DialogContent>
     </Dialog>
+    -->
   </div>
 </template>
 

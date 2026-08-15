@@ -3,6 +3,8 @@ import { createPinia } from 'pinia';
 import App from './App.vue';
 
 // ===== 全局样式 =====
+// vue-sonner Toast 通知样式（必须在 globals.css 之前导入）
+import 'vue-sonner/style.css';
 // markstream-vue 流式 Markdown 渲染器样式（必须在 globals.css 之前导入）
 import 'markstream-vue/index.css';
 import 'katex/dist/katex.min.css';

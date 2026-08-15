@@ -31,10 +31,13 @@ export interface ChunkResult {
   chunkStrategy: string;
 }
 
+/** 数据来源类型 */
+export type DataSource = 'FILE' | 'INVOICE';
+
 /** 切片记录（对应 document_chunks 表） */
 export interface DocumentChunkRecord {
   id?: number;
-  fileItemId: number; // 关联 file_item.id
+  fileItemId: number; // 关联 file_item.id（FILE）或 invoice_record.id（INVOICE）
   folderId: number;
   chunkIndex: number;
   chunkText: string;
@@ -42,6 +45,8 @@ export interface DocumentChunkRecord {
   charStart: number;
   charEnd: number;
   metadataJson: string | null;
+  /** 数据来源：FILE=文件模块，INVOICE=OCR 票据归档 */
+  source: DataSource;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -58,6 +63,8 @@ export interface VectorStoreRecord {
   metadata: Record<string, unknown>;
   dimension: number;
   status: 'VECTORIZED' | 'PENDING' | 'FAILED';
+  /** 数据来源：FILE=文件模块，INVOICE=OCR 票据归档 */
+  source: DataSource;
   createdAt?: string;
 }
 
@@ -77,6 +84,8 @@ export interface VectorSearchResult {
   chunkIndex: number;
   folderId: number;
   fileName: string;
+  /** 数据来源：FILE=文件模块，INVOICE=OCR 票据归档 */
+  source: DataSource;
 }
 
 /** 关键词检索命中 */
@@ -88,6 +97,8 @@ export interface KeywordHit {
   chunkText: string;
   rawScore: number;
   normalizedScore: number;
+  /** 数据来源：FILE=文件模块，INVOICE=OCR 票据归档 */
+  source: DataSource;
 }
 
 /**
@@ -167,6 +178,8 @@ export interface RetrievalCandidate {
   chunkIndex: number;
   folderId: number;
   fileName: string;
+  /** 数据来源：FILE=文件模块，INVOICE=OCR 票据归档 */
+  source: DataSource;
   /** 向量检索评分（取多次命中的最大值） */
   vectorScore: number;
   /** 关键词检索评分（取多次命中的最大值） */
@@ -206,6 +219,13 @@ export interface EvidenceMetadata {
   vectorScore: number;
   keywordScore: number;
   hybridScore: number;
+  /** 数据来源：FILE=文件模块，INVOICE=OCR 票据归档 */
+  source: DataSource;
+  /** 票据归档特有元数据（source=INVOICE 时有值） */
+  invoiceNumber?: string | null;
+  typeName?: string | null;
+  issueDate?: string | null;
+  amountTotal?: number | null;
 }
 
 /**
@@ -245,6 +265,13 @@ export interface Citation {
   fileName: string;
   score: number;
   snippet: string | null;
+  /** 数据来源：FILE=文件模块，INVOICE=OCR 票据归档 */
+  source: DataSource;
+  /** 票据归档特有展示信息（source=INVOICE 时有值） */
+  invoiceNumber?: string | null;
+  typeName?: string | null;
+  issueDate?: string | null;
+  amountTotal?: number | null;
 }
 
 /** 问答响应 */

@@ -177,7 +177,7 @@ const fontFamilyMap = {
 
 // ========== Base Color HSL 映射表 ==========
 // 参考 shadcn-vue/themes 的标准色值
-const baseColorMap = {
+var baseColorMap = {
   neutral: {
     light: {
       '--background': '0 0% 100%',
@@ -351,7 +351,7 @@ const baseColorMap = {
 }
 
 // ========== Primary Color HSL 映射表 ==========
-const primaryColorMap = {
+var primaryColorMap = {
   blue:    { light: '221 83% 53%',  dark: '217 91% 60%'  },
   green:   { light: '142 71% 45%',  dark: '142 71% 45%'  },
   violet:  { light: '262 83% 58%',  dark: '263 70% 65%'  },
@@ -362,7 +362,7 @@ const primaryColorMap = {
 }
 
 // ========== Radius 映射表 ==========
-const radiusMap = {
+var radiusMap = {
   none:    '0px',
   small:   '0.375rem',   // 6px
   default: '0.5rem',     // 8px
@@ -370,59 +370,66 @@ const radiusMap = {
 }
 
 // ========== 应用自定义变量映射 ==========
-// 将 shadcn 标准变量派生到应用自定义变量，保持全局一致
+// 从 shadcn 标准变量（已由 baseColor 设置）派生应用自定义变量，
+// 确保切换基础色调时全局 UI 颜色同步变化。
 function applyAppCustomVariables(dark) {
-  const root = document.documentElement
+  var root = document.documentElement
+
+  // 读取当前 baseColor 对应的 HSL 值（applyThemeCustomization 已设置到 :root）
+  var cs = getComputedStyle(root)
+  function getVar(name) { return cs.getPropertyValue(name).trim() }
+  // 构造 hsl(h s% l%) 字符串
+  function h(c) { return 'hsl(' + c + ')' }
+  // 构造带透明度的 hsl(h s% l% / alpha)
+  function ha(c, a) { return 'hsl(' + c + ' / ' + a + ')' }
 
   if (dark) {
-    // 暗色应用自定义变量
-    root.style.setProperty('--bg-layout', 'hsl(222 47% 8%)')
-    root.style.setProperty('--bg-panel', 'hsl(222 47% 11%)')
-    root.style.setProperty('--bg-sidebar', 'hsl(222 47% 9%)')
-    root.style.setProperty('--bg-statusbar', 'hsl(222 47% 9%)')
-    root.style.setProperty('--bg-hover', 'hsl(215 28% 17%)')
-    root.style.setProperty('--bg-active', 'hsl(215 28% 20%)')
-    root.style.setProperty('--bg-divider', 'hsl(217 33% 20%)')
+    root.style.setProperty('--bg-layout', ha(getVar('--background'), '0.7'))
+    root.style.setProperty('--bg-panel', h(getVar('--background')))
+    root.style.setProperty('--bg-sidebar', h(getVar('--muted')))
+    root.style.setProperty('--bg-statusbar', h(getVar('--muted')))
+    root.style.setProperty('--bg-hover', h(getVar('--accent')))
+    root.style.setProperty('--bg-active', ha(getVar('--accent'), '0.8'))
+    root.style.setProperty('--bg-divider', h(getVar('--border')))
     root.style.setProperty('--bg-divider-hover', 'hsl(var(--primary))')
-    root.style.setProperty('--border-color', 'hsl(217 33% 20%)')
-    root.style.setProperty('--border-color-light', 'hsl(217 33% 17%)')
-    root.style.setProperty('--text-primary', 'hsl(210 40% 98%)')
-    root.style.setProperty('--text-secondary', 'hsl(215 20% 65%)')
-    root.style.setProperty('--text-muted', 'hsl(215 16% 47%)')
+    root.style.setProperty('--border-color', h(getVar('--border')))
+    root.style.setProperty('--border-color-light', h(getVar('--border')))
+    root.style.setProperty('--text-primary', h(getVar('--foreground')))
+    root.style.setProperty('--text-secondary', h(getVar('--muted-foreground')))
+    root.style.setProperty('--text-muted', ha(getVar('--muted-foreground'), '0.7'))
     root.style.setProperty('--accent-color', 'hsl(var(--primary))')
     root.style.setProperty('--accent-hover', 'hsl(var(--primary) / 0.8)')
     root.style.setProperty('--shadow-sm', '0 1px 4px hsl(0 0% 0% / 0.3)')
-    root.style.setProperty('--scrollbar-thumb', 'hsl(215 16% 30%)')
+    root.style.setProperty('--scrollbar-thumb', ha(getVar('--muted-foreground'), '0.3'))
     root.style.setProperty('--scrollbar-track', 'transparent')
   } else {
-    // 亮色应用自定义变量
-    root.style.setProperty('--bg-layout', 'hsl(210 20% 96%)')
-    root.style.setProperty('--bg-panel', 'hsl(0 0% 100%)')
-    root.style.setProperty('--bg-sidebar', 'hsl(210 20% 96%)')
-    root.style.setProperty('--bg-statusbar', 'hsl(210 20% 96%)')
-    root.style.setProperty('--bg-hover', 'hsl(210 40% 94%)')
-    root.style.setProperty('--bg-active', 'hsl(210 40% 90%)')
-    root.style.setProperty('--bg-divider', 'hsl(214 32% 91%)')
+    root.style.setProperty('--bg-layout', h(getVar('--secondary')))
+    root.style.setProperty('--bg-panel', h(getVar('--background')))
+    root.style.setProperty('--bg-sidebar', h(getVar('--secondary')))
+    root.style.setProperty('--bg-statusbar', h(getVar('--secondary')))
+    root.style.setProperty('--bg-hover', h(getVar('--accent')))
+    root.style.setProperty('--bg-active', ha(getVar('--accent'), '0.6'))
+    root.style.setProperty('--bg-divider', h(getVar('--border')))
     root.style.setProperty('--bg-divider-hover', 'hsl(var(--primary))')
-    root.style.setProperty('--border-color', 'hsl(214 32% 91%)')
-    root.style.setProperty('--border-color-light', 'hsl(210 20% 94%)')
-    root.style.setProperty('--text-primary', 'hsl(222 47% 11%)')
-    root.style.setProperty('--text-secondary', 'hsl(215 16% 47%)')
-    root.style.setProperty('--text-muted', 'hsl(215 16% 60%)')
+    root.style.setProperty('--border-color', h(getVar('--border')))
+    root.style.setProperty('--border-color-light', ha(getVar('--secondary'), '0.5'))
+    root.style.setProperty('--text-primary', h(getVar('--foreground')))
+    root.style.setProperty('--text-secondary', h(getVar('--muted-foreground')))
+    root.style.setProperty('--text-muted', ha(getVar('--muted-foreground'), '0.7'))
     root.style.setProperty('--accent-color', 'hsl(var(--primary))')
     root.style.setProperty('--accent-hover', 'hsl(var(--primary) / 0.8)')
     root.style.setProperty('--shadow-sm', '0 1px 4px hsl(0 0% 0% / 0.06)')
-    root.style.setProperty('--scrollbar-thumb', 'hsl(215 16% 75%)')
+    root.style.setProperty('--scrollbar-thumb', ha(getVar('--muted-foreground'), '0.4'))
     root.style.setProperty('--scrollbar-track', 'transparent')
   }
 }
 
 // ========== 应用主题到 DOM ==========
 function applyTheme() {
-  const dark = themeMode.value === 'dark' || (themeMode.value === 'system' && systemDark.value)
+  var dark = themeMode.value === 'dark' || (themeMode.value === 'system' && systemDark.value)
   isDark.value = dark
 
-  const html = document.documentElement
+  var html = document.documentElement
   if (dark) {
     html.classList.add('dark')
     html.setAttribute('data-theme', 'dark')
@@ -431,24 +438,24 @@ function applyTheme() {
     html.setAttribute('data-theme', 'light')
   }
 
-  applyAppCustomVariables(dark)
+  // applyThemeCustomization 会先设置 shadcn 变量，再调用 applyAppCustomVariables 派生
   applyThemeCustomization()
 }
 
 // ========== 应用主题定制参数 ==========
 function applyThemeCustomization() {
-  const root = document.documentElement
-  const colors = baseColorMap[baseColor.value]
-  const dark = isDark.value
+  var root = document.documentElement
+  var colors = baseColorMap[baseColor.value]
+  var dark = isDark.value
 
   // 应用 Base Color — 覆盖 shadcn 标准变量
-  const targetColors = dark ? colors.dark : colors.light
-  Object.entries(targetColors).forEach(([key, value]) => {
-    root.style.setProperty(key, value)
+  var targetColors = dark ? colors.dark : colors.light
+  Object.keys(targetColors).forEach(function (key) {
+    root.style.setProperty(key, targetColors[key])
   })
 
   // 应用 Primary Color
-  const primary = primaryColorMap[primaryColor.value]
+  var primary = primaryColorMap[primaryColor.value]
   root.style.setProperty('--primary', dark ? primary.dark : primary.light)
   root.style.setProperty('--ring', dark ? primary.dark : primary.light)
 
@@ -456,7 +463,7 @@ function applyThemeCustomization() {
   root.style.setProperty('--radius', radiusMap[radiusSize.value])
 
   // 应用 Font Family
-  const fontInfo = fontFamilyMap[fontFamily.value] || fontFamilyMap.system
+  var fontInfo = fontFamilyMap[fontFamily.value] || fontFamilyMap.system
   root.style.setProperty('--font-family', fontInfo.value)
 
   // 应用 Font Mono：如果用户选择的字体是等宽类，则 --font-mono 也跟随用户选择；
@@ -468,7 +475,7 @@ function applyThemeCustomization() {
     root.style.removeProperty('--font-mono')
   }
 
-  // 同步应用自定义变量（因为 primary 可能变了）
+  // 同步应用自定义变量（从 shadcn 变量派生，因为 baseColor/primary 可能变了）
   applyAppCustomVariables(dark)
 }
 
@@ -476,7 +483,7 @@ function applyThemeCustomization() {
 
 /** 在亮色/暗色之间切换 */
 function toggleTheme() {
-  const newMode = isDark.value ? 'light' : 'dark'
+  var newMode = isDark.value ? 'light' : 'dark'
   setThemeMode(newMode)
 }
 
@@ -519,8 +526,8 @@ function setFontFamily(font) {
 
 // 监听系统主题变化
 if (window.matchMedia) {
-  const mql = window.matchMedia('(prefers-color-scheme: dark)')
-  mql.addEventListener('change', (e) => {
+  var mql = window.matchMedia('(prefers-color-scheme: dark)')
+  mql.addEventListener('change', function (e) {
     systemDark.value = e.matches
     if (themeMode.value === 'system') {
       applyTheme()
@@ -530,11 +537,11 @@ if (window.matchMedia) {
 
 // 从 localStorage 恢复配置
 function initTheme() {
-  const savedMode = localStorage.getItem('app-theme-mode') || 'light'
-  const savedBase = localStorage.getItem('theme-base-color') || 'neutral'
-  const savedPrimary = localStorage.getItem('theme-primary') || 'blue'
-  const savedRadius = localStorage.getItem('theme-radius') || 'default'
-  const savedFont = localStorage.getItem('theme-font-family') || 'system'
+  var savedMode = localStorage.getItem('app-theme-mode') || 'light'
+  var savedBase = localStorage.getItem('theme-base-color') || 'neutral'
+  var savedPrimary = localStorage.getItem('theme-primary') || 'blue'
+  var savedRadius = localStorage.getItem('theme-radius') || 'default'
+  var savedFont = localStorage.getItem('theme-font-family') || 'system'
 
   themeMode.value = savedMode
   baseColor.value = savedBase
@@ -550,7 +557,7 @@ function initTheme() {
 initTheme()
 
 // 当 isDark 变化时，重新应用定制（确保变量同步）
-watch(isDark, () => {
+watch(isDark, function () {
   applyThemeCustomization()
 })
 

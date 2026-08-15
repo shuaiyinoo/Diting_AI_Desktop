@@ -20,9 +20,9 @@
         <TooltipContent side="top" align="start">检查更新</TooltipContent>
       </Tooltip>
 
+      <!-- 远程地址（已隐藏）
       <span class="mx-0.5 h-3 w-px shrink-0 bg-border" />
 
-      <!-- 远程地址 -->
       <Tooltip>
         <TooltipTrigger as-child>
           <span
@@ -38,6 +38,7 @@
           {{ remoteAddress ? remoteAddress : '添加远程地址' }}
         </TooltipContent>
       </Tooltip>
+      -->
     </div>
 
     <!-- 右侧 -->

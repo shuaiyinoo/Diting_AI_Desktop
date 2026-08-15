@@ -37,6 +37,7 @@ export type {
   EmbeddingProvider,
   VectorSearchResult,
   KeywordHit,
+  DataSource,
 } from './types';
 
 export {
@@ -71,7 +72,9 @@ export {
   embedAndStore,
   searchVectors,
   deleteVectorsByFileItemId,
+  deleteVectorsBySourceId,
   buildStableId,
+  buildStableIdForSource,
 } from './database/vector-store';
 
 // ═══════════════════════════════════════════

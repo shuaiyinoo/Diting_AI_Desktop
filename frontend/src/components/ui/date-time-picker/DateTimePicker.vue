@@ -33,7 +33,6 @@ watch(() => props.modelValue, (val) => {
   if (val) {
     const d = dayjs(val)
     if (d.isValid()) {
-      // 转换为 @internationalized/date 的 CalendarDate
       selectedDate.value = new CalendarDate(d.year(), d.month() + 1, d.date())
       timeStr.value = d.format('HH:mm')
     }
@@ -51,21 +50,28 @@ const displayText = computed(() => {
   return d.format('YYYY-MM-DD HH:mm')
 })
 
+// 传给 Calendar 的 modelValue：null → undefined（避免 CalendarRoot 内 isEqualDay 报错）
+const calendarValue = computed(() => selectedDate.value ?? undefined)
+
+// 构造日期时间字符串
+function buildDateStr(date, time) {
+  return `${date.year}-${String(date.month).padStart(2, '0')}-${String(date.day).padStart(2, '0')}T${time}`
+}
+
 // 当 Calendar 选择日期时更新
 function onDateSelect(date) {
   if (!date) return
   // date 是 CalendarDate 对象
-  // 构造新的 YYYY-MM-DDTHH:mm 字符串
-  const newDateStr = `${date.year}-${String(date.month).padStart(2, '0')}-${String(date.day).padStart(2, '0')}T${timeStr.value}`
+  const newDateStr = buildDateStr(date, timeStr.value)
   emits('update:modelValue', newDateStr)
+  // 不自动关闭，让用户可以同时调整时间
 }
 
 // 当时间输入变化时更新
 function onTimeInput(e) {
   timeStr.value = e.target.value
   if (selectedDate.value) {
-    const date = selectedDate.value
-    const newDateStr = `${date.year}-${String(date.month).padStart(2, '0')}-${String(date.day).padStart(2, '0')}T${timeStr.value}`
+    const newDateStr = buildDateStr(selectedDate.value, timeStr.value)
     emits('update:modelValue', newDateStr)
   }
 }
@@ -79,14 +85,14 @@ function clearValue() {
 </script>
 
 <template>
-  <div :class="cn('relative flex', props.class)">
+  <div class="relative flex w-full items-center">
     <Popover v-model:open="open">
       <PopoverTrigger as-child>
         <Button
           variant="outline"
           :disabled="disabled"
           class="w-full justify-start text-left font-normal"
-          :class="!modelValue ? 'text-muted-foreground' : ''"
+          :class="cn(props.class, !props.modelValue ? 'text-muted-foreground' : '')"
         >
           <CalendarIcon class="size-4 shrink-0" />
           {{ displayText || placeholder }}
@@ -94,7 +100,7 @@ function clearValue() {
       </PopoverTrigger>
       <PopoverContent class="w-auto p-0" align="start">
         <Calendar
-          :model-value="selectedDate"
+          :model-value="calendarValue"
           @update:model-value="onDateSelect"
         />
         <div class="flex items-center gap-2 border-t border-border/50 p-3">
@@ -109,13 +115,14 @@ function clearValue() {
       </PopoverContent>
     </Popover>
     <Button
-      v-if="modelValue && !disabled"
+      v-if="props.modelValue && !disabled"
       variant="ghost"
       size="icon"
-      class="absolute right-0.5 top-1/2 size-7 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-      @click="clearValue"
+      class="absolute right-0.5 top-1/2 size-6 -translate-y-1/2 shrink-0 text-muted-foreground hover:text-foreground"
+      tabindex="-1"
+      @click.stop="clearValue"
     >
-      <X class="size-3.5" />
+      <X class="size-3" />
     </Button>
   </div>
 </template>

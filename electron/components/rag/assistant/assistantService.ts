@@ -32,6 +32,7 @@ import type {
   AssistantChatStreamEvent,
   AssistantMessageVO,
   AssistantToolMode,
+  KbScope,
 } from './types';
 import { EvidenceLevel } from '../types';
 import type { Citation, LlmUsageInfo, RetrievedEvidenceBundle } from '../types';
@@ -69,7 +70,9 @@ class AssistantService {
   ): Promise<void> {
     const startTime = Date.now();
     const safeRequest = this.requireChatRequest(request);
-    const { sessionId, toolMode, folderId } = safeRequest;
+    const { sessionId, toolMode } = safeRequest;
+    const folderId: number | null = safeRequest.folderId ?? null;
+    const kbScope: KbScope = safeRequest.kbScope ?? (folderId ? 'FOLDER' : 'NONE');
 
     let reply = '';
     let success = false;
@@ -104,31 +107,45 @@ class AssistantService {
       // 3. 发送 start 事件
       callbacks.onEvent(this.makeEvent('start', sessionId, toolMode, folderId ?? null));
 
-      // 4. KB_SEARCH 模式：检索证据
+            // 4. KB_SEARCH 模式：检索证据
       let citations: Citation[] = [];
       let evidenceLevel: EvidenceLevel | null = null;
       let evidenceBundle: RetrievedEvidenceBundle | null = null;
-
       if (toolMode === 'KB_SEARCH') {
-        if (!folderId || folderId <= 0) {
-          throw new Error('KB_SEARCH 模式必须提供 folderId');
+        // 根据检索范围选择策略
+        if (kbScope === 'NONE') {
+          // NONE 范围等同于 CHAT 模式，跳过检索
+          evidenceBundle = null;
+        } else if (kbScope === 'ALL') {
+          // 全部知识库（跨文件夹 + OCR 归档）
+          evidenceBundle = await hybridRetrievalService.retrieveAll(safeRequest.message, 5);
+        } else if (kbScope === 'INVOICE') {
+          // 仅 OCR 归档票据
+          evidenceBundle = await hybridRetrievalService.retrieveBySource(safeRequest.message, 'INVOICE', 5);
+        } else {
+          // FOLDER：指定文件夹
+          if (!folderId || folderId <= 0) {
+            throw new Error('KB_SEARCH 模式必须提供 folderId');
+          }
+          evidenceBundle = await hybridRetrievalService.retrieve(folderId, safeRequest.message, 5);
         }
-        evidenceBundle = await hybridRetrievalService.retrieve(folderId, safeRequest.message, 5);
-        // 弱证据时不返回引用，避免误导用户
-        citations = evidenceBundle.evidenceLevel === EvidenceLevel.WEAK
-          ? []
-          : assembleCitations(evidenceBundle.documents);
-        evidenceLevel = evidenceBundle.evidenceLevel;
 
-        // 发送引用事件（流开始前让前端展示证据）
-        callbacks.onEvent({
-          ...this.makeEvent('citations', sessionId, toolMode, folderId),
-          citations,
-          evidenceLevel,
-        });
+        if (evidenceBundle) {
+          // 弱证据时不返回引用，避免误导用户
+          citations = evidenceBundle.evidenceLevel === EvidenceLevel.WEAK
+            ? []
+            : assembleCitations(evidenceBundle.documents);
+          evidenceLevel = evidenceBundle.evidenceLevel;
 
-        // 无证据 → 直接结束
-        if (evidenceBundle.documents.length === 0) {
+          // 发送引用事件（流开始前让前端展示证据）
+          callbacks.onEvent({
+            ...this.makeEvent('citations', sessionId, toolMode, folderId),
+            citations,
+            evidenceLevel,
+          });
+
+          // 无证据 → 直接结束
+          if (evidenceBundle.documents.length === 0) {
           const usage: LlmUsageInfo = {
             promptTokens: 0,
             completionTokens: 0,
@@ -162,6 +179,9 @@ class AssistantService {
           });
           success = true;
           return;
+        }
+        } else {
+          // NONE 范围：跳过检索，进入正常流式回答
         }
       }
 
@@ -398,11 +418,19 @@ class AssistantService {
     if (request.message.length > 8000) {
       throw new Error('消息长度不能超过 8000 个字符');
     }
-    if (request.toolMode === 'CHAT' && request.folderId != null) {
-      throw new Error('CHAT 模式不允许传 folderId');
-    }
-    if (request.toolMode === 'KB_SEARCH' && !request.folderId) {
-      throw new Error('KB_SEARCH 模式必须传 folderId');
+    // 校验 kbScope 与 folderId 的组合
+    const scope: KbScope = request.kbScope ?? (request.folderId ? 'FOLDER' : 'NONE');
+    if (request.toolMode === 'CHAT') {
+      // CHAT 模式不检索知识库，folderId 无意义
+      if (request.folderId != null) {
+        throw new Error('CHAT 模式不允许传 folderId');
+      }
+    } else if (request.toolMode === 'KB_SEARCH') {
+      // KB_SEARCH 模式根据 kbScope 校验
+      if (scope === 'FOLDER' && (!request.folderId || request.folderId <= 0)) {
+        throw new Error('FOLDER 检索范围必须传 folderId');
+      }
+      // ALL / INVOICE / NONE 不需要 folderId
     }
     return request;
   }

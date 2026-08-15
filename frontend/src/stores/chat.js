@@ -25,6 +25,9 @@ export const useChatStore = defineStore('chat', () => {
   /** 多会话隔离：每个会话最后选择的知识库 folderId */
   const folderIdBySession = ref({})
 
+  /** 多会话隔离：每个会话最后选择的知识库范围 */
+  const kbScopeBySession = ref({})
+
   /** 多会话隔离：流式状态按 sessionId 跟踪 */
   const streamingSessions = ref(new Set())
 
@@ -108,7 +111,7 @@ export const useChatStore = defineStore('chat', () => {
    * @param {Object} params - { text, sessionId, httpServerUrl, onScroll }
    */
   async function sendMessage(params) {
-    const { text, httpServerUrl, onScroll, toolMode, folderId } = params
+    const { text, httpServerUrl, onScroll, toolMode, folderId, kbScope } = params
 
     // 获取或创建会话
     let sessionId = currentSessionId.value
@@ -174,6 +177,9 @@ export const useChatStore = defineStore('chat', () => {
     }
     if (folderId) {
       requestBody.folderId = folderId
+    }
+    if (kbScope) {
+      requestBody.kbScope = kbScope
     }
     console.log('[ChatStore] SSE 请求体:', JSON.stringify(requestBody))
 
@@ -256,12 +262,29 @@ export const useChatStore = defineStore('chat', () => {
     return folderIdBySession.value[sessionId] ?? null
   }
 
+  /** 设置当前会话选择的知识库范围 */
+  function setSessionKbScope(scope) {
+    const sid = currentSessionId.value
+    if (!sid) return
+    if (scope) {
+      kbScopeBySession.value[sid] = scope
+    } else {
+      delete kbScopeBySession.value[sid]
+    }
+  }
+
+  /** 获取指定会话的知识库范围 */
+  function getSessionKbScope(sessionId) {
+    return kbScopeBySession.value[sessionId] ?? null
+  }
+
   /** 删除会话时清理状态 */
   function cleanupSession(sessionId) {
     // 清理消息
     delete messagesBySession.value[sessionId]
     // 清理知识库记忆
     delete folderIdBySession.value[sessionId]
+    delete kbScopeBySession.value[sessionId]
     // 如果删除的是当前会话，清空 messages ref
     if (sessionId === currentSessionId.value) {
       messages.value = []
@@ -349,23 +372,26 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
-  return {
-    // State
-    messagesBySession,
-    folderIdBySession,
-    streamingSessions,
-    // Getters
-    currentSessionId,
-    messages,
-    isStreaming,
-    // Actions
-    loadMessages,
-    sendMessage,
-    stopGeneration,
-    cleanupSession,
-    setSessionFolderId,
-    getSessionFolderId,
-  }
+    return {
+      // State
+      messagesBySession,
+      folderIdBySession,
+      kbScopeBySession,
+      streamingSessions,
+      // Getters
+      currentSessionId,
+      messages,
+      isStreaming,
+      // Actions
+      loadMessages,
+      sendMessage,
+      stopGeneration,
+      cleanupSession,
+      setSessionFolderId,
+      getSessionFolderId,
+      setSessionKbScope,
+      getSessionKbScope,
+    }
 })
 
 // ===== 工具函数 =====

@@ -10,14 +10,14 @@ import MiniSearch from 'minisearch';
 import type { Options as MiniSearchOptions } from 'minisearch';
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { readFile as readFileAsync, writeFile as writeFileAsync } from 'node:fs/promises';
-import type { KeywordHit } from '../types';
+import type { KeywordHit, DataSource } from '../types';
 
 const SCORE_REFERENCE = 100;
 
 const MINISEARCH_OPTIONS: MiniSearchOptions = {
   idField: 'chunkId',
   fields: ['chunkText', 'fileName'],
-  storeFields: ['fileItemId', 'chunkId', 'chunkIndex', 'folderId', 'fileName', 'chunkText', 'status'],
+  storeFields: ['fileItemId', 'chunkId', 'chunkIndex', 'folderId', 'fileName', 'chunkText', 'status', 'source'],
   tokenize: (text: string) => {
     const tokens: string[] = [];
     const segments = text.match(/[a-zA-Z]+|[\u4e00-\u9fff]+|[0-9]+/g) || [];
@@ -52,6 +52,7 @@ export interface ChunkIndexItem {
   fileName: string;
   chunkText: string;
   status?: string;
+  source: DataSource;
 }
 
 export class KeywordSearchService {
@@ -105,6 +106,7 @@ export class KeywordSearchService {
         fileName: chunk.fileName,
         chunkText: chunk.chunkText,
         status: chunk.status ?? 'READY',
+        source: chunk.source ?? 'FILE',
       });
     }
   }
@@ -181,6 +183,7 @@ export class KeywordSearchService {
         chunkText: (r.chunkText as string) ?? '',
         rawScore: result.score,
         normalizedScore: this.normalizeKeywordScore(result.score),
+        source: ((r.source as string) ?? 'FILE') as DataSource,
       };
     });
   }

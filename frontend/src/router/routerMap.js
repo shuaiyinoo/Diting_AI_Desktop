@@ -142,7 +142,7 @@ const constantRouterMap = [
       {
         path: '/ocr/archive',
         name: 'OcrArchive',
-        component: () => import('@/views/Placeholder.vue'),
+        component: () => import('@/views/invoice/Archive.vue'),
         props: { title: '归集查阅' },
       },
       {
