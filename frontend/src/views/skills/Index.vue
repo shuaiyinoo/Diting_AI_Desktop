@@ -15,25 +15,39 @@
         <span class="ml-1 text-xs text-muted-foreground">{{ tab.count }}</span>
       </div>
 
-      <!-- 记忆 Tab 激活时显示项目选择器 -->
-      <div v-if="activeTab === 'memory'" class="ml-auto flex items-center gap-1.5">
+      <!-- Skills 市场按钮（仅 Skills tab 激活时显示） -->
+      <button
+        v-if="activeTab === 'skills'"
+        class="ml-auto inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-1.5 text-sm font-medium text-primary-foreground shadow-sm transition-all hover:bg-primary/80"
+        @click="showMarket = true"
+      >
+        <Store class="size-4" />
+        Skills 市场
+      </button>
+
+      <!-- 记忆 Tab 激活时显示项目选择器（右侧） -->
+      <div v-if="activeTab === 'memory'" class="ml-auto flex items-center gap-2">
         <span class="shrink-0 whitespace-nowrap text-xs font-medium text-muted-foreground">项目选择</span>
-        <select
-          v-model="selectedWorkspaceSlug"
-          class="min-w-[220px] cursor-pointer rounded-lg border border-border bg-background px-3 py-1.5 text-sm text-foreground appearance-none bg-[url('data:image/svg+xml;utf8,<svg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%2710%27%20height=%276%27%20viewBox=%270%200%2010%206%27><path%20d=%27M1%201l4%204%204-4%27%20stroke=%27%238A8884%27%20stroke-width=%271.5%27%20fill=%27none%27%20stroke-linecap=%27round%27/></svg>')] bg-[length:10px_6px] bg-no-repeat bg-[position:right_10px_center] pr-7 hover:border-foreground/30 focus:outline-none focus:border-foreground/50"
-          @change="onWorkspaceChange"
-        >
-          <option v-for="ws in workspaces" :key="ws.id" :value="ws.id">
-            {{ ws.name }}
-          </option>
-        </select>
+        <Select v-model="selectedWorkspaceSlug" @update:model-value="onWorkspaceChange">
+          <SelectTrigger class="h-8 w-[240px] gap-2 text-sm">
+            <SelectValue placeholder="选择项目..." />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem v-for="ws in workspaces" :key="ws.id" :value="ws.id">
+              {{ ws.name }}
+            </SelectItem>
+          </SelectContent>
+        </Select>
       </div>
     </div>
 
     <!-- Tab 内容区 -->
     <div class="min-h-0 flex-1 overflow-y-auto px-6 pb-6 pt-5">
+      <!-- ===== Skills 市场内嵌视图 ===== -->
+      <MarketView v-if="showMarket && activeTab === 'skills'" @back="showMarket = false" @installed="onSkillInstalled" />
+
       <!-- ===== Skills Tab ===== -->
-      <div v-show="activeTab === 'skills'">
+      <div v-show="activeTab === 'skills' && !showMarket">
         <div class="mb-3 text-xs font-medium text-muted-foreground">
           Diting 内置 <span class="text-muted-foreground/70">{{ skills.length }}</span>
         </div>
@@ -513,10 +527,11 @@ import { Spinner } from '@/components/ui/spinner'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
 
 import { ref, computed, onMounted, watch } from 'vue'
 import { toast } from 'vue-sonner'
-import { ChevronDown, Cloud, Eye, FileText, FolderOpen, Pencil, Plug, RefreshCw, Save, Star, X, Zap } from '@lucide/vue'
+import { ChevronDown, Cloud, Eye, FileText, FolderOpen, Pencil, Plug, RefreshCw, Save, Star, Store, X, Zap } from '@lucide/vue'
 import { ipc } from '@/utils/ipcRenderer'
 import { ipcApiRoute } from '@/api'
 import MemoryFileTreeNode from '@/components/skills/MemoryFileTreeNode.vue'
@@ -526,10 +541,20 @@ import { isDark } from '@/theme'
 import { useAgentStore } from '@/stores/agent'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useRouter } from 'vue-router'
+import MarketView from '@/views/skills/Market.vue'
 
 const agentStore = useAgentStore()
 const wsStore = useWorkspaceStore()
 const router = useRouter()
+
+// ========== Skills 市场 ==========
+const showMarket = ref(false)
+
+/** Skills 市场安装成功后，关闭市场视图并刷新内置 Skills 列表 */
+function onSkillInstalled() {
+  showMarket.value = false
+  loadSkills()
+}
 
 // ========== 标签页 ==========
 const activeTab = ref('skills')

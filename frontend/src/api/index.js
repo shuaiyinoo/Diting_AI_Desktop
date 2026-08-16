@@ -200,6 +200,22 @@ respondAskUser: 'controller/piAgent/respondAskUser',
 // 文件面板管理（列文件/添加文件）
 fileOperation: 'controller/piAgent/fileOperation',
 },
+
+// SkillHub Skills 市场
+skillHub: {
+// 搜索 Skills
+search: 'controller/skillHub/search',
+// 获取热门 Top 100
+getTop20: 'controller/skillHub/getTop20',
+// 获取 Topic 分组列表
+getTopics: 'controller/skillHub/getTopics',
+// 获取 Skill 详情
+getDetail: 'controller/skillHub/getDetail',
+// 安装到指定工作区
+install: 'controller/skillHub/install',
+// 安装到所有工作区
+installToAll: 'controller/skillHub/installToAll',
+},
 }
 
 /**

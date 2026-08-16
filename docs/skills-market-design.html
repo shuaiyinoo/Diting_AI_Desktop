@@ -1,0 +1,1225 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Skills 市场 · Diting Agent</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #FAFAF8;
+    --sidebar: #F2F1ED;
+    --surface: #FFFFFF;
+    --border: #E8E6E0;
+    --border-strong: #D6D3CC;
+    --text: #1A1A18;
+    --text-secondary: #5F5E5A;
+    --text-tertiary: #8A8884;
+    --accent: #185FA5;
+    --accent-soft: #E6F1FB;
+    --green: #0F6E56;
+    --green-soft: #E1F5EE;
+    --amber: #854F0B;
+    --amber-soft: #FAEEDA;
+    --pill-bg: #F1EFE8;
+    --star: #D97706;
+    --shadow-md: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-lg: 0 4px 24px rgba(0,0,0,0.10);
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 13px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .window {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+
+  /* ===== Title bar ===== */
+  .titlebar {
+    height: 38px;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .traffic { display: flex; gap: 8px; }
+  .traffic span {
+    width: 12px; height: 12px; border-radius: 50%; display: inline-block;
+  }
+  .t-close { background: #FF5F57; }
+  .t-min { background: #FEBC2E; }
+  .t-max { background: #28C840; }
+  .brand {
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+  .brand .badge {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-size: 11px;
+    margin-left: 6px;
+  }
+
+  /* ===== Layout ===== */
+  .layout { display: flex; flex: 1; overflow: hidden; }
+  .sidebar {
+    width: 180px;
+    background: var(--sidebar);
+    border-right: 1px solid var(--border);
+    padding: 12px 8px;
+    overflow-y: auto;
+    flex-shrink: 0;
+  }
+  .side-group {
+    padding: 8px 10px;
+    font-size: 11px;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    font-weight: 500;
+    margin-top: 8px;
+  }
+  .side-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    color: var(--text-secondary);
+    font-size: 12px;
+    cursor: pointer;
+    margin-bottom: 1px;
+  }
+  .side-item:hover { background: rgba(0,0,0,0.04); }
+  .side-item.active {
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-weight: 500;
+  }
+  .side-item .count {
+    margin-left: auto;
+    background: rgba(24,95,165,0.15);
+    color: var(--accent);
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 8px;
+    font-weight: 500;
+  }
+  .side-foot {
+    margin-top: 16px;
+    padding: 12px 10px;
+    border-top: 1px solid var(--border);
+    font-size: 11px;
+    color: var(--text-tertiary);
+  }
+
+  /* ===== Main ===== */
+  .main { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+  .tabs {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    flex-shrink: 0;
+  }
+  .tab {
+    padding: 5px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    cursor: pointer;
+  }
+  .tab:hover { background: var(--pill-bg); }
+  .tab.active {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-weight: 500;
+  }
+  .tab .count {
+    color: var(--text-tertiary);
+    margin-left: 4px;
+    font-size: 12px;
+  }
+
+  /* ===== Toolbar ===== */
+  .toolbar {
+    display: flex;
+    align-items: center;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    flex-shrink: 0;
+    gap: 8px;
+  }
+  .toolbar-title { font-size: 12px; color: var(--text-secondary); }
+  .toolbar-spacer { flex: 1; }
+  .btn {
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 12px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-weight: 500;
+  }
+  .btn:hover { background: var(--pill-bg); }
+  .btn.primary {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+  .btn.primary:hover { background: #0C447C; }
+
+  /* ===== Cards grid (background list) ===== */
+  .list-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+  }
+  .group-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 10px;
+    font-weight: 500;
+  }
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    cursor: pointer;
+    transition: border-color 120ms, box-shadow 120ms;
+    position: relative;
+  }
+  .card:hover {
+    border-color: var(--border-strong);
+    box-shadow: var(--shadow-md);
+  }
+  .card-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .card-icon {
+    width: 22px;
+    height: 22px;
+    color: var(--star);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .card-title {
+    font-size: 14px;
+    font-weight: 600;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .card-version {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    flex-shrink: 0;
+  }
+  .card-name {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    margin-bottom: 6px;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  .card-desc {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin-bottom: 10px;
+    min-height: 36px;
+  }
+  .card-foot {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .card-tag {
+    font-size: 11px;
+    padding: 2px 7px;
+    border-radius: 4px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-weight: 500;
+  }
+  .card-stats {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 11px;
+    color: var(--text-tertiary);
+  }
+
+  /* ===== Modal overlay ===== */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    backdrop-filter: blur(2px);
+  }
+  .modal {
+    background: var(--bg);
+    width: 90vw;
+    max-width: 1080px;
+    height: 84vh;
+    border-radius: 14px;
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--border);
+  }
+  .modal-head {
+    display: flex;
+    align-items: center;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    gap: 12px;
+    flex-shrink: 0;
+  }
+  .modal-title {
+    font-size: 16px;
+    font-weight: 600;
+  }
+  .modal-title .badge {
+    display: inline-block;
+    font-size: 11px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    margin-left: 8px;
+    font-weight: 500;
+  }
+  .modal-spacer { flex: 1; }
+  .modal-close {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-close:hover { background: var(--pill-bg); }
+
+  /* ===== Search bar in modal ===== */
+  .search-row {
+    padding: 12px 20px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .search-box {
+    position: relative;
+    max-width: 600px;
+  }
+  .search-input {
+    width: 100%;
+    padding: 8px 12px 8px 36px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg);
+    font-size: 13px;
+    outline: none;
+    transition: border-color 120ms, box-shadow 120ms;
+  }
+  .search-input:focus {
+    border-color: var(--accent);
+    background: var(--surface);
+    box-shadow: 0 0 0 3px rgba(24,95,165,0.10);
+  }
+  .search-input::placeholder { color: var(--text-tertiary); }
+  .search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-tertiary);
+  }
+  .filter-row {
+    display: flex;
+    gap: 6px;
+    margin-top: 10px;
+  }
+  .filter-chip {
+    padding: 3px 10px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    font-size: 11px;
+    color: var(--text-secondary);
+    cursor: pointer;
+  }
+  .filter-chip:hover { background: var(--pill-bg); }
+  .filter-chip.active {
+    background: var(--accent-soft);
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+
+  /* ===== Modal grid (market) ===== */
+  .market-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 20px;
+  }
+  .market-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+
+  /* ===== Detail panel (overlay on market) ===== */
+  .detail-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 110;
+    backdrop-filter: blur(2px);
+  }
+  .detail-modal {
+    background: var(--surface);
+    width: 86vw;
+    max-width: 760px;
+    max-height: 88vh;
+    border-radius: 14px;
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--border);
+  }
+  .detail-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    flex-shrink: 0;
+  }
+  .detail-icon {
+    width: 36px;
+    height: 36px;
+    color: var(--star);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--amber-soft);
+    border-radius: 8px;
+    flex-shrink: 0;
+  }
+  .detail-title-block { flex: 1; min-width: 0; }
+  .detail-title {
+    font-size: 17px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .detail-subtitle {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    margin-top: 2px;
+  }
+  .detail-version-pill {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: var(--pill-bg);
+    color: var(--text-secondary);
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  .detail-close {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .detail-close:hover { background: var(--pill-bg); }
+
+  .detail-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 24px;
+  }
+  .detail-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 16px;
+    font-size: 12px;
+  }
+  .detail-table tr { border-bottom: 1px solid var(--border); }
+  .detail-table tr:last-child { border-bottom: none; }
+  .detail-table td {
+    padding: 8px 0;
+    vertical-align: top;
+  }
+  .detail-table td:first-child {
+    width: 80px;
+    color: var(--text-tertiary);
+    font-weight: 500;
+  }
+  .detail-table td:last-child { color: var(--text); }
+
+  .resource-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .resource-tag {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: var(--pill-bg);
+    color: var(--text-secondary);
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+
+  .markdown-block {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+  .markdown-block h1 {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .markdown-block h2 {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 14px 0 6px;
+  }
+  .markdown-block p {
+    color: var(--text-secondary);
+    font-size: 12px;
+    line-height: 1.65;
+    margin-bottom: 8px;
+  }
+  .markdown-block code {
+    background: var(--pill-bg);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    color: var(--text);
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  .markdown-block ul {
+    list-style: none;
+    margin-bottom: 12px;
+  }
+  .markdown-block li {
+    position: relative;
+    padding-left: 16px;
+    margin-bottom: 5px;
+    color: var(--text-secondary);
+    font-size: 12px;
+    line-height: 1.65;
+  }
+  .markdown-block li::before {
+    content: "·";
+    position: absolute;
+    left: 4px;
+    color: var(--text-tertiary);
+    font-weight: 700;
+  }
+
+  .detail-foot {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 24px;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    flex-shrink: 0;
+  }
+  .detail-foot .note {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    margin-right: auto;
+  }
+  .btn-install-all {
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 13px;
+    cursor: pointer;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn-install-all:hover { background: var(--pill-bg); border-color: var(--border-strong); }
+  .btn-install-project {
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: none;
+    background: var(--accent);
+    color: #fff;
+    font-size: 13px;
+    cursor: pointer;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn-install-project:hover { background: #0C447C; }
+
+  /* Responsive */
+  @media (max-width: 960px) {
+    .card-grid, .market-grid { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 640px) {
+    .card-grid, .market-grid { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="window">
+
+  <!-- Title bar -->
+  <div class="titlebar">
+    <div class="traffic">
+      <span class="t-close"></span>
+      <span class="t-min"></span>
+      <span class="t-max"></span>
+    </div>
+    <div class="brand">谛听 AI <span class="badge">为 AI 而听真实</span></div>
+  </div>
+
+  <!-- Layout -->
+  <div class="layout">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="side-group">工具</div>
+      <div class="side-item"><span>📄</span>文件 <span class="count">1</span></div>
+      <div class="side-item"><span>🔍</span>OCR 识别</div>
+      <div class="side-item"><span>📋</span>任务/日程/Todo <span class="count">1</span></div>
+      <div class="side-item active"><span>✨</span>Agent 技能 <span class="count">19</span></div>
+      <div class="side-foot">v1.0.0</div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+      <div class="tabs">
+        <div class="tab active">Skills <span class="count">15</span></div>
+        <div class="tab">MCP <span class="count">4</span></div>
+        <div class="tab">记忆 <span class="count">5</span></div>
+      </div>
+
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <span class="toolbar-title">Diting 内置 15</span>
+        <div class="toolbar-spacer"></div>
+        <button class="btn primary" onclick="openMarket()">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+            <path d="M2 5h12l-1 9H3L2 5zM5 5V3a3 3 0 0 1 6 0v2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Skills 市场
+        </button>
+      </div>
+
+      <!-- List area (background) -->
+      <div class="list-area">
+        <div class="group-label">▾ diting 5</div>
+        <div class="card-grid">
+          <div class="card">
+            <div class="card-head">
+              <span class="card-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 2l1.5 4.5L18 8l-3 3 .7 4.5L12 13.5 8.3 15.5 9 11 6 8l4.5-1.5L12 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" fill="none"/>
+                  <circle cx="18" cy="18" r="3" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                </svg>
+              </span>
+              <span class="card-title">agent-collaboration</span>
+              <span class="card-version">v1.1.1</span>
+            </div>
+            <div class="card-name">agent-collaboration</div>
+            <div class="card-desc">Diting 协作子 Agent Skill. 当需要并行探索多个方向 (多样性探索)、对抗性审查验证已有方案, 或多个长...</div>
+            <div class="card-foot">
+              <span class="card-tag">Diting 内置</span>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head">
+              <span class="card-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2l1.5 4.5L18 8l-3 3 .7 4.5L12 13.5 8.3 15.5 9 11 6 8l4.5-1.5L12 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" fill="none"/></svg>
+              </span>
+              <span class="card-title">automation</span>
+              <span class="card-version">v1.0.11</span>
+            </div>
+            <div class="card-name">automation</div>
+            <div class="card-desc">Diting 内嵌自动任务与定时任务 Skill, 属于 Diting 自带能力...</div>
+            <div class="card-foot">
+              <span class="card-tag">Diting 内置</span>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head">
+              <span class="card-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2l1.5 4.5L18 8l-3 3 .7 4.5L12 13.5 8.3 15.5 9 11 6 8l4.5-1.5L12 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" fill="none"/></svg>
+              </span>
+              <span class="card-title">diting-coach</span>
+              <span class="card-version">v1.0.8</span>
+            </div>
+            <div class="card-name">diting-coach</div>
+            <div class="card-desc">Diting 使用顾问, 自动把用户在 Diting/Agent/Skill/Chat 工具项目里的摩擦、疑惑...</div>
+            <div class="card-foot">
+              <span class="card-tag">Diting 内置</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ========== Skills 市场弹窗 ========== -->
+<div class="modal-overlay" id="marketModal">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title">Skills 市场 <span class="badge">Top 20</span></span>
+      <div class="modal-spacer"></div>
+      <button class="modal-close" onclick="closeMarket()" title="关闭">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+          <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="search-row">
+      <div class="search-box">
+        <span class="search-icon">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+            <circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.4"/>
+            <path d="M11 11l3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+          </svg>
+        </span>
+        <input class="search-input" placeholder="搜索 Skill 名称 / 功能描述 / 分类..." />
+      </div>
+      <div class="filter-row">
+        <span class="filter-chip active">全部</span>
+        <span class="filter-chip">协作</span>
+        <span class="filter-chip">开发</span>
+        <span class="filter-chip">文档</span>
+        <span class="filter-chip">数据</span>
+        <span class="filter-chip">效率</span>
+        <span class="filter-chip">设计</span>
+      </div>
+    </div>
+
+    <div class="market-body">
+      <div class="market-grid">
+        <!-- Card 1 -->
+        <div class="card" onclick="openDetail('docx', 'v1.0.1', 'docx', 'Create, read, edit, or manipulate Word documents (.docx)... 对 .docx 文件进行创建、读取、编辑或修改操作。本能力应作为处理 Word 文档时的首选入口。', '文档处理', 'skills/docx', ['SKILL.md', 'examples/extract_text.py'])">
+          <div class="card-head">
+            <span class="card-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2l1.5 4.5L18 8l-3 3 .7 4.5L12 13.5 8.3 15.5 9 11 6 8l4.5-1.5L12 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" fill="none"/></svg>
+            </span>
+            <span class="card-title">docx</span>
+            <span class="card-version">v1.0.1</span>
+          </div>
+          <div class="card-name">docx</div>
+          <div class="card-desc">Create, read, edit, or manipulate Word documents (.docx)... 对 .docx 文件进行创建、读取、编辑或修改操作...</div>
+          <div class="card-foot">
+            <span class="card-tag">文档处理</span>
+            <span class="card-stats">⭐ 12.4k · 📦 89k</span>
+          </div>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="card" onclick="openDetail('pdf', 'v1.0.5', 'pdf', 'Whenever the user mentions a PDF file or asks to produce/edit one. For read-only tasks, prefer reading the PDF directly...', '文档处理', 'skills/pdf', ['SKILL.md'])">
+          <div class="card-head">
+            <span class="card-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2l1.5 4.5L18 8l-3 3 .7 4.5L12 13.5 8.3 15.5 9 11 6 8l4.5-1.5L12 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" fill="none"/></svg></span>
+            <span class="card-title">pdf</span>
+            <span class="card-version">v1.0.5</span>
+          </div>
+          <div class="card-name">pdf</div>
+          <div class="card-desc">Whenever the user mentions a PDF file or asks to produce/edit one. For read-only tasks...</div>
+          <div class="card-foot">
+            <span class="card-tag">文档处理</span>
+            <span class="card-stats">⭐ 10.8k · 📦 76k</span>
+          </div>
+        </div>
+
+        <!-- Card 3 -->
+        <div class="card" onclick="openDetail('pptx', 'v1.0.1', 'pptx', 'Use this skill any time a .pptx file is involved in any way — as input, output, or both. This includes...', '文档处理', 'skills/pptx', ['SKILL.md', 'examples/slide_layout.json'])">
+          <div class="card-head">
+            <span class="card-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2l1.5 4.5L18 8l-3 3 .7 4.5L12 13.5 8.3 15.5 9 11 6 8l4.5-1.5L12 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" fill="none"/></svg></span>
+            <span class="card-title">pptx</span>
+            <span class="card-version">v1.0.1</span>
+          </div>
+          <div class="card-name">pptx</div>
+          <div class="card-desc">Use this skill any time a .pptx file is involved in any way — as input, output, or both...</div>
+          <div class="card-foot">
+            <span class="card-tag">文档处理</span>
+            <span class="card-stats">⭐ 8.2k · 📦 62k</span>
+          </div>
+        </div>
+
+        <!-- Card 4 -->
+        <div class="card" onclick="openDetail('executing-plans', 'v1.0.1', 'executing-plans', 'Use when you have a written implementation plan to execute in a separate session with review checkpoints...', '执行协作', 'skills/executing-plans', ['SKILL.md'])">
+          <div class="card-head">
+            <span class="card-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2l1.5 4.5L18 8l-3 3 .7 4.5L12 13.5 8.3 15.5 9 11 6 8l4.5-1.5L12 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" fill="none"/></svg></span>
+            <span class="card-title">executing-plans</span>
+            <span class="card-version">v1.0.1</span>
+          </div>
+          <div class="card-name">executing-plans</div>
+          <div class="card-desc">Use when you have a written implementation plan to execute in a separate session with review checkpoints...</div>
+          <div class="card-foot">
+            <span class="card-tag">执行协作</span>
+            <span class="card-stats">⭐ 6.4k · 📦 41k</span>
+          </div>
+        </div>
+
+        <!-- Card 5 -->
+        <div class="card" onclick="openDetail('find-skills', 'v1.0.1', 'find-skills', 'Helps users discover and install agent skills when they ask questions like "how do I do X", "find a skill"...', '元技能', 'skills/find-skills', ['SKILL.md'])">
+          <div class="card-head">
+            <span class="card-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2l1.5 4.5L18 8l-3 3 .7 4.5L12 13.5 8.3 15.5 9 11 6 8l4.5-1.5L12 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" fill="none"/></svg></span>
+            <span class="card-title">find-skills</span>
+            <span class="card-version">v1.0.1</span>
+          </div>
+          <div class="card-name">find-skills</div>
+          <div class="card-desc">Helps users discover and install agent skills when they ask questions like "how do I do X"...</div>
+          <div class="card-foot">
+            <span class="card-tag">元技能</span>
+            <span class="card-stats">⭐ 5.8k · 📦 38k</span>
+          </div>
+        </div>
+
+        <!-- Card 6 -->
+        <div class="card" onclick="openDetail('skill-creator', 'v1.1.2', 'skill-creator', 'Create new skills, modify and improve existing skills, and measure skill performance. Use when users want to create a skill from scratch, edit, or optimize an existing skill...', '工具管理', 'skills/skill-creator', ['SKILL.md', 'examples/create_from_scratch.md'])">
+          <div class="card-head">
+            <span class="card-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2l1.5 4.5L18 8l-3 3 .7 4.5L12 13.5 8.3 15.5 9 11 6 8l4.5-1.5L12 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" fill="none"/></svg></span>
+            <span class="card-title">skill-creator</span>
+            <span class="card-version">v1.1.2</span>
+          </div>
+          <div class="card-name">skill-creator</div>
+          <div class="card-desc">Create new skills, modify and improve existing skills, and measure skill performance...</div>
+          <div class="card-foot">
+            <span class="card-tag">工具管理</span>
+            <span class="card-stats">⭐ 9.1k · 📦 54k</span>
+          </div>
+        </div>
+
+        <!-- Card 7 -->
+        <div class="card" onclick="openDetail('tool-builder', 'v1.0.2', 'tool-builder', 'Create new tools, modify existing tools, and manage MCP servers. Use when users want to add a new API or HTTP tool...', '工具管理', 'skills/tool-builder', ['SKILL.md', 'examples/http_tool.json'])">
+          <div class="card-head">
+            <span class="card-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2l1.5 4.5L18 8l-3 3 .7 4.5L12 13.5 8.3 15.5 9 11 6 8l4.5-1.5L12 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" fill="none"/></svg></span>
+            <span class="card-title">tool-builder</span>
+            <span class="card-version">v1.0.2</span>
+          </div>
+          <div class="card-name">tool-builder</div>
+          <div class="card-desc">Create new tools, modify existing tools, and manage MCP servers. Use when users want to add a new API or HTTP tool...</div>
+          <div class="card-foot">
+            <span class="card-tag">工具管理</span>
+            <span class="card-stats">⭐ 7.5k · 📦 47k</span>
+          </div>
+        </div>
+
+        <!-- Card 8 -->
+        <div class="card" onclick="openDetail('in-app-browser', 'v1.0.0', 'in-app-browser', 'Diting 内嵌浏览器简易使用指南. 当用户要求打开、展示、访问或操作网页、或探测小红书...', '浏览器', 'skills/in-app-browser', ['SKILL.md'])">
+          <div class="card-head">
+            <span class="card-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2l1.5 4.5L18 8l-3 3 .7 4.5L12 13.5 8.3 15.5 9 11 6 8l4.5-1.5L12 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" fill="none"/></svg></span>
+            <span class="card-title">in-app-browser</span>
+            <span class="card-version">v1.0.0</span>
+          </div>
+          <div class="card-name">in-app-browser</div>
+          <div class="card-desc">Diting 内嵌浏览器简易使用指南. 当用户要求打开、展示、访问或操作网页、或探测小红书...</div>
+          <div class="card-foot">
+            <span class="card-tag">浏览器</span>
+            <span class="card-stats">⭐ 4.3k · 📦 28k</span>
+          </div>
+        </div>
+
+        <!-- Card 9 -->
+        <div class="card" onclick="openDetail('session-cleaner', 'v2.0.1', 'session-cleaner', '把 Diting 会话 JSONL 清洗为干净可读的 Markdown 对话, 并且支持超长会话的渐进式读取 (概览 / 大纲 / ...', '数据整理', 'skills/session-cleaner', ['SKILL.md', 'scripts/clean.py'])">
+          <div class="card-head">
+            <span class="card-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2l1.5 4.5L18 8l-3 3 .7 4.5L12 13.5 8.3 15.5 9 11 6 8l4.5-1.5L12 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" fill="none"/></svg></span>
+            <span class="card-title">session-cleaner</span>
+            <span class="card-version">v2.0.1</span>
+          </div>
+          <div class="card-name">session-cleaner</div>
+          <div class="card-desc">把 Diting 会话 JSONL 清洗为干净可读的 Markdown 对话, 并且支持超长会话的渐进式读取...</div>
+          <div class="card-foot">
+            <span class="card-tag">数据整理</span>
+            <span class="card-stats">⭐ 5.1k · 📦 33k</span>
+          </div>
+        </div>
+
+        <!-- Card 10 -->
+        <div class="card" onclick="openDetail('data-viz', 'v1.2.0', 'data-viz', 'Generate data visualizations including charts, graphs, dashboards. Supports ECharts, Chart.js, D3. Use when user asks to "show data", "visualize"...', '可视化', 'skills/data-viz', ['SKILL.md', 'templates/echarts.json'])">
+          <div class="card-head">
+            <span class="card-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2l1.5 4.5L18 8l-3 3 .7 4.5L12 13.5 8.3 15.5 9 11 6 8l4.5-1.5L12 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" fill="none"/></svg></span>
+            <span class="card-title">data-viz</span>
+            <span class="card-version">v1.2.0</span>
+          </div>
+          <div class="card-name">data-viz</div>
+          <div class="card-desc">Generate data visualizations including charts, graphs, dashboards. Supports ECharts, Chart.js, D3...</div>
+          <div class="card-foot">
+            <span class="card-tag">可视化</span>
+            <span class="card-stats">⭐ 11.2k · 📦 72k</span>
+          </div>
+        </div>
+
+        <!-- Card 11 -->
+        <div class="card" onclick="openDetail('git-workflow', 'v1.1.0', 'git-workflow', 'Standardize Git operations: branching strategy, commit conventions, PR templates, conflict resolution. Use when working with code in version-controlled projects...', '开发', 'skills/git-workflow', ['SKILL.md'])">
+          <div class="card-head">
+            <span class="card-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2l1.5 4.5L18 8l-3 3 .7 4.5L12 13.5 8.3 15.5 9 11 6 8l4.5-1.5L12 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" fill="none"/></svg></span>
+            <span class="card-title">git-workflow</span>
+            <span class="card-version">v1.1.0</span>
+          </div>
+          <div class="card-name">git-workflow</div>
+          <div class="card-desc">Standardize Git operations: branching strategy, commit conventions, PR templates...</div>
+          <div class="card-foot">
+            <span class="card-tag">开发</span>
+            <span class="card-stats">⭐ 8.7k · 📦 51k</span>
+          </div>
+        </div>
+
+        <!-- Card 12 -->
+        <div class="card" onclick="openDetail('web-search', 'v1.0.4', 'web-search', 'Perform real-time web search and aggregate results from multiple sources. Use when user needs up-to-date information beyond the model's knowledge cutoff...', '信息检索', 'skills/web-search', ['SKILL.md', 'scripts/search.ts'])">
+          <div class="card-head">
+            <span class="card-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2l1.5 4.5L18 8l-3 3 .7 4.5L12 13.5 8.3 15.5 9 11 6 8l4.5-1.5L12 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" fill="none"/></svg></span>
+            <span class="card-title">web-search</span>
+            <span class="card-version">v1.0.4</span>
+          </div>
+          <div class="card-name">web-search</div>
+          <div class="card-desc">Perform real-time web search and aggregate results from multiple sources...</div>
+          <div class="card-foot">
+            <span class="card-tag">信息检索</span>
+            <span class="card-stats">⭐ 14.3k · 📦 92k</span>
+          </div>
+        </div>
+
+        <!-- Card 13 -->
+        <div class="card" onclick="openDetail('image-gen', 'v1.0.0', 'image-gen', 'Generate images using DALL-E, Stable Diffusion, or Midjourney. Use when user asks to "draw", "create image", "generate picture"...', '设计', 'skills/image-gen', ['SKILL.md'])">
+          <div class="card-head">
+            <span class="card-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2l1.5 4.5L18 8l-3 3 .7 4.5L12 13.5 8.3 15.5 9 11 6 8l4.5-1.5L12 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" fill="none"/></svg></span>
+            <span class="card-title">image-gen</span>
+            <span class="card-version">v1.0.0</span>
+          </div>
+          <div class="card-name">image-gen</div>
+          <div class="card-desc">Generate images using DALL-E, Stable Diffusion, or Midjourney...</div>
+          <div class="card-foot">
+            <span class="card-tag">设计</span>
+            <span class="card-stats">⭐ 13.6k · 📦 88k</span>
+          </div>
+        </div>
+
+        <!-- Card 14 -->
+        <div class="card" onclick="openDetail('code-review', 'v1.0.3', 'code-review', 'Review code changes for quality, security, performance, and style. Generate structured review comments. Use after writing or modifying code...', '开发', 'skills/code-review', ['SKILL.md', 'checklists/security.md'])">
+          <div class="card-head">
+            <span class="card-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2l1.5 4.5L18 8l-3 3 .7 4.5L12 13.5 8.3 15.5 9 11 6 8l4.5-1.5L12 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" fill="none"/></svg></span>
+            <span class="card-title">code-review</span>
+            <span class="card-version">v1.0.3</span>
+          </div>
+          <div class="card-name">code-review</div>
+          <div class="card-desc">Review code changes for quality, security, performance, and style. Generate structured review comments...</div>
+          <div class="card-foot">
+            <span class="card-tag">开发</span>
+            <span class="card-stats">⭐ 9.4k · 📦 58k</span>
+          </div>
+        </div>
+
+        <!-- Card 15 -->
+        <div class="card" onclick="openDetail('sql-helper', 'v1.0.1', 'sql-helper', 'Generate and optimize SQL queries. Support MySQL, PostgreSQL, SQLite. Explain query plans and suggest indexes. Use when user works with databases...', '数据', 'skills/sql-helper', ['SKILL.md', 'examples/queries.sql'])">
+          <div class="card-head">
+            <span class="card-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2l1.5 4.5L18 8l-3 3 .7 4.5L12 13.5 8.3 15.5 9 11 6 8l4.5-1.5L12 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" fill="none"/></svg></span>
+            <span class="card-title">sql-helper</span>
+            <span class="card-version">v1.0.1</span>
+          </div>
+          <div class="card-name">sql-helper</div>
+          <div class="card-desc">Generate and optimize SQL queries. Support MySQL, PostgreSQL, SQLite. Explain query plans...</div>
+          <div class="card-foot">
+            <span class="card-tag">数据</span>
+            <span class="card-stats">⭐ 6.8k · 📦 44k</span>
+          </div>
+        </div>
+
+        <!-- Card 16 -->
+        <div class="card" onclick="openDetail('api-tester', 'v1.0.2', 'api-tester', 'Test REST APIs with automatic request generation, response validation, and assertion. Support GET, POST, PUT, DELETE. Use when validating backend services...', '开发', 'skills/api-tester', ['SKILL.md'])">
+          <div class="card-head">
+            <span class="card-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2l1.5 4.5L18 8l-3 3 .7 4.5L12 13.5 8.3 15.5 9 11 6 8l4.5-1.5L12 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" fill="none"/></svg></span>
+            <span class="card-title">api-tester</span>
+            <span class="card-version">v1.0.2</span>
+          </div>
+          <div class="card-name">api-tester</div>
+          <div class="card-desc">Test REST APIs with automatic request generation, response validation, and assertion...</div>
+          <div class="card-foot">
+            <span class="card-tag">开发</span>
+            <span class="card-stats">⭐ 5.5k · 📦 36k</span>
+          </div>
+        </div>
+
+        <!-- Card 17 -->
+        <div class="card" onclick="openDetail('translate', 'v1.0.5', 'translate', 'Multi-language translation with context awareness. Support 50+ languages, technical terminology, document translation. Use when user needs translation...', '效率', 'skills/translate', ['SKILL.md'])">
+          <div class="card-head">
+            <span class="card-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2l1.5 4.5L18 8l-3 3 .7 4.5L12 13.5 8.3 15.5 9 11 6 8l4.5-1.5L12 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" fill="none"/></svg></span>
+            <span class="card-title">translate</span>
+            <span class="card-version">v1.0.5</span>
+          </div>
+          <div class="card-name">translate</div>
+          <div class="card-desc">Multi-language translation with context awareness. Support 50+ languages, technical terminology...</div>
+          <div class="card-foot">
+            <span class="card-tag">效率</span>
+            <span class="card-stats">⭐ 7.9k · 📦 49k</span>
+          </div>
+        </div>
+
+        <!-- Card 18 -->
+        <div class="card" onclick="openDetail('test-generator', 'v1.0.0', 'test-generator', 'Generate unit tests, integration tests, and e2e tests. Support Jest, Pytest, JUnit, Go test. Auto-generate mocks and fixtures. Use when writing tests...', '开发', 'skills/test-generator', ['SKILL.md'])">
+          <div class="card-head">
+            <span class="card-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2l1.5 4.5L18 8l-3 3 .7 4.5L12 13.5 8.3 15.5 9 11 6 8l4.5-1.5L12 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" fill="none"/></svg></span>
+            <span class="card-title">test-generator</span>
+            <span class="card-version">v1.0.0</span>
+          </div>
+          <div class="card-name">test-generator</div>
+          <div class="card-desc">Generate unit tests, integration tests, and e2e tests. Support Jest, Pytest, JUnit...</div>
+          <div class="card-foot">
+            <span class="card-tag">开发</span>
+            <span class="card-stats">⭐ 6.2k · 📦 39k</span>
+          </div>
+        </div>
+
+        <!-- Card 19 -->
+        <div class="card" onclick="openDetail('meeting-notes', 'v1.0.1', 'meeting-notes', 'Generate structured meeting notes from transcripts or rough notes. Extract decisions, action items, owners, deadlines. Use after meetings...', '效率', 'skills/meeting-notes', ['SKILL.md'])">
+          <div class="card-head">
+            <span class="card-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2l1.5 4.5L18 8l-3 3 .7 4.5L12 13.5 8.3 15.5 9 11 6 8l4.5-1.5L12 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" fill="none"/></svg></span>
+            <span class="card-title">meeting-notes</span>
+            <span class="card-version">v1.0.1</span>
+          </div>
+          <div class="card-name">meeting-notes</div>
+          <div class="card-desc">Generate structured meeting notes from transcripts or rough notes. Extract decisions, action items...</div>
+          <div class="card-foot">
+            <span class="card-tag">效率</span>
+            <span class="card-stats">⭐ 5.7k · 📦 35k</span>
+          </div>
+        </div>
+
+        <!-- Card 20 -->
+        <div class="card" onclick="openDetail('security-scan', 'v1.0.0', 'security-scan', 'Scan code for common security vulnerabilities: XSS, SQL injection, hardcoded secrets, unsafe deserialization. Generate remediation guidance...', '开发', 'skills/security-scan', ['SKILL.md', 'rules/owasp-top10.md'])">
+          <div class="card-head">
+            <span class="card-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2l1.5 4.5L18 8l-3 3 .7 4.5L12 13.5 8.3 15.5 9 11 6 8l4.5-1.5L12 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" fill="none"/></svg></span>
+            <span class="card-title">security-scan</span>
+            <span class="card-version">v1.0.0</span>
+          </div>
+          <div class="card-name">security-scan</div>
+          <div class="card-desc">Scan code for common security vulnerabilities: XSS, SQL injection, hardcoded secrets...</div>
+          <div class="card-foot">
+            <span class="card-tag">开发</span>
+            <span class="card-stats">⭐ 8.3k · 📦 52k</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== Skill 详情弹窗 ========== -->
+<div class="detail-overlay" id="detailModal" style="display:none;">
+  <div class="detail-modal">
+    <div class="detail-head">
+      <div class="detail-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2l1.5 4.5L18 8l-3 3 .7 4.5L12 13.5 8.3 15.5 9 11 6 8l4.5-1.5L12 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" fill="none"/></svg>
+      </div>
+      <div class="detail-title-block">
+        <div class="detail-title">
+          <span id="detailTitle">docx</span>
+          <span class="detail-version-pill" id="detailVersion">v1.0.1</span>
+        </div>
+        <div class="detail-subtitle" id="detailName">docx</div>
+      </div>
+      <button class="detail-close" onclick="closeDetail()" title="关闭">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+          <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="detail-body">
+      <table class="detail-table">
+        <tr>
+          <td>名称</td>
+          <td id="detailName2">docx</td>
+        </tr>
+        <tr>
+          <td>描述</td>
+          <td id="detailDesc">Create, read, edit, or manipulate Word documents...</td>
+        </tr>
+        <tr>
+          <td>分组</td>
+          <td id="detailGroup">文档处理</td>
+        </tr>
+        <tr>
+          <td>位置</td>
+          <td id="detailPath" style="font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 11px; color: var(--text-secondary);">skills/docx</td>
+        </tr>
+        <tr>
+          <td>说明</td>
+          <td>
+            <div class="resource-tags" id="detailResources">
+              <span class="resource-tag">SKILL.md</span>
+            </div>
+          </td>
+        </tr>
+      </table>
+
+      <div class="markdown-block">
+        <h1 id="mdTitle">DOCX Skill</h1>
+        <p>Use this skill whenever the user wants to create, read, edit, or manipulate Word documents (<code>.docx</code> files). This includes:</p>
+        <ul>
+          <li>Creating new Word documents from scratch or templates</li>
+          <li>Reading content from existing <code>.docx</code> files</li>
+          <li>Modifying existing documents (text, formatting, structure)</li>
+          <li>Extracting text, tables, images from documents</li>
+          <li>Converting between formats</li>
+        </ul>
+        <h2>When to use</h2>
+        <p>Trigger this skill when the user mentions <code>.docx</code>, Word document, or asks to generate/read/edit Office documents.</p>
+        <h2>Workflow</h2>
+        <ul>
+          <li>Identify the user's intent (create / read / edit / extract)</li>
+          <li>Load the appropriate helper script from <code>examples/</code></li>
+          <li>Execute with proper error handling</li>
+          <li>Validate output before returning to user</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="detail-foot">
+      <span class="note">💡 安装后可在 Agent 中通过 <code style="background:var(--pill-bg);padding:1px 5px;border-radius:3px;">/skill:docx</code> 命令调用</span>
+      <button class="btn-install-all">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+          <path d="M2 4h12v8H2V4z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+          <path d="M5 4V2h6v2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+        </svg>
+        安装到所有项目
+      </button>
+      <button class="btn-install-project">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+          <path d="M2 4h12v8H2V4z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+          <path d="M2 4l6 4 6-4" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+        </svg>
+        安装到指定项目
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  function openMarket() {
+    document.getElementById('marketModal').style.display = 'flex';
+  }
+  function closeMarket() {
+    document.getElementById('marketModal').style.display = 'none';
+  }
+  function openDetail(title, version, name, desc, group, path, resources) {
+    document.getElementById('detailTitle').textContent = title;
+    document.getElementById('detailVersion').textContent = version;
+    document.getElementById('detailName').textContent = name;
+    document.getElementById('detailName2').textContent = name;
+    document.getElementById('detailDesc').textContent = desc;
+    document.getElementById('detailGroup').textContent = group;
+    document.getElementById('detailPath').textContent = path;
+    document.getElementById('mdTitle').textContent = title.toUpperCase() + ' Skill';
+
+    const tagsContainer = document.getElementById('detailResources');
+    tagsContainer.innerHTML = '';
+    resources.forEach(r => {
+      const tag = document.createElement('span');
+      tag.className = 'resource-tag';
+      tag.textContent = '📄 ' + r;
+      tagsContainer.appendChild(tag);
+    });
+
+    document.getElementById('detailModal').style.display = 'flex';
+  }
+  function closeDetail() {
+    document.getElementById('detailModal').style.display = 'none';
+  }
+
+  // Close modal on overlay click
+  document.getElementById('marketModal').addEventListener('click', function(e) {
+    if (e.target === this) closeMarket();
+  });
+  document.getElementById('detailModal').addEventListener('click', function(e) {
+    if (e.target === this) closeDetail();
+  });
+
+  // Filter chip
+  document.querySelectorAll('.filter-chip').forEach(c => {
+    c.addEventListener('click', () => {
+      document.querySelectorAll('.filter-chip').forEach(x => x.classList.remove('active'));
+      c.classList.add('active');
+    });
+  });
+</script>
+</body>
+</html>
