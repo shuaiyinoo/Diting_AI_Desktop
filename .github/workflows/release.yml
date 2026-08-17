@@ -101,6 +101,10 @@ jobs:
         with:
           node-version: 22
 
+      # 增加 Node.js 堆内存限制，防止 vite build 时 OOM 崩溃
+      - name: 配置 Node.js 堆内存
+        run: echo "NODE_OPTIONS=--max-old-space-size=4096" >> $GITHUB_ENV
+
       - name: 安装依赖
         run: npm install
 
@@ -187,6 +191,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+
+      # 增加 Node.js 堆内存限制，防止 vite build 时 OOM 崩溃
+      - name: 配置 Node.js 堆内存
+        run: echo "NODE_OPTIONS=--max-old-space-size=4096" >> $GITHUB_ENV
 
       - name: 安装依赖
         run: npm install
@@ -437,6 +445,10 @@ jobs:
         with:
           node-version: 22
 
+      # 增加 Node.js 堆内存限制，防止 vite build 时 OOM 崩溃
+      - name: 配置 Node.js 堆内存
+        run: echo "NODE_OPTIONS=--max-old-space-size=4096" >> $GITHUB_ENV
+
       # Linux 环境需要 canvas 的系统依赖
       - name: 安装 canvas 系统依赖
         run: |
@@ -491,6 +503,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+
+      # 增加 Node.js 堆内存限制，防止 vite build 时 OOM 崩溃
+      - name: 配置 Node.js 堆内存
+        shell: bash
+        run: echo "NODE_OPTIONS=--max-old-space-size=4096" >> $GITHUB_ENV
 
       - name: 安装依赖
         run: npm install
