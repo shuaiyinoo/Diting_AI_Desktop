@@ -335,7 +335,7 @@ function buildSystemPrompt(workspace?: WorkspaceMeta, sessionId?: string): strin
   const parts: string[] = []
 
   // 基础身份
-  parts.push('You are a helpful AI assistant integrated into Diting AI, a local-first desktop application.')
+  parts.push('You are a helpful AI assistant integrated into Diting, a local-first desktop application.')
   parts.push('You can read and write files, execute commands, and use MCP tools.')
 
   // 回复风格约束

@@ -1,5 +1,5 @@
 {
-  "productName": "Diting AI",
+  "productName": "Diting",
   "appId": "com.diting.ai",
   "copyright": "© 2025 duola Technology Co., Ltd.",
   "directories": {
@@ -36,7 +36,7 @@
     "installerHeaderIcon": "build/icons/icon.ico",
     "createDesktopShortcut": true,
     "createStartMenuShortcut": true,
-    "shortcutName": "Diting AI"
+    "shortcutName": "Diting"
   },
   "publish": [
     {

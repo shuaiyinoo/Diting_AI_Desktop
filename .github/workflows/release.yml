@@ -1,4 +1,4 @@
-# GitHub Actions: Diting AI 自动打包分发
+# GitHub Actions: Diting 自动打包分发
 #
 # 触发条件：推送 v* tag（如 v5.0.17）
 # 构建 macOS (ARM64 + x64)、Linux (x64)、Windows (x64) 产物并发布到 GitHub Releases
@@ -29,11 +29,68 @@ permissions:
 
 jobs:
   # ============================================================
+  # Job 0: 创建 Draft Release（确保只有一个 Release，避免并行 build 竞态）
+  # ============================================================
+  create-release:
+    name: Create Draft Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 创建 Draft Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME}"
+          REPO="${GITHUB_REPOSITORY}"
+          NOTES_FILE="release-notes/${TAG}.md"
+
+          # 检查 Release 是否已存在
+          EXISTING=$(curl -s -H "Authorization: token ${GH_TOKEN}" \
+            "https://api.github.com/repos/${REPO}/releases" \
+            | python3 -c "
+          import json, sys
+          for r in json.load(sys.stdin):
+              if r.get('tag_name') == '${TAG}':
+                  print(r['id']); break
+          " || true)
+
+          if [ -n "$EXISTING" ]; then
+            echo "Release already exists (ID: ${EXISTING}), skipping creation"
+            exit 0
+          fi
+
+          # 用 Python 构造 JSON payload（安全处理多行文本和特殊字符）
+          PAYLOAD=$(python3 -c "
+          import json
+          tag = '${TAG}'
+          notes_file = '${NOTES_FILE}'
+          try:
+              with open(notes_file, 'r') as f:
+                  body = f.read()
+          except FileNotFoundError:
+              body = f'Release {tag}'
+          print(json.dumps({'tag_name': tag, 'name': tag, 'body': body, 'draft': True, 'prerelease': False}))
+          ")
+
+          # 创建 draft release
+          curl -s -X POST \
+            -H "Authorization: token ${GH_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "$PAYLOAD" \
+            "https://api.github.com/repos/${REPO}/releases" \
+            | python3 -c "import json,sys; r=json.load(sys.stdin); print(f'Created draft release: {r.get(\"id\",\"?\")} (tag: {r.get(\"tag_name\",\"?\")})')"
+
+  # ============================================================
   # Job 1: macOS ARM64 (Apple Silicon)
   # ============================================================
   build-mac-arm64:
     name: build (macos-latest, mac, arm64)
     runs-on: macos-latest
+    needs: create-release
 
     steps:
       - name: 检出代码
@@ -105,6 +162,7 @@ jobs:
   build-mac-x64:
     name: build (macos-latest, mac, x64)
     runs-on: macos-latest
+    needs: create-release
 
     steps:
       - name: 检出代码
@@ -224,19 +282,18 @@ jobs:
 
           # 找到 arm64 和 x64 zip 文件名
           # artifactName 模板: ${productName}-${os}-${version}-${arch}.${ext}
-          # 产物名含空格: Diting AI-mac-5.0.x-arm64.zip
-          # GitHub 上传时空格可能被编码，匹配时做 URL 解码
+          # 产物名: Diting-mac-5.0.x-arm64.zip / Diting-mac-5.0.x-x64.zip
           ARM64_ZIP=$(echo "$RELEASE_JSON" | python3 -c "
-          import json, sys, urllib.parse
+          import json, sys
           for a in json.load(sys.stdin)['assets']:
-              n = urllib.parse.unquote(a['name'])
+              n = a['name']
               if 'arm64' in n and n.endswith('.zip') and 'mac' in n and not n.endswith('.blockmap'):
                   print(n); break
           ")
           X64_ZIP=$(echo "$RELEASE_JSON" | python3 -c "
-          import json, sys, urllib.parse
+          import json, sys
           for a in json.load(sys.stdin)['assets']:
-              n = urllib.parse.unquote(a['name'])
+              n = a['name']
               if 'x64' in n and n.endswith('.zip') and 'mac' in n and 'arm64' not in n and not n.endswith('.blockmap'):
                   print(n); break
           ")
@@ -253,16 +310,16 @@ jobs:
 
           # 通过 API 获取下载 URL（支持 draft release）
           ARM64_URL=$(echo "$RELEASE_JSON" | python3 -c "
-          import json, sys, urllib.parse
+          import json, sys
           for a in json.load(sys.stdin)['assets']:
-              n = urllib.parse.unquote(a['name'])
+              n = a['name']
               if 'arm64' in n and n.endswith('.zip') and 'mac' in n and not n.endswith('.blockmap'):
                   print(a['url']); break
           ")
           X64_URL=$(echo "$RELEASE_JSON" | python3 -c "
-          import json, sys, urllib.parse
+          import json, sys
           for a in json.load(sys.stdin)['assets']:
-              n = urllib.parse.unquote(a['name'])
+              n = a['name']
               if 'x64' in n and n.endswith('.zip') and 'mac' in n and 'arm64' not in n and not n.endswith('.blockmap'):
                   print(a['url']); break
           ")
@@ -339,6 +396,7 @@ jobs:
   build-linux-x64:
     name: build (ubuntu-latest, linux, x64)
     runs-on: ubuntu-latest
+    needs: create-release
 
     steps:
       - name: 检出代码
@@ -378,6 +436,7 @@ jobs:
   build-windows-x64:
     name: build (windows-latest, win, x64)
     runs-on: windows-latest
+    needs: create-release
 
     steps:
       - name: 检出代码
@@ -406,10 +465,10 @@ jobs:
         run: npx electron-builder --config ./cmd/builder.json --win --x64 --publish always
 
   # ============================================================
-  # Job 6: 将 release-notes 目录的 Markdown 写入 GitHub Release body
+  # Job 6: 更新 Release Notes 并发布 Draft Release
   # ============================================================
   update-release-notes:
-    name: Update Release Notes
+    name: Update Release Notes & Publish
     runs-on: ubuntu-latest
     needs: [build-mac-arm64, build-mac-x64, merge-mac-yml, build-linux-x64, build-windows-x64]
 
@@ -417,19 +476,48 @@ jobs:
       - name: 检出代码
         uses: actions/checkout@v4
 
-      - name: 将 release-notes 写入 GitHub Release body
+      - name: 更新 Release Notes 并发布
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           TAG="${GITHUB_REF_NAME}"
+          REPO="${GITHUB_REPOSITORY}"
           NOTES_FILE="release-notes/${TAG}.md"
 
-          if [ -f "$NOTES_FILE" ]; then
-            echo "Found release notes file: $NOTES_FILE"
-            BODY=$(cat "$NOTES_FILE")
-            gh release edit "$TAG" --notes "$BODY"
-            echo "✅ Release notes updated for $TAG"
-          else
-            echo "⚠️ No release notes file found at $NOTES_FILE, skipping"
+          # 查找 Release（draft 状态，需遍历列表）
+          RELEASE_ID=$(curl -s -H "Authorization: token ${GH_TOKEN}" \
+            "https://api.github.com/repos/${REPO}/releases" \
+            | python3 -c "
+          import json, sys
+          for r in json.load(sys.stdin):
+              if r.get('tag_name') == '${TAG}':
+                  print(r['id']); break
+          ")
+
+          if [ -z "$RELEASE_ID" ]; then
+            echo "ERROR: Release not found for tag ${TAG}"
+            exit 1
           fi
+          echo "Release ID: ${RELEASE_ID}"
+
+          # 读取 release notes
+          if [ -f "$NOTES_FILE" ]; then
+            echo "Found release notes file: ${NOTES_FILE}"
+            BODY=$(python3 -c "
+          import json
+          with open('${NOTES_FILE}', 'r') as f:
+              print(json.dumps(f.read()))
+          ")
+          else
+            echo "⚠️ No release notes file found at ${NOTES_FILE}, using default"
+            BODY=$(python3 -c "import json; print(json.dumps('Release ${TAG}'))")
+          fi
+
+          # 更新 Release body 并发布（draft: false）
+          curl -s -X PATCH \
+            -H "Authorization: token ${GH_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "{\"body\": ${BODY}, \"draft\": false}" \
+            "https://api.github.com/repos/${REPO}/releases/${RELEASE_ID}" \
+            | python3 -c "import json,sys; r=json.load(sys.stdin); print(f'✅ Release published: {r.get(\"tag_name\",\"?\")} (draft={r.get(\"draft\",\"?\")})')"

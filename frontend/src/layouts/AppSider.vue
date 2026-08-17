@@ -11,7 +11,7 @@
     >
       <img class="size-7 shrink-0 rounded-md" src="~@/assets/logo.png" alt="logo" />
       <span v-if="!isCollapsed" class="whitespace-nowrap text-[15px] font-bold tracking-tight text-foreground">
-        Diting AI
+        Diting
       </span>
     </div>
 

@@ -1,6 +1,6 @@
 {
   "name": "ee",
-  "version": "5.0.20",
+  "version": "5.0.22",
   "description": "A fast, desktop software development framework",
   "main": "./public/electron/main.js",
   "scripts": {
@@ -40,8 +40,8 @@
   "repository": "https://github.com/shuaiyinoo/Diting_AI_Desktop.git",
   "keywords": [
     "Diting",
-    "Diting AI",
-    "Diting AI RAG"
+    "Diting RAG",
+    "Diting AI"
   ],
   "author": "帅印, <shuaiyinoo@163.com>",
   "license": "Apache-2.0",

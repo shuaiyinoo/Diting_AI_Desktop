@@ -36,7 +36,7 @@
     <div v-else-if="tabStore.tabMode && !tabStore.activeTab" class="flex items-center justify-center h-full w-full bg-card">
       <div class="flex flex-col items-center gap-3 p-12">
         <Bot class="size-14 text-primary opacity-50" />
-        <h2 class="text-xl font-semibold text-foreground m-0">欢迎使用 Diting AI</h2>
+        <h2 class="text-xl font-semibold text-foreground m-0">欢迎使用 Diting</h2>
         <p class="text-sm text-muted-foreground m-0">从左侧选择一个会话开始对话</p>
       </div>
     </div>
