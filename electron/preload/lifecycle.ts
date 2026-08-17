@@ -8,6 +8,12 @@ import { startScheduler as startAutomationScheduler } from '../components/planni
 import { startPlanningReminderScheduler } from '../components/planning/reminder-scheduler';
 import { stopScheduler as stopAutomationScheduler } from '../components/planning/automation-scheduler';
 import { stopPlanningReminderScheduler } from '../components/planning/reminder-scheduler';
+import { feishuBridgeManager } from '../service/bridge/feishu-bridge-manager';
+import { wechatBridge } from '../service/bridge/wechat-bridge';
+import { dingtalkBridgeManager } from '../service/bridge/dingtalk-bridge-manager';
+import { getWeChatConfig } from '../service/bridge/wechat-config';
+import { getFeishuMultiBotConfig } from '../service/bridge/feishu-config';
+import { getDingTalkMultiBotConfig } from '../service/bridge/dingtalk-config';
 
 class Lifecycle {
   /**
@@ -37,6 +43,51 @@ class Lifecycle {
     } catch (err) {
       logger.error('[lifecycle] 调度器启动失败:', err);
     }
+
+    // 自动启动已启用的 IM Bridge（飞书/微信/钉钉）
+    // 延迟 5 秒，等待窗口和数据库完全就绪
+    setTimeout(async () => {
+      try {
+        // 飞书
+        const feishuConfig = getFeishuMultiBotConfig();
+        for (const bot of feishuConfig.bots) {
+          if (bot.enabled) {
+            try {
+              await feishuBridgeManager.startBridge(bot.id);
+              logger.info(`[lifecycle] 飞书 Bridge 已启动: ${bot.name}`);
+            } catch (err) {
+              logger.error(`[lifecycle] 飞书 Bridge 启动失败 (${bot.name}):`, err);
+            }
+          }
+        }
+
+        // 微信：用已有凭证自动启动长轮询
+        const wechatConfig = getWeChatConfig();
+        if (wechatConfig.enabled && wechatConfig.credentials) {
+          try {
+            await wechatBridge.start();
+            logger.info('[lifecycle] 微信 Bridge 已启动');
+          } catch (err) {
+            logger.error('[lifecycle] 微信 Bridge 启动失败:', err);
+          }
+        }
+
+        // 钉钉
+        const dingtalkConfig = getDingTalkMultiBotConfig();
+        for (const bot of dingtalkConfig.bots) {
+          if (bot.enabled) {
+            try {
+              await dingtalkBridgeManager.startBridge(bot.id);
+              logger.info(`[lifecycle] 钉钉 Bridge 已启动: ${bot.name}`);
+            } catch (err) {
+              logger.error(`[lifecycle] 钉钉 Bridge 启动失败 (${bot.name}):`, err);
+            }
+          }
+        }
+      } catch (err) {
+        logger.error('[lifecycle] Bridge 自动启动失败:', err);
+      }
+    }, 5000);
 
     // When double clicking the icon, display the opened window
     electronApp.on('second-instance', () => {
@@ -88,6 +139,15 @@ class Lifecycle {
     logger.info('[lifecycle] before-close');
     stopAutomationScheduler();
     stopPlanningReminderScheduler();
+
+    // 停止所有 IM Bridge
+    try {
+      feishuBridgeManager.stopAll();
+      wechatBridge.stop();
+      dingtalkBridgeManager.stopAll();
+    } catch (err) {
+      logger.error('[lifecycle] Bridge 停止失败:', err);
+    }
   }
 }
 export {

@@ -411,7 +411,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { toast } from 'vue-sonner'
@@ -797,6 +797,29 @@ function getFolderName(path) {
   return parts[parts.length - 1] || path
 }
 
+// 监听 Bridge 创建会话事件（飞书/微信/钉钉等 IM Bridge 创建会话后通知前端刷新）
+function onBridgeSessionCreated() {
+  ws.loadAgentProjects()
+  agent.loadSessions()
+}
+
+// Bridge 消息开始处理：后端 headless 模式运行 Agent，前端启动消息轮询以实时刷新 UI
+function onBridgeMessageStart(_event, { sessionId, workspaceId }) {
+  // 刷新会话列表，确保新会话出现在列表中
+  agent.loadSessions()
+  // 启动消息轮询：定期 reload 持久化的消息，直到检测到 LLM 回复完成
+  agent.startMessagePolling(sessionId)
+  console.log(`[MenuBar] Bridge 消息开始处理，启动轮询: ${sessionId}`)
+}
+
+// Bridge 消息处理完成：停止消息轮询
+function onBridgeMessageDone(_event, { sessionId }) {
+  agent.stopMessagePolling(sessionId)
+  // 最后加载一次消息，确保 UI 显示最终结果
+  agent.loadMessages(sessionId).catch(() => {})
+  console.log(`[MenuBar] Bridge 消息处理完成，停止轮询: ${sessionId}`)
+}
+
 onMounted(() => {
   ws.loadFolderList()
   ws.loadChatSessions()
@@ -805,5 +828,15 @@ onMounted(() => {
   loadSkillsCount()
   loadTotalFileCount()
   planning.loadAll().catch(() => {})
+
+  ipc.on('controller/bridge/sessionCreated', onBridgeSessionCreated)
+  ipc.on('controller/bridge/messageStart', onBridgeMessageStart)
+  ipc.on('controller/bridge/messageDone', onBridgeMessageDone)
+})
+
+onUnmounted(() => {
+  ipc.removeListener('controller/bridge/sessionCreated', onBridgeSessionCreated)
+  ipc.removeListener('controller/bridge/messageStart', onBridgeMessageStart)
+  ipc.removeListener('controller/bridge/messageDone', onBridgeMessageDone)
 })
 </script>

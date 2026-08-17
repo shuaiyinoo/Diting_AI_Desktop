@@ -1,6 +1,6 @@
 {
   "name": "ee",
-  "version": "5.0.6",
+  "version": "5.0.16",
   "description": "A fast, desktop software development framework",
   "main": "./public/electron/main.js",
   "scripts": {
@@ -47,6 +47,7 @@
     "@electron/rebuild": "^3.7.1",
     "@types/better-sqlite3": "^7.6.12",
     "@types/node": "^22.20.1",
+    "@types/qrcode": "^1.5.6",
     "cross-env": "^7.0.3",
     "debug": "^4.4.0",
     "ee-bin": "^5.0.0",
@@ -59,6 +60,7 @@
     "@earendil-works/pi-ai": "0.82.1",
     "@earendil-works/pi-coding-agent": "0.82.1",
     "@kreuzberg/node": "^4.9.9",
+    "@larksuiteoapi/node-sdk": "^1.73.0",
     "@modelcontextprotocol/sdk": "^1.30.0",
     "@zvec/zvec": "^0.5.0",
     "axios": "^1.7.9",
@@ -67,6 +69,7 @@
     "canvas": "^3.2.3",
     "chokidar": "^5.0.0",
     "dayjs": "^1.11.13",
+    "dingtalk-stream-sdk-nodejs": "^2.0.4",
     "ee-core": "^5.0.1",
     "electron-updater": "^6.7.3",
     "hf-embedder": "^0.2.1",
@@ -77,6 +80,7 @@
     "pdf-parse": "^2.4.5",
     "ppu-paddle-ocr": "^6.4.0",
     "ppu-pdf": "^6.2.0",
+    "qrcode": "^1.5.4",
     "qwen-embedder": "^0.1.5",
     "typebox": "1.1.38"
   }

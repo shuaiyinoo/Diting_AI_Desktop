@@ -216,6 +216,44 @@ install: 'controller/skillHub/install',
 // 安装到所有工作区
 installToAll: 'controller/skillHub/installToAll',
 },
+
+// Bridge IM 渠道（飞书/微信/钉钉）
+bridge: {
+// 自动启动已启用的 Bridge
+autoStart: 'controller/bridge/autoStart',
+// 飞书
+feishuListBots: 'controller/bridge/feishuListBots',
+feishuSaveBot: 'controller/bridge/feishuSaveBot',
+feishuDeleteBot: 'controller/bridge/feishuDeleteBot',
+feishuStartBot: 'controller/bridge/feishuStartBot',
+feishuStopBot: 'controller/bridge/feishuStopBot',
+feishuGetStatuses: 'controller/bridge/feishuGetStatuses',
+feishuTestConnection: 'controller/bridge/feishuTestConnection',
+// 飞书扫码注册
+feishuRegisterApp: 'controller/bridge/feishuRegisterApp',
+feishuCancelRegister: 'controller/bridge/feishuCancelRegister',
+feishuRegisterQrcodeEvent: 'controller/bridge/feishuRegisterQrcode',
+feishuRegisterStatusEvent: 'controller/bridge/feishuRegisterStatus',
+// 飞书绑定管理
+feishuListBindings: 'controller/bridge/feishuListBindings',
+feishuUpdateBinding: 'controller/bridge/feishuUpdateBinding',
+feishuRemoveBinding: 'controller/bridge/feishuRemoveBinding',
+// 微信（扫码登录模式，无需手动配置 Token）
+wechatGetConfig: 'controller/bridge/wechatGetConfig',
+wechatStartLogin: 'controller/bridge/wechatStartLogin',
+wechatLogout: 'controller/bridge/wechatLogout',
+wechatStart: 'controller/bridge/wechatStart',
+wechatStop: 'controller/bridge/wechatStop',
+wechatGetStatus: 'controller/bridge/wechatGetStatus',
+// 钉钉
+dingtalkListBots: 'controller/bridge/dingtalkListBots',
+dingtalkSaveBot: 'controller/bridge/dingtalkSaveBot',
+dingtalkDeleteBot: 'controller/bridge/dingtalkDeleteBot',
+dingtalkStartBot: 'controller/bridge/dingtalkStartBot',
+dingtalkStopBot: 'controller/bridge/dingtalkStopBot',
+dingtalkGetStatuses: 'controller/bridge/dingtalkGetStatuses',
+dingtalkTestConnection: 'controller/bridge/dingtalkTestConnection',
+},
 }
 
 /**

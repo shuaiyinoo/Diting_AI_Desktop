@@ -36,6 +36,7 @@
         <RuntimePanel v-else-if="activeTab === 'runtime'" ref="runtimeRef" />
         <GeneralPanel v-else-if="activeTab === 'general'" />
         <AppearancePanel v-else-if="activeTab === 'appearance'" />
+        <BridgeSettings v-else-if="activeTab === 'bridge'" />
       </div>
     </div>
   </div>
@@ -45,7 +46,7 @@
 import { ref, computed } from 'vue'
 import { toast } from 'vue-sonner'
 import {
-  Settings, Zap, Plug, Palette, Bot, Monitor, Wrench,
+  Settings, Zap, Plug, Palette, Bot, Monitor, Wrench, Radio,
 } from '@lucide/vue'
 import PanelDivider from '@/components/layout/PanelDivider.vue'
 import { ipcApiRoute } from '@/api'
@@ -57,6 +58,7 @@ import ToolsPanel from './ToolsPanel.vue'
 import RuntimePanel from './RuntimePanel.vue'
 import GeneralPanel from './GeneralPanel.vue'
 import AppearancePanel from './AppearancePanel.vue'
+import BridgeSettings from './BridgeSettings.vue'
 
 // ========== 面板布局 ==========
 const workspaceRef = ref(null)
@@ -78,6 +80,7 @@ const settingTabs = [
   { key: 'runtime', label: '环境检测', icon: Monitor },
   { key: 'general', label: '常规', icon: Settings },
   { key: 'appearance', label: '外观', icon: Palette },
+  { key: 'bridge', label: '远程连接', icon: Radio },
 ]
 
 const currentTabLabel = computed(() => settingTabs.find((t) => t.key === activeTab.value)?.label || '')
