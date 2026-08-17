@@ -27,6 +27,7 @@
     "build-m-x86": "npm run build-frontend && npm run build-electron && ee-bin build --cmds=mac",
     "build-m-arm64": "npm run build-frontend && npm run build-electron && ee-bin build --cmds=mac_arm64 && ee-bin updater --platform=macos_apple",
     "build-l": "npm run build-frontend && npm run build-electron && ee-bin build --cmds=linux",
+    "build-all": "npm run build-frontend && npm run build-electron && ee-bin build --cmds=mac_arm64 && ee-bin build --cmds=mac && ee-bin build --cmds=linux && ee-bin build --cmds=win64",
     "ohos-resources": "ee-bin ohos --cmds=resources",
     "debug-dev": "cross-env DEBUG=ee-* ee-bin dev",
     "debug-encrypt": "ee-bin encrypt",
@@ -35,14 +36,16 @@
     "packages-build": "pnpm --filter ee-bin run build && pnpm --filter ee-core run build",
     "re-sqlite": "electron-rebuild -f -w better-sqlite3"
   },
-  "repository": "https://github.com/dromara/electron-egg.git",
+  
+  "repository": "https://github.com/shuaiyinoo/Diting_AI_Desktop.git",
   "keywords": [
-    "Electron",
-    "electron-egg",
-    "ElectronEgg"
+    "Diting",
+    "Diting AI",
+    "Diting AI RAG"
   ],
-  "author": "哆啦好梦, Inc <530353222@qq.com>",
+  "author": "帅印, <shuaiyinoo@163.com>",
   "license": "Apache",
+
   "devDependencies": {
     "@electron/rebuild": "^3.7.1",
     "@types/better-sqlite3": "^7.6.12",

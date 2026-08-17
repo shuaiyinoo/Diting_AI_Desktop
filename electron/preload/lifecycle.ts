@@ -122,13 +122,15 @@ class Lifecycle {
     const y = Math.floor((height - windowHeight) / 2);
     win.setBounds({ x, y, width: windowWidth, height: windowHeight })
 
-    // Delayed loading, no white screen
+    // 延迟显示窗口：config 中 show: false，等页面首帧渲染完成后才 show + focus
+    // windowReady() 在 loadServer() 之前执行，因此 ready-to-show 监听会正确注册
+    // 这样可避免 preload 和页面加载期间用户看到空白窗口
     const { windowsOption } = getConfig();
-    if (windowsOption.show == false) {
+    if (windowsOption.show === false) {
       win.once('ready-to-show', () => {
         win.show();
         win.focus();
-      })
+      });
     }
   }
 

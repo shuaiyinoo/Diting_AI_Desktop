@@ -40,8 +40,9 @@
   },
   "publish": [
     {
-      "provider": "generic",
-      "url": "https://github.com/wallace5303/electron-egg"
+      "provider": "github",
+      "owner": "shuaiyinoo",
+      "repo": "Diting_AI_Desktop"
     }
   ],
   "win": {

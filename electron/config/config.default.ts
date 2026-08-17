@@ -22,7 +22,10 @@ export default (): Partial<Config> => {
         //preload: path.join(getElectronDir(), 'preload', 'bridge.js'),
       },
       titleBarStyle: 'hidden',
-      show: true,
+      // 延迟显示窗口：等页面 ready-to-show 后再 show，避免启动期间出现空白窗口
+      show: false,
+      // 设置背景色与前端 #loadingPage 一致，避免 ready-to-show 前的闪白
+      backgroundColor: '#f0f2f5',
       icon: path.join(getBaseDir(), 'public', 'images', 'logo-32.png'),
     },
     logger: {
