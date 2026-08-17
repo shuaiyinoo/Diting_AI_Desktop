@@ -202,17 +202,20 @@ jobs:
           echo "Release ID: ${RELEASE_ID}"
 
           # 找到 arm64 和 x64 zip 文件名
+          # artifactName 模板: ${productName}-${os}-${version}-${arch}.${ext}
+          # 实际产物: Diting AI-mac-5.0.17-arm64.zip / Diting AI-mac-5.0.17-x64.zip
           ARM64_ZIP=$(echo "$RELEASE_JSON" | python3 -c "
           import json, sys
           for a in json.load(sys.stdin)['assets']:
-              if 'arm64-mac.zip' in a['name'] and not a['name'].endswith('.blockmap'):
-                  print(a['name']); break
+              n = a['name']
+              if 'arm64' in n and n.endswith('.zip') and 'mac' in n and not n.endswith('.blockmap'):
+                  print(n); break
           ")
           X64_ZIP=$(echo "$RELEASE_JSON" | python3 -c "
           import json, sys
           for a in json.load(sys.stdin)['assets']:
               n = a['name']
-              if n.endswith('-mac.zip') and 'arm64' not in n and not n.endswith('.blockmap'):
+              if 'x64' in n and n.endswith('.zip') and 'mac' in n and 'arm64' not in n and not n.endswith('.blockmap'):
                   print(n); break
           ")
 
@@ -228,14 +231,15 @@ jobs:
           ARM64_URL=$(echo "$RELEASE_JSON" | python3 -c "
           import json, sys
           for a in json.load(sys.stdin)['assets']:
-              if 'arm64-mac.zip' in a['name'] and not a['name'].endswith('.blockmap'):
+              n = a['name']
+              if 'arm64' in n and n.endswith('.zip') and 'mac' in n and not n.endswith('.blockmap'):
                   print(a['url']); break
           ")
           X64_URL=$(echo "$RELEASE_JSON" | python3 -c "
           import json, sys
           for a in json.load(sys.stdin)['assets']:
               n = a['name']
-              if n.endswith('-mac.zip') and 'arm64' not in n and not n.endswith('.blockmap'):
+              if 'x64' in n and n.endswith('.zip') and 'mac' in n and 'arm64' not in n and not n.endswith('.blockmap'):
                   print(a['url']); break
           ")
 
