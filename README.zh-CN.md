@@ -1,131 +1,134 @@
-[![star](https://gitee.com/dromara/electron-egg/badge/star.svg?theme=gvp)](https://gitee.com/dromara/electron-egg/stargazers)
+# Diting AI Desktop 中文说明
 
-<div align=center>
-<img src="https://wallace5303.gitee.io/ee/images/electron-egg/logo.png" width="150" height="150" />
-<h3>🎉🎉🎉 ElectronEgg V5 已发布! 🎉🎉🎉</h3>
-</div>
-<br>
+> 同步维护的英文文档见 [README.md](./README.md)，内容更完整。
 
-<div align=center>
-<img src="./public/images/example/logo.png" width="150" height="150" />
-</div>
+## 项目简介
 
-<div align=center>
-<h3><strong>一个入门简单、跨平台、企业级桌面软件开发框架</strong></h3>
-</div>
-<br>
+Diting AI Desktop（谛听 AI 桌面客户端）是一款基于 [electron-egg v5](https://github.com/dromara/electron-egg) 框架构建的企业级跨平台桌面 AI 助手应用。
 
-<!-- ## 🌏 [English](https://www.yuque.com/u34495/ee-doc) | [中文](https://www.kaka996.com/) -->
+它融合了本地文件管理、RAG 知识库问答、Pi Agent 智能代理、LLM 多轮对话等 AI 核心能力，面向 Windows / macOS / Linux 三大平台，旨在为用户提供高效、安全、本地优先的桌面 AI 工作台。
 
-## 📋 介绍
+> 本项目受 [Proma](https://github.com/ErlichLiu/Proma) 开源项目启发，Agent 模式的 UI 设计与交互风格参考了 Proma 的优秀实践，特此感谢。
 
-> 框架已经广泛应用于记账、政务、企业、医疗、学校、股票交易、ERP、娱乐、视频等领域客户端，请放心使用！
+## 核心能力
 
-## 👦 谁可以使用
+- **文件管理**：授权文件夹扫描、文件同步、Office/PDF 在线预览、RAG 自动向量化
+- **RAG 知识库问答**：文档解析 → 智能切片 → 本地向量嵌入 → 混合检索（向量 + 关键字）→ LLM 生成 → 引用追踪
+- **Agent 模式**：基于 Pi Agent SDK 的智能代理，支持工作区隔离、Skills 技能系统、MCP 工具协议、权限模式、流式输出
+- **多轮对话**：多模型对话、流式 SSE 输出、上下文记忆、工具模式切换
+- **LLM 模型管理**：多模型配置、连接测试、参数调优、用量统计与费用估算
+- **本地优先**：所有 AI 能力（嵌入、检索、存储）本地执行，数据不上传云端
+- **跨平台**：一套代码打包 Windows / macOS / Linux
 
-项目已经有 5 个交流群，覆盖`前端`、`java`、`go`、`python`、`php` 等开发者。
+## 下载安装
 
-无论你是前端、服务端、运维、游戏、客户端等，都可以很快入门，
+从 [GitHub Releases](https://github.com/shuaiyinoo/Diting_AI_Desktop/releases) 下载对应平台安装包。
 
-## 🐶 精彩案例
+## 从源码构建
 
-- [**点击查看**](#项目案例)
+```bash
+# 克隆仓库
+git clone https://github.com/shuaiyinoo/Diting_AI_Desktop.git
+cd Diting_AI_Desktop
 
-## 📺 特点
-- 🍩 **为什么使用？** 桌面软件（办公方向、 个人工具），仍然是未来十几年PC端需求之一，提高工作效率
-- 🍉 **简单：** 支持 js、ts、cjs、esm 
-- 🍑 **愿景：** 所有开发者都能学会桌面软件研发
-- 🍰 **gitee：** https://gitee.com/dromara/electron-egg **6000+**
-- 🍨 **github：** https://github.com/dromara/electron-egg **2400+**
-- 🏆 码云最有价值开源项目
-    ![](./public/images/example/ee-zs.png)    
+# 安装依赖
+npm install
 
-## 📚 文档
-- 快速体验：[教程文档](https://www.kaka996.com/)
-    ![](./public/images/example/v3-home.png) 
+# 为 Electron 重建 better-sqlite3 原生模块
+npm run re-sqlite
 
-## 📦 特性
-1. 🍄 跨平台：一套代码，可以打包成windows版、Mac版、Linux版、国产UOS、Deepin、麒麟等
-2. 🌹 架构：单业务进程/模块化/多任务(进程，线程，渲染进程)，让开发大型项目变的简单。
-3. 🌱 简单高效：只需学习 js 语言
-4. 🌴 前端独立：理论上支持任何前端技术，如：vue、react、html等等
-5. 🍁 工程化：可以用前端、服务端的开发思维，来编写桌面软件
-6. 🌷 高性能：事件驱动、非阻塞式IO
-7. 🌰 功能丰富：配置、通信、插件、数据库、升级、打包、工具... 应有尽有
-8. 💐 安全：支持字节码加密、压缩混淆加密
-9. 🌻 功能demo：桌面软件常见功能，框架集成或提供demo
+# 开发模式（frontend + electron 同时启动）
+npm run dev
 
-## ✈️ 使用场景
+# 构建并运行
+npm run build
+npm run start
+```
 
-### 1. 🚀 常规桌面软件
-- 🚖 windows平台
+## 常用命令
 
-    ![](./public/images/example/ee-win-home.png)
+```bash
+# 开发
+npm run dev               # 完整开发（frontend + electron）
+npm run dev-frontend      # 仅前端开发（Vite dev server :8080）
+npm run dev-electron      # 仅 Electron 开发
 
-- 🚍 macOS平台    
-    ![](./public/images/example/ee-mac-home.png)
+# 构建
+npm run build             # 构建 frontend + electron + 加密
+npm run build-frontend    # Vite 构建前端
+npm run build-electron    # esbuild 打包 Electron
 
-- 🚔 linux平台 - 国产UOS、Deepin
-    ![](./public/images/example/uos-home.png)
+# 平台打包
+npm run build-m           # macOS ARM64
+npm run build-m-x86       # macOS x64
+npm run build-w           # Windows 64-bit
+npm run build-l           # Linux
+npm run build-all         # 一键打包所有平台
+```
 
-- 🚔 linux平台 - ubuntu
-    ![](./public/images/example/ubuntu-db.png)
+## 技术栈
 
-### 🚐 2. vue、react、angular、web 转换成桌面软件
-- 🚙 vue-ant-design（本地）
+| 层级 | 技术 | 版本 |
+|------|------|------|
+| 桌面框架 | Electron + electron-egg v5 | 39.x |
+| 前端框架 | Vue 3 + Vite | 3.5 + 7.x |
+| UI 组件 | Ant Design Vue | 4.2.6 |
+| 状态管理 | Pinia | 2.3.1 |
+| 富文本编辑 | TipTap | 3.29.2 |
+| Markdown 渲染 | md-editor-v3 + markstream-vue | 6.5.5 |
+| 代码高亮 | Shiki | 3.23.0 |
+| 图表 | Mermaid | 11.16.1 |
+| 数学公式 | KaTeX | 0.18.1 |
+| 数据库 | better-sqlite3 + zvec | 12.5.0 |
+| Agent Runtime | @earendil-works/pi-coding-agent | 0.82.1 |
+| AI 对话 | @earendil-works/pi-ai | 0.82.1 |
+| MCP | @modelcontextprotocol/sdk | 1.30.0 |
+| 构建工具 | esbuild + electron-builder | — |
 
-    ![](./public/images/example/vue-antd.png)
+## 本地数据
 
-- 🚙 禅道项目管理（web项目地址）
+```text
+~/.diting/
+├── channels.json           # LLM 模型配置
+├── conversations/          # 对话消息存储 (JSONL)
+├── agent-sessions/         # Agent 会话存储 (JSONL)
+├── agent-workspaces/       # Agent 工作区目录
+│   └── {workspace-slug}/
+│       ├── mcp.json        # MCP Server 配置
+│       └── skills/         # Skills 配置
+├── attachments/            # 附件文件
+└── data/                   # SQLite 数据库
+    ├── file.db             # 文件索引
+    ├── llm.db              # 模型配置
+    ├── qa.db               # 问答记录
+    ├── assistant.db        # 助手会话
+    └── rag.db              # 向量索引
+```
 
-    ![](./public/images/example/ee-project-7.png)
+## 贡献
 
-### 🚂 3. 游戏（h5相关技术开发）
-- 🚊 忍者100层
+欢迎修 Bug、补文档、加测试、完善体验。
 
-    ![](./public/images/example/ee_game_1.png)
+提交 PR 前建议先确认：
 
+- 使用 `npm run dev` 能正常启动
+- 状态管理使用 Pinia
+- 尽量保持本地优先，优先使用 SQLite 和配置文件
+- UI 组件推荐使用 Ant Design Vue
+- 注释和日志采用中文，保留必要的专业术语
 
-## 📒 开始使用
+## 许可证
 
-- ✒️ [安装文档](https://www.kaka996.com/pages/e64ff6/)
-    
-## 项目案例
-- 🐟 框架已经应用于医疗、学校、政务、股票交易、ERP、娱乐、视频、企业等领域客户端
+本项目基于 [Apache License 2.0](./LICENSE) 开源协议发布。
 
-### 🐸 远控
+Copyright 2026 Diting AI
 
-- RQ Center
-![](./public/images/example/rq-1.png)
-![](./public/images/example/rq-2.png)
+您可以自由使用、修改和分发本软件，但需遵守 Apache 2.0 协议的相关条款。
 
-### 🐸 云盘
+## 链接
 
-- FM Cloud
-![](./public/images/example/fm-p2.png)
-![](./public/images/example/fm-p1.png)
-![](./public/images/example/fm-p4.png)
-
-### 🐸 IM
-
-- Cede IM
-![](./public/images/example/im-p1.png)
-![](./public/images/example/im-p5.png)
-![](./public/images/example/im-p1.png)
-
-### 🐸 壁纸
-
-- warpar
-![](./public/images/example/aw-3.png)
-
-### 🐸 英雄联盟助手
-
-- Serendlplty
-![](./public/images/example/lol-zhanji.png)
-
-### 🐸 更多
-
-- [更多案例](https://www.kaka996.com/pages/eadf46/)
-
-## 💬 交流
-1. [讨论](https://www.kaka996.com/pages/c2720e/)
+- [完整文档（英文）](./README.md)
+- [用户教程](./tutorial/tutorial.md)
+- [AI 编码指南](./AGENTS.md)
+- [产品路线图](./docs/product-thinking.md)
+- [发布说明](./release-notes/)

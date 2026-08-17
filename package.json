@@ -1,6 +1,6 @@
 {
   "name": "ee",
-  "version": "5.0.16",
+  "version": "5.0.17",
   "description": "A fast, desktop software development framework",
   "main": "./public/electron/main.js",
   "scripts": {
@@ -44,7 +44,7 @@
     "Diting AI RAG"
   ],
   "author": "帅印, <shuaiyinoo@163.com>",
-  "license": "Apache",
+  "license": "Apache-2.0",
 
   "devDependencies": {
     "@electron/rebuild": "^3.7.1",

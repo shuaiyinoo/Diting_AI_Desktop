@@ -26,14 +26,14 @@ Diting AI Desktop（谛听 AI 桌面客户端）是一款基于 [electron-egg v5
 
 ### 下载安装
 
-从 [GitHub Releases](https://github.com/dromara/electron-egg/releases) 下载对应平台安装包。
+从 [GitHub Releases](https://github.com/shuaiyinoo/Diting_AI_Desktop/releases) 下载对应平台安装包。
 
 ### 从源码构建
 
 ```bash
 # 克隆仓库
-git clone https://github.com/dromara/electron-egg.git
-cd electron-egg
+git clone https://github.com/shuaiyinoo/Diting_AI_Desktop.git
+cd Diting_AI_Desktop
 
 # 安装依赖
 npm install
@@ -123,7 +123,7 @@ Electron 39 + Node.js v20
 - **Socket.IO**：WebSocket（端口 7070），实时数据推送
 - **SSE**：流式输出统一通过 Server-Sent Events 推送
 
-更完整的工程约定见 [CLAUDE.md](./CLAUDE.md)。
+更完整的工程约定见 [AGENTS.md](./AGENTS.md)。
 
 ## 详细调用路径
 
@@ -736,11 +736,15 @@ npm run build-l           # Linux
 
 ## 许可证
 
-[Apache License 2.0](./LICENSE)
+本项目基于 [Apache License 2.0](./LICENSE) 开源协议发布。
+
+Copyright 2026 Diting AI
+
+您可以自由使用、修改和分发本软件，但需遵守 Apache 2.0 协议的相关条款。
 
 ## 链接
 
 - [用户教程](./tutorial/tutorial.md)
-- [AI 编码指南](./CLAUDE.md)
+- [AI 编码指南](./AGENTS.md)
 - [产品路线图](./docs/product-thinking.md)
 - [发布说明](./release-notes/)
