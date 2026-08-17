@@ -28,6 +28,24 @@ Diting AI Desktop（谛听 AI 桌面客户端）是一款基于 [electron-egg v5
 
 从 [GitHub Releases](https://github.com/shuaiyinoo/Diting_AI_Desktop/releases) 下载对应平台安装包。
 
+#### macOS 安装注意事项
+
+由于应用未进行 Apple 代码签名和公证，macOS 安装后打开可能提示「"Diting"已损坏，无法打开」。这是 macOS Gatekeeper 安全机制导致，可通过以下方式解决：
+
+**方法一（推荐）：终端命令去除隔离标记**
+
+```bash
+xattr -cr /Applications/Diting.app
+```
+
+**方法二：系统设置放行**
+
+1. 打开「系统设置」→「隐私与安全性」
+2. 滚动到底部，找到被拦截的 Diting 应用提示
+3. 点击「仍要打开」
+
+> 如果使用 Homebrew Cask 安装，可执行 `xattr -cr -- $(brew --prefix)/Caskroom/Diting`
+
 ### 从源码构建
 
 ```bash
