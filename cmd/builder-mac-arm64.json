@@ -10,7 +10,9 @@
   "files": [
     "public",
     "package.json",
-    "node_modules/**/*"
+    "node_modules/**/*",
+    "!node_modules/onnxruntime-node/bin/napi-v6/linux",
+    "!node_modules/onnxruntime-node/bin/napi-v6/win32"
   ],
   "extraResources": [
     {

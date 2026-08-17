@@ -110,34 +110,12 @@
     <!-- 分隔条 2 -->
     <PanelDivider @resize="onPanel2Resize" />
 
-    <!-- ========== 第三部分：文件预览/编辑区 ========== -->
+    <!-- ========== 第三部分：文件预览区 ========== -->
     <div class="flex flex-1 min-w-[200px] flex-col h-full overflow-hidden">
-      <MdEditor
-        v-if="editorMode && ws.selectedFile && isMdFile(ws.selectedFile.name)"
-        :key="'md-editor-' + ws.selectedFile.id"
-        :file-item-id="ws.selectedFile.id"
-        :file-name="ws.selectedFile.name"
-        :panel4-collapsed="panel4Collapsed"
-        @toggle-panel4="togglePanel4"
-      />
-      <OnlyOfficeEditor
-        v-else-if="editorMode && ws.selectedFile && isEditableFile(ws.selectedFile.name)"
-        :key="'editor-' + ws.selectedFile.id"
-        :file-item-id="ws.selectedFile.id"
-        :file-name="ws.selectedFile.name"
-        :panel4-collapsed="panel4Collapsed"
-        mode="edit"
-        @state-change="onEditorStateChange"
-        @toggle-panel4="togglePanel4"
-        @rename="onEditorRename"
-      />
       <FilePreviewPanel
-        v-else
         :file="ws.selectedFile"
         :panel4-collapsed="panel4Collapsed"
-        :show-edit-button="ws.selectedFile && isEditableFile(ws.selectedFile.name)"
         @toggle-panel4="togglePanel4"
-        @edit="enterEditMode"
       />
     </div>
 
@@ -152,7 +130,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch, shallowRef } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { FileCode, FileText, FolderOpen, Inbox, Loader2, Plus, RefreshCw, Sheet } from '@lucide/vue'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -164,8 +142,6 @@ import { ipc } from '@/utils/ipcRenderer'
 import { useWorkspaceStore } from '@/stores/workspace'
 import FilePreviewPanel from '@/components/file/FilePreviewPanel.vue'
 import FileInfoPanel from '@/components/file/FileInfoPanel.vue'
-import OnlyOfficeEditor from '@/components/file/OnlyOfficeEditor.vue'
-import MdEditor from '@/components/file/MdEditor.vue'
 import PanelDivider from '@/components/layout/PanelDivider.vue'
 
 const toast = useToast()
@@ -251,22 +227,7 @@ const ragProcessing = ref(false)
 
 // ========== 新建文件 ==========
 const createPopoverVisible = ref(false)
-const editorMode = ref(false)
 const creatingFile = ref(false)
-const editorRef = shallowRef(null)
-
-const EDITABLE_EXTENSIONS = ['docx', 'xlsx', 'pptx', 'md']
-const MD_EXTENSIONS = ['md', 'markdown']
-
-function isEditableFile(fileName) {
-  const ext = (fileName || '').split('.').pop()?.toLowerCase() || ''
-  return EDITABLE_EXTENSIONS.includes(ext)
-}
-
-function isMdFile(fileName) {
-  const ext = (fileName || '').split('.').pop()?.toLowerCase() || ''
-  return MD_EXTENSIONS.includes(ext)
-}
 
 const FILE_TYPE_LABELS = {
   docx: '文档',
@@ -320,45 +281,6 @@ async function generateUniqueFileName(baseName, ext) {
   }
   return name
 }
-
-function onEditorStateChange(modified) {
-  // 可以在这里处理未保存提示
-}
-
-async function onEditorRename(newName) {
-  if (!ws.selectedFile || !newName) return
-  const oldName = ws.selectedFile.name || ''
-  const oldExt = oldName.includes('.') ? oldName.split('.').pop().toLowerCase() : ''
-  const newNameExt = newName.includes('.') ? newName.split('.').pop().toLowerCase() : ''
-  const finalName = (oldExt && newNameExt !== oldExt) ? `${newName}.${oldExt}` : newName
-  try {
-    const result = await ipc.invoke(ipcApiRoute.file.renameFile, {
-      fileItemId: ws.selectedFile.id,
-      newName: finalName,
-    })
-    if (result.success) {
-      ws.selectFile(result.fileItem || { ...ws.selectedFile, name: finalName })
-      loadFileList()
-      toast.success(`已重命名为: ${finalName}`)
-    } else {
-      toast.error(result.message || '重命名失败')
-    }
-  } catch (err) {
-    console.error('[file] 重命名失败:', err)
-    toast.error('重命名失败')
-  }
-}
-
-function enterEditMode() {
-  editorMode.value = true
-}
-
-// 切换文件时：可编辑文件直接用编辑器打开
-watch(() => ws.selectedFile, (file, oldFile) => {
-  if (file?.id !== oldFile?.id) {
-    editorMode.value = isEditableFile(file?.name || '')
-  }
-})
 
 // 监听 MenuBar 中文件夹选中变化（使用 storeToRefs 的 ref 确保响应式）
 watch(wsSelectedFolderId, (folderId, oldFolderId) => {
