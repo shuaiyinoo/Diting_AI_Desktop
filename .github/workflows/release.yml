@@ -168,6 +168,13 @@ jobs:
 
   # ============================================================
   # Job 3: 合并 macOS latest-mac.yml（ARM64 + x64 双架构更新清单）
+  #
+  # 为什么需要合并？
+  # electron-updater 通过 latest-mac.yml 判断是否有新版本。
+  # 两个 build Job 分别上传各自的 latest-mac.yml（只含单架构信息），
+  # 后上传的会覆盖先上传的，导致另一架构用户无法正确更新。
+  # 合并后的 latest-mac.yml 包含 files 数组列出两个架构的 zip，
+  # electron-updater 会根据当前机器架构自动选择正确的包下载。
   # ============================================================
   merge-mac-yml:
     name: Merge latest-mac.yml (arm64 + x64)
@@ -186,35 +193,45 @@ jobs:
 
           echo "=== Fetching release info for ${TAG} ==="
 
-          # 获取 release 信息
+          # 按 tag 直接查找 Release（兼容 draft 状态）
           RELEASE_JSON=$(curl -s -H "Authorization: token ${GH_TOKEN}" \
-            "https://api.github.com/repos/${REPO}/releases" \
-            | python3 -c "
-          import json, sys
-          releases = json.load(sys.stdin)
-          for r in releases:
-              if r.get('tag_name') == '${TAG}' or r.get('name') == '${TAG}':
-                  print(json.dumps(r)); break
-          else:
-              sys.exit('ERROR: release not found for tag ${TAG}')
-          ")
-          RELEASE_ID=$(echo "$RELEASE_JSON" | python3 -c "import json,sys; print(json.load(sys.stdin)['id'])")
+            "https://api.github.com/repos/${REPO}/releases/tags/${TAG}")
+
+          # 检查是否找到了 Release
+          RELEASE_ID=$(echo "$RELEASE_JSON" | python3 -c "import json,sys; r=json.load(sys.stdin); print(r.get('id',''))")
+          if [ -z "$RELEASE_ID" ]; then
+            echo "ERROR: Release not found for tag ${TAG}"
+            exit 1
+          fi
           echo "Release ID: ${RELEASE_ID}"
 
-          # 找到 arm64 和 x64 zip 文件名
-          # artifactName 模板: ${productName}-${os}-${version}-${arch}.${ext}
-          # 实际产物: Diting AI-mac-5.0.17-arm64.zip / Diting AI-mac-5.0.17-x64.zip
-          ARM64_ZIP=$(echo "$RELEASE_JSON" | python3 -c "
+          # 列出所有 asset 名称（调试用）
+          echo "=== All assets in this release ==="
+          echo "$RELEASE_JSON" | python3 -c "
           import json, sys
-          for a in json.load(sys.stdin)['assets']:
-              n = a['name']
+          r = json.load(sys.stdin)
+          assets = r.get('assets', [])
+          if not assets:
+              print('(no assets found)')
+          for a in assets:
+              print(f\"  - {a['name']} ({a.get('size','?')} bytes)\")
+          "
+
+          # 匹配 arm64 和 x64 的 mac zip 文件
+          # artifactName 模板: ${productName}-${os}-${version}-${arch}.${ext}
+          # 产物名含空格: Diting AI-mac-5.0.x-arm64.zip
+          # GitHub 上传时空格可能被替换，所以匹配时做 URL 解码
+          ARM64_ZIP=$(echo "$RELEASE_JSON" | python3 -c "
+          import json, sys, urllib.parse
+          for a in json.load(sys.stdin).get('assets', []):
+              n = urllib.parse.unquote(a['name'])
               if 'arm64' in n and n.endswith('.zip') and 'mac' in n and not n.endswith('.blockmap'):
                   print(n); break
           ")
           X64_ZIP=$(echo "$RELEASE_JSON" | python3 -c "
-          import json, sys
-          for a in json.load(sys.stdin)['assets']:
-              n = a['name']
+          import json, sys, urllib.parse
+          for a in json.load(sys.stdin).get('assets', []):
+              n = urllib.parse.unquote(a['name'])
               if 'x64' in n and n.endswith('.zip') and 'mac' in n and 'arm64' not in n and not n.endswith('.blockmap'):
                   print(n); break
           ")
@@ -224,26 +241,28 @@ jobs:
 
           if [ -z "$ARM64_ZIP" ] || [ -z "$X64_ZIP" ]; then
             echo "ERROR: missing mac zip assets"
+            echo "This usually means the build jobs did not upload zip files successfully."
+            echo "Check the build job logs for electron-builder upload errors."
             exit 1
           fi
 
-          # 获取下载 URL
+          # 获取 asset 的 API URL（用于下载）
           ARM64_URL=$(echo "$RELEASE_JSON" | python3 -c "
-          import json, sys
-          for a in json.load(sys.stdin)['assets']:
-              n = a['name']
+          import json, sys, urllib.parse
+          for a in json.load(sys.stdin).get('assets', []):
+              n = urllib.parse.unquote(a['name'])
               if 'arm64' in n and n.endswith('.zip') and 'mac' in n and not n.endswith('.blockmap'):
                   print(a['url']); break
           ")
           X64_URL=$(echo "$RELEASE_JSON" | python3 -c "
-          import json, sys
-          for a in json.load(sys.stdin)['assets']:
-              n = a['name']
+          import json, sys, urllib.parse
+          for a in json.load(sys.stdin).get('assets', []):
+              n = urllib.parse.unquote(a['name'])
               if 'x64' in n and n.endswith('.zip') and 'mac' in n and 'arm64' not in n and not n.endswith('.blockmap'):
                   print(a['url']); break
           ")
 
-          # 下载两个 zip
+          # 下载两个 zip 计算校验值
           echo "Downloading arm64 zip..."
           curl -sL -H "Authorization: token ${GH_TOKEN}" -H "Accept: application/octet-stream" \
             "${ARM64_URL}" -o arm64.zip
@@ -282,21 +301,21 @@ jobs:
           echo "=== Merged latest-mac.yml ==="
           cat latest-mac.yml
 
-          # 删除旧的 latest-mac.yml
-          ASSET_ID=$(curl -s -H "Authorization: token ${GH_TOKEN}" \
+          # 删除旧的 latest-mac.yml（两个 build Job 各上传了一个）
+          ASSET_IDS=$(curl -s -H "Authorization: token ${GH_TOKEN}" \
             "https://api.github.com/repos/${REPO}/releases/${RELEASE_ID}/assets" \
             | python3 -c "
           import json, sys
           for a in json.load(sys.stdin):
               if a['name'] == 'latest-mac.yml':
-                  print(a['id']); break
+                  print(a['id'])
           " || true)
 
-          if [ -n "$ASSET_ID" ]; then
+          for ASSET_ID in $ASSET_IDS; do
             echo "Deleting old latest-mac.yml (asset ${ASSET_ID})..."
             curl -s -X DELETE -H "Authorization: token ${GH_TOKEN}" \
               "https://api.github.com/repos/${REPO}/releases/assets/${ASSET_ID}"
-          fi
+          done
 
           # 上传合并后的 latest-mac.yml
           echo "Uploading merged latest-mac.yml..."
