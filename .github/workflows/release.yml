@@ -193,16 +193,21 @@ jobs:
 
           echo "=== Fetching release info for ${TAG} ==="
 
-          # 按 tag 直接查找 Release（兼容 draft 状态）
+          # 获取 release 信息
+          # 注意：electron-builder --publish always 创建的是 draft release，
+          # draft release 无法通过 /releases/tags/{tag} 查找，必须遍历 /releases 列表
           RELEASE_JSON=$(curl -s -H "Authorization: token ${GH_TOKEN}" \
-            "https://api.github.com/repos/${REPO}/releases/tags/${TAG}")
-
-          # 检查是否找到了 Release
-          RELEASE_ID=$(echo "$RELEASE_JSON" | python3 -c "import json,sys; r=json.load(sys.stdin); print(r.get('id',''))")
-          if [ -z "$RELEASE_ID" ]; then
-            echo "ERROR: Release not found for tag ${TAG}"
-            exit 1
-          fi
+            "https://api.github.com/repos/${REPO}/releases" \
+            | python3 -c "
+          import json, sys
+          releases = json.load(sys.stdin)
+          for r in releases:
+              if r.get('tag_name') == '${TAG}' or r.get('name') == '${TAG}':
+                  print(json.dumps(r)); break
+          else:
+              sys.exit('ERROR: release not found for tag ${TAG}')
+          ")
+          RELEASE_ID=$(echo "$RELEASE_JSON" | python3 -c "import json,sys; print(json.load(sys.stdin)['id'])")
           echo "Release ID: ${RELEASE_ID}"
 
           # 列出所有 asset 名称（调试用）
@@ -217,20 +222,20 @@ jobs:
               print(f\"  - {a['name']} ({a.get('size','?')} bytes)\")
           "
 
-          # 匹配 arm64 和 x64 的 mac zip 文件
+          # 找到 arm64 和 x64 zip 文件名
           # artifactName 模板: ${productName}-${os}-${version}-${arch}.${ext}
           # 产物名含空格: Diting AI-mac-5.0.x-arm64.zip
-          # GitHub 上传时空格可能被替换，所以匹配时做 URL 解码
+          # GitHub 上传时空格可能被编码，匹配时做 URL 解码
           ARM64_ZIP=$(echo "$RELEASE_JSON" | python3 -c "
           import json, sys, urllib.parse
-          for a in json.load(sys.stdin).get('assets', []):
+          for a in json.load(sys.stdin)['assets']:
               n = urllib.parse.unquote(a['name'])
               if 'arm64' in n and n.endswith('.zip') and 'mac' in n and not n.endswith('.blockmap'):
                   print(n); break
           ")
           X64_ZIP=$(echo "$RELEASE_JSON" | python3 -c "
           import json, sys, urllib.parse
-          for a in json.load(sys.stdin).get('assets', []):
+          for a in json.load(sys.stdin)['assets']:
               n = urllib.parse.unquote(a['name'])
               if 'x64' in n and n.endswith('.zip') and 'mac' in n and 'arm64' not in n and not n.endswith('.blockmap'):
                   print(n); break
@@ -246,23 +251,23 @@ jobs:
             exit 1
           fi
 
-          # 获取 asset 的 API URL（用于下载）
+          # 通过 API 获取下载 URL（支持 draft release）
           ARM64_URL=$(echo "$RELEASE_JSON" | python3 -c "
           import json, sys, urllib.parse
-          for a in json.load(sys.stdin).get('assets', []):
+          for a in json.load(sys.stdin)['assets']:
               n = urllib.parse.unquote(a['name'])
               if 'arm64' in n and n.endswith('.zip') and 'mac' in n and not n.endswith('.blockmap'):
                   print(a['url']); break
           ")
           X64_URL=$(echo "$RELEASE_JSON" | python3 -c "
           import json, sys, urllib.parse
-          for a in json.load(sys.stdin).get('assets', []):
+          for a in json.load(sys.stdin)['assets']:
               n = urllib.parse.unquote(a['name'])
               if 'x64' in n and n.endswith('.zip') and 'mac' in n and 'arm64' not in n and not n.endswith('.blockmap'):
                   print(a['url']); break
           ")
 
-          # 下载两个 zip 计算校验值
+          # 下载两个 zip（通过 API URL + Accept header，支持 draft release）
           echo "Downloading arm64 zip..."
           curl -sL -H "Authorization: token ${GH_TOKEN}" -H "Accept: application/octet-stream" \
             "${ARM64_URL}" -o arm64.zip
@@ -282,7 +287,7 @@ jobs:
 
           RELEASE_DATE=$(date -u +"%Y-%m-%dT%H:%M:%S.000Z")
 
-          # 生成合并后的 latest-mac.yml
+          # 生成合并后的 latest-mac.yml（无缩进 heredoc）
           cat > latest-mac.yml <<EOF
           version: ${VERSION}
           files:
@@ -301,7 +306,7 @@ jobs:
           echo "=== Merged latest-mac.yml ==="
           cat latest-mac.yml
 
-          # 删除旧的 latest-mac.yml（两个 build Job 各上传了一个）
+          # 删除旧的 latest-mac.yml asset（两个 build Job 各上传了一个）
           ASSET_IDS=$(curl -s -H "Authorization: token ${GH_TOKEN}" \
             "https://api.github.com/repos/${REPO}/releases/${RELEASE_ID}/assets" \
             | python3 -c "
