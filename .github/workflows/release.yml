@@ -103,8 +103,8 @@ jobs:
   # Job 2: macOS x64 (Intel)
   # ============================================================
   build-mac-x64:
-    name: build (macos-13, mac, x64)
-    runs-on: macos-13
+    name: build (macos-latest, mac, x64)
+    runs-on: macos-latest
 
     steps:
       - name: 检出代码
@@ -138,8 +138,8 @@ jobs:
 
           rm $RUNNER_TEMP/cert.p12
 
-      - name: 重编译 native 模块
-        run: npx electron-rebuild -f -w better-sqlite3,canvas
+      - name: 重编译 native 模块 (x64 交叉编译)
+        run: npx electron-rebuild -f -a x64 -w better-sqlite3,canvas
 
       - name: 构建前端
         run: npm run build-frontend
