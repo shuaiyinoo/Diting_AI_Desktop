@@ -1,211 +1,217 @@
 <template>
-  <div class="mx-auto max-w-[640px]">
-    <div class="mb-3 flex items-start justify-between">
+  <div class="relative mx-auto flex h-full w-full max-w-[640px] flex-col">
+    <!-- 顶部标题栏 -->
+    <div class="mb-4 flex items-start justify-between px-1">
       <div class="flex-1">
         <h3 class="flex items-center gap-2 text-base font-semibold text-foreground">
           <Bot class="size-5 text-primary" />
           语义模型配置
         </h3>
-        <p class="mb-4 mt-1.5 text-xs leading-relaxed text-muted-foreground">配置大语言模型（LLM）用于智能问答与语义检索。同一时间只能启用一个模型。</p>
+        <p class="mt-1.5 text-xs leading-relaxed text-muted-foreground">
+          配置大语言模型（LLM）用于智能问答与语义检索。同一时间只能启用一个模型。
+        </p>
       </div>
-      <Button @click="openAddModal">
-        <Plus class="size-4" />
-        添加模型
-      </Button>
+      <div class="flex items-center gap-2">
+        <Button variant="outline" size="sm" class="h-8 gap-1.5 px-3.5 text-[13px]" @click="handleAddCloud">
+          <Cloud class="size-4" />
+          Diting Cloud 模型
+          <span class="ml-1 rounded bg-blue-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-blue-600">BETA</span>
+        </Button>
+        <Button size="sm" class="h-8 gap-1.5 px-3.5 text-[13px]" @click="handleAdd">
+          <Plus class="size-4" />
+          添加官方模型
+        </Button>
+      </div>
     </div>
 
     <!-- 当前启用模型状态 -->
-    <div v-if="enabledModel" class="mb-3.5 flex items-center gap-2.5 rounded-lg border border-border bg-muted/50 p-2.5 shadow-sm">
-      <Badge variant="default" class="gap-1">
-        <CheckCircle2 class="size-3.5" />
-        当前启用
-      </Badge>
-      <span class="text-sm font-semibold text-foreground">{{ enabledModel.name }}</span>
-      <span class="text-[13px] text-muted-foreground">
-        {{ providerLabel(enabledModel.provider) }} · {{ enabledModel.model_name }}
-      </span>
-    </div>
-    <div v-else class="mb-3.5 flex items-center gap-2.5 rounded-lg border border-border bg-muted/50 p-2.5 shadow-sm">
-      <Badge variant="secondary" class="gap-1">
-        <AlertCircle class="size-3.5" />
-        未启用
-      </Badge>
-      <span class="text-sm text-muted-foreground">尚未启用任何模型，请添加并启用一个模型</span>
-    </div>
-
-    <!-- 模型列表表格 -->
-    <div class="overflow-hidden rounded-lg border border-border bg-card p-1 shadow-sm">
-      <div v-if="loading" class="flex items-center justify-center py-12">
-        <Spinner class="size-5 text-muted-foreground" />
-        <span class="ml-2 text-sm text-muted-foreground">加载中…</span>
+    <div
+      v-if="enabledModel"
+      class="mb-4 flex items-center gap-3 rounded-lg border border-primary/20 bg-primary/5 p-3"
+    >
+      <img :src="getModelLogo(enabledModel.model_name, inferProviderType(enabledModel.provider, enabledModel.base_url))" :alt="enabledModel.name" class="size-8 rounded-lg" />
+      <div class="flex flex-1 items-center gap-2">
+        <Badge variant="default" class="gap-1">
+          <CheckCircle2 class="size-3" />
+          当前启用
+        </Badge>
+        <span class="text-sm font-semibold text-foreground">{{ enabledModel.name }}</span>
+        <span class="text-xs text-muted-foreground">{{ enabledModel.model_name }}</span>
       </div>
-      <table v-else class="w-full text-sm">
-        <thead>
-          <tr class="border-b bg-muted/50">
-            <th class="px-3 py-2 text-left font-medium">状态</th>
-            <th class="px-3 py-2 text-left font-medium">别名</th>
-            <th class="px-3 py-2 text-left font-medium">提供商</th>
-            <th class="px-3 py-2 text-left font-medium">模型名称</th>
-            <th class="px-3 py-2 text-left font-medium">API Key</th>
-            <th class="px-3 py-2 text-left font-medium">操作</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="record in list" :key="record.id" class="border-b hover:bg-muted/30">
-            <td class="px-3 py-2">
-              <Badge v-if="record.enabled === 1" variant="default" class="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">已启用</Badge>
-              <Badge v-else variant="secondary">未启用</Badge>
-            </td>
-            <td class="px-3 py-2">{{ record.name }}</td>
-            <td class="px-3 py-2">{{ providerLabel(record.provider) }}</td>
-            <td class="px-3 py-2">{{ record.model_name }}</td>
-            <td class="px-3 py-2 font-mono text-xs text-muted-foreground">{{ maskKey(record.api_key) }}</td>
-            <td class="px-3 py-2">
-              <div class="flex items-center gap-1">
-                <Button v-if="record.enabled !== 1" variant="link" size="sm" @click="$emit('enable', record)">启用</Button>
-                <Button v-else variant="link" size="sm" @click="$emit('disable', record)">禁用</Button>
-                <Button variant="link" size="sm" :disabled="testingId === record.id" @click="$emit('test', record)">{{ testingId === record.id ? '测试中…' : '测试' }}</Button>
-                <Button variant="link" size="sm" @click="openEditModal(record)">编辑</Button>
-                <Button variant="link" size="sm" class="text-destructive" @click="$emit('delete', record)">删除</Button>
-              </div>
-            </td>
-          </tr>
-          <tr v-if="list.length === 0">
-            <td colspan="6" class="py-8 text-center text-sm text-muted-foreground">暂无数据</td>
-          </tr>
-        </tbody>
-      </table>
+    </div>
+    <div
+      v-else
+      class="mb-4 flex items-center gap-3 rounded-lg border border-yellow-200 bg-yellow-50 p-3 dark:border-yellow-900 dark:bg-yellow-950/50"
+    >
+      <div class="flex flex-1 items-center gap-2">
+        <Badge variant="secondary" class="gap-1">
+          <AlertCircle class="size-3" />
+          未启用
+        </Badge>
+        <span class="text-sm text-muted-foreground">尚未启用任何模型，请添加并启用一个模型</span>
+      </div>
     </div>
 
-    <!-- 模型添加/编辑弹窗 -->
-    <Dialog v-model:open="modalVisible">
-      <DialogContent class="max-w-[640px]">
-        <DialogHeader>
-          <DialogTitle>{{ editingModel ? '编辑模型' : '添加模型' }}</DialogTitle>
-        </DialogHeader>
-        <div class="space-y-4 py-2">
-          <div class="space-y-1.5">
-            <label class="text-sm font-medium">模型别名 <span class="text-destructive">*</span></label>
-            <Input v-model="formData.name" placeholder="如：我的GPT-4o、DeepSeek生产环境" />
-          </div>
-          <div class="space-y-1.5">
-            <label class="text-sm font-medium">接口提供商</label>
-            <Select v-model="formData.provider">
-              <SelectTrigger><SelectValue placeholder="选择提供商类型" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="openai">OpenAI 兼容（OpenAI / DeepSeek / Moonshot / Qwen 等）</SelectItem>
-                <SelectItem value="anthropic">Anthropic Claude</SelectItem>
-                <SelectItem value="google">Google Gemini</SelectItem>
-                <SelectItem value="custom">自定义</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div class="space-y-1.5">
-            <label class="text-sm font-medium">API 地址 (Base URL)</label>
-            <Input v-model="formData.base_url" placeholder="如：https://api.openai.com/v1" />
-            <div class="flex flex-wrap gap-1">
-              <Button variant="link" size="sm" @click="formData.base_url = 'https://api.openai.com/v1'">OpenAI</Button>
-              <Button variant="link" size="sm" @click="formData.base_url = 'https://api.deepseek.com/v1'">DeepSeek</Button>
-              <Button variant="link" size="sm" @click="formData.base_url = 'https://api.moonshot.cn/v1'">Moonshot</Button>
-              <Button variant="link" size="sm" @click="formData.base_url = 'https://dashscope.aliyuncs.com/compatible-mode/v1'">通义千问</Button>
-              <Button variant="link" size="sm" @click="formData.base_url = 'https://api.siliconflow.cn/v1'">硅基流动</Button>
-            </div>
-            <p class="text-xs text-muted-foreground">不含 /chat/completions 后缀</p>
-          </div>
-          <div class="space-y-1.5">
-            <label class="text-sm font-medium">API Key</label>
-            <Input v-model="formData.api_key" type="password" placeholder="sk-..." autocomplete="new-password" />
-          </div>
-          <div class="space-y-1.5">
-            <label class="text-sm font-medium">模型名称 <span class="text-destructive">*</span></label>
-            <Input v-model="formData.model_name" placeholder="如：gpt-4o、deepseek-chat、claude-3-5-sonnet-20241022" />
-            <div class="flex flex-wrap gap-1">
-              <Button variant="link" size="sm" @click="formData.model_name = 'gpt-4o'">gpt-4o</Button>
-              <Button variant="link" size="sm" @click="formData.model_name = 'gpt-4o-mini'">gpt-4o-mini</Button>
-              <Button variant="link" size="sm" @click="formData.model_name = 'deepseek-chat'">deepseek-chat</Button>
-              <Button variant="link" size="sm" @click="formData.model_name = 'deepseek-reasoner'">deepseek-reasoner</Button>
-              <Button variant="link" size="sm" @click="formData.model_name = 'moonshot-v1-8k'">moonshot-v1-8k</Button>
-              <Button variant="link" size="sm" @click="formData.model_name = 'qwen-plus'">qwen-plus</Button>
+    <!-- 加载中 -->
+    <div v-if="loading" class="flex items-center justify-center py-16">
+      <Spinner class="size-5 text-muted-foreground" />
+      <span class="ml-2 text-sm text-muted-foreground">加载中…</span>
+    </div>
+
+    <!-- 模型卡片列表 -->
+    <div v-else-if="list.length > 0" class="grid grid-cols-2 gap-3">
+      <div
+        v-for="record in list"
+        :key="record.id"
+        class="group cursor-pointer rounded-lg border bg-card p-3.5 shadow-sm transition-all hover:shadow-md hover:border-primary/30"
+        :class="record.enabled === 1 ? 'border-primary/40' : 'border-border'"
+        @click="handleEdit(record)"
+      >
+        <!-- 卡片头部：Logo + 名称 + 状态 -->
+        <div class="mb-2 flex items-start justify-between">
+          <div class="flex items-center gap-2.5">
+            <img
+              :src="getModelLogo(record.model_name, inferProviderType(record.provider, record.base_url))"
+              :alt="record.name"
+              class="size-9 rounded-lg"
+            />
+            <div class="min-w-0">
+              <div class="truncate text-sm font-semibold text-foreground">{{ record.name }}</div>
+              <div class="truncate text-xs text-muted-foreground">{{ record.model_name }}</div>
             </div>
           </div>
-          <div class="flex gap-4">
-            <div class="flex-1 space-y-1.5">
-              <label class="text-sm font-medium">温度 (Temperature)</label>
-              <Input v-model="formData.temperature" type="number" :min="0" :max="2" :step="0.1" />
-              <p class="text-xs text-muted-foreground">0=精确，2=创造性，默认 0.7</p>
-            </div>
-            <div class="flex-1 space-y-1.5">
-              <label class="text-sm font-medium">最大输出 Token</label>
-              <Input v-model="formData.max_tokens" type="number" :min="1" :max="128000" :step="256" />
-              <p class="text-xs text-muted-foreground">默认 4096</p>
-            </div>
+          <Badge v-if="record.enabled === 1" variant="default" class="shrink-0 gap-1">
+            <CheckCircle2 class="size-3" />
+            启用
+          </Badge>
+          <Badge v-else variant="secondary" class="shrink-0">未启用</Badge>
+        </div>
+
+        <!-- 卡片中部：供应商 + URL -->
+        <div class="mb-2.5 space-y-1">
+          <div class="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Globe class="size-3 shrink-0" />
+            <span class="truncate" :title="record.base_url">{{ record.base_url || '(未设置)' }}</span>
           </div>
-          <div class="space-y-1.5">
-            <label class="text-sm font-medium">备注</label>
-            <Textarea v-model="formData.remark" :rows="2" placeholder="可选，如：用于代码生成 / 用于文档总结" />
+          <div class="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Key class="size-3 shrink-0" />
+            <span class="font-mono">{{ maskKey(record.api_key) }}</span>
           </div>
         </div>
-        <DialogFooter>
-          <Button variant="outline" @click="modalVisible = false">取消</Button>
-          <Button :disabled="submitting" @click="handleSubmit">{{ submitting ? '提交中…' : '确定' }}</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+
+        <!-- 卡片底部：操作按钮（阻止冒泡） -->
+        <div class="flex items-center gap-1 border-t border-border pt-2.5" @click.stop>
+          <Button
+            v-if="record.enabled !== 1"
+            variant="link"
+            size="sm"
+            class="h-7 px-2 text-xs"
+            @click="handleEnable(record)"
+          >
+            启用
+          </Button>
+          <Button
+            v-else
+            variant="link"
+            size="sm"
+            class="h-7 px-2 text-xs"
+            @click="handleDisable(record)"
+          >
+            禁用
+          </Button>
+          <Button
+            variant="link"
+            size="sm"
+            class="h-7 px-2 text-xs"
+            :disabled="testingId === record.id"
+            @click="handleTest(record)"
+          >
+            <Loader2 v-if="testingId === record.id" class="mr-1 size-3 animate-spin" />
+            {{ testingId === record.id ? '测试中' : '测试' }}
+          </Button>
+          <Button
+            variant="link"
+            size="sm"
+            class="h-7 px-2 text-xs text-destructive hover:text-destructive"
+            @click="handleDelete(record)"
+          >
+            删除
+          </Button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 空状态 -->
+    <div v-else class="flex flex-col items-center justify-center rounded-lg border border-dashed border-border py-16">
+      <Bot class="mb-3 size-10 text-muted-foreground/50" />
+      <p class="text-sm text-muted-foreground">还没有配置任何模型</p>
+      <Button variant="outline" size="sm" class="mt-3" @click="handleAdd">
+        <Plus class="mr-1 size-4" />
+        添加第一个模型
+      </Button>
+    </div>
+
+    <!-- 编辑/新增弹窗 -->
+    <ModelEditDialog ref="editDialogRef" @saved="fetchModels" />
 
     <!-- 测试结果弹窗 -->
-    <Dialog v-model:open="testResultVisible">
-      <DialogContent class="max-w-[480px]">
-        <DialogHeader>
-          <DialogTitle>连通性测试结果</DialogTitle>
-        </DialogHeader>
-        <div v-if="testResult" class="py-4 text-center">
-          <div class="mb-2 flex items-center justify-center gap-2 text-lg font-semibold" :class="testResult.success ? 'text-green-600' : 'text-red-600'">
-            <CheckCircle2 v-if="testResult.success" class="size-5" />
-            <AlertCircle v-else class="size-5" />
-            {{ testResult.success ? '连接成功' : '连接失败' }}
-          </div>
-          <p class="text-sm text-muted-foreground">{{ testResult.message }}</p>
-          <div v-if="testResult.success" class="mt-2 text-sm text-green-600">延迟：{{ testResult.latencyMs }}ms</div>
-        </div>
-        <DialogFooter>
-          <Button @click="testResultVisible = false">关闭</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <ModelTestDialog ref="testDialogRef" />
+
+    <!-- 删除确认弹窗 -->
+    <AlertDialog v-model:open="deleteDialogOpen">
+      <AlertDialogContent class="max-w-[400px]">
+        <AlertDialogHeader>
+          <AlertDialogTitle>确认删除</AlertDialogTitle>
+          <AlertDialogDescription>
+            确定删除模型「{{ deleteTarget?.name }}」吗？此操作不可撤销。
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>取消</AlertDialogCancel>
+          <AlertDialogAction class="bg-destructive text-destructive-foreground hover:bg-destructive/90" @click="confirmDelete">
+            删除
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { toast } from 'vue-sonner'
-import { Bot, Plus, CheckCircle2, AlertCircle } from '@lucide/vue'
+import { Bot, Plus, CheckCircle2, AlertCircle, Globe, Key, Loader2, Cloud } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { Spinner } from '@/components/ui/spinner'
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from '@/components/ui/alert-dialog'
 import { ipcApiRoute } from '@/api'
 import { ipc } from '@/utils/ipcRenderer'
+import { inferProviderType } from '@/utils/provider-presets'
+import { getModelLogo } from '@/utils/model-logo'
+import ModelEditDialog from './ModelEditDialog.vue'
+import ModelTestDialog from './ModelTestDialog.vue'
 
 defineEmits(['enable', 'disable', 'test', 'delete'])
 
 const loading = ref(false)
-const submitting = ref(false)
 const testingId = ref(null)
-const modalVisible = ref(false)
-const testResultVisible = ref(false)
-const editingModel = ref(null)
 const list = ref([])
-const testResult = ref(null)
+const editDialogRef = ref(null)
+const testDialogRef = ref(null)
+const deleteDialogOpen = ref(false)
+const deleteTarget = ref(null)
 
 const enabledModel = computed(() => list.value.find((m) => m.enabled === 1) || null)
-
-const formData = reactive({
-  name: '', provider: 'openai', base_url: '', api_key: '',
-  model_name: '', temperature: 0.7, max_tokens: 4096, remark: '',
-})
 
 onMounted(fetchModels)
 
@@ -222,64 +228,88 @@ async function fetchModels() {
   }
 }
 
-function providerLabel(provider) {
-  const map = { openai: 'OpenAI 兼容', anthropic: 'Anthropic', google: 'Google', custom: '自定义' }
-  return map[provider] || provider
-}
-
 function maskKey(key) {
   if (!key) return '(未设置)'
   if (key.length <= 8) return '****'
   return key.substring(0, 4) + '****' + key.substring(key.length - 4)
 }
 
-function openAddModal() {
-  editingModel.value = null
-  Object.assign(formData, {
-    name: '', provider: 'openai', base_url: '', api_key: '',
-    model_name: '', temperature: 0.7, max_tokens: 4096, remark: '',
-  })
-  modalVisible.value = true
+function handleAdd() {
+  editDialogRef.value?.show(null)
 }
 
-function openEditModal(record) {
-  editingModel.value = record
-  Object.assign(formData, {
-    name: record.name, provider: record.provider, base_url: record.base_url,
-    api_key: record.api_key, model_name: record.model_name,
-    temperature: record.temperature, max_tokens: record.max_tokens, remark: record.remark || '',
-  })
-  modalVisible.value = true
+function handleAddCloud() {
+  toast.info('Diting Cloud 模型功能即将上线，敬请期待')
 }
 
-async function handleSubmit() {
-  if (!formData.name.trim()) { toast.error('请输入模型别名'); return }
-  if (!formData.model_name.trim()) { toast.error('请输入模型名称'); return }
-  submitting.value = true
+function handleEdit(record) {
+  editDialogRef.value?.show(record)
+}
+
+async function handleEnable(record) {
   try {
-    const params = {
-      name: formData.name, provider: formData.provider, base_url: formData.base_url,
-      api_key: formData.api_key, model_name: formData.model_name,
-      temperature: Number(formData.temperature), max_tokens: Number(formData.max_tokens),
-      remark: formData.remark,
-    }
-    let res
-    if (editingModel.value) {
-      res = await ipc.invoke(ipcApiRoute.llm.modelOperation, { action: 'update', id: editingModel.value.id, params })
-    } else {
-      res = await ipc.invoke(ipcApiRoute.llm.modelOperation, { action: 'add', params })
-    }
+    const res = await ipc.invoke(ipcApiRoute.llm.modelOperation, { action: 'enable', id: record.id })
     if (res.code === 0) {
-      toast.success(res.message || (editingModel.value ? '更新成功' : '添加成功'))
-      modalVisible.value = false
+      toast.success(`已启用: ${record.name}`)
       fetchModels()
     } else {
-      toast.error(res.message || '操作失败')
+      toast.error(res.message || '启用失败')
     }
   } catch (err) {
-    toast.error('操作异常: ' + (err?.message || err))
+    toast.error('启用异常: ' + (err?.message || err))
+  }
+}
+
+async function handleDisable(record) {
+  try {
+    const res = await ipc.invoke(ipcApiRoute.llm.modelOperation, { action: 'disable', id: record.id })
+    if (res.code === 0) {
+      toast.success(`已禁用: ${record.name}`)
+      fetchModels()
+    } else {
+      toast.error(res.message || '禁用失败')
+    }
+  } catch (err) {
+    toast.error('禁用异常: ' + (err?.message || err))
+  }
+}
+
+function handleDelete(record) {
+  deleteTarget.value = record
+  deleteDialogOpen.value = true
+}
+
+async function confirmDelete() {
+  if (!deleteTarget.value) return
+  const record = deleteTarget.value
+  try {
+    const res = await ipc.invoke(ipcApiRoute.llm.modelOperation, { action: 'delete', id: record.id })
+    if (res.code === 0) {
+      toast.success('删除成功')
+      fetchModels()
+    } else {
+      toast.error(res.message || '删除失败')
+    }
+  } catch (err) {
+    toast.error('删除异常: ' + (err?.message || err))
   } finally {
-    submitting.value = false
+    deleteTarget.value = null
+  }
+}
+
+async function handleTest(record) {
+  testingId.value = record.id
+  try {
+    const res = await ipc.invoke(ipcApiRoute.llm.modelOperation, { action: 'test', id: record.id })
+    if (res.code === 0 && res.testResult) {
+      testDialogRef.value?.show(res.testResult)
+    } else {
+      toast.error(res.message || '测试失败')
+    }
+  } catch (err) {
+    toast.error('测试异常: ' + (err?.message || err))
+  } finally {
+    testingId.value = null
   }
 }
 
@@ -287,8 +317,7 @@ async function handleSubmit() {
 defineExpose({
   refresh: fetchModels,
   showTestResult: (result) => {
-    testResult.value = result
-    testResultVisible.value = true
+    testDialogRef.value?.show(result)
   },
   setTestingId: (id) => { testingId.value = id },
 })

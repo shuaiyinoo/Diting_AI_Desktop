@@ -2,7 +2,7 @@
   <div class="flex h-screen flex-col overflow-hidden bg-background">
     <!-- 顶部：拖拽条 + 模式切换 -->
     <div
-      class="flex h-10 shrink-0 items-center justify-center border-b border-border bg-background"
+      class="pattern-surface flex h-10 shrink-0 items-center justify-center border-b border-border bg-background"
       style="-webkit-app-region: drag"
     >
       <TopBar />

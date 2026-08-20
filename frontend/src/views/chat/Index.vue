@@ -25,7 +25,7 @@
             v-for="msg in messages"
             :key="msg.id"
             :id="'msg-' + msg.id"
-            class="msg-fade-in mx-auto flex w-full max-w-[860px] flex-col gap-1.5 px-6 py-2.5"
+            class="msg-fade-in mx-auto flex w-full flex-col gap-1.5 px-6 py-2.5"
           >
             <!-- 消息头部 -->
             <div class="mb-0.5 flex items-center gap-2.5" :class="msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'">
@@ -37,12 +37,7 @@
                 </svg>
               </div>
               <!-- AI 头像 -->
-              <div v-else class="flex size-[30px] shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary/80 text-white shadow-[0_2px_8px_rgba(22,119,255,0.2)]">
-                <svg class="size-[15px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M12 3L4 7v5c0 5 3.5 9 8 10 4.5-1 8-5 8-10V7l-8-4z" />
-                  <path d="M9 12l2 2 4-4" />
-                </svg>
-              </div>
+              <img v-else :src="aiLogo" :alt="selectedModel || 'AI'" class="size-[30px] shrink-0 rounded-lg object-cover" />
               <div class="flex flex-col gap-px" :class="msg.role === 'user' ? 'items-end' : 'items-start'">
                 <span class="text-[13px] font-semibold leading-tight text-secondary-foreground">{{ msg.role === 'user' ? '我' : (selectedModel || 'AI') }}</span>
                 <span v-if="msg.time" class="text-[11px] leading-tight tabular-nums text-muted-foreground">{{ msg.time }}</span>
@@ -141,10 +136,19 @@
                 :disabled="availableModels.length === 0"
               >
                 <SelectTrigger class="h-8 min-w-[140px] max-w-[200px]">
-                  <SelectValue :placeholder="availableModels.length === 0 ? '未启用模型' : '选择模型'" />
+                  <div v-if="selectedModel" class="flex items-center gap-1.5">
+                    <img :src="aiLogo" :alt="selectedModel" class="size-4 shrink-0 rounded" />
+                    <span class="truncate">{{ availableModels.find(m => m.id === selectedModel)?.name || selectedModel }}</span>
+                  </div>
+                  <span v-else class="text-muted-foreground">{{ availableModels.length === 0 ? '未启用模型' : '选择模型' }}</span>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem v-for="m in availableModels" :key="m.id" :value="m.id">{{ m.name }}</SelectItem>
+                  <SelectItem v-for="m in availableModels" :key="m.id" :value="m.id">
+                    <div class="flex items-center gap-2">
+                      <img :src="getModelLogo(m.model_name, inferProviderType(m.provider, m.base_url)) || LOGO_DEFAULT" :alt="m.name" class="size-4 shrink-0 rounded" />
+                      <span>{{ m.name }}</span>
+                    </div>
+                  </SelectItem>
                 </SelectContent>
               </Select>
 
@@ -213,6 +217,8 @@ import { isDark } from '@/theme'
 import MarkdownRender from 'markstream-vue'
 import CitationRail from '@/components/CitationRail.vue'
 import RichTextInput from '@/components/agent/RichTextInput.vue'
+import { getModelLogo, LOGO_DEFAULT } from '@/utils/model-logo'
+import { inferProviderType } from '@/utils/provider-presets'
 
 const props = defineProps({
   /** 会话 ID，由 TabContent 传入 */
@@ -377,6 +383,15 @@ function jumpToMessage(msgId) {
   }
 }
 
+/** AI 头像 logo */
+const aiLogo = computed(() => {
+  const model = availableModels.value.find((m) => m.id === selectedModel.value)
+  if (model) {
+    return getModelLogo(model.model_name, inferProviderType(model.provider, model.base_url)) || LOGO_DEFAULT
+  }
+  return LOGO_DEFAULT
+})
+
 // ========== 会话标题 ==========
 const currentSessionTitle = computed(() => {
   if (currentSessionId.value) {
@@ -422,7 +437,10 @@ onMounted(async () => {
     if (!chatStore.messagesBySession[currentSessionId.value]) {
       await chatStore.loadMessages(currentSessionId.value)
     }
-    await scrollToBottom(true)
+    // 等待 DOM 更新后滚动到底部
+    pendingScrollToBottom = true
+    await nextTick()
+    scrollToBottom(true)
   }
 })
 
@@ -446,7 +464,7 @@ async function loadEnabledModel() {
     const res = await ipc.invoke(ipcApiRoute.llm.modelOperation, { action: 'getEnabled' })
     if (res.code === 0 && res.data) {
       const m = res.data
-      availableModels.value = [{ id: m.model_name, name: m.name || m.model_name }]
+      availableModels.value = [{ id: m.model_name, name: m.name || m.model_name, model_name: m.model_name, provider: m.provider, base_url: m.base_url }]
       selectedModel.value = m.model_name
     }
   } catch (err) {

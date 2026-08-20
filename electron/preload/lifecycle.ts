@@ -1,4 +1,4 @@
-import { app as electronApp, screen } from 'electron';
+import { app as electronApp, screen, ipcMain } from 'electron';
 import { logger } from 'ee-core/log';
 import { getConfig } from 'ee-core/config';
 import { getMainWindow } from 'ee-core/electron';
@@ -14,6 +14,9 @@ import { dingtalkBridgeManager } from '../service/bridge/dingtalk-bridge-manager
 import { getWeChatConfig } from '../service/bridge/wechat-config';
 import { getFeishuMultiBotConfig } from '../service/bridge/feishu-config';
 import { getDingTalkMultiBotConfig } from '../service/bridge/dingtalk-config';
+import { autoUpdaterService } from '../service/os/auto_updater';
+import { updaterController } from '../controller/updater';
+import { cleanupUpdater } from '../service/os/auto_updater';
 
 class Lifecycle {
   /**
@@ -28,6 +31,18 @@ class Lifecycle {
    */
   async electronAppReady(): Promise<void> {
     logger.info('[lifecycle] electron-app-ready');
+
+    // 注册更新相关 IPC 处理器
+    try {
+      updaterController.registerIpc();
+    } catch (err) {
+      logger.error('[lifecycle] 更新 IPC 注册失败:', err);
+    }
+
+    // 注册获取应用版本号的 IPC
+    ipcMain.handle('updater:get-app-version', (): string => {
+      return electronApp.getVersion();
+    });
 
     // 初始化 Pi Agent 环境（同步默认 Skills、升级工作区 Skills）
     try {
@@ -98,6 +113,15 @@ class Lifecycle {
       win.show();
       win.focus();
     });
+
+    // 初始化自动更新（延迟 3 秒等待主窗口完全就绪）
+    setTimeout(() => {
+      try {
+        autoUpdaterService.init();
+      } catch (err) {
+        logger.error('[lifecycle] 自动更新初始化失败:', err);
+      }
+    }, 3000);
   }
 
   /**
@@ -141,6 +165,13 @@ class Lifecycle {
     logger.info('[lifecycle] before-close');
     stopAutomationScheduler();
     stopPlanningReminderScheduler();
+
+    // 清理更新器资源
+    try {
+      cleanupUpdater();
+    } catch (err) {
+      logger.error('[lifecycle] 更新器清理失败:', err);
+    }
 
     // 停止所有 IM Bridge
     try {

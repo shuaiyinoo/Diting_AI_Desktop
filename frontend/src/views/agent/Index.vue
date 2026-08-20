@@ -43,6 +43,7 @@
           :messages="messages"
           :is-streaming="isStreaming"
           :model-name="selectedModel || 'Agent'"
+          :model-logo="aiLogo"
           :message-stats="messageStats"
           :rail-hover-idx="railHoverIdx"
           @citation-click="onCitationClick"
@@ -118,6 +119,8 @@ import AgentMessageList from '@/components/agent/AgentMessageList.vue'
 import AgentFilePanel from '@/components/agent/AgentFilePanel.vue'
 import AgentChatInput from '@/components/agent/AgentChatInput.vue'
 import { hasTaskBlocks } from '@/utils/task-progress'
+import { getModelLogo, LOGO_DEFAULT } from '@/utils/model-logo'
+import { inferProviderType } from '@/utils/provider-presets'
 
 const ws = useWorkspaceStore()
 const browserStore = useBrowserStore()
@@ -134,6 +137,15 @@ watch(() => props.sessionId, (sid) => {
     tabStore.activateTab(sid)
   }
 }, { immediate: false })
+
+// ========== AI 头像 logo ==========
+const aiLogo = computed(() => {
+  const model = availableModels.value.find((m) => m.id === selectedModel.value)
+  if (model) {
+    return getModelLogo(model.model_name, inferProviderType(model.provider, model.base_url)) || LOGO_DEFAULT
+  }
+  return LOGO_DEFAULT
+})
 
 // ========== 顶部标题 ==========
 const toolbarTitle = computed(() => {
@@ -269,7 +281,23 @@ onMounted(async () => {
       await sendMessageWithText(promptText)
     }
   } else if (agentStore.sessions.length > 0 && !agentStore.currentSessionId) {
+    // 无活跃会话：选中第一个会话
     await agentStore.selectSession(agentStore.sessions[0].id)
+  } else if (agentStore.currentSessionId) {
+    // Tab 恢复了上次会话：检查会话是否仍存在
+    const sessionExists = agentStore.sessions.some((s) => s.id === agentStore.currentSessionId)
+    if (sessionExists) {
+      // 确保消息已加载
+      if (!agentStore.messagesBySession[agentStore.currentSessionId]) {
+        await agentStore.loadMessages(agentStore.currentSessionId)
+      }
+      pendingScrollToBottom = true
+      await nextTick()
+      scrollToBottom(true)
+    } else if (agentStore.sessions.length > 0) {
+      // 上次会话已失效：选中第一个会话
+      await agentStore.selectSession(agentStore.sessions[0].id)
+    }
   } else if (messages.value.length > 0) {
     isAtBottom.value = true
     await nextTick()
@@ -314,7 +342,7 @@ async function loadEnabledModel() {
     const res = await ipc.invoke(ipcApiRoute.llm.modelOperation, { action: 'getEnabled' })
     if (res.code === 0 && res.data) {
       const m = res.data
-      availableModels.value = [{ id: m.model_name, name: m.name || m.model_name }]
+      availableModels.value = [{ id: m.model_name, name: m.name || m.model_name, model_name: m.model_name, provider: m.provider, base_url: m.base_url }]
       selectedModel.value = m.model_name
     }
   } catch (err) {

@@ -488,3 +488,36 @@
 .skill-mention-chip::before { background: #7C3AED; }
 .mcp-mention-chip::before { background: #059669; }
 .session-mention-chip::before { background: #EA580C; }
+
+/* ========== 背景传统纹样 ==========
+ * 当 data-pattern="on" 时，仅在顶部栏、底部状态栏、左侧菜单栏三个控件上叠加纹样。
+ * 纹样只描述形状（SVG mask），颜色由 --pattern-ink 控制，
+ * 自动随明/暗模式反相、并带主题色相。
+ *
+ * 实现原理：
+ * 1. 每个目标控件通过 .pattern-surface 类标记
+ * 2. .pattern-surface::before 使用 CSS mask 绘制纹样，定位覆盖父元素
+ * 3. 伪元素 pointer-events: none 不影响交互
+ */
+[data-pattern="on"] .pattern-surface {
+  position: relative;
+}
+[data-pattern="on"] .pattern-surface::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  -webkit-mask-image: var(--pattern-mask);
+  mask-image: var(--pattern-mask);
+  -webkit-mask-repeat: repeat;
+  mask-repeat: repeat;
+  -webkit-mask-size: var(--pattern-size);
+  mask-size: var(--pattern-size);
+  background-color: var(--pattern-ink);
+}
+/* 确保控件内容位于纹样之上 */
+[data-pattern="on"] .pattern-surface > * {
+  position: relative;
+  z-index: 1;
+}

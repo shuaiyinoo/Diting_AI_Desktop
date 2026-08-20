@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex h-full shrink-0 select-none flex-col overflow-hidden border-r border-border bg-sidebar transition-all duration-250"
+    class="pattern-surface flex h-full shrink-0 select-none flex-col overflow-hidden border-r border-border bg-sidebar transition-all duration-250"
     style="-webkit-app-region: no-drag"
     :style="{ width: ws.menuCollapsed ? '56px' : ws.menuWidth + 'px' }"
   >
@@ -142,7 +142,7 @@
               <span class="flex-1 min-w-0 truncate" :title="getFolderName(folder.path)">{{ getFolderName(folder.path) }}</span>
               <span v-if="folder.file_count != null" class="flex h-4 shrink-0 items-center rounded-full bg-muted px-1.5 text-[11px] leading-none text-muted-foreground">{{ folder.file_count }}</span>
               <Button variant="ghost" size="icon" class="h-5 w-5 shrink-0 text-muted-foreground hover:bg-red-500/10 hover:text-red-500" @click.stop="onDeleteFolder(folder)">
-                <Trash2 class="size-3.5" />
+                <Eraser class="size-3" />
               </Button>
             </div>
             <div v-if="!ws.folderLoading && ws.folderList.length === 0" class="px-2 py-3 text-center text-xs text-muted-foreground">暂无文件夹</div>
@@ -171,7 +171,7 @@
               <MessageSquare class="size-3.5 shrink-0" :class="ws.currentChatSessionId === session.id ? 'text-primary' : 'text-muted-foreground'" />
               <span class="flex-1 min-w-0 truncate">{{ session.title || '新会话' }}</span>
               <Button variant="ghost" size="icon" class="h-5 w-5 shrink-0 text-muted-foreground hover:bg-red-500/10 hover:text-red-500" @click.stop="onDeleteChatSession(session)">
-                <Trash2 class="size-3.5" />
+                <Eraser class="size-3" />
               </Button>
             </div>
             <div v-if="!ws.chatSessionLoading && ws.chatSessions.length === 0" class="px-2 py-3 text-center text-xs text-muted-foreground">暂无对话</div>
@@ -210,7 +210,7 @@
                 />
                 <span v-else class="flex-1 min-w-0 truncate" @dblclick.stop="startEditProject(project)">{{ project.name }}</span>
                 <Button variant="ghost" size="icon" class="h-5 w-5 shrink-0 text-muted-foreground hover:bg-red-500/10 hover:text-red-500" @click.stop="onDeleteProject(project)">
-                  <Trash2 class="size-3.5" />
+                  <Eraser class="size-3" />
                 </Button>
                 <Button variant="ghost" size="icon" class="h-5 w-5 shrink-0 text-muted-foreground hover:text-primary" @click.stop="onCreateAgentSession(project)">
                   <Plus class="size-3.5" />
@@ -239,7 +239,7 @@
                   />
                   <span v-else class="flex-1 min-w-0 truncate" @dblclick.stop="startEditSession(sess)">{{ sess.title || '未命名' }}</span>
                   <Button variant="ghost" size="icon" class="h-5 w-5 shrink-0 text-muted-foreground hover:bg-red-500/10 hover:text-red-500" @click.stop="onDeleteAgentSession(sess, project)">
-                    <Trash2 class="size-3.5" />
+                    <Eraser class="size-3" />
                   </Button>
                 </div>
                 <div v-if="getProjectSessions(project.id).length === 0" class="py-1.5 pl-7 text-left text-xs text-muted-foreground">暂无会话</div>
@@ -417,7 +417,7 @@ import { storeToRefs } from 'pinia'
 import { toast } from 'vue-sonner'
 import {
   PanelLeftClose, PanelLeftOpen, MessageSquare, Bot, Folder, FileSearch,
-  CalendarRange, Zap, FileText, Inbox, Plus, Trash2, ChevronDown, ChevronRight,
+  CalendarRange, Zap, FileText, Inbox, Plus, Eraser, ChevronDown, ChevronRight,
   Settings,
 } from '@lucide/vue'
 import { ipc } from '@/utils/ipcRenderer'
@@ -539,7 +539,35 @@ watch(() => route.path, (path) => {
   else if (path.startsWith('/setting')) ws.setActiveModule('setting')
 }, { immediate: true })
 
-function navigate(key) {
+/** 选中第一个项目的第一个会话（用于 Agent 模式无活跃会话时的回退） */
+async function selectFirstAgentSession() {
+  // 确保项目和会话列表已加载
+  if (ws.agentProjects.length === 0) {
+    await ws.loadAgentProjects()
+  }
+  if (agent.sessions.length === 0) {
+    await agent.loadSessions()
+  }
+  // 选中第一个项目
+  if (ws.agentProjects.length > 0) {
+    const firstProject = ws.agentProjects[0]
+    ws.selectAgentProject(firstProject.id)
+    // 找到该项目下的第一个会话
+    const projectSessions = agent.sessions.filter((s) => {
+      const wid = s.workspaceId || s.workspace_id || s.projectId || ''
+      return String(wid) === String(firstProject.id)
+    })
+    if (projectSessions.length > 0) {
+      await agent.selectSession(projectSessions[0].id)
+    } else {
+      tabStore.enterTabMode()
+    }
+  } else {
+    tabStore.enterTabMode()
+  }
+}
+
+async function navigate(key) {
   if (['file', 'invoice', 'planning', 'skills', 'setting'].includes(key)) {
     tabStore.exitTabMode()
     ws.setActiveModule(key)
@@ -558,8 +586,16 @@ function navigate(key) {
     const sessionId = agent.currentSessionId
     if (sessionId) {
       const session = agent.sessions.find(s => s.id === sessionId)
-      if (session) tabStore.openSessionTab('agent', sessionId, session.title || 'Agent 会话')
-    } else { tabStore.enterTabMode() }
+      if (session) {
+        tabStore.openSessionTab('agent', sessionId, session.title || 'Agent 会话')
+      } else {
+        // 上次会话已失效：选中第一个项目的第一个会话
+        await selectFirstAgentSession()
+      }
+    } else {
+      // 无活跃会话：选中第一个项目的第一个会话
+      await selectFirstAgentSession()
+    }
   }
 }
 

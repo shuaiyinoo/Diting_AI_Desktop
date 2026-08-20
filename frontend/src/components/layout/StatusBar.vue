@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex h-[25px] shrink-0 select-none items-center justify-between border-t border-border bg-sidebar px-2.5 text-xs text-muted-foreground transition-colors duration-250"
+    class="pattern-surface flex h-[25px] shrink-0 select-none items-center justify-between border-t border-border bg-sidebar px-2.5 text-xs text-muted-foreground transition-colors duration-250"
     style="-webkit-app-region: drag"
   >
     <!-- 左侧 -->
@@ -11,13 +11,19 @@
           <span
             class="inline-flex cursor-pointer items-center gap-1 rounded px-1.5 py-0.5 transition-colors hover:bg-accent hover:text-foreground"
             style="-webkit-app-region: no-drag"
-            @click="onCheckUpdate"
+            @click="goToAbout"
           >
-            <RefreshCw class="size-3.5" />
-            <span class="whitespace-nowrap leading-none">v{{ appVersion }}</span>
+            <RefreshCw v-if="updaterStore.hasUpdate" class="size-3.5 text-primary" />
+            <span
+              class="whitespace-nowrap leading-none"
+              :class="updaterStore.hasUpdate ? 'text-primary font-medium' : ''"
+            >v{{ appVersion }}</span>
+            <span v-if="updaterStore.hasUpdate" class="size-1.5 rounded-full bg-primary" />
           </span>
         </TooltipTrigger>
-        <TooltipContent side="top" align="start">检查更新</TooltipContent>
+        <TooltipContent side="top" align="start">
+          {{ updaterStore.hasUpdate ? '有可用更新，点击查看' : '关于/更新' }}
+        </TooltipContent>
       </Tooltip>
 
       <!-- 远程地址（已隐藏）
@@ -49,7 +55,7 @@
           <span
             class="inline-flex cursor-pointer items-center gap-1 rounded px-1.5 py-0.5 transition-colors hover:bg-accent hover:text-foreground"
             style="-webkit-app-region: no-drag"
-            @click="openExternal('https://github.com')"
+            @click="openExternal('https://github.com/shuaiyinoo/Diting_AI_Desktop')"
           >
             <Star class="size-3.5" />
             <span class="whitespace-nowrap leading-none">贡献</span>
@@ -66,7 +72,7 @@
           <span
             class="inline-flex cursor-pointer items-center gap-1 rounded px-1.5 py-0.5 transition-colors hover:bg-accent hover:text-foreground"
             style="-webkit-app-region: no-drag"
-            @click="openExternal('https://github.com')"
+            @click="openExternal('https://ditingrag.com/cn/guide/introduction')"
           >
             <Book class="size-3.5" />
             <span class="whitespace-nowrap leading-none">文档</span>
@@ -154,7 +160,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { toast } from 'vue-sonner';
 import {
@@ -165,6 +171,7 @@ import { ipcApiRoute } from '@/api';
 import { ipc } from '@/utils/ipcRenderer';
 import { useTabStore } from '@/stores/tab';
 import { useBrowserStore } from '@/stores/browser';
+import { useUpdaterStore } from '@/stores/updater';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -173,6 +180,7 @@ import { Input } from '@/components/ui/input';
 const router = useRouter();
 const tabStore = useTabStore();
 const browserStore = useBrowserStore();
+const updaterStore = useUpdaterStore();
 
 const appVersion = ref('1.0.0');
 const remoteAddress = ref('');
@@ -184,15 +192,21 @@ onMounted(() => {
   if (saved) {
     remoteAddress.value = saved;
   }
+
+  // 初始化更新状态订阅
+  updaterStore.initialize();
+
+  // 获取应用版本号
+  updaterStore.getAppVersion().then((v) => {
+    if (v) appVersion.value = v;
+  });
 });
 
-async function onCheckUpdate() {
-  try {
-    toast.loading('正在检查更新...');
-    await ipc.invoke(ipcApiRoute.framework.checkForUpdater);
-  } catch {
-    toast.info('检查更新功能待接入');
-  }
+/**
+ * 跳转到设置-关于/更新页面
+ */
+function goToAbout() {
+  router.push({ path: '/setting', query: { tab: 'about' } });
 }
 
 function onEditRemote() {

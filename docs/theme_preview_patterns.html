@@ -1,0 +1,171 @@
+<!doctype html><html lang="zh"><head><meta charset="utf-8">
+<style>
+  body{font-family:-apple-system,system-ui,'PingFang SC',sans-serif;background:#f5f5f7;color:#222;margin:0;padding:24px;}
+  h1{font-size:20px;} h3{font-size:15px;margin:28px 0 10px;}
+  .grid{display:flex;flex-wrap:wrap;gap:14px;}
+  .card{background:#fff;border:1px solid #e5e5e5;border-radius:10px;padding:12px;width:200px;}
+  .name{font-size:13px;margin-bottom:8px;} code{color:#888;font-size:11px;}
+  .row{display:flex;gap:8px;}
+  .surf{width:92px;height:92px;border-radius:8px;position:relative;
+    -webkit-mask-image:var(--pm);mask-image:var(--pm);
+    -webkit-mask-repeat:repeat;mask-repeat:repeat;
+    -webkit-mask-size:var(--ps);mask-size:var(--ps);
+    background-color:hsl(var(--fg) / 0.07);}
+  .surf.light{background-color:#fbfbfd;box-shadow:inset 0 0 0 1px #eee;}
+  .surf.light::after{content:"";position:absolute;inset:0;background-color:hsl(var(--fg) / 0.07);
+    -webkit-mask-image:var(--pm);mask-image:var(--pm);-webkit-mask-repeat:repeat;mask-repeat:repeat;
+    -webkit-mask-size:var(--ps);mask-size:var(--ps);}
+  .surf.dark{background-color:#0a0a0a;box-shadow:inset 0 0 0 1px #222;}
+  .surf.dark::after{content:"";position:absolute;inset:0;background-color:hsl(var(--fg) / 0.09);
+    -webkit-mask-image:var(--pm);mask-image:var(--pm);-webkit-mask-repeat:repeat;mask-repeat:repeat;
+    -webkit-mask-size:var(--ps);mask-size:var(--ps);}
+  .tintgrid{display:flex;gap:14px;flex-wrap:wrap;}
+  .tintcol{width:120px;} .tn{font-size:12px;color:#666;margin-bottom:6px;}
+  .tintcol .surf{width:120px;height:64px;}
+</style></head><body>
+<h1>中国传统纹样预览（矢量 / 无损 / 可平铺）</h1>
+<p style="color:#666;font-size:13px;max-width:760px;">
+纹样本身只画形状，颜色用 CSS mask + <code>--fg</code> 变量控制：明模式下墨色深、暗模式下墨色浅，且自动带主题色相——
+即「墨随纸变、纹随色调」。下方 Light/Dark 两列即同一纹样在明暗下的观感。
+</p>
+<div class="grid">
+    <div class="card">
+      <div class="name"><b>回纹</b> <code>huiwen</code></div>
+      <div class="row">
+        <div class="surf light"  style="--fg:0 0% 9%;   --pm:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2244%22%20height%3D%2244%22%20viewBox%3D%220%200%2044%2044%22%3E%3Crect%20x%3D%229%22%20y%3D%229%22%20width%3D%2226%22%20height%3D%2226%22%20rx%3D%222%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%223%22%2F%3E%3Crect%20x%3D%2217%22%20y%3D%2217%22%20width%3D%2210%22%20height%3D%2210%22%20rx%3D%221%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%2F%3E%3C%2Fsvg%3E'); --ps:44px 44px;"></div>
+        <div class="surf dark"   style="--fg:0 0% 98%;  --pm:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2244%22%20height%3D%2244%22%20viewBox%3D%220%200%2044%2044%22%3E%3Crect%20x%3D%229%22%20y%3D%229%22%20width%3D%2226%22%20height%3D%2226%22%20rx%3D%222%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%223%22%2F%3E%3Crect%20x%3D%2217%22%20y%3D%2217%22%20width%3D%2210%22%20height%3D%2210%22%20rx%3D%221%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%2F%3E%3C%2Fsvg%3E'); --ps:44px 44px;"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="name"><b>云纹</b> <code>yunwen</code></div>
+      <div class="row">
+        <div class="surf light"  style="--fg:0 0% 9%;   --pm:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2264%22%20height%3D%2264%22%20viewBox%3D%220%200%2064%2064%22%3E%3Cpath%20d%3D%22M5%2044%20A11%2011%200%200%201%2027%2044%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222.5%22%2F%3E%3Cpath%20d%3D%22M21%2044%20A11%2011%200%200%201%2043%2044%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222.5%22%2F%3E%3Cpath%20d%3D%22M37%2044%20A11%2011%200%200%201%2059%2044%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222.5%22%2F%3E%3C%2Fsvg%3E'); --ps:64px 64px;"></div>
+        <div class="surf dark"   style="--fg:0 0% 98%;  --pm:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2264%22%20height%3D%2264%22%20viewBox%3D%220%200%2064%2064%22%3E%3Cpath%20d%3D%22M5%2044%20A11%2011%200%200%201%2027%2044%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222.5%22%2F%3E%3Cpath%20d%3D%22M21%2044%20A11%2011%200%200%201%2043%2044%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222.5%22%2F%3E%3Cpath%20d%3D%22M37%2044%20A11%2011%200%200%201%2059%2044%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222.5%22%2F%3E%3C%2Fsvg%3E'); --ps:64px 64px;"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="name"><b>水纹</b> <code>shuiwen</code></div>
+      <div class="row">
+        <div class="surf light"  style="--fg:0 0% 9%;   --pm:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2260%22%20height%3D%2226%22%20viewBox%3D%220%200%2060%2026%22%3E%3Cpath%20d%3D%22M0%208%20q15%20-7%2030%200%20t30%200%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%2F%3E%3Cpath%20d%3D%22M0%2018%20q15%207%2030%200%20t30%200%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%2F%3E%3C%2Fsvg%3E'); --ps:60px 26px;"></div>
+        <div class="surf dark"   style="--fg:0 0% 98%;  --pm:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2260%22%20height%3D%2226%22%20viewBox%3D%220%200%2060%2026%22%3E%3Cpath%20d%3D%22M0%208%20q15%20-7%2030%200%20t30%200%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%2F%3E%3Cpath%20d%3D%22M0%2018%20q15%207%2030%200%20t30%200%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%2F%3E%3C%2Fsvg%3E'); --ps:60px 26px;"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="name"><b>联珠纹</b> <code>lianzhu</code></div>
+      <div class="row">
+        <div class="surf light"  style="--fg:0 0% 9%;   --pm:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2240%22%20height%3D%2240%22%20viewBox%3D%220%200%2040%2040%22%3E%3Ccircle%20cx%3D%2220%22%20cy%3D%2220%22%20r%3D%2212%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222.5%22%2F%3E%3C%2Fsvg%3E'); --ps:40px 40px;"></div>
+        <div class="surf dark"   style="--fg:0 0% 98%;  --pm:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2240%22%20height%3D%2240%22%20viewBox%3D%220%200%2040%2040%22%3E%3Ccircle%20cx%3D%2220%22%20cy%3D%2220%22%20r%3D%2212%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222.5%22%2F%3E%3C%2Fsvg%3E'); --ps:40px 40px;"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="name"><b>钱纹</b> <code>qianwen</code></div>
+      <div class="row">
+        <div class="surf light"  style="--fg:0 0% 9%;   --pm:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2256%22%20height%3D%2256%22%20viewBox%3D%220%200%2056%2056%22%3E%3Cpath%20fill-rule%3D%22evenodd%22%20fill%3D%22black%22%20d%3D%22M10%2028%20a18%2018%200%201%200%2036%200%20a18%2018%200%201%200%20-36%200%20Z%20M20%2020%20h16%20v16%20h-16%20Z%22%2F%3E%3C%2Fsvg%3E'); --ps:56px 56px;"></div>
+        <div class="surf dark"   style="--fg:0 0% 98%;  --pm:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2256%22%20height%3D%2256%22%20viewBox%3D%220%200%2056%2056%22%3E%3Cpath%20fill-rule%3D%22evenodd%22%20fill%3D%22black%22%20d%3D%22M10%2028%20a18%2018%200%201%200%2036%200%20a18%2018%200%201%200%20-36%200%20Z%20M20%2020%20h16%20v16%20h-16%20Z%22%2F%3E%3C%2Fsvg%3E'); --ps:56px 56px;"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="name"><b>方胜纹</b> <code>fangsheng</code></div>
+      <div class="row">
+        <div class="surf light"  style="--fg:0 0% 9%;   --pm:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2248%22%20height%3D%2248%22%20viewBox%3D%220%200%2048%2048%22%3E%3Cpath%20d%3D%22M24%204%20L44%2024%20L24%2044%20L4%2024%20Z%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222.5%22%2F%3E%3Cpath%20d%3D%22M24%2014%20L34%2024%20L24%2034%20L14%2024%20Z%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%2F%3E%3C%2Fsvg%3E'); --ps:48px 48px;"></div>
+        <div class="surf dark"   style="--fg:0 0% 98%;  --pm:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2248%22%20height%3D%2248%22%20viewBox%3D%220%200%2048%2048%22%3E%3Cpath%20d%3D%22M24%204%20L44%2024%20L24%2044%20L4%2024%20Z%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222.5%22%2F%3E%3Cpath%20d%3D%22M24%2014%20L34%2024%20L24%2034%20L14%2024%20Z%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%2F%3E%3C%2Fsvg%3E'); --ps:48px 48px;"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="name"><b>锁子纹</b> <code>suozi</code></div>
+      <div class="row">
+        <div class="surf light"  style="--fg:0 0% 9%;   --pm:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2248%22%20height%3D%2248%22%20viewBox%3D%220%200%2048%2048%22%3E%3Ccircle%20cx%3D%2224%22%20cy%3D%2224%22%20r%3D%2216%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%223%22%2F%3E%3Ccircle%20cx%3D%220%22%20cy%3D%220%22%20r%3D%2216%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%223%22%2F%3E%3Ccircle%20cx%3D%2248%22%20cy%3D%220%22%20r%3D%2216%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%223%22%2F%3E%3Ccircle%20cx%3D%220%22%20cy%3D%2248%22%20r%3D%2216%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%223%22%2F%3E%3Ccircle%20cx%3D%2248%22%20cy%3D%2248%22%20r%3D%2216%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%223%22%2F%3E%3C%2Fsvg%3E'); --ps:48px 48px;"></div>
+        <div class="surf dark"   style="--fg:0 0% 98%;  --pm:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2248%22%20height%3D%2248%22%20viewBox%3D%220%200%2048%2048%22%3E%3Ccircle%20cx%3D%2224%22%20cy%3D%2224%22%20r%3D%2216%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%223%22%2F%3E%3Ccircle%20cx%3D%220%22%20cy%3D%220%22%20r%3D%2216%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%223%22%2F%3E%3Ccircle%20cx%3D%2248%22%20cy%3D%220%22%20r%3D%2216%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%223%22%2F%3E%3Ccircle%20cx%3D%220%22%20cy%3D%2248%22%20r%3D%2216%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%223%22%2F%3E%3Ccircle%20cx%3D%2248%22%20cy%3D%2248%22%20r%3D%2216%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%223%22%2F%3E%3C%2Fsvg%3E'); --ps:48px 48px;"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="name"><b>席纹</b> <code>xiwen</code></div>
+      <div class="row">
+        <div class="surf light"  style="--fg:0 0% 9%;   --pm:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2228%22%20height%3D%2228%22%20viewBox%3D%220%200%2028%2028%22%3E%3Cpath%20d%3D%22M0%200%20L28%2028%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%223%22%2F%3E%3Cpath%20d%3D%22M28%200%20L0%2028%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%223%22%2F%3E%3C%2Fsvg%3E'); --ps:28px 28px;"></div>
+        <div class="surf dark"   style="--fg:0 0% 98%;  --pm:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2228%22%20height%3D%2228%22%20viewBox%3D%220%200%2028%2028%22%3E%3Cpath%20d%3D%22M0%200%20L28%2028%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%223%22%2F%3E%3Cpath%20d%3D%22M28%200%20L0%2028%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%223%22%2F%3E%3C%2Fsvg%3E'); --ps:28px 28px;"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="name"><b>冰裂纹</b> <code>binglie</code></div>
+      <div class="row">
+        <div class="surf light"  style="--fg:0 0% 9%;   --pm:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%3E%3Cpath%20d%3D%22M30%200%20L48%2012%20L60%2030%20L48%2048%20L30%2060%20L12%2048%20L0%2030%20L12%2012%20Z%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%2F%3E%3Cpath%20d%3D%22M30%2030%20L30%200%20M30%2030%20L60%2030%20M30%2030%20L30%2060%20M30%2030%20L0%2030%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%2F%3E%3C%2Fsvg%3E'); --ps:60px 60px;"></div>
+        <div class="surf dark"   style="--fg:0 0% 98%;  --pm:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%3E%3Cpath%20d%3D%22M30%200%20L48%2012%20L60%2030%20L48%2048%20L30%2060%20L12%2048%20L0%2030%20L12%2012%20Z%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%2F%3E%3Cpath%20d%3D%22M30%2030%20L30%200%20M30%2030%20L60%2030%20M30%2030%20L30%2060%20M30%2030%20L0%2030%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%2F%3E%3C%2Fsvg%3E'); --ps:60px 60px;"></div>
+      </div>
+    </div></div>
+<h3>回纹（<code>huiwen</code>）跟随各套主题色调</h3><div class="tintgrid">
+        <div class="tintcol">
+          <div class="tn">neutral</div>
+          <div class="surf light" style="--fg:0 0% 9%; --pm:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2244%22%20height%3D%2244%22%20viewBox%3D%220%200%2044%2044%22%3E%3Crect%20x%3D%229%22%20y%3D%229%22%20width%3D%2226%22%20height%3D%2226%22%20rx%3D%222%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%223%22%2F%3E%3Crect%20x%3D%2217%22%20y%3D%2217%22%20width%3D%2210%22%20height%3D%2210%22%20rx%3D%221%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%2F%3E%3C%2Fsvg%3E'); --ps:44px 44px;"></div>
+          <div class="surf dark"  style="--fg:0 0% 98%; --pm:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2244%22%20height%3D%2244%22%20viewBox%3D%220%200%2044%2044%22%3E%3Crect%20x%3D%229%22%20y%3D%229%22%20width%3D%2226%22%20height%3D%2226%22%20rx%3D%222%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%223%22%2F%3E%3Crect%20x%3D%2217%22%20y%3D%2217%22%20width%3D%2210%22%20height%3D%2210%22%20rx%3D%221%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%2F%3E%3C%2Fsvg%3E'); --ps:44px 44px;"></div>
+        </div>
+        <div class="tintcol">
+          <div class="tn">stone</div>
+          <div class="surf light" style="--fg:32 18% 12%; --pm:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2244%22%20height%3D%2244%22%20viewBox%3D%220%200%2044%2044%22%3E%3Crect%20x%3D%229%22%20y%3D%229%22%20width%3D%2226%22%20height%3D%2226%22%20rx%3D%222%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%223%22%2F%3E%3Crect%20x%3D%2217%22%20y%3D%2217%22%20width%3D%2210%22%20height%3D%2210%22%20rx%3D%221%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%2F%3E%3C%2Fsvg%3E'); --ps:44px 44px;"></div>
+          <div class="surf dark"  style="--fg:40 20% 95%; --pm:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2244%22%20height%3D%2244%22%20viewBox%3D%220%200%2044%2044%22%3E%3Crect%20x%3D%229%22%20y%3D%229%22%20width%3D%2226%22%20height%3D%2226%22%20rx%3D%222%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%223%22%2F%3E%3Crect%20x%3D%2217%22%20y%3D%2217%22%20width%3D%2210%22%20height%3D%2210%22%20rx%3D%221%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%2F%3E%3C%2Fsvg%3E'); --ps:44px 44px;"></div>
+        </div>
+        <div class="tintcol">
+          <div class="tn">dailan</div>
+          <div class="surf light" style="--fg:212 45% 12%; --pm:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2244%22%20height%3D%2244%22%20viewBox%3D%220%200%2044%2044%22%3E%3Crect%20x%3D%229%22%20y%3D%229%22%20width%3D%2226%22%20height%3D%2226%22%20rx%3D%222%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%223%22%2F%3E%3Crect%20x%3D%2217%22%20y%3D%2217%22%20width%3D%2210%22%20height%3D%2210%22%20rx%3D%221%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%2F%3E%3C%2Fsvg%3E'); --ps:44px 44px;"></div>
+          <div class="surf dark"  style="--fg:210 40% 96%; --pm:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2244%22%20height%3D%2244%22%20viewBox%3D%220%200%2044%2044%22%3E%3Crect%20x%3D%229%22%20y%3D%229%22%20width%3D%2226%22%20height%3D%2226%22%20rx%3D%222%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%223%22%2F%3E%3Crect%20x%3D%2217%22%20y%3D%2217%22%20width%3D%2210%22%20height%3D%2210%22%20rx%3D%221%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%2F%3E%3C%2Fsvg%3E'); --ps:44px 44px;"></div>
+        </div>
+        <div class="tintcol">
+          <div class="tn">zhusha</div>
+          <div class="surf light" style="--fg:24 30% 12%; --pm:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2244%22%20height%3D%2244%22%20viewBox%3D%220%200%2044%2044%22%3E%3Crect%20x%3D%229%22%20y%3D%229%22%20width%3D%2226%22%20height%3D%2226%22%20rx%3D%222%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%223%22%2F%3E%3Crect%20x%3D%2217%22%20y%3D%2217%22%20width%3D%2210%22%20height%3D%2210%22%20rx%3D%221%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%2F%3E%3C%2Fsvg%3E'); --ps:44px 44px;"></div>
+          <div class="surf dark"  style="--fg:25 32% 95%; --pm:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2244%22%20height%3D%2244%22%20viewBox%3D%220%200%2044%2044%22%3E%3Crect%20x%3D%229%22%20y%3D%229%22%20width%3D%2226%22%20height%3D%2226%22%20rx%3D%222%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%223%22%2F%3E%3Crect%20x%3D%2217%22%20y%3D%2217%22%20width%3D%2210%22%20height%3D%2210%22%20rx%3D%221%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%2F%3E%3C%2Fsvg%3E'); --ps:44px 44px;"></div>
+        </div>
+        <div class="tintcol">
+          <div class="tn">songhua</div>
+          <div class="surf light" style="--fg:155 40% 12%; --pm:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2244%22%20height%3D%2244%22%20viewBox%3D%220%200%2044%2044%22%3E%3Crect%20x%3D%229%22%20y%3D%229%22%20width%3D%2226%22%20height%3D%2226%22%20rx%3D%222%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%223%22%2F%3E%3Crect%20x%3D%2217%22%20y%3D%2217%22%20width%3D%2210%22%20height%3D%2210%22%20rx%3D%221%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%2F%3E%3C%2Fsvg%3E'); --ps:44px 44px;"></div>
+          <div class="surf dark"  style="--fg:150 32% 95%; --pm:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2244%22%20height%3D%2244%22%20viewBox%3D%220%200%2044%2044%22%3E%3Crect%20x%3D%229%22%20y%3D%229%22%20width%3D%2226%22%20height%3D%2226%22%20rx%3D%222%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%223%22%2F%3E%3Crect%20x%3D%2217%22%20y%3D%2217%22%20width%3D%2210%22%20height%3D%2210%22%20rx%3D%221%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%2F%3E%3C%2Fsvg%3E'); --ps:44px 44px;"></div>
+        </div></div><h3>冰裂纹（<code>binglie</code>）跟随各套主题色调</h3><div class="tintgrid">
+        <div class="tintcol">
+          <div class="tn">neutral</div>
+          <div class="surf light" style="--fg:0 0% 9%; --pm:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%3E%3Cpath%20d%3D%22M30%200%20L48%2012%20L60%2030%20L48%2048%20L30%2060%20L12%2048%20L0%2030%20L12%2012%20Z%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%2F%3E%3Cpath%20d%3D%22M30%2030%20L30%200%20M30%2030%20L60%2030%20M30%2030%20L30%2060%20M30%2030%20L0%2030%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%2F%3E%3C%2Fsvg%3E'); --ps:60px 60px;"></div>
+          <div class="surf dark"  style="--fg:0 0% 98%; --pm:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%3E%3Cpath%20d%3D%22M30%200%20L48%2012%20L60%2030%20L48%2048%20L30%2060%20L12%2048%20L0%2030%20L12%2012%20Z%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%2F%3E%3Cpath%20d%3D%22M30%2030%20L30%200%20M30%2030%20L60%2030%20M30%2030%20L30%2060%20M30%2030%20L0%2030%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%2F%3E%3C%2Fsvg%3E'); --ps:60px 60px;"></div>
+        </div>
+        <div class="tintcol">
+          <div class="tn">stone</div>
+          <div class="surf light" style="--fg:32 18% 12%; --pm:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%3E%3Cpath%20d%3D%22M30%200%20L48%2012%20L60%2030%20L48%2048%20L30%2060%20L12%2048%20L0%2030%20L12%2012%20Z%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%2F%3E%3Cpath%20d%3D%22M30%2030%20L30%200%20M30%2030%20L60%2030%20M30%2030%20L30%2060%20M30%2030%20L0%2030%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%2F%3E%3C%2Fsvg%3E'); --ps:60px 60px;"></div>
+          <div class="surf dark"  style="--fg:40 20% 95%; --pm:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%3E%3Cpath%20d%3D%22M30%200%20L48%2012%20L60%2030%20L48%2048%20L30%2060%20L12%2048%20L0%2030%20L12%2012%20Z%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%2F%3E%3Cpath%20d%3D%22M30%2030%20L30%200%20M30%2030%20L60%2030%20M30%2030%20L30%2060%20M30%2030%20L0%2030%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%2F%3E%3C%2Fsvg%3E'); --ps:60px 60px;"></div>
+        </div>
+        <div class="tintcol">
+          <div class="tn">dailan</div>
+          <div class="surf light" style="--fg:212 45% 12%; --pm:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%3E%3Cpath%20d%3D%22M30%200%20L48%2012%20L60%2030%20L48%2048%20L30%2060%20L12%2048%20L0%2030%20L12%2012%20Z%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%2F%3E%3Cpath%20d%3D%22M30%2030%20L30%200%20M30%2030%20L60%2030%20M30%2030%20L30%2060%20M30%2030%20L0%2030%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%2F%3E%3C%2Fsvg%3E'); --ps:60px 60px;"></div>
+          <div class="surf dark"  style="--fg:210 40% 96%; --pm:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%3E%3Cpath%20d%3D%22M30%200%20L48%2012%20L60%2030%20L48%2048%20L30%2060%20L12%2048%20L0%2030%20L12%2012%20Z%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%2F%3E%3Cpath%20d%3D%22M30%2030%20L30%200%20M30%2030%20L60%2030%20M30%2030%20L30%2060%20M30%2030%20L0%2030%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%2F%3E%3C%2Fsvg%3E'); --ps:60px 60px;"></div>
+        </div>
+        <div class="tintcol">
+          <div class="tn">zhusha</div>
+          <div class="surf light" style="--fg:24 30% 12%; --pm:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%3E%3Cpath%20d%3D%22M30%200%20L48%2012%20L60%2030%20L48%2048%20L30%2060%20L12%2048%20L0%2030%20L12%2012%20Z%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%2F%3E%3Cpath%20d%3D%22M30%2030%20L30%200%20M30%2030%20L60%2030%20M30%2030%20L30%2060%20M30%2030%20L0%2030%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%2F%3E%3C%2Fsvg%3E'); --ps:60px 60px;"></div>
+          <div class="surf dark"  style="--fg:25 32% 95%; --pm:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%3E%3Cpath%20d%3D%22M30%200%20L48%2012%20L60%2030%20L48%2048%20L30%2060%20L12%2048%20L0%2030%20L12%2012%20Z%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%2F%3E%3Cpath%20d%3D%22M30%2030%20L30%200%20M30%2030%20L60%2030%20M30%2030%20L30%2060%20M30%2030%20L0%2030%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%2F%3E%3C%2Fsvg%3E'); --ps:60px 60px;"></div>
+        </div>
+        <div class="tintcol">
+          <div class="tn">songhua</div>
+          <div class="surf light" style="--fg:155 40% 12%; --pm:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%3E%3Cpath%20d%3D%22M30%200%20L48%2012%20L60%2030%20L48%2048%20L30%2060%20L12%2048%20L0%2030%20L12%2012%20Z%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%2F%3E%3Cpath%20d%3D%22M30%2030%20L30%200%20M30%2030%20L60%2030%20M30%2030%20L30%2060%20M30%2030%20L0%2030%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%2F%3E%3C%2Fsvg%3E'); --ps:60px 60px;"></div>
+          <div class="surf dark"  style="--fg:150 32% 95%; --pm:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%3E%3Cpath%20d%3D%22M30%200%20L48%2012%20L60%2030%20L48%2048%20L30%2060%20L12%2048%20L0%2030%20L12%2012%20Z%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%2F%3E%3Cpath%20d%3D%22M30%2030%20L30%200%20M30%2030%20L60%2030%20M30%2030%20L30%2060%20M30%2030%20L0%2030%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%2F%3E%3C%2Fsvg%3E'); --ps:60px 60px;"></div>
+        </div></div><h3>云纹（<code>yunwen</code>）跟随各套主题色调</h3><div class="tintgrid">
+        <div class="tintcol">
+          <div class="tn">neutral</div>
+          <div class="surf light" style="--fg:0 0% 9%; --pm:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2264%22%20height%3D%2264%22%20viewBox%3D%220%200%2064%2064%22%3E%3Cpath%20d%3D%22M5%2044%20A11%2011%200%200%201%2027%2044%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222.5%22%2F%3E%3Cpath%20d%3D%22M21%2044%20A11%2011%200%200%201%2043%2044%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222.5%22%2F%3E%3Cpath%20d%3D%22M37%2044%20A11%2011%200%200%201%2059%2044%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222.5%22%2F%3E%3C%2Fsvg%3E'); --ps:64px 64px;"></div>
+          <div class="surf dark"  style="--fg:0 0% 98%; --pm:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2264%22%20height%3D%2264%22%20viewBox%3D%220%200%2064%2064%22%3E%3Cpath%20d%3D%22M5%2044%20A11%2011%200%200%201%2027%2044%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222.5%22%2F%3E%3Cpath%20d%3D%22M21%2044%20A11%2011%200%200%201%2043%2044%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222.5%22%2F%3E%3Cpath%20d%3D%22M37%2044%20A11%2011%200%200%201%2059%2044%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222.5%22%2F%3E%3C%2Fsvg%3E'); --ps:64px 64px;"></div>
+        </div>
+        <div class="tintcol">
+          <div class="tn">stone</div>
+          <div class="surf light" style="--fg:32 18% 12%; --pm:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2264%22%20height%3D%2264%22%20viewBox%3D%220%200%2064%2064%22%3E%3Cpath%20d%3D%22M5%2044%20A11%2011%200%200%201%2027%2044%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222.5%22%2F%3E%3Cpath%20d%3D%22M21%2044%20A11%2011%200%200%201%2043%2044%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222.5%22%2F%3E%3Cpath%20d%3D%22M37%2044%20A11%2011%200%200%201%2059%2044%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222.5%22%2F%3E%3C%2Fsvg%3E'); --ps:64px 64px;"></div>
+          <div class="surf dark"  style="--fg:40 20% 95%; --pm:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2264%22%20height%3D%2264%22%20viewBox%3D%220%200%2064%2064%22%3E%3Cpath%20d%3D%22M5%2044%20A11%2011%200%200%201%2027%2044%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222.5%22%2F%3E%3Cpath%20d%3D%22M21%2044%20A11%2011%200%200%201%2043%2044%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222.5%22%2F%3E%3Cpath%20d%3D%22M37%2044%20A11%2011%200%200%201%2059%2044%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222.5%22%2F%3E%3C%2Fsvg%3E'); --ps:64px 64px;"></div>
+        </div>
+        <div class="tintcol">
+          <div class="tn">dailan</div>
+          <div class="surf light" style="--fg:212 45% 12%; --pm:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2264%22%20height%3D%2264%22%20viewBox%3D%220%200%2064%2064%22%3E%3Cpath%20d%3D%22M5%2044%20A11%2011%200%200%201%2027%2044%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222.5%22%2F%3E%3Cpath%20d%3D%22M21%2044%20A11%2011%200%200%201%2043%2044%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222.5%22%2F%3E%3Cpath%20d%3D%22M37%2044%20A11%2011%200%200%201%2059%2044%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222.5%22%2F%3E%3C%2Fsvg%3E'); --ps:64px 64px;"></div>
+          <div class="surf dark"  style="--fg:210 40% 96%; --pm:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2264%22%20height%3D%2264%22%20viewBox%3D%220%200%2064%2064%22%3E%3Cpath%20d%3D%22M5%2044%20A11%2011%200%200%201%2027%2044%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222.5%22%2F%3E%3Cpath%20d%3D%22M21%2044%20A11%2011%200%200%201%2043%2044%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222.5%22%2F%3E%3Cpath%20d%3D%22M37%2044%20A11%2011%200%200%201%2059%2044%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222.5%22%2F%3E%3C%2Fsvg%3E'); --ps:64px 64px;"></div>
+        </div>
+        <div class="tintcol">
+          <div class="tn">zhusha</div>
+          <div class="surf light" style="--fg:24 30% 12%; --pm:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2264%22%20height%3D%2264%22%20viewBox%3D%220%200%2064%2064%22%3E%3Cpath%20d%3D%22M5%2044%20A11%2011%200%200%201%2027%2044%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222.5%22%2F%3E%3Cpath%20d%3D%22M21%2044%20A11%2011%200%200%201%2043%2044%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222.5%22%2F%3E%3Cpath%20d%3D%22M37%2044%20A11%2011%200%200%201%2059%2044%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222.5%22%2F%3E%3C%2Fsvg%3E'); --ps:64px 64px;"></div>
+          <div class="surf dark"  style="--fg:25 32% 95%; --pm:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2264%22%20height%3D%2264%22%20viewBox%3D%220%200%2064%2064%22%3E%3Cpath%20d%3D%22M5%2044%20A11%2011%200%200%201%2027%2044%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222.5%22%2F%3E%3Cpath%20d%3D%22M21%2044%20A11%2011%200%200%201%2043%2044%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222.5%22%2F%3E%3Cpath%20d%3D%22M37%2044%20A11%2011%200%200%201%2059%2044%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222.5%22%2F%3E%3C%2Fsvg%3E'); --ps:64px 64px;"></div>
+        </div>
+        <div class="tintcol">
+          <div class="tn">songhua</div>
+          <div class="surf light" style="--fg:155 40% 12%; --pm:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2264%22%20height%3D%2264%22%20viewBox%3D%220%200%2064%2064%22%3E%3Cpath%20d%3D%22M5%2044%20A11%2011%200%200%201%2027%2044%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222.5%22%2F%3E%3Cpath%20d%3D%22M21%2044%20A11%2011%200%200%201%2043%2044%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222.5%22%2F%3E%3Cpath%20d%3D%22M37%2044%20A11%2011%200%200%201%2059%2044%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222.5%22%2F%3E%3C%2Fsvg%3E'); --ps:64px 64px;"></div>
+          <div class="surf dark"  style="--fg:150 32% 95%; --pm:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2264%22%20height%3D%2264%22%20viewBox%3D%220%200%2064%2064%22%3E%3Cpath%20d%3D%22M5%2044%20A11%2011%200%200%201%2027%2044%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222.5%22%2F%3E%3Cpath%20d%3D%22M21%2044%20A11%2011%200%200%201%2043%2044%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222.5%22%2F%3E%3Cpath%20d%3D%22M37%2044%20A11%2011%200%200%201%2059%2044%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222.5%22%2F%3E%3C%2Fsvg%3E'); --ps:64px 64px;"></div>
+        </div></div>
+</body></html>

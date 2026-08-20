@@ -42,10 +42,19 @@
         <div class="flex items-center gap-2">
           <Select v-model="selectedModel" :disabled="models.length === 0">
             <SelectTrigger class="h-8 min-w-[140px] max-w-[200px]">
-              <SelectValue :placeholder="models.length === 0 ? '未启用模型' : '选择模型'" />
+              <div v-if="selectedModel" class="flex items-center gap-1.5">
+                <img :src="currentModelLogo" :alt="selectedModel" class="size-4 shrink-0 rounded" />
+                <span class="truncate">{{ models.find(m => m.id === selectedModel)?.name || selectedModel }}</span>
+              </div>
+              <span v-else class="text-muted-foreground">{{ models.length === 0 ? '未启用模型' : '选择模型' }}</span>
             </SelectTrigger>
             <SelectContent>
-              <SelectItem v-for="m in models" :key="m.id" :value="m.id">{{ m.name }}</SelectItem>
+              <SelectItem v-for="m in models" :key="m.id" :value="m.id">
+                <div class="flex items-center gap-2">
+                  <img :src="getModelLogo(m.model_name, inferProviderType(m.provider, m.base_url)) || LOGO_DEFAULT" :alt="m.name" class="size-4 shrink-0 rounded" />
+                  <span>{{ m.name }}</span>
+                </div>
+              </SelectItem>
             </SelectContent>
           </Select>
 
@@ -80,13 +89,15 @@
 
 <script setup>
 import { computed } from 'vue'
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
+import { Select, SelectTrigger, SelectContent, SelectItem } from '@/components/ui/select'
 import RichTextInput from '@/components/agent/RichTextInput.vue'
 import PermissionModeSelector from '@/components/agent/PermissionModeSelector.vue'
 import ThinkingDepthPopover from '@/components/agent/ThinkingDepthPopover.vue'
 import DelegationCard from '@/components/agent/DelegationCard.vue'
 import TaskProgressCard from '@/components/agent/TaskProgressCard.vue'
 import { hasTaskBlocks } from '@/utils/task-progress'
+import { getModelLogo, LOGO_DEFAULT } from '@/utils/model-logo'
+import { inferProviderType } from '@/utils/provider-presets'
 
 const props = defineProps({
   /** v-model 绑定值 */
@@ -143,6 +154,15 @@ const thinkingLevel = computed({
 })
 
 const hasTaskBlocksFlag = computed(() => hasTaskBlocks(props.taskBlocks))
+
+/** 当前选中模型的 logo */
+const currentModelLogo = computed(() => {
+  const model = props.models.find((m) => m.id === props.selectedModel)
+  if (model) {
+    return getModelLogo(model.model_name, inferProviderType(model.provider, model.base_url)) || LOGO_DEFAULT
+  }
+  return LOGO_DEFAULT
+})
 </script>
 
 <style scoped>

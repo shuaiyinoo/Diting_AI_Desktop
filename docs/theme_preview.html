@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>baseColorMap 主题预览 v4（含中国传统色彩）</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;
+         background:#f4f5f7; color:#1f2330; padding:32px; }
+  h1 { font-size:22px; margin:0 0 4px; }
+  .lead { color:#5a6072; margin:0 0 28px; font-size:14px; max-width:880px; line-height:1.6; }
+  .theme { background:#fff; border:1px solid #e6e8ee; border-radius:14px; padding:20px; margin-bottom:22px; }
+  .thead h2 { margin:0 0 4px; font-size:17px; display:flex; align-items:center; gap:10px; }
+  .tag { font-size:11px; font-weight:600; padding:2px 9px; border-radius:999px; background:#b3243b; color:#fff; }
+  .tag-o { background:#e6e8ee; color:#6a7080; }
+  .thead p { margin:0 0 16px; color:#6a7080; font-size:13px; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+  .col { }
+  .colhead { font-size:12px; font-weight:600; color:#8a90a0; text-transform:uppercase; letter-spacing:.06em; margin-bottom:8px; }
+  .mock { display:flex; height:260px; border-radius:10px; overflow:hidden; border:1px solid rgba(0,0,0,.08); background:var(--bg-panel); }
+  .sb { width:84px; padding:12px 10px; background:var(--bg-sidebar); display:flex; flex-direction:column; gap:8px; border-right:1px solid var(--border-color); }
+  .logo { width:26px; height:26px; border-radius:7px; }
+  .navi { font-size:12px; padding:6px 8px; border-radius:6px; color:var(--text-secondary); }
+  .navi.active { background:var(--bg-active); color:var(--text-primary); font-weight:600; }
+  .sbfoot { margin-top:auto; font-size:10px; }
+  .ct { flex:1; display:flex; flex-direction:column; background:var(--bg-layout); }
+  .bar { height:40px; display:flex; align-items:center; justify-content:space-between; padding:0 12px; font-size:13px; font-weight:600; }
+  .pill { font-size:11px; padding:2px 9px; border-radius:999px; }
+  .body { padding:14px; display:flex; flex-direction:column; gap:12px; }
+  .card { border-radius:9px; padding:12px; }
+  .ctitle { font-size:14px; font-weight:700; }
+  .csub { font-size:12px; margin-top:4px; line-height:1.5; }
+  .crow { display:flex; gap:8px; margin-top:10px; }
+  .btn { font-size:12px; padding:6px 12px; border-radius:7px; }
+  .hover { border-radius:8px; padding:9px 12px; font-size:12px; }
+  .divider { height:2px; border-radius:2px; }
+  .muted { font-size:11px; }
+  .swatches { display:grid; grid-template-columns:repeat(3,1fr); gap:6px 10px; margin-top:12px; }
+  .sw { display:flex; align-items:center; gap:6px; font-size:10px; color:#6a7080; }
+  .chip { width:14px; height:14px; border-radius:4px; border:1px solid rgba(0,0,0,.1); flex:none; }
+  .swk { width:38px; flex:none; }
+  .swv { font-family:ui-monospace,Menlo,monospace; color:#9aa0b0; }
+  @media (max-width:880px){ .grid{grid-template-columns:1fr;} }
+</style>
+</head>
+<body>
+  <h1>baseColorMap 主题预览 v4（含 5 套中国传统色彩）</h1>
+  <p class="lead">原有 5 套保留；新增 5 套中国传统色彩：每套 base 用「宣纸/墨」意象，并配套一个中国传统主色(primary/高亮)，暗色画布带朝向主色的「墨×」色相——base 与 primary 成套和谐。预览中每套按推荐主色渲染（主色 swatch 在色板末尾）。</p>
+  
+    <section class="theme">
+      <div class="thead">
+        <h2><span class="tag tag-o">原有</span> Neutral · 中性灰（默认）</h2>
+        <p>Light 纯白凸显内容；Dark 纯黑 OLED 风（背景/卡片/侧边栏/悬停全 0 0% 0%）。</p>
+      </div>
+      <div class="grid">
+        
+    <div class="col">
+      <div class="colhead">Light 模式</div>
+      <div class="mock" style="--background:0 0% 100%; --foreground:0 0% 9%; --card:0 0% 100%; --card-foreground:0 0% 9%; --popover:0 0% 100%; --popover-foreground:0 0% 9%; --secondary:0 0% 96%; --secondary-foreground:0 0% 9%; --muted:0 0% 96%; --muted-foreground:0 0% 40%; --accent:0 0% 94%; --accent-foreground:0 0% 9%; --border:0 0% 90%; --input:0 0% 90%; --bg-layout:hsl(0 0% 96%); --bg-panel:hsl(0 0% 100%); --bg-sidebar:hsl(0 0% 96%); --bg-statusbar:hsl(0 0% 96%); --bg-hover:hsl(0 0% 94%); --bg-active:hsl(0 0% 94% / 0.6); --bg-divider:hsl(0 0% 90%); --border-color:hsl(0 0% 90%); --text-primary:hsl(0 0% 9%); --text-secondary:hsl(0 0% 40%); --text-muted:hsl(0 0% 40% / 0.7); --accent-color:hsl(221 83% 53%);">
+        <aside class="sb">
+          <div class="logo" style="background:var(--accent-color)"></div>
+          <div class="navi active">会话</div>
+          <div class="navi">知识库</div>
+          <div class="navi">设置</div>
+          <div class="sbfoot" style="border-top:1px solid var(--border-color);color:var(--text-muted)">v1.0.0</div>
+        </aside>
+        <main class="ct">
+          <div class="bar" style="background:var(--bg-statusbar);border-bottom:1px solid var(--border-color)">
+            <span style="color:var(--text-primary)">Diting AI</span>
+            <span class="pill" style="background:var(--accent-color);color:#fff">主色</span>
+          </div>
+          <div class="body">
+            <div class="card" style="background:var(--bg-panel);border:1px solid var(--border-color)">
+              <div class="ctitle" style="color:var(--text-primary)">主题预览卡片</div>
+              <div class="csub" style="color:var(--text-secondary)">这是一段正文示例，用于检验对比度与可读性。</div>
+              <div class="crow">
+                <span class="btn" style="background:var(--accent-color);color:#fff">主按钮</span>
+                <span class="btn ghost" style="border:1px solid var(--border-color);color:var(--text-primary)">次按钮</span>
+              </div>
+            </div>
+            <div class="hover" style="background:var(--bg-hover);border:1px solid var(--border-color);color:var(--text-primary)">悬停态 (--accent)</div>
+            <div class="divider" style="background:var(--bg-divider)"></div>
+            <div class="muted" style="color:var(--text-muted)">次要信息文字 (--muted-foreground)</div>
+          </div>
+        </main>
+      </div>
+      <div class="swatches"><div class="sw"><span class="chip" style="background:hsl(0 0% 100%)"></span><span class="swk">背景</span><span class="swv">0 0% 100%</span></div><div class="sw"><span class="chip" style="background:hsl(0 0% 100%)"></span><span class="swk">卡片</span><span class="swv">0 0% 100%</span></div><div class="sw"><span class="chip" style="background:hsl(0 0% 96%)"></span><span class="swk">次表面</span><span class="swv">0 0% 96%</span></div><div class="sw"><span class="chip" style="background:hsl(0 0% 96%)"></span><span class="swk">弱化</span><span class="swv">0 0% 96%</span></div><div class="sw"><span class="chip" style="background:hsl(0 0% 94%)"></span><span class="swk">悬停</span><span class="swv">0 0% 94%</span></div><div class="sw"><span class="chip" style="background:hsl(0 0% 90%)"></span><span class="swk">边框</span><span class="swv">0 0% 90%</span></div><div class="sw"><span class="chip" style="background:hsl(0 0% 9%)"></span><span class="swk">文字</span><span class="swv">0 0% 9%</span></div><div class="sw"><span class="chip" style="background:hsl(0 0% 40%)"></span><span class="swk">次文字</span><span class="swv">0 0% 40%</span></div><div class="sw"><span class="chip" style="background:hsl(221 83% 53%)"></span><span class="swk">主色</span><span class="swv">221 83% 53%</span></div></div>
+    </div>
+        
+    <div class="col">
+      <div class="colhead">Dark 模式</div>
+      <div class="mock" style="--background:0 0% 0%; --foreground:0 0% 98%; --card:0 0% 0%; --card-foreground:0 0% 98%; --popover:0 0% 0%; --popover-foreground:0 0% 98%; --secondary:0 0% 0%; --secondary-foreground:0 0% 98%; --muted:0 0% 0%; --muted-foreground:0 0% 58%; --accent:0 0% 0%; --accent-foreground:0 0% 98%; --border:0 0% 15%; --input:0 0% 15%; --bg-layout:hsl(0 0% 0% / 0.7); --bg-panel:hsl(0 0% 0%); --bg-sidebar:hsl(0 0% 0%); --bg-statusbar:hsl(0 0% 0%); --bg-hover:hsl(0 0% 0%); --bg-active:hsl(0 0% 0% / 0.8); --bg-divider:hsl(0 0% 15%); --border-color:hsl(0 0% 15%); --text-primary:hsl(0 0% 98%); --text-secondary:hsl(0 0% 58%); --text-muted:hsl(0 0% 58% / 0.7); --accent-color:hsl(217 91% 60%);">
+        <aside class="sb">
+          <div class="logo" style="background:var(--accent-color)"></div>
+          <div class="navi active">会话</div>
+          <div class="navi">知识库</div>
+          <div class="navi">设置</div>
+          <div class="sbfoot" style="border-top:1px solid var(--border-color);color:var(--text-muted)">v1.0.0</div>
+        </aside>
+        <main class="ct">
+          <div class="bar" style="background:var(--bg-statusbar);border-bottom:1px solid var(--border-color)">
+            <span style="color:var(--text-primary)">Diting AI</span>
+            <span class="pill" style="background:var(--accent-color);color:#fff">主色</span>
+          </div>
+          <div class="body">
+            <div class="card" style="background:var(--bg-panel);border:1px solid var(--border-color)">
+              <div class="ctitle" style="color:var(--text-primary)">主题预览卡片</div>
+              <div class="csub" style="color:var(--text-secondary)">这是一段正文示例，用于检验对比度与可读性。</div>
+              <div class="crow">
+                <span class="btn" style="background:var(--accent-color);color:#fff">主按钮</span>
+                <span class="btn ghost" style="border:1px solid var(--border-color);color:var(--text-primary)">次按钮</span>
+              </div>
+            </div>
+            <div class="hover" style="background:var(--bg-hover);border:1px solid var(--border-color);color:var(--text-primary)">悬停态 (--accent)</div>
+            <div class="divider" style="background:var(--bg-divider)"></div>
+            <div class="muted" style="color:var(--text-muted)">次要信息文字 (--muted-foreground)</div>
+          </div>
+        </main>
+      </div>
+      <div class="swatches"><div class="sw"><span class="chip" style="background:hsl(0 0% 0%)"></span><span class="swk">背景</span><span class="swv">0 0% 0%</span></div><div class="sw"><span class="chip" style="background:hsl(0 0% 0%)"></span><span class="swk">卡片</span><span class="swv">0 0% 0%</span></div><div class="sw"><span class="chip" style="background:hsl(0 0% 0%)"></span><span class="swk">次表面</span><span class="swv">0 0% 0%</span></div><div class="sw"><span class="chip" style="background:hsl(0 0% 0%)"></span><span class="swk">弱化</span><span class="swv">0 0% 0%</span></div><div class="sw"><span class="chip" style="background:hsl(0 0% 0%)"></span><span class="swk">悬停</span><span class="swv">0 0% 0%</span></div><div class="sw"><span class="chip" style="background:hsl(0 0% 15%)"></span><span class="swk">边框</span><span class="swv">0 0% 15%</span></div><div class="sw"><span class="chip" style="background:hsl(0 0% 98%)"></span><span class="swk">文字</span><span class="swv">0 0% 98%</span></div><div class="sw"><span class="chip" style="background:hsl(0 0% 58%)"></span><span class="swk">次文字</span><span class="swv">0 0% 58%</span></div><div class="sw"><span class="chip" style="background:hsl(217 91% 60%)"></span><span class="swk">主色</span><span class="swv">217 91% 60%</span></div></div>
+    </div>
+      </div>
+    </section>
+    <section class="theme">
+      <div class="thead">
+        <h2><span class="tag tag-o">原有</span> Stone · 暖米</h2>
+        <p>Light 暖米；Dark 暖棕黑画布(30 24% 8%)，侧边栏/悬停更饱和。</p>
+      </div>
+      <div class="grid">
+        
+    <div class="col">
+      <div class="colhead">Light 模式</div>
+      <div class="mock" style="--background:40 22% 99%; --foreground:32 18% 12%; --card:40 22% 99%; --card-foreground:32 18% 12%; --popover:40 22% 99%; --popover-foreground:32 18% 12%; --secondary:40 30% 94%; --secondary-foreground:32 18% 12%; --muted:40 30% 94%; --muted-foreground:35 16% 42%; --accent:38 36% 89%; --accent-foreground:32 18% 12%; --border:40 28% 86%; --input:40 28% 86%; --bg-layout:hsl(40 30% 94%); --bg-panel:hsl(40 22% 99%); --bg-sidebar:hsl(40 30% 94%); --bg-statusbar:hsl(40 30% 94%); --bg-hover:hsl(38 36% 89%); --bg-active:hsl(38 36% 89% / 0.6); --bg-divider:hsl(40 28% 86%); --border-color:hsl(40 28% 86%); --text-primary:hsl(32 18% 12%); --text-secondary:hsl(35 16% 42%); --text-muted:hsl(35 16% 42% / 0.7); --accent-color:hsl(221 83% 53%);">
+        <aside class="sb">
+          <div class="logo" style="background:var(--accent-color)"></div>
+          <div class="navi active">会话</div>
+          <div class="navi">知识库</div>
+          <div class="navi">设置</div>
+          <div class="sbfoot" style="border-top:1px solid var(--border-color);color:var(--text-muted)">v1.0.0</div>
+        </aside>
+        <main class="ct">
+          <div class="bar" style="background:var(--bg-statusbar);border-bottom:1px solid var(--border-color)">
+            <span style="color:var(--text-primary)">Diting AI</span>
+            <span class="pill" style="background:var(--accent-color);color:#fff">主色</span>
+          </div>
+          <div class="body">
+            <div class="card" style="background:var(--bg-panel);border:1px solid var(--border-color)">
+              <div class="ctitle" style="color:var(--text-primary)">主题预览卡片</div>
+              <div class="csub" style="color:var(--text-secondary)">这是一段正文示例，用于检验对比度与可读性。</div>
+              <div class="crow">
+                <span class="btn" style="background:var(--accent-color);color:#fff">主按钮</span>
+                <span class="btn ghost" style="border:1px solid var(--border-color);color:var(--text-primary)">次按钮</span>
+              </div>
+            </div>
+            <div class="hover" style="background:var(--bg-hover);border:1px solid var(--border-color);color:var(--text-primary)">悬停态 (--accent)</div>
+            <div class="divider" style="background:var(--bg-divider)"></div>
+            <div class="muted" style="color:var(--text-muted)">次要信息文字 (--muted-foreground)</div>
+          </div>
+        </main>
+      </div>
+      <div class="swatches"><div class="sw"><span class="chip" style="background:hsl(40 22% 99%)"></span><span class="swk">背景</span><span class="swv">40 22% 99%</span></div><div class="sw"><span class="chip" style="background:hsl(40 22% 99%)"></span><span class="swk">卡片</span><span class="swv">40 22% 99%</span></div><div class="sw"><span class="chip" style="background:hsl(40 30% 94%)"></span><span class="swk">次表面</span><span class="swv">40 30% 94%</span></div><div class="sw"><span class="chip" style="background:hsl(40 30% 94%)"></span><span class="swk">弱化</span><span class="swv">40 30% 94%</span></div><div class="sw"><span class="chip" style="background:hsl(38 36% 89%)"></span><span class="swk">悬停</span><span class="swv">38 36% 89%</span></div><div class="sw"><span class="chip" style="background:hsl(40 28% 86%)"></span><span class="swk">边框</span><span class="swv">40 28% 86%</span></div><div class="sw"><span class="chip" style="background:hsl(32 18% 12%)"></span><span class="swk">文字</span><span class="swv">32 18% 12%</span></div><div class="sw"><span class="chip" style="background:hsl(35 16% 42%)"></span><span class="swk">次文字</span><span class="swv">35 16% 42%</span></div><div class="sw"><span class="chip" style="background:hsl(221 83% 53%)"></span><span class="swk">主色</span><span class="swv">221 83% 53%</span></div></div>
+    </div>
+        
+    <div class="col">
+      <div class="colhead">Dark 模式</div>
+      <div class="mock" style="--background:30 24% 8%; --foreground:40 20% 95%; --card:32 20% 11%; --card-foreground:40 20% 95%; --popover:32 20% 11%; --popover-foreground:40 20% 95%; --secondary:32 28% 14%; --secondary-foreground:40 20% 95%; --muted:32 28% 14%; --muted-foreground:36 16% 64%; --accent:34 34% 19%; --accent-foreground:40 20% 95%; --border:32 22% 19%; --input:32 22% 19%; --bg-layout:hsl(30 24% 8% / 0.7); --bg-panel:hsl(30 24% 8%); --bg-sidebar:hsl(32 28% 14%); --bg-statusbar:hsl(32 28% 14%); --bg-hover:hsl(34 34% 19%); --bg-active:hsl(34 34% 19% / 0.8); --bg-divider:hsl(32 22% 19%); --border-color:hsl(32 22% 19%); --text-primary:hsl(40 20% 95%); --text-secondary:hsl(36 16% 64%); --text-muted:hsl(36 16% 64% / 0.7); --accent-color:hsl(217 91% 60%);">
+        <aside class="sb">
+          <div class="logo" style="background:var(--accent-color)"></div>
+          <div class="navi active">会话</div>
+          <div class="navi">知识库</div>
+          <div class="navi">设置</div>
+          <div class="sbfoot" style="border-top:1px solid var(--border-color);color:var(--text-muted)">v1.0.0</div>
+        </aside>
+        <main class="ct">
+          <div class="bar" style="background:var(--bg-statusbar);border-bottom:1px solid var(--border-color)">
+            <span style="color:var(--text-primary)">Diting AI</span>
+            <span class="pill" style="background:var(--accent-color);color:#fff">主色</span>
+          </div>
+          <div class="body">
+            <div class="card" style="background:var(--bg-panel);border:1px solid var(--border-color)">
+              <div class="ctitle" style="color:var(--text-primary)">主题预览卡片</div>
+              <div class="csub" style="color:var(--text-secondary)">这是一段正文示例，用于检验对比度与可读性。</div>
+              <div class="crow">
+                <span class="btn" style="background:var(--accent-color);color:#fff">主按钮</span>
+                <span class="btn ghost" style="border:1px solid var(--border-color);color:var(--text-primary)">次按钮</span>
+              </div>
+            </div>
+            <div class="hover" style="background:var(--bg-hover);border:1px solid var(--border-color);color:var(--text-primary)">悬停态 (--accent)</div>
+            <div class="divider" style="background:var(--bg-divider)"></div>
+            <div class="muted" style="color:var(--text-muted)">次要信息文字 (--muted-foreground)</div>
+          </div>
+        </main>
+      </div>
+      <div class="swatches"><div class="sw"><span class="chip" style="background:hsl(30 24% 8%)"></span><span class="swk">背景</span><span class="swv">30 24% 8%</span></div><div class="sw"><span class="chip" style="background:hsl(32 20% 11%)"></span><span class="swk">卡片</span><span class="swv">32 20% 11%</span></div><div class="sw"><span class="chip" style="background:hsl(32 28% 14%)"></span><span class="swk">次表面</span><span class="swv">32 28% 14%</span></div><div class="sw"><span class="chip" style="background:hsl(32 28% 14%)"></span><span class="swk">弱化</span><span class="swv">32 28% 14%</span></div><div class="sw"><span class="chip" style="background:hsl(34 34% 19%)"></span><span class="swk">悬停</span><span class="swv">34 34% 19%</span></div><div class="sw"><span class="chip" style="background:hsl(32 22% 19%)"></span><span class="swk">边框</span><span class="swv">32 22% 19%</span></div><div class="sw"><span class="chip" style="background:hsl(40 20% 95%)"></span><span class="swk">文字</span><span class="swv">40 20% 95%</span></div><div class="sw"><span class="chip" style="background:hsl(36 16% 64%)"></span><span class="swk">次文字</span><span class="swv">36 16% 64%</span></div><div class="sw"><span class="chip" style="background:hsl(217 91% 60%)"></span><span class="swk">主色</span><span class="swv">217 91% 60%</span></div></div>
+    </div>
+      </div>
+    </section>
+    <section class="theme">
+      <div class="thead">
+        <h2><span class="tag tag-o">原有</span> Gray · 冷蓝灰</h2>
+        <p>Light 冷蓝灰；Dark 冷蓝黑画布(220 24% 9%)，分层清晰。</p>
+      </div>
+      <div class="grid">
+        
+    <div class="col">
+      <div class="colhead">Light 模式</div>
+      <div class="mock" style="--background:220 24% 99%; --foreground:222 47% 11%; --card:220 24% 99%; --card-foreground:222 47% 11%; --popover:220 24% 99%; --popover-foreground:222 47% 11%; --secondary:220 32% 94%; --secondary-foreground:222 47% 11%; --muted:220 32% 94%; --muted-foreground:220 16% 42%; --accent:220 38% 89%; --accent-foreground:222 47% 11%; --border:220 30% 86%; --input:220 30% 86%; --bg-layout:hsl(220 32% 94%); --bg-panel:hsl(220 24% 99%); --bg-sidebar:hsl(220 32% 94%); --bg-statusbar:hsl(220 32% 94%); --bg-hover:hsl(220 38% 89%); --bg-active:hsl(220 38% 89% / 0.6); --bg-divider:hsl(220 30% 86%); --border-color:hsl(220 30% 86%); --text-primary:hsl(222 47% 11%); --text-secondary:hsl(220 16% 42%); --text-muted:hsl(220 16% 42% / 0.7); --accent-color:hsl(221 83% 53%);">
+        <aside class="sb">
+          <div class="logo" style="background:var(--accent-color)"></div>
+          <div class="navi active">会话</div>
+          <div class="navi">知识库</div>
+          <div class="navi">设置</div>
+          <div class="sbfoot" style="border-top:1px solid var(--border-color);color:var(--text-muted)">v1.0.0</div>
+        </aside>
+        <main class="ct">
+          <div class="bar" style="background:var(--bg-statusbar);border-bottom:1px solid var(--border-color)">
+            <span style="color:var(--text-primary)">Diting AI</span>
+            <span class="pill" style="background:var(--accent-color);color:#fff">主色</span>
+          </div>
+          <div class="body">
+            <div class="card" style="background:var(--bg-panel);border:1px solid var(--border-color)">
+              <div class="ctitle" style="color:var(--text-primary)">主题预览卡片</div>
+              <div class="csub" style="color:var(--text-secondary)">这是一段正文示例，用于检验对比度与可读性。</div>
+              <div class="crow">
+                <span class="btn" style="background:var(--accent-color);color:#fff">主按钮</span>
+                <span class="btn ghost" style="border:1px solid var(--border-color);color:var(--text-primary)">次按钮</span>
+              </div>
+            </div>
+            <div class="hover" style="background:var(--bg-hover);border:1px solid var(--border-color);color:var(--text-primary)">悬停态 (--accent)</div>
+            <div class="divider" style="background:var(--bg-divider)"></div>
+            <div class="muted" style="color:var(--text-muted)">次要信息文字 (--muted-foreground)</div>
+          </div>
+        </main>
+      </div>
+      <div class="swatches"><div class="sw"><span class="chip" style="background:hsl(220 24% 99%)"></span><span class="swk">背景</span><span class="swv">220 24% 99%</span></div><div class="sw"><span class="chip" style="background:hsl(220 24% 99%)"></span><span class="swk">卡片</span><span class="swv">220 24% 99%</span></div><div class="sw"><span class="chip" style="background:hsl(220 32% 94%)"></span><span class="swk">次表面</span><span class="swv">220 32% 94%</span></div><div class="sw"><span class="chip" style="background:hsl(220 32% 94%)"></span><span class="swk">弱化</span><span class="swv">220 32% 94%</span></div><div class="sw"><span class="chip" style="background:hsl(220 38% 89%)"></span><span class="swk">悬停</span><span class="swv">220 38% 89%</span></div><div class="sw"><span class="chip" style="background:hsl(220 30% 86%)"></span><span class="swk">边框</span><span class="swv">220 30% 86%</span></div><div class="sw"><span class="chip" style="background:hsl(222 47% 11%)"></span><span class="swk">文字</span><span class="swv">222 47% 11%</span></div><div class="sw"><span class="chip" style="background:hsl(220 16% 42%)"></span><span class="swk">次文字</span><span class="swv">220 16% 42%</span></div><div class="sw"><span class="chip" style="background:hsl(221 83% 53%)"></span><span class="swk">主色</span><span class="swv">221 83% 53%</span></div></div>
+    </div>
+        
+    <div class="col">
+      <div class="colhead">Dark 模式</div>
+      <div class="mock" style="--background:220 24% 9%; --foreground:210 32% 96%; --card:220 22% 12%; --card-foreground:210 32% 96%; --popover:220 22% 12%; --popover-foreground:210 32% 96%; --secondary:220 30% 15%; --secondary-foreground:210 32% 96%; --muted:220 30% 15%; --muted-foreground:218 20% 64%; --accent:220 38% 19%; --accent-foreground:210 32% 96%; --border:220 26% 20%; --input:220 26% 20%; --bg-layout:hsl(220 24% 9% / 0.7); --bg-panel:hsl(220 24% 9%); --bg-sidebar:hsl(220 30% 15%); --bg-statusbar:hsl(220 30% 15%); --bg-hover:hsl(220 38% 19%); --bg-active:hsl(220 38% 19% / 0.8); --bg-divider:hsl(220 26% 20%); --border-color:hsl(220 26% 20%); --text-primary:hsl(210 32% 96%); --text-secondary:hsl(218 20% 64%); --text-muted:hsl(218 20% 64% / 0.7); --accent-color:hsl(217 91% 60%);">
+        <aside class="sb">
+          <div class="logo" style="background:var(--accent-color)"></div>
+          <div class="navi active">会话</div>
+          <div class="navi">知识库</div>
+          <div class="navi">设置</div>
+          <div class="sbfoot" style="border-top:1px solid var(--border-color);color:var(--text-muted)">v1.0.0</div>
+        </aside>
+        <main class="ct">
+          <div class="bar" style="background:var(--bg-statusbar);border-bottom:1px solid var(--border-color)">
+            <span style="color:var(--text-primary)">Diting AI</span>
+            <span class="pill" style="background:var(--accent-color);color:#fff">主色</span>
+          </div>
+          <div class="body">
+            <div class="card" style="background:var(--bg-panel);border:1px solid var(--border-color)">
+              <div class="ctitle" style="color:var(--text-primary)">主题预览卡片</div>
+              <div class="csub" style="color:var(--text-secondary)">这是一段正文示例，用于检验对比度与可读性。</div>
+              <div class="crow">
+                <span class="btn" style="background:var(--accent-color);color:#fff">主按钮</span>
+                <span class="btn ghost" style="border:1px solid var(--border-color);color:var(--text-primary)">次按钮</span>
+              </div>
+            </div>
+            <div class="hover" style="background:var(--bg-hover);border:1px solid var(--border-color);color:var(--text-primary)">悬停态 (--accent)</div>
+            <div class="divider" style="background:var(--bg-divider)"></div>
+            <div class="muted" style="color:var(--text-muted)">次要信息文字 (--muted-foreground)</div>
+          </div>
+        </main>
+      </div>
+      <div class="swatches"><div class="sw"><span class="chip" style="background:hsl(220 24% 9%)"></span><span class="swk">背景</span><span class="swv">220 24% 9%</span></div><div class="sw"><span class="chip" style="background:hsl(220 22% 12%)"></span><span class="swk">卡片</span><span class="swv">220 22% 12%</span></div><div class="sw"><span class="chip" style="background:hsl(220 30% 15%)"></span><span class="swk">次表面</span><span class="swv">220 30% 15%</span></div><div class="sw"><span class="chip" style="background:hsl(220 30% 15%)"></span><span class="swk">弱化</span><span class="swv">220 30% 15%</span></div><div class="sw"><span class="chip" style="background:hsl(220 38% 19%)"></span><span class="swk">悬停</span><span class="swv">220 38% 19%</span></div><div class="sw"><span class="chip" style="background:hsl(220 26% 20%)"></span><span class="swk">边框</span><span class="swv">220 26% 20%</span></div><div class="sw"><span class="chip" style="background:hsl(210 32% 96%)"></span><span class="swk">文字</span><span class="swv">210 32% 96%</span></div><div class="sw"><span class="chip" style="background:hsl(218 20% 64%)"></span><span class="swk">次文字</span><span class="swv">218 20% 64%</span></div><div class="sw"><span class="chip" style="background:hsl(217 91% 60%)"></span><span class="swk">主色</span><span class="swv">217 91% 60%</span></div></div>
+    </div>
+      </div>
+    </section>
+    <section class="theme">
+      <div class="thead">
+        <h2><span class="tag tag-o">原有</span> Zinc · 紫灰</h2>
+        <p>Light 紫灰；Dark 紫黑画布(270 26% 8%)，侧边栏/悬停带紫调。</p>
+      </div>
+      <div class="grid">
+        
+    <div class="col">
+      <div class="colhead">Light 模式</div>
+      <div class="mock" style="--background:270 14% 99%; --foreground:270 22% 11%; --card:270 14% 99%; --card-foreground:270 22% 11%; --popover:270 14% 99%; --popover-foreground:270 22% 11%; --secondary:270 22% 94%; --secondary-foreground:270 22% 11%; --muted:270 22% 94%; --muted-foreground:270 16% 42%; --accent:270 28% 89%; --accent-foreground:270 22% 11%; --border:270 20% 86%; --input:270 20% 86%; --bg-layout:hsl(270 22% 94%); --bg-panel:hsl(270 14% 99%); --bg-sidebar:hsl(270 22% 94%); --bg-statusbar:hsl(270 22% 94%); --bg-hover:hsl(270 28% 89%); --bg-active:hsl(270 28% 89% / 0.6); --bg-divider:hsl(270 20% 86%); --border-color:hsl(270 20% 86%); --text-primary:hsl(270 22% 11%); --text-secondary:hsl(270 16% 42%); --text-muted:hsl(270 16% 42% / 0.7); --accent-color:hsl(221 83% 53%);">
+        <aside class="sb">
+          <div class="logo" style="background:var(--accent-color)"></div>
+          <div class="navi active">会话</div>
+          <div class="navi">知识库</div>
+          <div class="navi">设置</div>
+          <div class="sbfoot" style="border-top:1px solid var(--border-color);color:var(--text-muted)">v1.0.0</div>
+        </aside>
+        <main class="ct">
+          <div class="bar" style="background:var(--bg-statusbar);border-bottom:1px solid var(--border-color)">
+            <span style="color:var(--text-primary)">Diting AI</span>
+            <span class="pill" style="background:var(--accent-color);color:#fff">主色</span>
+          </div>
+          <div class="body">
+            <div class="card" style="background:var(--bg-panel);border:1px solid var(--border-color)">
+              <div class="ctitle" style="color:var(--text-primary)">主题预览卡片</div>
+              <div class="csub" style="color:var(--text-secondary)">这是一段正文示例，用于检验对比度与可读性。</div>
+              <div class="crow">
+                <span class="btn" style="background:var(--accent-color);color:#fff">主按钮</span>
+                <span class="btn ghost" style="border:1px solid var(--border-color);color:var(--text-primary)">次按钮</span>
+              </div>
+            </div>
+            <div class="hover" style="background:var(--bg-hover);border:1px solid var(--border-color);color:var(--text-primary)">悬停态 (--accent)</div>
+            <div class="divider" style="background:var(--bg-divider)"></div>
+            <div class="muted" style="color:var(--text-muted)">次要信息文字 (--muted-foreground)</div>
+          </div>
+        </main>
+      </div>
+      <div class="swatches"><div class="sw"><span class="chip" style="background:hsl(270 14% 99%)"></span><span class="swk">背景</span><span class="swv">270 14% 99%</span></div><div class="sw"><span class="chip" style="background:hsl(270 14% 99%)"></span><span class="swk">卡片</span><span class="swv">270 14% 99%</span></div><div class="sw"><span class="chip" style="background:hsl(270 22% 94%)"></span><span class="swk">次表面</span><span class="swv">270 22% 94%</span></div><div class="sw"><span class="chip" style="background:hsl(270 22% 94%)"></span><span class="swk">弱化</span><span class="swv">270 22% 94%</span></div><div class="sw"><span class="chip" style="background:hsl(270 28% 89%)"></span><span class="swk">悬停</span><span class="swv">270 28% 89%</span></div><div class="sw"><span class="chip" style="background:hsl(270 20% 86%)"></span><span class="swk">边框</span><span class="swv">270 20% 86%</span></div><div class="sw"><span class="chip" style="background:hsl(270 22% 11%)"></span><span class="swk">文字</span><span class="swv">270 22% 11%</span></div><div class="sw"><span class="chip" style="background:hsl(270 16% 42%)"></span><span class="swk">次文字</span><span class="swv">270 16% 42%</span></div><div class="sw"><span class="chip" style="background:hsl(221 83% 53%)"></span><span class="swk">主色</span><span class="swv">221 83% 53%</span></div></div>
+    </div>
+        
+    <div class="col">
+      <div class="colhead">Dark 模式</div>
+      <div class="mock" style="--background:270 26% 8%; --foreground:270 20% 96%; --card:270 24% 11%; --card-foreground:270 20% 96%; --popover:270 24% 11%; --popover-foreground:270 20% 96%; --secondary:270 32% 15%; --secondary-foreground:270 20% 96%; --muted:270 32% 15%; --muted-foreground:270 16% 64%; --accent:270 38% 19%; --accent-foreground:270 20% 96%; --border:270 26% 20%; --input:270 26% 20%; --bg-layout:hsl(270 26% 8% / 0.7); --bg-panel:hsl(270 26% 8%); --bg-sidebar:hsl(270 32% 15%); --bg-statusbar:hsl(270 32% 15%); --bg-hover:hsl(270 38% 19%); --bg-active:hsl(270 38% 19% / 0.8); --bg-divider:hsl(270 26% 20%); --border-color:hsl(270 26% 20%); --text-primary:hsl(270 20% 96%); --text-secondary:hsl(270 16% 64%); --text-muted:hsl(270 16% 64% / 0.7); --accent-color:hsl(217 91% 60%);">
+        <aside class="sb">
+          <div class="logo" style="background:var(--accent-color)"></div>
+          <div class="navi active">会话</div>
+          <div class="navi">知识库</div>
+          <div class="navi">设置</div>
+          <div class="sbfoot" style="border-top:1px solid var(--border-color);color:var(--text-muted)">v1.0.0</div>
+        </aside>
+        <main class="ct">
+          <div class="bar" style="background:var(--bg-statusbar);border-bottom:1px solid var(--border-color)">
+            <span style="color:var(--text-primary)">Diting AI</span>
+            <span class="pill" style="background:var(--accent-color);color:#fff">主色</span>
+          </div>
+          <div class="body">
+            <div class="card" style="background:var(--bg-panel);border:1px solid var(--border-color)">
+              <div class="ctitle" style="color:var(--text-primary)">主题预览卡片</div>
+              <div class="csub" style="color:var(--text-secondary)">这是一段正文示例，用于检验对比度与可读性。</div>
+              <div class="crow">
+                <span class="btn" style="background:var(--accent-color);color:#fff">主按钮</span>
+                <span class="btn ghost" style="border:1px solid var(--border-color);color:var(--text-primary)">次按钮</span>
+              </div>
+            </div>
+            <div class="hover" style="background:var(--bg-hover);border:1px solid var(--border-color);color:var(--text-primary)">悬停态 (--accent)</div>
+            <div class="divider" style="background:var(--bg-divider)"></div>
+            <div class="muted" style="color:var(--text-muted)">次要信息文字 (--muted-foreground)</div>
+          </div>
+        </main>
+      </div>
+      <div class="swatches"><div class="sw"><span class="chip" style="background:hsl(270 26% 8%)"></span><span class="swk">背景</span><span class="swv">270 26% 8%</span></div><div class="sw"><span class="chip" style="background:hsl(270 24% 11%)"></span><span class="swk">卡片</span><span class="swv">270 24% 11%</span></div><div class="sw"><span class="chip" style="background:hsl(270 32% 15%)"></span><span class="swk">次表面</span><span class="swv">270 32% 15%</span></div><div class="sw"><span class="chip" style="background:hsl(270 32% 15%)"></span><span class="swk">弱化</span><span class="swv">270 32% 15%</span></div><div class="sw"><span class="chip" style="background:hsl(270 38% 19%)"></span><span class="swk">悬停</span><span class="swv">270 38% 19%</span></div><div class="sw"><span class="chip" style="background:hsl(270 26% 20%)"></span><span class="swk">边框</span><span class="swv">270 26% 20%</span></div><div class="sw"><span class="chip" style="background:hsl(270 20% 96%)"></span><span class="swk">文字</span><span class="swv">270 20% 96%</span></div><div class="sw"><span class="chip" style="background:hsl(270 16% 64%)"></span><span class="swk">次文字</span><span class="swv">270 16% 64%</span></div><div class="sw"><span class="chip" style="background:hsl(217 91% 60%)"></span><span class="swk">主色</span><span class="swv">217 91% 60%</span></div></div>
+    </div>
+      </div>
+    </section>
+    <section class="theme">
+      <div class="thead">
+        <h2><span class="tag tag-o">原有</span> Slate · 强蓝</h2>
+        <p>Light 强蓝；Dark 深蓝黑画布(215 34% 9%)，蓝调最浓。</p>
+      </div>
+      <div class="grid">
+        
+    <div class="col">
+      <div class="colhead">Light 模式</div>
+      <div class="mock" style="--background:205 28% 99%; --foreground:212 40% 12%; --card:205 28% 99%; --card-foreground:212 40% 12%; --popover:205 28% 99%; --popover-foreground:212 40% 12%; --secondary:205 42% 94%; --secondary-foreground:212 40% 12%; --muted:205 42% 94%; --muted-foreground:210 22% 42%; --accent:205 50% 88%; --accent-foreground:212 40% 12%; --border:205 40% 85%; --input:205 40% 85%; --bg-layout:hsl(205 42% 94%); --bg-panel:hsl(205 28% 99%); --bg-sidebar:hsl(205 42% 94%); --bg-statusbar:hsl(205 42% 94%); --bg-hover:hsl(205 50% 88%); --bg-active:hsl(205 50% 88% / 0.6); --bg-divider:hsl(205 40% 85%); --border-color:hsl(205 40% 85%); --text-primary:hsl(212 40% 12%); --text-secondary:hsl(210 22% 42%); --text-muted:hsl(210 22% 42% / 0.7); --accent-color:hsl(221 83% 53%);">
+        <aside class="sb">
+          <div class="logo" style="background:var(--accent-color)"></div>
+          <div class="navi active">会话</div>
+          <div class="navi">知识库</div>
+          <div class="navi">设置</div>
+          <div class="sbfoot" style="border-top:1px solid var(--border-color);color:var(--text-muted)">v1.0.0</div>
+        </aside>
+        <main class="ct">
+          <div class="bar" style="background:var(--bg-statusbar);border-bottom:1px solid var(--border-color)">
+            <span style="color:var(--text-primary)">Diting AI</span>
+            <span class="pill" style="background:var(--accent-color);color:#fff">主色</span>
+          </div>
+          <div class="body">
+            <div class="card" style="background:var(--bg-panel);border:1px solid var(--border-color)">
+              <div class="ctitle" style="color:var(--text-primary)">主题预览卡片</div>
+              <div class="csub" style="color:var(--text-secondary)">这是一段正文示例，用于检验对比度与可读性。</div>
+              <div class="crow">
+                <span class="btn" style="background:var(--accent-color);color:#fff">主按钮</span>
+                <span class="btn ghost" style="border:1px solid var(--border-color);color:var(--text-primary)">次按钮</span>
+              </div>
+            </div>
+            <div class="hover" style="background:var(--bg-hover);border:1px solid var(--border-color);color:var(--text-primary)">悬停态 (--accent)</div>
+            <div class="divider" style="background:var(--bg-divider)"></div>
+            <div class="muted" style="color:var(--text-muted)">次要信息文字 (--muted-foreground)</div>
+          </div>
+        </main>
+      </div>
+      <div class="swatches"><div class="sw"><span class="chip" style="background:hsl(205 28% 99%)"></span><span class="swk">背景</span><span class="swv">205 28% 99%</span></div><div class="sw"><span class="chip" style="background:hsl(205 28% 99%)"></span><span class="swk">卡片</span><span class="swv">205 28% 99%</span></div><div class="sw"><span class="chip" style="background:hsl(205 42% 94%)"></span><span class="swk">次表面</span><span class="swv">205 42% 94%</span></div><div class="sw"><span class="chip" style="background:hsl(205 42% 94%)"></span><span class="swk">弱化</span><span class="swv">205 42% 94%</span></div><div class="sw"><span class="chip" style="background:hsl(205 50% 88%)"></span><span class="swk">悬停</span><span class="swv">205 50% 88%</span></div><div class="sw"><span class="chip" style="background:hsl(205 40% 85%)"></span><span class="swk">边框</span><span class="swv">205 40% 85%</span></div><div class="sw"><span class="chip" style="background:hsl(212 40% 12%)"></span><span class="swk">文字</span><span class="swv">212 40% 12%</span></div><div class="sw"><span class="chip" style="background:hsl(210 22% 42%)"></span><span class="swk">次文字</span><span class="swv">210 22% 42%</span></div><div class="sw"><span class="chip" style="background:hsl(221 83% 53%)"></span><span class="swk">主色</span><span class="swv">221 83% 53%</span></div></div>
+    </div>
+        
+    <div class="col">
+      <div class="colhead">Dark 模式</div>
+      <div class="mock" style="--background:215 34% 9%; --foreground:210 38% 96%; --card:214 30% 12%; --card-foreground:210 38% 96%; --popover:214 30% 12%; --popover-foreground:210 38% 96%; --secondary:213 40% 16%; --secondary-foreground:210 38% 96%; --muted:213 40% 16%; --muted-foreground:212 26% 66%; --accent:210 48% 20%; --accent-foreground:210 38% 96%; --border:213 34% 21%; --input:213 34% 21%; --bg-layout:hsl(215 34% 9% / 0.7); --bg-panel:hsl(215 34% 9%); --bg-sidebar:hsl(213 40% 16%); --bg-statusbar:hsl(213 40% 16%); --bg-hover:hsl(210 48% 20%); --bg-active:hsl(210 48% 20% / 0.8); --bg-divider:hsl(213 34% 21%); --border-color:hsl(213 34% 21%); --text-primary:hsl(210 38% 96%); --text-secondary:hsl(212 26% 66%); --text-muted:hsl(212 26% 66% / 0.7); --accent-color:hsl(217 91% 60%);">
+        <aside class="sb">
+          <div class="logo" style="background:var(--accent-color)"></div>
+          <div class="navi active">会话</div>
+          <div class="navi">知识库</div>
+          <div class="navi">设置</div>
+          <div class="sbfoot" style="border-top:1px solid var(--border-color);color:var(--text-muted)">v1.0.0</div>
+        </aside>
+        <main class="ct">
+          <div class="bar" style="background:var(--bg-statusbar);border-bottom:1px solid var(--border-color)">
+            <span style="color:var(--text-primary)">Diting AI</span>
+            <span class="pill" style="background:var(--accent-color);color:#fff">主色</span>
+          </div>
+          <div class="body">
+            <div class="card" style="background:var(--bg-panel);border:1px solid var(--border-color)">
+              <div class="ctitle" style="color:var(--text-primary)">主题预览卡片</div>
+              <div class="csub" style="color:var(--text-secondary)">这是一段正文示例，用于检验对比度与可读性。</div>
+              <div class="crow">
+                <span class="btn" style="background:var(--accent-color);color:#fff">主按钮</span>
+                <span class="btn ghost" style="border:1px solid var(--border-color);color:var(--text-primary)">次按钮</span>
+              </div>
+            </div>
+            <div class="hover" style="background:var(--bg-hover);border:1px solid var(--border-color);color:var(--text-primary)">悬停态 (--accent)</div>
+            <div class="divider" style="background:var(--bg-divider)"></div>
+            <div class="muted" style="color:var(--text-muted)">次要信息文字 (--muted-foreground)</div>
+          </div>
+        </main>
+      </div>
+      <div class="swatches"><div class="sw"><span class="chip" style="background:hsl(215 34% 9%)"></span><span class="swk">背景</span><span class="swv">215 34% 9%</span></div><div class="sw"><span class="chip" style="background:hsl(214 30% 12%)"></span><span class="swk">卡片</span><span class="swv">214 30% 12%</span></div><div class="sw"><span class="chip" style="background:hsl(213 40% 16%)"></span><span class="swk">次表面</span><span class="swv">213 40% 16%</span></div><div class="sw"><span class="chip" style="background:hsl(213 40% 16%)"></span><span class="swk">弱化</span><span class="swv">213 40% 16%</span></div><div class="sw"><span class="chip" style="background:hsl(210 48% 20%)"></span><span class="swk">悬停</span><span class="swv">210 48% 20%</span></div><div class="sw"><span class="chip" style="background:hsl(213 34% 21%)"></span><span class="swk">边框</span><span class="swv">213 34% 21%</span></div><div class="sw"><span class="chip" style="background:hsl(210 38% 96%)"></span><span class="swk">文字</span><span class="swv">210 38% 96%</span></div><div class="sw"><span class="chip" style="background:hsl(212 26% 66%)"></span><span class="swk">次文字</span><span class="swv">212 26% 66%</span></div><div class="sw"><span class="chip" style="background:hsl(217 91% 60%)"></span><span class="swk">主色</span><span class="swv">217 91% 60%</span></div></div>
+    </div>
+      </div>
+    </section>
+    <section class="theme">
+      <div class="thead">
+        <h2><span class="tag">中国传统</span> 黛蓝 · 群青</h2>
+        <p>主色 群青/靛蓝；Light 冷蓝宣纸，Dark 墨蓝(212 38% 8%)。水墨蓝调。</p>
+      </div>
+      <div class="grid">
+        
+    <div class="col">
+      <div class="colhead">Light 模式</div>
+      <div class="mock" style="--background:212 30% 99%; --foreground:212 45% 12%; --card:212 30% 99%; --card-foreground:212 45% 12%; --popover:212 30% 99%; --popover-foreground:212 45% 12%; --secondary:212 36% 94%; --secondary-foreground:212 45% 12%; --muted:212 36% 94%; --muted-foreground:212 22% 42%; --accent:212 44% 89%; --accent-foreground:212 45% 12%; --border:212 32% 86%; --input:212 32% 86%; --bg-layout:hsl(212 36% 94%); --bg-panel:hsl(212 30% 99%); --bg-sidebar:hsl(212 36% 94%); --bg-statusbar:hsl(212 36% 94%); --bg-hover:hsl(212 44% 89%); --bg-active:hsl(212 44% 89% / 0.6); --bg-divider:hsl(212 32% 86%); --border-color:hsl(212 32% 86%); --text-primary:hsl(212 45% 12%); --text-secondary:hsl(212 22% 42%); --text-muted:hsl(212 22% 42% / 0.7); --accent-color:hsl(212 64% 48%);">
+        <aside class="sb">
+          <div class="logo" style="background:var(--accent-color)"></div>
+          <div class="navi active">会话</div>
+          <div class="navi">知识库</div>
+          <div class="navi">设置</div>
+          <div class="sbfoot" style="border-top:1px solid var(--border-color);color:var(--text-muted)">v1.0.0</div>
+        </aside>
+        <main class="ct">
+          <div class="bar" style="background:var(--bg-statusbar);border-bottom:1px solid var(--border-color)">
+            <span style="color:var(--text-primary)">Diting AI</span>
+            <span class="pill" style="background:var(--accent-color);color:#fff">主色</span>
+          </div>
+          <div class="body">
+            <div class="card" style="background:var(--bg-panel);border:1px solid var(--border-color)">
+              <div class="ctitle" style="color:var(--text-primary)">主题预览卡片</div>
+              <div class="csub" style="color:var(--text-secondary)">这是一段正文示例，用于检验对比度与可读性。</div>
+              <div class="crow">
+                <span class="btn" style="background:var(--accent-color);color:#fff">主按钮</span>
+                <span class="btn ghost" style="border:1px solid var(--border-color);color:var(--text-primary)">次按钮</span>
+              </div>
+            </div>
+            <div class="hover" style="background:var(--bg-hover);border:1px solid var(--border-color);color:var(--text-primary)">悬停态 (--accent)</div>
+            <div class="divider" style="background:var(--bg-divider)"></div>
+            <div class="muted" style="color:var(--text-muted)">次要信息文字 (--muted-foreground)</div>
+          </div>
+        </main>
+      </div>
+      <div class="swatches"><div class="sw"><span class="chip" style="background:hsl(212 30% 99%)"></span><span class="swk">背景</span><span class="swv">212 30% 99%</span></div><div class="sw"><span class="chip" style="background:hsl(212 30% 99%)"></span><span class="swk">卡片</span><span class="swv">212 30% 99%</span></div><div class="sw"><span class="chip" style="background:hsl(212 36% 94%)"></span><span class="swk">次表面</span><span class="swv">212 36% 94%</span></div><div class="sw"><span class="chip" style="background:hsl(212 36% 94%)"></span><span class="swk">弱化</span><span class="swv">212 36% 94%</span></div><div class="sw"><span class="chip" style="background:hsl(212 44% 89%)"></span><span class="swk">悬停</span><span class="swv">212 44% 89%</span></div><div class="sw"><span class="chip" style="background:hsl(212 32% 86%)"></span><span class="swk">边框</span><span class="swv">212 32% 86%</span></div><div class="sw"><span class="chip" style="background:hsl(212 45% 12%)"></span><span class="swk">文字</span><span class="swv">212 45% 12%</span></div><div class="sw"><span class="chip" style="background:hsl(212 22% 42%)"></span><span class="swk">次文字</span><span class="swv">212 22% 42%</span></div><div class="sw"><span class="chip" style="background:hsl(212 64% 48%)"></span><span class="swk">主色</span><span class="swv">212 64% 48%</span></div></div>
+    </div>
+        
+    <div class="col">
+      <div class="colhead">Dark 模式</div>
+      <div class="mock" style="--background:212 38% 8%; --foreground:210 40% 96%; --card:212 32% 11%; --card-foreground:210 40% 96%; --popover:212 32% 11%; --popover-foreground:210 40% 96%; --secondary:212 42% 15%; --secondary-foreground:210 40% 96%; --muted:212 42% 15%; --muted-foreground:210 26% 64%; --accent:210 48% 19%; --accent-foreground:210 40% 96%; --border:212 34% 20%; --input:212 34% 20%; --bg-layout:hsl(212 38% 8% / 0.7); --bg-panel:hsl(212 38% 8%); --bg-sidebar:hsl(212 42% 15%); --bg-statusbar:hsl(212 42% 15%); --bg-hover:hsl(210 48% 19%); --bg-active:hsl(210 48% 19% / 0.8); --bg-divider:hsl(212 34% 20%); --border-color:hsl(212 34% 20%); --text-primary:hsl(210 40% 96%); --text-secondary:hsl(210 26% 64%); --text-muted:hsl(210 26% 64% / 0.7); --accent-color:hsl(210 72% 58%);">
+        <aside class="sb">
+          <div class="logo" style="background:var(--accent-color)"></div>
+          <div class="navi active">会话</div>
+          <div class="navi">知识库</div>
+          <div class="navi">设置</div>
+          <div class="sbfoot" style="border-top:1px solid var(--border-color);color:var(--text-muted)">v1.0.0</div>
+        </aside>
+        <main class="ct">
+          <div class="bar" style="background:var(--bg-statusbar);border-bottom:1px solid var(--border-color)">
+            <span style="color:var(--text-primary)">Diting AI</span>
+            <span class="pill" style="background:var(--accent-color);color:#fff">主色</span>
+          </div>
+          <div class="body">
+            <div class="card" style="background:var(--bg-panel);border:1px solid var(--border-color)">
+              <div class="ctitle" style="color:var(--text-primary)">主题预览卡片</div>
+              <div class="csub" style="color:var(--text-secondary)">这是一段正文示例，用于检验对比度与可读性。</div>
+              <div class="crow">
+                <span class="btn" style="background:var(--accent-color);color:#fff">主按钮</span>
+                <span class="btn ghost" style="border:1px solid var(--border-color);color:var(--text-primary)">次按钮</span>
+              </div>
+            </div>
+            <div class="hover" style="background:var(--bg-hover);border:1px solid var(--border-color);color:var(--text-primary)">悬停态 (--accent)</div>
+            <div class="divider" style="background:var(--bg-divider)"></div>
+            <div class="muted" style="color:var(--text-muted)">次要信息文字 (--muted-foreground)</div>
+          </div>
+        </main>
+      </div>
+      <div class="swatches"><div class="sw"><span class="chip" style="background:hsl(212 38% 8%)"></span><span class="swk">背景</span><span class="swv">212 38% 8%</span></div><div class="sw"><span class="chip" style="background:hsl(212 32% 11%)"></span><span class="swk">卡片</span><span class="swv">212 32% 11%</span></div><div class="sw"><span class="chip" style="background:hsl(212 42% 15%)"></span><span class="swk">次表面</span><span class="swv">212 42% 15%</span></div><div class="sw"><span class="chip" style="background:hsl(212 42% 15%)"></span><span class="swk">弱化</span><span class="swv">212 42% 15%</span></div><div class="sw"><span class="chip" style="background:hsl(210 48% 19%)"></span><span class="swk">悬停</span><span class="swv">210 48% 19%</span></div><div class="sw"><span class="chip" style="background:hsl(212 34% 20%)"></span><span class="swk">边框</span><span class="swv">212 34% 20%</span></div><div class="sw"><span class="chip" style="background:hsl(210 40% 96%)"></span><span class="swk">文字</span><span class="swv">210 40% 96%</span></div><div class="sw"><span class="chip" style="background:hsl(210 26% 64%)"></span><span class="swk">次文字</span><span class="swv">210 26% 64%</span></div><div class="sw"><span class="chip" style="background:hsl(210 72% 58%)"></span><span class="swk">主色</span><span class="swv">210 72% 58%</span></div></div>
+    </div>
+      </div>
+    </section>
+    <section class="theme">
+      <div class="thead">
+        <h2><span class="tag">中国传统</span> 朱砂 · 朱红</h2>
+        <p>主色 朱红/朱砂；Light 暖宣纸，Dark 朱墨暖黑(18 22% 8%)。国风正红。</p>
+      </div>
+      <div class="grid">
+        
+    <div class="col">
+      <div class="colhead">Light 模式</div>
+      <div class="mock" style="--background:35 28% 99%; --foreground:24 30% 12%; --card:35 28% 99%; --card-foreground:24 30% 12%; --popover:35 28% 99%; --popover-foreground:24 30% 12%; --secondary:35 32% 94%; --secondary-foreground:24 30% 12%; --muted:35 32% 94%; --muted-foreground:24 18% 42%; --accent:30 38% 89%; --accent-foreground:24 30% 12%; --border:35 28% 86%; --input:35 28% 86%; --bg-layout:hsl(35 32% 94%); --bg-panel:hsl(35 28% 99%); --bg-sidebar:hsl(35 32% 94%); --bg-statusbar:hsl(35 32% 94%); --bg-hover:hsl(30 38% 89%); --bg-active:hsl(30 38% 89% / 0.6); --bg-divider:hsl(35 28% 86%); --border-color:hsl(35 28% 86%); --text-primary:hsl(24 30% 12%); --text-secondary:hsl(24 18% 42%); --text-muted:hsl(24 18% 42% / 0.7); --accent-color:hsl(12 85% 52%);">
+        <aside class="sb">
+          <div class="logo" style="background:var(--accent-color)"></div>
+          <div class="navi active">会话</div>
+          <div class="navi">知识库</div>
+          <div class="navi">设置</div>
+          <div class="sbfoot" style="border-top:1px solid var(--border-color);color:var(--text-muted)">v1.0.0</div>
+        </aside>
+        <main class="ct">
+          <div class="bar" style="background:var(--bg-statusbar);border-bottom:1px solid var(--border-color)">
+            <span style="color:var(--text-primary)">Diting AI</span>
+            <span class="pill" style="background:var(--accent-color);color:#fff">主色</span>
+          </div>
+          <div class="body">
+            <div class="card" style="background:var(--bg-panel);border:1px solid var(--border-color)">
+              <div class="ctitle" style="color:var(--text-primary)">主题预览卡片</div>
+              <div class="csub" style="color:var(--text-secondary)">这是一段正文示例，用于检验对比度与可读性。</div>
+              <div class="crow">
+                <span class="btn" style="background:var(--accent-color);color:#fff">主按钮</span>
+                <span class="btn ghost" style="border:1px solid var(--border-color);color:var(--text-primary)">次按钮</span>
+              </div>
+            </div>
+            <div class="hover" style="background:var(--bg-hover);border:1px solid var(--border-color);color:var(--text-primary)">悬停态 (--accent)</div>
+            <div class="divider" style="background:var(--bg-divider)"></div>
+            <div class="muted" style="color:var(--text-muted)">次要信息文字 (--muted-foreground)</div>
+          </div>
+        </main>
+      </div>
+      <div class="swatches"><div class="sw"><span class="chip" style="background:hsl(35 28% 99%)"></span><span class="swk">背景</span><span class="swv">35 28% 99%</span></div><div class="sw"><span class="chip" style="background:hsl(35 28% 99%)"></span><span class="swk">卡片</span><span class="swv">35 28% 99%</span></div><div class="sw"><span class="chip" style="background:hsl(35 32% 94%)"></span><span class="swk">次表面</span><span class="swv">35 32% 94%</span></div><div class="sw"><span class="chip" style="background:hsl(35 32% 94%)"></span><span class="swk">弱化</span><span class="swv">35 32% 94%</span></div><div class="sw"><span class="chip" style="background:hsl(30 38% 89%)"></span><span class="swk">悬停</span><span class="swv">30 38% 89%</span></div><div class="sw"><span class="chip" style="background:hsl(35 28% 86%)"></span><span class="swk">边框</span><span class="swv">35 28% 86%</span></div><div class="sw"><span class="chip" style="background:hsl(24 30% 12%)"></span><span class="swk">文字</span><span class="swv">24 30% 12%</span></div><div class="sw"><span class="chip" style="background:hsl(24 18% 42%)"></span><span class="swk">次文字</span><span class="swv">24 18% 42%</span></div><div class="sw"><span class="chip" style="background:hsl(12 85% 52%)"></span><span class="swk">主色</span><span class="swv">12 85% 52%</span></div></div>
+    </div>
+        
+    <div class="col">
+      <div class="colhead">Dark 模式</div>
+      <div class="mock" style="--background:18 22% 8%; --foreground:25 32% 95%; --card:18 20% 11%; --card-foreground:25 32% 95%; --popover:18 20% 11%; --popover-foreground:25 32% 95%; --secondary:18 26% 14%; --secondary-foreground:25 32% 95%; --muted:18 26% 14%; --muted-foreground:20 18% 64%; --accent:16 32% 18%; --accent-foreground:25 32% 95%; --border:18 22% 19%; --input:18 22% 19%; --bg-layout:hsl(18 22% 8% / 0.7); --bg-panel:hsl(18 22% 8%); --bg-sidebar:hsl(18 26% 14%); --bg-statusbar:hsl(18 26% 14%); --bg-hover:hsl(16 32% 18%); --bg-active:hsl(16 32% 18% / 0.8); --bg-divider:hsl(18 22% 19%); --border-color:hsl(18 22% 19%); --text-primary:hsl(25 32% 95%); --text-secondary:hsl(20 18% 64%); --text-muted:hsl(20 18% 64% / 0.7); --accent-color:hsl(12 88% 60%);">
+        <aside class="sb">
+          <div class="logo" style="background:var(--accent-color)"></div>
+          <div class="navi active">会话</div>
+          <div class="navi">知识库</div>
+          <div class="navi">设置</div>
+          <div class="sbfoot" style="border-top:1px solid var(--border-color);color:var(--text-muted)">v1.0.0</div>
+        </aside>
+        <main class="ct">
+          <div class="bar" style="background:var(--bg-statusbar);border-bottom:1px solid var(--border-color)">
+            <span style="color:var(--text-primary)">Diting AI</span>
+            <span class="pill" style="background:var(--accent-color);color:#fff">主色</span>
+          </div>
+          <div class="body">
+            <div class="card" style="background:var(--bg-panel);border:1px solid var(--border-color)">
+              <div class="ctitle" style="color:var(--text-primary)">主题预览卡片</div>
+              <div class="csub" style="color:var(--text-secondary)">这是一段正文示例，用于检验对比度与可读性。</div>
+              <div class="crow">
+                <span class="btn" style="background:var(--accent-color);color:#fff">主按钮</span>
+                <span class="btn ghost" style="border:1px solid var(--border-color);color:var(--text-primary)">次按钮</span>
+              </div>
+            </div>
+            <div class="hover" style="background:var(--bg-hover);border:1px solid var(--border-color);color:var(--text-primary)">悬停态 (--accent)</div>
+            <div class="divider" style="background:var(--bg-divider)"></div>
+            <div class="muted" style="color:var(--text-muted)">次要信息文字 (--muted-foreground)</div>
+          </div>
+        </main>
+      </div>
+      <div class="swatches"><div class="sw"><span class="chip" style="background:hsl(18 22% 8%)"></span><span class="swk">背景</span><span class="swv">18 22% 8%</span></div><div class="sw"><span class="chip" style="background:hsl(18 20% 11%)"></span><span class="swk">卡片</span><span class="swv">18 20% 11%</span></div><div class="sw"><span class="chip" style="background:hsl(18 26% 14%)"></span><span class="swk">次表面</span><span class="swv">18 26% 14%</span></div><div class="sw"><span class="chip" style="background:hsl(18 26% 14%)"></span><span class="swk">弱化</span><span class="swv">18 26% 14%</span></div><div class="sw"><span class="chip" style="background:hsl(16 32% 18%)"></span><span class="swk">悬停</span><span class="swv">16 32% 18%</span></div><div class="sw"><span class="chip" style="background:hsl(18 22% 19%)"></span><span class="swk">边框</span><span class="swv">18 22% 19%</span></div><div class="sw"><span class="chip" style="background:hsl(25 32% 95%)"></span><span class="swk">文字</span><span class="swv">25 32% 95%</span></div><div class="sw"><span class="chip" style="background:hsl(20 18% 64%)"></span><span class="swk">次文字</span><span class="swv">20 18% 64%</span></div><div class="sw"><span class="chip" style="background:hsl(12 88% 60%)"></span><span class="swk">主色</span><span class="swv">12 88% 60%</span></div></div>
+    </div>
+      </div>
+    </section>
+    <section class="theme">
+      <div class="thead">
+        <h2><span class="tag">中国传统</span> 松花绿 · 碧</h2>
+        <p>主色 松花绿/碧；Light 青绿宣纸，Dark 墨绿(155 30% 8%)。竹石之色。</p>
+      </div>
+      <div class="grid">
+        
+    <div class="col">
+      <div class="colhead">Light 模式</div>
+      <div class="mock" style="--background:150 24% 99%; --foreground:155 40% 12%; --card:150 24% 99%; --card-foreground:155 40% 12%; --popover:150 24% 99%; --popover-foreground:155 40% 12%; --secondary:150 30% 94%; --secondary-foreground:155 40% 12%; --muted:150 30% 94%; --muted-foreground:155 20% 40%; --accent:150 40% 89%; --accent-foreground:155 40% 12%; --border:150 28% 86%; --input:150 28% 86%; --bg-layout:hsl(150 30% 94%); --bg-panel:hsl(150 24% 99%); --bg-sidebar:hsl(150 30% 94%); --bg-statusbar:hsl(150 30% 94%); --bg-hover:hsl(150 40% 89%); --bg-active:hsl(150 40% 89% / 0.6); --bg-divider:hsl(150 28% 86%); --border-color:hsl(150 28% 86%); --text-primary:hsl(155 40% 12%); --text-secondary:hsl(155 20% 40%); --text-muted:hsl(155 20% 40% / 0.7); --accent-color:hsl(150 58% 40%);">
+        <aside class="sb">
+          <div class="logo" style="background:var(--accent-color)"></div>
+          <div class="navi active">会话</div>
+          <div class="navi">知识库</div>
+          <div class="navi">设置</div>
+          <div class="sbfoot" style="border-top:1px solid var(--border-color);color:var(--text-muted)">v1.0.0</div>
+        </aside>
+        <main class="ct">
+          <div class="bar" style="background:var(--bg-statusbar);border-bottom:1px solid var(--border-color)">
+            <span style="color:var(--text-primary)">Diting AI</span>
+            <span class="pill" style="background:var(--accent-color);color:#fff">主色</span>
+          </div>
+          <div class="body">
+            <div class="card" style="background:var(--bg-panel);border:1px solid var(--border-color)">
+              <div class="ctitle" style="color:var(--text-primary)">主题预览卡片</div>
+              <div class="csub" style="color:var(--text-secondary)">这是一段正文示例，用于检验对比度与可读性。</div>
+              <div class="crow">
+                <span class="btn" style="background:var(--accent-color);color:#fff">主按钮</span>
+                <span class="btn ghost" style="border:1px solid var(--border-color);color:var(--text-primary)">次按钮</span>
+              </div>
+            </div>
+            <div class="hover" style="background:var(--bg-hover);border:1px solid var(--border-color);color:var(--text-primary)">悬停态 (--accent)</div>
+            <div class="divider" style="background:var(--bg-divider)"></div>
+            <div class="muted" style="color:var(--text-muted)">次要信息文字 (--muted-foreground)</div>
+          </div>
+        </main>
+      </div>
+      <div class="swatches"><div class="sw"><span class="chip" style="background:hsl(150 24% 99%)"></span><span class="swk">背景</span><span class="swv">150 24% 99%</span></div><div class="sw"><span class="chip" style="background:hsl(150 24% 99%)"></span><span class="swk">卡片</span><span class="swv">150 24% 99%</span></div><div class="sw"><span class="chip" style="background:hsl(150 30% 94%)"></span><span class="swk">次表面</span><span class="swv">150 30% 94%</span></div><div class="sw"><span class="chip" style="background:hsl(150 30% 94%)"></span><span class="swk">弱化</span><span class="swv">150 30% 94%</span></div><div class="sw"><span class="chip" style="background:hsl(150 40% 89%)"></span><span class="swk">悬停</span><span class="swv">150 40% 89%</span></div><div class="sw"><span class="chip" style="background:hsl(150 28% 86%)"></span><span class="swk">边框</span><span class="swv">150 28% 86%</span></div><div class="sw"><span class="chip" style="background:hsl(155 40% 12%)"></span><span class="swk">文字</span><span class="swv">155 40% 12%</span></div><div class="sw"><span class="chip" style="background:hsl(155 20% 40%)"></span><span class="swk">次文字</span><span class="swv">155 20% 40%</span></div><div class="sw"><span class="chip" style="background:hsl(150 58% 40%)"></span><span class="swk">主色</span><span class="swv">150 58% 40%</span></div></div>
+    </div>
+        
+    <div class="col">
+      <div class="colhead">Dark 模式</div>
+      <div class="mock" style="--background:155 30% 8%; --foreground:150 32% 95%; --card:155 26% 11%; --card-foreground:150 32% 95%; --popover:155 26% 11%; --popover-foreground:150 32% 95%; --secondary:155 34% 15%; --secondary-foreground:150 32% 95%; --muted:155 34% 15%; --muted-foreground:150 22% 64%; --accent:152 42% 19%; --accent-foreground:150 32% 95%; --border:155 30% 20%; --input:155 30% 20%; --bg-layout:hsl(155 30% 8% / 0.7); --bg-panel:hsl(155 30% 8%); --bg-sidebar:hsl(155 34% 15%); --bg-statusbar:hsl(155 34% 15%); --bg-hover:hsl(152 42% 19%); --bg-active:hsl(152 42% 19% / 0.8); --bg-divider:hsl(155 30% 20%); --border-color:hsl(155 30% 20%); --text-primary:hsl(150 32% 95%); --text-secondary:hsl(150 22% 64%); --text-muted:hsl(150 22% 64% / 0.7); --accent-color:hsl(148 50% 48%);">
+        <aside class="sb">
+          <div class="logo" style="background:var(--accent-color)"></div>
+          <div class="navi active">会话</div>
+          <div class="navi">知识库</div>
+          <div class="navi">设置</div>
+          <div class="sbfoot" style="border-top:1px solid var(--border-color);color:var(--text-muted)">v1.0.0</div>
+        </aside>
+        <main class="ct">
+          <div class="bar" style="background:var(--bg-statusbar);border-bottom:1px solid var(--border-color)">
+            <span style="color:var(--text-primary)">Diting AI</span>
+            <span class="pill" style="background:var(--accent-color);color:#fff">主色</span>
+          </div>
+          <div class="body">
+            <div class="card" style="background:var(--bg-panel);border:1px solid var(--border-color)">
+              <div class="ctitle" style="color:var(--text-primary)">主题预览卡片</div>
+              <div class="csub" style="color:var(--text-secondary)">这是一段正文示例，用于检验对比度与可读性。</div>
+              <div class="crow">
+                <span class="btn" style="background:var(--accent-color);color:#fff">主按钮</span>
+                <span class="btn ghost" style="border:1px solid var(--border-color);color:var(--text-primary)">次按钮</span>
+              </div>
+            </div>
+            <div class="hover" style="background:var(--bg-hover);border:1px solid var(--border-color);color:var(--text-primary)">悬停态 (--accent)</div>
+            <div class="divider" style="background:var(--bg-divider)"></div>
+            <div class="muted" style="color:var(--text-muted)">次要信息文字 (--muted-foreground)</div>
+          </div>
+        </main>
+      </div>
+      <div class="swatches"><div class="sw"><span class="chip" style="background:hsl(155 30% 8%)"></span><span class="swk">背景</span><span class="swv">155 30% 8%</span></div><div class="sw"><span class="chip" style="background:hsl(155 26% 11%)"></span><span class="swk">卡片</span><span class="swv">155 26% 11%</span></div><div class="sw"><span class="chip" style="background:hsl(155 34% 15%)"></span><span class="swk">次表面</span><span class="swv">155 34% 15%</span></div><div class="sw"><span class="chip" style="background:hsl(155 34% 15%)"></span><span class="swk">弱化</span><span class="swv">155 34% 15%</span></div><div class="sw"><span class="chip" style="background:hsl(152 42% 19%)"></span><span class="swk">悬停</span><span class="swv">152 42% 19%</span></div><div class="sw"><span class="chip" style="background:hsl(155 30% 20%)"></span><span class="swk">边框</span><span class="swv">155 30% 20%</span></div><div class="sw"><span class="chip" style="background:hsl(150 32% 95%)"></span><span class="swk">文字</span><span class="swv">150 32% 95%</span></div><div class="sw"><span class="chip" style="background:hsl(150 22% 64%)"></span><span class="swk">次文字</span><span class="swv">150 22% 64%</span></div><div class="sw"><span class="chip" style="background:hsl(148 50% 48%)"></span><span class="swk">主色</span><span class="swv">148 50% 48%</span></div></div>
+    </div>
+      </div>
+    </section>
+    <section class="theme">
+      <div class="thead">
+        <h2><span class="tag">中国传统</span> 藕荷 · 青莲紫</h2>
+        <p>主色 藕荷/青莲紫；Light 藕粉宣纸，Dark 墨紫(288 28% 8%)。婉约之色。</p>
+      </div>
+      <div class="grid">
+        
+    <div class="col">
+      <div class="colhead">Light 模式</div>
+      <div class="mock" style="--background:290 18% 99%; --foreground:290 30% 12%; --card:290 18% 99%; --card-foreground:290 30% 12%; --popover:290 18% 99%; --popover-foreground:290 30% 12%; --secondary:290 24% 95%; --secondary-foreground:290 30% 12%; --muted:290 24% 95%; --muted-foreground:290 18% 44%; --accent:290 30% 90%; --accent-foreground:290 30% 12%; --border:290 22% 87%; --input:290 22% 87%; --bg-layout:hsl(290 24% 95%); --bg-panel:hsl(290 18% 99%); --bg-sidebar:hsl(290 24% 95%); --bg-statusbar:hsl(290 24% 95%); --bg-hover:hsl(290 30% 90%); --bg-active:hsl(290 30% 90% / 0.6); --bg-divider:hsl(290 22% 87%); --border-color:hsl(290 22% 87%); --text-primary:hsl(290 30% 12%); --text-secondary:hsl(290 18% 44%); --text-muted:hsl(290 18% 44% / 0.7); --accent-color:hsl(288 46% 50%);">
+        <aside class="sb">
+          <div class="logo" style="background:var(--accent-color)"></div>
+          <div class="navi active">会话</div>
+          <div class="navi">知识库</div>
+          <div class="navi">设置</div>
+          <div class="sbfoot" style="border-top:1px solid var(--border-color);color:var(--text-muted)">v1.0.0</div>
+        </aside>
+        <main class="ct">
+          <div class="bar" style="background:var(--bg-statusbar);border-bottom:1px solid var(--border-color)">
+            <span style="color:var(--text-primary)">Diting AI</span>
+            <span class="pill" style="background:var(--accent-color);color:#fff">主色</span>
+          </div>
+          <div class="body">
+            <div class="card" style="background:var(--bg-panel);border:1px solid var(--border-color)">
+              <div class="ctitle" style="color:var(--text-primary)">主题预览卡片</div>
+              <div class="csub" style="color:var(--text-secondary)">这是一段正文示例，用于检验对比度与可读性。</div>
+              <div class="crow">
+                <span class="btn" style="background:var(--accent-color);color:#fff">主按钮</span>
+                <span class="btn ghost" style="border:1px solid var(--border-color);color:var(--text-primary)">次按钮</span>
+              </div>
+            </div>
+            <div class="hover" style="background:var(--bg-hover);border:1px solid var(--border-color);color:var(--text-primary)">悬停态 (--accent)</div>
+            <div class="divider" style="background:var(--bg-divider)"></div>
+            <div class="muted" style="color:var(--text-muted)">次要信息文字 (--muted-foreground)</div>
+          </div>
+        </main>
+      </div>
+      <div class="swatches"><div class="sw"><span class="chip" style="background:hsl(290 18% 99%)"></span><span class="swk">背景</span><span class="swv">290 18% 99%</span></div><div class="sw"><span class="chip" style="background:hsl(290 18% 99%)"></span><span class="swk">卡片</span><span class="swv">290 18% 99%</span></div><div class="sw"><span class="chip" style="background:hsl(290 24% 95%)"></span><span class="swk">次表面</span><span class="swv">290 24% 95%</span></div><div class="sw"><span class="chip" style="background:hsl(290 24% 95%)"></span><span class="swk">弱化</span><span class="swv">290 24% 95%</span></div><div class="sw"><span class="chip" style="background:hsl(290 30% 90%)"></span><span class="swk">悬停</span><span class="swv">290 30% 90%</span></div><div class="sw"><span class="chip" style="background:hsl(290 22% 87%)"></span><span class="swk">边框</span><span class="swv">290 22% 87%</span></div><div class="sw"><span class="chip" style="background:hsl(290 30% 12%)"></span><span class="swk">文字</span><span class="swv">290 30% 12%</span></div><div class="sw"><span class="chip" style="background:hsl(290 18% 44%)"></span><span class="swk">次文字</span><span class="swv">290 18% 44%</span></div><div class="sw"><span class="chip" style="background:hsl(288 46% 50%)"></span><span class="swk">主色</span><span class="swv">288 46% 50%</span></div></div>
+    </div>
+        
+    <div class="col">
+      <div class="colhead">Dark 模式</div>
+      <div class="mock" style="--background:288 28% 8%; --foreground:290 30% 96%; --card:288 24% 11%; --card-foreground:290 30% 96%; --popover:288 24% 11%; --popover-foreground:290 30% 96%; --secondary:288 34% 15%; --secondary-foreground:290 30% 96%; --muted:288 34% 15%; --muted-foreground:290 22% 66%; --accent:285 42% 19%; --accent-foreground:290 30% 96%; --border:288 30% 20%; --input:288 30% 20%; --bg-layout:hsl(288 28% 8% / 0.7); --bg-panel:hsl(288 28% 8%); --bg-sidebar:hsl(288 34% 15%); --bg-statusbar:hsl(288 34% 15%); --bg-hover:hsl(285 42% 19%); --bg-active:hsl(285 42% 19% / 0.8); --bg-divider:hsl(288 30% 20%); --border-color:hsl(288 30% 20%); --text-primary:hsl(290 30% 96%); --text-secondary:hsl(290 22% 66%); --text-muted:hsl(290 22% 66% / 0.7); --accent-color:hsl(288 48% 62%);">
+        <aside class="sb">
+          <div class="logo" style="background:var(--accent-color)"></div>
+          <div class="navi active">会话</div>
+          <div class="navi">知识库</div>
+          <div class="navi">设置</div>
+          <div class="sbfoot" style="border-top:1px solid var(--border-color);color:var(--text-muted)">v1.0.0</div>
+        </aside>
+        <main class="ct">
+          <div class="bar" style="background:var(--bg-statusbar);border-bottom:1px solid var(--border-color)">
+            <span style="color:var(--text-primary)">Diting AI</span>
+            <span class="pill" style="background:var(--accent-color);color:#fff">主色</span>
+          </div>
+          <div class="body">
+            <div class="card" style="background:var(--bg-panel);border:1px solid var(--border-color)">
+              <div class="ctitle" style="color:var(--text-primary)">主题预览卡片</div>
+              <div class="csub" style="color:var(--text-secondary)">这是一段正文示例，用于检验对比度与可读性。</div>
+              <div class="crow">
+                <span class="btn" style="background:var(--accent-color);color:#fff">主按钮</span>
+                <span class="btn ghost" style="border:1px solid var(--border-color);color:var(--text-primary)">次按钮</span>
+              </div>
+            </div>
+            <div class="hover" style="background:var(--bg-hover);border:1px solid var(--border-color);color:var(--text-primary)">悬停态 (--accent)</div>
+            <div class="divider" style="background:var(--bg-divider)"></div>
+            <div class="muted" style="color:var(--text-muted)">次要信息文字 (--muted-foreground)</div>
+          </div>
+        </main>
+      </div>
+      <div class="swatches"><div class="sw"><span class="chip" style="background:hsl(288 28% 8%)"></span><span class="swk">背景</span><span class="swv">288 28% 8%</span></div><div class="sw"><span class="chip" style="background:hsl(288 24% 11%)"></span><span class="swk">卡片</span><span class="swv">288 24% 11%</span></div><div class="sw"><span class="chip" style="background:hsl(288 34% 15%)"></span><span class="swk">次表面</span><span class="swv">288 34% 15%</span></div><div class="sw"><span class="chip" style="background:hsl(288 34% 15%)"></span><span class="swk">弱化</span><span class="swv">288 34% 15%</span></div><div class="sw"><span class="chip" style="background:hsl(285 42% 19%)"></span><span class="swk">悬停</span><span class="swv">285 42% 19%</span></div><div class="sw"><span class="chip" style="background:hsl(288 30% 20%)"></span><span class="swk">边框</span><span class="swv">288 30% 20%</span></div><div class="sw"><span class="chip" style="background:hsl(290 30% 96%)"></span><span class="swk">文字</span><span class="swv">290 30% 96%</span></div><div class="sw"><span class="chip" style="background:hsl(290 22% 66%)"></span><span class="swk">次文字</span><span class="swv">290 22% 66%</span></div><div class="sw"><span class="chip" style="background:hsl(288 48% 62%)"></span><span class="swk">主色</span><span class="swv">288 48% 62%</span></div></div>
+    </div>
+      </div>
+    </section>
+    <section class="theme">
+      <div class="thead">
+        <h2><span class="tag">中国传统</span> 赭石 · 檀</h2>
+        <p>主色 赭石/檀；Light 暖沙宣纸，Dark 赭黑(22 18% 8%)。沉稳大地色。</p>
+      </div>
+      <div class="grid">
+        
+    <div class="col">
+      <div class="colhead">Light 模式</div>
+      <div class="mock" style="--background:36 26% 99%; --foreground:26 26% 12%; --card:36 26% 99%; --card-foreground:26 26% 12%; --popover:36 26% 99%; --popover-foreground:26 26% 12%; --secondary:36 30% 94%; --secondary-foreground:26 26% 12%; --muted:36 30% 94%; --muted-foreground:26 16% 42%; --accent:28 36% 89%; --accent-foreground:26 26% 12%; --border:33 26% 86%; --input:33 26% 86%; --bg-layout:hsl(36 30% 94%); --bg-panel:hsl(36 26% 99%); --bg-sidebar:hsl(36 30% 94%); --bg-statusbar:hsl(36 30% 94%); --bg-hover:hsl(28 36% 89%); --bg-active:hsl(28 36% 89% / 0.6); --bg-divider:hsl(33 26% 86%); --border-color:hsl(33 26% 86%); --text-primary:hsl(26 26% 12%); --text-secondary:hsl(26 16% 42%); --text-muted:hsl(26 16% 42% / 0.7); --accent-color:hsl(18 48% 40%);">
+        <aside class="sb">
+          <div class="logo" style="background:var(--accent-color)"></div>
+          <div class="navi active">会话</div>
+          <div class="navi">知识库</div>
+          <div class="navi">设置</div>
+          <div class="sbfoot" style="border-top:1px solid var(--border-color);color:var(--text-muted)">v1.0.0</div>
+        </aside>
+        <main class="ct">
+          <div class="bar" style="background:var(--bg-statusbar);border-bottom:1px solid var(--border-color)">
+            <span style="color:var(--text-primary)">Diting AI</span>
+            <span class="pill" style="background:var(--accent-color);color:#fff">主色</span>
+          </div>
+          <div class="body">
+            <div class="card" style="background:var(--bg-panel);border:1px solid var(--border-color)">
+              <div class="ctitle" style="color:var(--text-primary)">主题预览卡片</div>
+              <div class="csub" style="color:var(--text-secondary)">这是一段正文示例，用于检验对比度与可读性。</div>
+              <div class="crow">
+                <span class="btn" style="background:var(--accent-color);color:#fff">主按钮</span>
+                <span class="btn ghost" style="border:1px solid var(--border-color);color:var(--text-primary)">次按钮</span>
+              </div>
+            </div>
+            <div class="hover" style="background:var(--bg-hover);border:1px solid var(--border-color);color:var(--text-primary)">悬停态 (--accent)</div>
+            <div class="divider" style="background:var(--bg-divider)"></div>
+            <div class="muted" style="color:var(--text-muted)">次要信息文字 (--muted-foreground)</div>
+          </div>
+        </main>
+      </div>
+      <div class="swatches"><div class="sw"><span class="chip" style="background:hsl(36 26% 99%)"></span><span class="swk">背景</span><span class="swv">36 26% 99%</span></div><div class="sw"><span class="chip" style="background:hsl(36 26% 99%)"></span><span class="swk">卡片</span><span class="swv">36 26% 99%</span></div><div class="sw"><span class="chip" style="background:hsl(36 30% 94%)"></span><span class="swk">次表面</span><span class="swv">36 30% 94%</span></div><div class="sw"><span class="chip" style="background:hsl(36 30% 94%)"></span><span class="swk">弱化</span><span class="swv">36 30% 94%</span></div><div class="sw"><span class="chip" style="background:hsl(28 36% 89%)"></span><span class="swk">悬停</span><span class="swv">28 36% 89%</span></div><div class="sw"><span class="chip" style="background:hsl(33 26% 86%)"></span><span class="swk">边框</span><span class="swv">33 26% 86%</span></div><div class="sw"><span class="chip" style="background:hsl(26 26% 12%)"></span><span class="swk">文字</span><span class="swv">26 26% 12%</span></div><div class="sw"><span class="chip" style="background:hsl(26 16% 42%)"></span><span class="swk">次文字</span><span class="swv">26 16% 42%</span></div><div class="sw"><span class="chip" style="background:hsl(18 48% 40%)"></span><span class="swk">主色</span><span class="swv">18 48% 40%</span></div></div>
+    </div>
+        
+    <div class="col">
+      <div class="colhead">Dark 模式</div>
+      <div class="mock" style="--background:22 18% 8%; --foreground:30 26% 94%; --card:22 16% 11%; --card-foreground:30 26% 94%; --popover:22 16% 11%; --popover-foreground:30 26% 94%; --secondary:24 22% 14%; --secondary-foreground:30 26% 94%; --muted:24 22% 14%; --muted-foreground:26 16% 64%; --accent:20 30% 18%; --accent-foreground:30 26% 94%; --border:22 18% 19%; --input:22 18% 19%; --bg-layout:hsl(22 18% 8% / 0.7); --bg-panel:hsl(22 18% 8%); --bg-sidebar:hsl(24 22% 14%); --bg-statusbar:hsl(24 22% 14%); --bg-hover:hsl(20 30% 18%); --bg-active:hsl(20 30% 18% / 0.8); --bg-divider:hsl(22 18% 19%); --border-color:hsl(22 18% 19%); --text-primary:hsl(30 26% 94%); --text-secondary:hsl(26 16% 64%); --text-muted:hsl(26 16% 64% / 0.7); --accent-color:hsl(18 46% 52%);">
+        <aside class="sb">
+          <div class="logo" style="background:var(--accent-color)"></div>
+          <div class="navi active">会话</div>
+          <div class="navi">知识库</div>
+          <div class="navi">设置</div>
+          <div class="sbfoot" style="border-top:1px solid var(--border-color);color:var(--text-muted)">v1.0.0</div>
+        </aside>
+        <main class="ct">
+          <div class="bar" style="background:var(--bg-statusbar);border-bottom:1px solid var(--border-color)">
+            <span style="color:var(--text-primary)">Diting AI</span>
+            <span class="pill" style="background:var(--accent-color);color:#fff">主色</span>
+          </div>
+          <div class="body">
+            <div class="card" style="background:var(--bg-panel);border:1px solid var(--border-color)">
+              <div class="ctitle" style="color:var(--text-primary)">主题预览卡片</div>
+              <div class="csub" style="color:var(--text-secondary)">这是一段正文示例，用于检验对比度与可读性。</div>
+              <div class="crow">
+                <span class="btn" style="background:var(--accent-color);color:#fff">主按钮</span>
+                <span class="btn ghost" style="border:1px solid var(--border-color);color:var(--text-primary)">次按钮</span>
+              </div>
+            </div>
+            <div class="hover" style="background:var(--bg-hover);border:1px solid var(--border-color);color:var(--text-primary)">悬停态 (--accent)</div>
+            <div class="divider" style="background:var(--bg-divider)"></div>
+            <div class="muted" style="color:var(--text-muted)">次要信息文字 (--muted-foreground)</div>
+          </div>
+        </main>
+      </div>
+      <div class="swatches"><div class="sw"><span class="chip" style="background:hsl(22 18% 8%)"></span><span class="swk">背景</span><span class="swv">22 18% 8%</span></div><div class="sw"><span class="chip" style="background:hsl(22 16% 11%)"></span><span class="swk">卡片</span><span class="swv">22 16% 11%</span></div><div class="sw"><span class="chip" style="background:hsl(24 22% 14%)"></span><span class="swk">次表面</span><span class="swv">24 22% 14%</span></div><div class="sw"><span class="chip" style="background:hsl(24 22% 14%)"></span><span class="swk">弱化</span><span class="swv">24 22% 14%</span></div><div class="sw"><span class="chip" style="background:hsl(20 30% 18%)"></span><span class="swk">悬停</span><span class="swv">20 30% 18%</span></div><div class="sw"><span class="chip" style="background:hsl(22 18% 19%)"></span><span class="swk">边框</span><span class="swv">22 18% 19%</span></div><div class="sw"><span class="chip" style="background:hsl(30 26% 94%)"></span><span class="swk">文字</span><span class="swv">30 26% 94%</span></div><div class="sw"><span class="chip" style="background:hsl(26 16% 64%)"></span><span class="swk">次文字</span><span class="swv">26 16% 64%</span></div><div class="sw"><span class="chip" style="background:hsl(18 46% 52%)"></span><span class="swk">主色</span><span class="swv">18 46% 52%</span></div></div>
+    </div>
+      </div>
+    </section>
+</body>
+</html>

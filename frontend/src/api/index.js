@@ -217,6 +217,21 @@ install: 'controller/skillHub/install',
 installToAll: 'controller/skillHub/installToAll',
 },
 
+// 磁盘管理
+storage: {
+  getStats: 'controller/storage/getStats',
+  cleanup: 'controller/storage/cleanup',
+  cleanupTemp: 'controller/storage/cleanupTemp',
+},
+
+// 更新管理
+updater: {
+  // 检查更新
+  checkForUpdater: 'controller/updater/checkForUpdater',
+  // 下载更新（兼容旧接口）
+  downloadApp: 'controller/updater/downloadApp',
+},
+
 // Bridge IM 渠道（飞书/微信/钉钉）
 bridge: {
 // 自动启动已启用的 Bridge
@@ -265,7 +280,7 @@ const specialIpcRoute = {
 }
 
 export {
-  ipcApiRoute, 
+  ipcApiRoute,
   specialIpcRoute
 }
 

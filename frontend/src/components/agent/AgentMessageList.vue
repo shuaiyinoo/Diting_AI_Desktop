@@ -18,20 +18,15 @@
       :class="msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'"
     >
       <!-- 头像 -->
-      <div class="flex size-7 shrink-0 items-center justify-center rounded-full"
-        :class="msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'"
-      >
-        <!-- 用户头像 -->
-        <svg v-if="msg.role === 'user'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="size-4">
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-          <circle cx="12" cy="7" r="4" />
-        </svg>
+        <div v-if="msg.role === 'user'" class="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
+          <!-- 用户头像 -->
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="size-4">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+            <circle cx="12" cy="7" r="4" />
+          </svg>
+        </div>
         <!-- AI 头像 -->
-        <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="size-4">
-          <path d="M12 3L4 7v5c0 5 3.5 9 8 10 4.5-1 8-5 8-10V7l-8-4z" />
-          <path d="M9 12l2 2 4-4" />
-        </svg>
-      </div>
+        <img v-else :src="modelLogo || LOGO_DEFAULT" :alt="modelName || 'Agent'" class="size-7 shrink-0 rounded-full object-cover" />
 
       <!-- 消息主体 -->
       <div class="flex min-w-0 flex-1 flex-col" :class="msg.role === 'user' ? 'items-end' : 'items-start'">
@@ -151,6 +146,8 @@ import MarkdownRender from 'markstream-vue'
 import ProcessBlockGroup from '@/components/agent/ProcessBlockGroup.vue'
 import CitationRail from '@/components/CitationRail.vue'
 import { hasTaskBlocks } from '@/utils/task-progress'
+import { getModelLogo, LOGO_DEFAULT } from '@/utils/model-logo'
+import { inferProviderType } from '@/utils/provider-presets'
 
 const props = defineProps({
   /** 消息列表 */
@@ -163,6 +160,8 @@ const props = defineProps({
   messageStats: { type: Object, default: () => ({}) },
   /** 悬浮指示器当前索引 */
   railHoverIdx: { type: Number, default: -1 },
+  /** 模型 logo URL */
+  modelLogo: { type: String, default: '' },
 })
 
 defineEmits(['citation-click', 'rail-hover', 'jump'])
