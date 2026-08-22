@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #000;
+      }
+
+      .container {
+        position: relative;
+        width: 100%;
+        height: 100%;
+      }
+
+      /* 视频铺满整个窗口 */
+      #loadingVideo {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        z-index: 0;
+      }
+
+      /* 半透明渐变遮罩，让文字更清晰 */
+      .overlay {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        pointer-events: none;
+        background: linear-gradient(
+          135deg,
+          rgba(0, 0, 0, 0.72) 0%,
+          rgba(0, 0, 0, 0.28) 45%,
+          rgba(0, 0, 0, 0.15) 100%
+        );
+      }
+
+      /* ===== 左上角文字区域 ===== */
+      .info {
+        position: absolute;
+        top: 48px;
+        left: 48px;
+        z-index: 2;
+        color: #ffffff;
+        max-width: 520px;
+      }
+
+      .info .title {
+        font-size: 32px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        line-height: 1.2;
+        margin-bottom: 8px;
+        text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+      }
+
+      .info .subtitle {
+        font-size: 16px;
+        font-weight: 500;
+        opacity: 0.9;
+        margin-bottom: 20px;
+        text-shadow: 0 1px 8px rgba(0, 0, 0, 0.5);
+      }
+
+      .info .desc {
+        font-size: 13px;
+        font-weight: 400;
+        line-height: 1.7;
+        opacity: 0.72;
+        margin-bottom: 18px;
+        text-shadow: 0 1px 6px rgba(0, 0, 0, 0.4);
+      }
+
+      .info .tips {
+        display: inline-block;
+        font-size: 12px;
+        font-weight: 500;
+        padding: 6px 14px;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+        letter-spacing: 0.3px;
+      }
+
+      /* ===== 左下角版权文字 ===== */
+      .copyright {
+        position: absolute;
+        bottom: 24px;
+        left: 48px;
+        z-index: 2;
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.5);
+        text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+        letter-spacing: 0.3px;
+      }
+
+      /* 视频加载失败的备用动画 */
+      .fallback {
+        display: none;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 1;
+      }
+      .fallback .spinner {
+        width: 60px;
+        height: 60px;
+        border: 3px solid rgba(255, 255, 255, 0.2);
+        border-top-color: #07C160;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <video
+        id="loadingVideo"
+        autoplay
+        muted
+        playsinline
+      >
+        <source src="../videos/diting_loading.mp4" type="video/mp4" />
+      </video>
+
+      <!-- 渐变遮罩，增强文字可读性 -->
+      <div class="overlay"></div>
+
+      <!-- 左上角：标题 / 副标题 / 描述 / Tips -->
+      <div class="info">
+        <div class="title">Diting Desktop</div>
+        <div class="subtitle">本地优先的 AI 桌面工作台</div>
+        <div class="desc">所有 AI 核心能力——文档解析、向量嵌入、混合检索、LLM 对话、Agent 执行——均在本地运行，数据不出电脑。</div>
+        <div class="tips">简单问题用 Chat · 复杂问题用 Agent</div>
+      </div>
+
+      <!-- 左下角：版权声明 -->
+      <div class="copyright">视频素材版权来自：影视飓风</div>
+
+      <!-- 视频加载失败的备用动画 -->
+      <div class="fallback" id="fallback">
+        <div class="spinner"></div>
+      </div>
+    </div>
+
+    <script>
+      const video = document.getElementById('loadingVideo');
+      const fallback = document.getElementById('fallback');
+
+      // 视频加载失败时显示备用动画
+      video.addEventListener('error', () => {
+        video.style.display = 'none';
+        fallback.style.display = 'block';
+      });
+
+      // 如果视频无法播放，也显示备用动画
+      video.addEventListener('canplay', () => {
+        video.play().catch(() => {
+          video.style.display = 'none';
+          fallback.style.display = 'block';
+        });
+      });
+
+      // 超时检测：如果 3 秒后视频仍未播放，显示备用动画
+      setTimeout(() => {
+        if (video.readyState < 2) {
+          video.style.display = 'none';
+          fallback.style.display = 'block';
+        }
+      }, 3000);
+    </script>
+  </body>
+</html>

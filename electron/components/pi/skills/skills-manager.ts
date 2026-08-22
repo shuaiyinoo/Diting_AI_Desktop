@@ -369,6 +369,11 @@ export function toggleWorkspaceSkill(workspaceSlug: string, skillSlug: string, e
     throw new Error(`目标目录已存在同名 Skill: ${skillSlug}`)
   }
 
+  // 确保目标目录存在，否则 renameSync 会报 ENOENT
+  if (!existsSync(destDir)) {
+    mkdirSync(destDir, { recursive: true })
+  }
+
   renameSync(srcPath, destPath)
   logger.info(`[Pi Agent Skills] Skill ${enabled ? '启用' : '禁用'}: ${workspaceSlug}/${skillSlug}`)
 }

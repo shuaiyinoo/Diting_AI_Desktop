@@ -11,8 +11,8 @@ export default (): Partial<Config> => {
     singleLock: true,
     windowsOption: {
       title: 'Diting',
-      width: 980,
-      height: 850,
+      width: 1000,
+      height: 700,
       minWidth: 400,
       minHeight: 300,
       webPreferences: {
@@ -22,7 +22,7 @@ export default (): Partial<Config> => {
         //preload: path.join(getElectronDir(), 'preload', 'bridge.js'),
       },
       titleBarStyle: 'hidden',
-      // 延迟显示窗口：等页面 ready-to-show 后再 show，避免启动期间出现空白窗口
+      // 延迟显示窗口：由 lifecycle 创建过场动画窗口，主窗口 ready-to-show 后再切换
       show: false,
       // 设置背景色与前端 #loadingPage 一致，避免 ready-to-show 前的闪白
       backgroundColor: '#f0f2f5',

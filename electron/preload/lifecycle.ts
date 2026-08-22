@@ -1,7 +1,9 @@
-import { app as electronApp, screen, ipcMain } from 'electron';
+import { app as electronApp, screen, ipcMain, BrowserWindow } from 'electron';
+import path from 'path';
 import { logger } from 'ee-core/log';
 import { getConfig } from 'ee-core/config';
 import { getMainWindow } from 'ee-core/electron';
+import { getBaseDir } from 'ee-core/ps';
 import { initPiAgent } from '../components/pi';
 import { browserController } from '../components/browser/browser-controller';
 import { startScheduler as startAutomationScheduler } from '../components/planning/automation-scheduler';
@@ -17,6 +19,57 @@ import { getDingTalkMultiBotConfig } from '../service/bridge/dingtalk-config';
 import { autoUpdaterService } from '../service/os/auto_updater';
 import { updaterController } from '../controller/updater';
 import { cleanupUpdater } from '../service/os/auto_updater';
+
+/**
+ * 创建启动过场动画窗口
+ *
+ * 加载 public/html/splash.html，其中使用 diting_loading.mp4 作为背景视频。
+ * 窗口无边框、不可调整大小、不在任务栏显示。
+ */
+function createSplashWindow(): BrowserWindow {
+  // 使用 config.default.ts 中的宽高配置，保持与主窗口一致
+  const { windowsOption } = getConfig();
+  const splashWidth = windowsOption.width || 980;
+  const splashHeight = windowsOption.height || 850;
+
+  // 居中显示在屏幕上
+  const mainScreen = screen.getPrimaryDisplay();
+  const { width: screenWidth, height: screenHeight } = mainScreen.workAreaSize;
+  const x = Math.floor((screenWidth - splashWidth) / 2);
+  const y = Math.floor((screenHeight - splashHeight) / 2);
+
+  const splashWin = new BrowserWindow({
+    width: splashWidth,
+    height: splashHeight,
+    x,
+    y,
+    frame: false,
+    resizable: false,
+    skipTaskbar: true,
+    show: false,
+    backgroundColor: '#000000',
+    webPreferences: {
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  });
+
+  const splashPath = path.join(getBaseDir(), 'public', 'html', 'splash.html');
+  splashWin.loadFile(splashPath).catch((err) => {
+    logger.error('[lifecycle] 过场动画页面加载失败:', err);
+  });
+
+  return splashWin;
+}
+
+/**
+ * 安全关闭过场动画窗口
+ */
+function destroySplashWindow(splashWin: BrowserWindow | null): void {
+  if (splashWin && !splashWin.isDestroyed()) {
+    splashWin.destroy();
+  }
+}
 
 class Lifecycle {
   /**
@@ -135,25 +188,24 @@ class Lifecycle {
     // 绑定主窗口给内置浏览器控制器
     browserController.setOwnerWindow(win);
 
-    // The window is centered and scaled proportionally
-    // Obtain the size information of the main screen, calculate the width and height of the window as a percentage of the screen,
-    // and calculate the coordinates of the upper left corner when the window is centered
-    const mainScreen = screen.getPrimaryDisplay();
-    const { width, height } = mainScreen.workAreaSize;
-    const windowWidth = Math.floor(width * 0.8);
-    const windowHeight = Math.floor(height * 0.7);
-    const x = Math.floor((width - windowWidth) / 2);
-    const y = Math.floor((height - windowHeight) / 2);
-    win.setBounds({ x, y, width: windowWidth, height: windowHeight })
+    // 主窗口尺寸由 config.default.ts 的 windowsOption.width/height 控制
+    // Electron 默认会将窗口居中显示，无需手动计算
 
-    // 延迟显示窗口：config 中 show: false，等页面首帧渲染完成后才 show + focus
-    // windowReady() 在 loadServer() 之前执行，因此 ready-to-show 监听会正确注册
-    // 这样可避免 preload 和页面加载期间用户看到空白窗口
+    // 启动过场动画窗口：config 中 show: false，主窗口不自动显示
+    // windowReady() 在 loadServer() 之前执行，此时先显示过场动画窗口
+    // 等主窗口页面首帧渲染完成（ready-to-show）后，关闭过场窗口并显示主窗口
     const { windowsOption } = getConfig();
     if (windowsOption.show === false) {
+      // 创建并显示过场动画窗口（播放 diting_loading.mp4）
+      const splashWin = createSplashWindow();
+      splashWin.show();
+
       win.once('ready-to-show', () => {
+        // 主窗口内容就绪，关闭过场窗口并显示主窗口
+        destroySplashWindow(splashWin);
         win.show();
         win.focus();
+        logger.info('[lifecycle] 主窗口已显示，过场动画窗口已关闭');
       });
     }
   }
