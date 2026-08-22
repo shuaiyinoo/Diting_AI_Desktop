@@ -4,7 +4,7 @@
       <div>
         <div style="font-weight: 600">{{ config.label }}</div>
         <div style="font-size: 12px; opacity: 0.8">{{ config.description }}</div>
-        <div style="font-size: 12px; opacity: 0.6; margin-top: 2px">点击切换模式</div>
+        <div style="font-size: 12px; opacity: 0.6; margin-top: 2px">{{ t('permissionMode.clickToSwitch') }}</div>
       </div>
     </template>
     <button
@@ -28,22 +28,25 @@
 
 <script setup>
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
+import { useI18n } from 'vue-i18n'
 
 import { computed } from 'vue'
+
+const { t } = useI18n()
 
 // ===== 权限模式配置 =====
 const PERMISSION_MODES = ['bypassPermissions', 'ask']
 
-const PERMISSION_MODE_CONFIG = {
+const PERMISSION_MODE_CONFIG = computed(() => ({
   bypassPermissions: {
-    label: '完全自动',
-    description: '所有工具调用自动允许',
+    label: t('permissionMode.bypassLabel'),
+    description: t('permissionMode.bypassDesc'),
   },
   ask: {
-    label: '需确认',
-    description: '工具调用需用户确认',
+    label: t('permissionMode.askLabel'),
+    description: t('permissionMode.askDesc'),
   },
-}
+}))
 
 // ===== Props / Emits =====
 const props = defineProps({
@@ -62,7 +65,7 @@ const displayMode = computed(() => {
   return PERMISSION_MODES.includes(mode) ? mode : 'bypassPermissions'
 })
 
-const config = computed(() => PERMISSION_MODE_CONFIG[displayMode.value])
+const config = computed(() => PERMISSION_MODE_CONFIG.value[displayMode.value])
 
 // ===== 方法 =====
 function cycleMode() {

@@ -5,7 +5,7 @@
       <div class="flex min-w-0 flex-1 items-center gap-1.5">
         <File class="size-3.5 shrink-0 text-accent-app" />
         <span class="truncate text-[13px] font-medium text-app-primary" :title="file ? file.name : ''">
-          {{ file ? file.name : '文件预览' }}
+          {{ file ? file.name : t('fileModule.preview.title') }}
         </span>
       </div>
       <!-- 右侧按钮组 -->
@@ -21,7 +21,7 @@
               <PanelRightOpen v-else class="size-3.5" />
             </button>
           </TooltipTrigger>
-          <TooltipContent>{{ panel4Collapsed ? '展开信息面板' : '收起信息面板' }}</TooltipContent>
+          <TooltipContent>{{ panel4Collapsed ? t('fileModule.preview.expandPanel') : t('fileModule.preview.collapsePanel') }}</TooltipContent>
         </Tooltip>
       </div>
     </div>
@@ -31,7 +31,7 @@
       <div v-if="!file" class="flex h-full items-center justify-center">
         <div class="flex flex-col items-center gap-2 text-app-muted">
           <FileQuestion class="size-10 opacity-40" />
-          <span class="text-sm">请从左侧选择文件</span>
+          <span class="text-sm">{{ t('fileModule.preview.noFile') }}</span>
         </div>
       </div>
       <FileViewer
@@ -49,9 +49,12 @@
 
 <script setup>
 import { File, FileQuestion, PanelRightClose, PanelRightOpen } from '@lucide/vue';
+import { useI18n } from 'vue-i18n';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import FileViewer from '@/components/file/FileViewer.vue';
 import { isDark } from '@/theme';
+
+const { t } = useI18n();
 
 const props = defineProps({
   file: { type: Object, default: null },

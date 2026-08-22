@@ -15,8 +15,8 @@
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
             </svg>
           </div>
-          <h2 class="mb-2 text-lg font-semibold text-foreground">开始一个新的对话</h2>
-          <p class="m-0 text-sm text-muted-foreground">输入消息，开始与 AI 助手交流</p>
+          <h2 class="mb-2 text-lg font-semibold text-foreground">{{ t('chat.newConversation') }}</h2>
+          <p class="m-0 text-sm text-muted-foreground">{{ t('chat.inputPlaceholder') }}</p>
         </div>
 
         <!-- 消息列表 -->
@@ -39,7 +39,7 @@
               <!-- AI 头像 -->
               <img v-else :src="aiLogo" :alt="selectedModel || 'AI'" class="size-[30px] shrink-0 rounded-lg object-cover" />
               <div class="flex flex-col gap-px" :class="msg.role === 'user' ? 'items-end' : 'items-start'">
-                <span class="text-[13px] font-semibold leading-tight text-secondary-foreground">{{ msg.role === 'user' ? '我' : (selectedModel || 'AI') }}</span>
+                <span class="text-[13px] font-semibold leading-tight text-secondary-foreground">{{ msg.role === 'user' ? t('chat.me') : (selectedModel || 'AI') }}</span>
                 <span v-if="msg.time" class="text-[11px] leading-tight tabular-nums text-muted-foreground">{{ msg.time }}</span>
               </div>
             </div>
@@ -58,7 +58,7 @@
                   <span class="loading-dot inline-block size-1.5 rounded-full bg-primary" />
                   <span class="loading-dot inline-block size-1.5 rounded-full bg-primary" style="animation-delay: 0.15s" />
                   <span class="loading-dot inline-block size-1.5 rounded-full bg-primary" style="animation-delay: 0.3s" />
-                  <span class="ml-1.5 text-[13px] text-secondary-foreground">正在思考...</span>
+                  <span class="ml-1.5 text-[13px] text-secondary-foreground">{{ t('chat.thinking') }}</span>
                 </div>
 
                 <!-- 流式/最终 Markdown 内容 -->
@@ -98,7 +98,7 @@
           <!-- 输入区：复用 Agent 的 RichTextInput 组件，行为完全一致 -->
           <RichTextInput
             v-model="inputText"
-            placeholder="输入消息... (Enter 发送, Shift+Enter 换行)"
+            :placeholder="t('chat.inputPlaceholder')"
             :auto-focus-trigger="currentSessionId"
             :session-id="currentSessionId"
             @submit="sendMessage"
@@ -112,19 +112,19 @@
             <div class="flex min-w-0 items-center gap-2">
               <Select v-model="selectedKbOption">
                 <SelectTrigger class="h-8 min-w-[120px] max-w-[180px]">
-                  <SelectValue placeholder="知识库" />
+                  <SelectValue :placeholder="t('chat.kbPlaceholder')" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="NONE">不使用知识库</SelectItem>
-                  <SelectItem value="ALL">全部知识库</SelectItem>
-                  <SelectLabel>文件夹</SelectLabel>
+                  <SelectItem value="NONE">{{ t('chat.kbNone') }}</SelectItem>
+                  <SelectItem value="ALL">{{ t('chat.kbAll') }}</SelectItem>
+                  <SelectLabel>{{ t('chat.kbFolders') }}</SelectLabel>
                   <SelectItem
                     v-for="f in folderList"
                     :key="f.id"
                     :value="`FOLDER:${f.id}`"
                   >{{ folderDisplayName(f) }}</SelectItem>
-                  <SelectLabel>OCR 识别</SelectLabel>
-                  <SelectItem value="INVOICE">OCR 归档票据</SelectItem>
+                  <SelectLabel>{{ t('chat.kbOcr') }}</SelectLabel>
+                  <SelectItem value="INVOICE">{{ t('chat.kbInvoice') }}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -140,7 +140,7 @@
                     <img :src="aiLogo" :alt="selectedModel" class="size-4 shrink-0 rounded" />
                     <span class="truncate">{{ availableModels.find(m => m.id === selectedModel)?.name || selectedModel }}</span>
                   </div>
-                  <span v-else class="text-muted-foreground">{{ availableModels.length === 0 ? '未启用模型' : '选择模型' }}</span>
+                  <span v-else class="text-muted-foreground">{{ availableModels.length === 0 ? t('chat.noModel') : t('chat.selectModel') }}</span>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem v-for="m in availableModels" :key="m.id" :value="m.id">
@@ -208,6 +208,7 @@
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem, SelectLabel } from '@/components/ui/select'
 
 import { ref, computed, onMounted, nextTick, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ipc } from '@/utils/ipcRenderer'
 import { ipcApiRoute } from '@/api'
 import { useWorkspaceStore } from '@/stores/workspace'
@@ -219,6 +220,8 @@ import CitationRail from '@/components/CitationRail.vue'
 import RichTextInput from '@/components/agent/RichTextInput.vue'
 import { getModelLogo, LOGO_DEFAULT } from '@/utils/model-logo'
 import { inferProviderType } from '@/utils/provider-presets'
+
+const { t } = useI18n()
 
 const props = defineProps({
   /** 会话 ID，由 TabContent 传入 */
@@ -318,7 +321,7 @@ async function loadFolderList() {
 
 /** 文件夹显示名称：只取路径最后一段 */
 function folderDisplayName(f) {
-  return f.path?.split('/').pop() || f.path || f.name || `文件夹 ${f.id}`
+  return f.path?.split('/').pop() || f.path || f.name || `${t('chat.fileFolder')} ${f.id}`
 }
 
 /** 当前 toolMode：选了知识库则为 KB_SEARCH，否则为 CHAT */
@@ -499,7 +502,7 @@ function onCitationClick(cite) {
   const fileId = cite.documentId ?? cite.fileItemId
   if (fileId === null || fileId === undefined) return
   tabStore.openFileTab({
-    name: cite.fileName || '文件',
+    name: cite.fileName || t('chat.fileFolder'),
     fileItemId: fileId,
   })
 }

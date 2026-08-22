@@ -19,7 +19,7 @@
     <PopoverContent class="w-[220px] p-3" side="top">
       <div class="thinking-popover-content">
         <div class="thinking-popover-header">
-          <span class="thinking-popover-label">思考深度</span>
+          <span class="thinking-popover-label">{{ t('thinkingDepth.label') }}</span>
           <span class="thinking-popover-value">{{ THINKING_LABELS[currentLevel] }}</span>
         </div>
         <div class="thinking-popover-slider">
@@ -44,18 +44,21 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
+
+const { t } = useI18n()
 
 const THINKING_LEVELS = ['off', 'low', 'medium', 'high', 'xhigh']
 
-const THINKING_LABELS = {
-  off: '关闭',
-  low: '低',
-  medium: '中',
-  high: '高',
-  xhigh: '极高',
-  max: '最大',
-}
+const THINKING_LABELS = computed(() => ({
+  off: t('thinkingDepth.off'),
+  low: t('thinkingDepth.low'),
+  medium: t('thinkingDepth.medium'),
+  high: t('thinkingDepth.high'),
+  xhigh: t('thinkingDepth.xhigh'),
+  max: t('thinkingDepth.max'),
+}))
 
 const props = defineProps({
   modelValue: {

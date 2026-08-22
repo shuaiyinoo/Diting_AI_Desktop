@@ -10,7 +10,7 @@
         @click="$emit('switch-mode', 'session')"
       >
         <File :size="14" />
-        <span>会话文件</span>
+        <span>{{ t('agentFilePanel.sessionFiles') }}</span>
       </Button>
       <Button
         variant="ghost"
@@ -20,7 +20,7 @@
         @click="$emit('switch-mode', 'project')"
       >
         <Folder :size="14" />
-        <span>项目文件</span>
+        <span>{{ t('agentFilePanel.projectFiles') }}</span>
       </Button>
     </div>
 
@@ -30,7 +30,7 @@
       <div v-if="mode === 'session' && sessionPath" class="flex items-center gap-1.5 border-b border-border/50 px-2.5 py-1.5" :title="sessionPath">
         <Folder :size="13" class="shrink-0 text-muted-foreground" />
         <span class="min-w-0 flex-1 truncate text-[11px] text-muted-foreground" :class="{ 'direction-rtl': sessionPathNeedsEllipsis }">{{ sessionPath }}</span>
-        <Button variant="ghost" size="icon" class="size-4 shrink-0 text-muted-foreground hover:text-foreground" title="在系统文件管理器中打开" @click="$emit('open-folder', 'session')">
+        <Button variant="ghost" size="icon" class="size-4 shrink-0 text-muted-foreground hover:text-foreground" :title="t('agentFilePanel.openInExplorer')" @click="$emit('open-folder', 'session')">
           <FolderOpen class="size-3.5" />
         </Button>
       </div>
@@ -39,7 +39,7 @@
       <div v-if="mode === 'project' && projectPath" class="flex items-center gap-1.5 border-b border-border/50 px-2.5 py-1.5" :title="projectPath">
         <Folder :size="13" class="shrink-0 text-muted-foreground" />
         <span class="min-w-0 flex-1 truncate text-[11px] text-muted-foreground" :class="{ 'direction-rtl': projectPathNeedsEllipsis }">{{ projectPath }}</span>
-        <Button variant="ghost" size="icon" class="size-4 shrink-0 text-muted-foreground hover:text-foreground" title="在系统文件管理器中打开" @click="$emit('open-folder', 'project')">
+        <Button variant="ghost" size="icon" class="size-4 shrink-0 text-muted-foreground hover:text-foreground" :title="t('agentFilePanel.openInExplorer')" @click="$emit('open-folder', 'project')">
           <FolderOpen class="size-3.5" />
         </Button>
       </div>
@@ -56,7 +56,7 @@
             <component :is="expandedAttachedDirs.has(dirPath) ? ChevronDown : ChevronRight" class="size-2.5 text-muted-foreground" />
             <Folder :size="14" class="shrink-0 text-muted-foreground" />
             <span class="min-w-0 flex-1 truncate text-[12px] text-foreground" :title="dirPath">{{ getDirName(dirPath) }}</span>
-            <Button variant="ghost" size="icon" class="size-4 shrink-0 text-muted-foreground hover:text-destructive" title="移除附加文件夹" @click.stop="$emit('detach-folder', dirPath)">
+            <Button variant="ghost" size="icon" class="size-4 shrink-0 text-muted-foreground hover:text-destructive" :title="t('agentFilePanel.removeFolder')" @click.stop="$emit('detach-folder', dirPath)">
               <X class="size-3.5" />
             </Button>
           </div>
@@ -81,7 +81,7 @@
       <!-- 空状态 -->
       <div v-if="flatFileTree.length === 0 && attachedDirs.length === 0" class="flex h-full flex-col items-center justify-center gap-2 text-muted-foreground">
         <Folder :size="32" class="opacity-40" />
-        <p class="text-xs">{{ mode === 'project' ? '暂无项目文件' : '暂无会话文件' }}</p>
+        <p class="text-xs">{{ mode === 'project' ? t('agentFilePanel.noProjectFiles') : t('agentFilePanel.noSessionFiles') }}</p>
       </div>
 
       <!-- 文件树 -->
@@ -110,7 +110,7 @@
         @click="$emit('add-file')"
       >
         <Paperclip class="size-3.5" />
-        <span>{{ mode === 'session' ? '添加文件到会话' : '添加文件' }}</span>
+        <span>{{ mode === 'session' ? t('agentFilePanel.addFileToSession') : t('agentFilePanel.addFile') }}</span>
       </Button>
       <!-- 附加文件夹（仅项目模式） -->
       <Button
@@ -120,7 +120,7 @@
         @click="$emit('attach-folder')"
       >
         <FolderPlus class="size-3.5" />
-        <span>附加文件夹</span>
+        <span>{{ t('agentFilePanel.attachFolder') }}</span>
       </Button>
     </div>
   </div>
@@ -128,8 +128,11 @@
 
 <script setup>
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { Folder, File, ChevronDown, ChevronRight, FolderOpen, FileText, X, Paperclip, FolderPlus } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
+
+const { t } = useI18n()
 
 const props = defineProps({
   /** 面板宽度 */

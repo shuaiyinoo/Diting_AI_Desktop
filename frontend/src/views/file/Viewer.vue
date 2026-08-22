@@ -4,7 +4,7 @@
     <div class="flex-shrink-0 flex items-center justify-between px-5 py-2.5 bg-card border-b border-border shadow-sm z-10">
       <div class="flex items-center gap-2 text-[15px] font-medium text-foreground overflow-hidden text-ellipsis whitespace-nowrap">
         <FileText class="size-4 text-primary" />
-        <span>{{ fileInfo.name || '文件查看' }}</span>
+        <span>{{ fileInfo.name || t('fileModule.viewer.title') }}</span>
       </div>
       <div class="flex items-center gap-4 text-xs text-muted-foreground flex-shrink-0">
         <span v-if="fileInfo.size" class="whitespace-nowrap">{{ formatSize(fileInfo.size) }}</span>
@@ -26,10 +26,13 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { useRoute } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { FileText } from '@lucide/vue';
 import FileViewer from '@/components/file/FileViewer.vue';
 import { ipcApiRoute } from '@/api';
 import { ipc } from '@/utils/ipcRenderer';
+
+const { t } = useI18n();
 
 const route = useRoute();
 

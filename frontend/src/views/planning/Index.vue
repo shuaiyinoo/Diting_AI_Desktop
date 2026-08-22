@@ -1,49 +1,49 @@
 <template>
   <div class="flex flex-col h-full w-full bg-card overflow-hidden">
-    <!-- 页头 -->
-    <header class="flex justify-between items-center px-6 pt-5 pb-3 flex-shrink-0">
-      <div>
-        <h1 class="text-xl font-semibold m-0 text-foreground tracking-tight">任务/日程</h1>
-        <p class="mt-1 m-0 text-[13px] text-muted-foreground">安排待办、日程与定时任务</p>
+    <!-- 顶部：Tab 切换 + 新增按钮 -->
+    <div class="flex shrink-0 items-center justify-between px-6 pt-3">
+      <div class="flex gap-0.5 rounded-lg bg-muted p-0.5">
+        <button
+          v-for="item in tabs"
+          :key="item.id"
+          class="inline-flex h-7 items-center gap-1.5 rounded-md px-3 text-[13px] font-medium transition-all"
+          :class="tab === item.id
+            ? 'bg-primary font-semibold text-primary-foreground shadow-[0_1px_4px_rgba(22,119,255,0.25)] hover:bg-primary/90'
+            : 'bg-transparent text-muted-foreground hover:bg-white/40 hover:text-foreground'"
+          @click="tab = item.id"
+        >
+          <component :is="item.icon" class="size-4" />
+          <span>{{ item.label }}</span>
+        </button>
       </div>
+
       <div class="flex gap-2">
         <button
           v-if="tab === 'todos'"
           class="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-lg bg-primary text-primary-foreground font-medium text-[13px] shadow-[0_2px_6px_hsl(var(--primary)/0.25)] transition-all hover:bg-primary/80"
           @click="requestTodoCreate"
         >
-          <Plus class="size-4" /> 新建 Todo
+          <Plus class="size-4" /> {{ t('planning.newTodo') }}
         </button>
         <button
           v-if="tab === 'calendar'"
           class="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-lg bg-primary text-primary-foreground font-medium text-[13px] shadow-[0_2px_6px_hsl(var(--primary)/0.25)] transition-all hover:bg-primary/80"
           @click="requestCalendarCreate"
         >
-          <Plus class="size-4" /> 新建日程
+          <Plus class="size-4" /> {{ t('planning.newSchedule') }}
         </button>
         <button
           v-if="tab === 'automations' && automations.length > 0"
           class="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-lg bg-primary text-primary-foreground font-medium text-[13px] shadow-[0_2px_6px_hsl(var(--primary)/0.25)] transition-all hover:bg-primary/80"
           @click="createAutomation"
         >
-          <Plus class="size-4" /> 新建定时任务
+          <Plus class="size-4" /> {{ t('planning.newAutomation') }}
         </button>
       </div>
-    </header>
-
-    <!-- Tab 切换 -->
-    <div class="px-6 pb-3 flex-shrink-0">
-      <button
-        v-for="item in tabs"
-        :key="item.id"
-        class="inline-flex items-center px-4 h-8 border-none rounded-lg cursor-pointer text-[13px] text-muted-foreground transition-all hover:text-foreground"
-        :class="tab === item.id ? 'bg-card text-primary font-semibold shadow-[0_1px_4px_hsl(0_0%_0%/0.06)]' : 'bg-transparent'"
-        @click="tab = item.id"
-      >{{ item.label }}</button>
     </div>
 
     <!-- 内容区 -->
-    <main class="flex-1 min-h-0 px-6 pb-4 flex box-border overflow-hidden" :class="tab === 'automations' ? 'overflow-y-auto' : ''">
+    <main class="flex-1 min-h-0 px-6 pt-3 pb-4 flex box-border overflow-hidden" :class="tab === 'automations' ? 'overflow-y-auto' : ''">
       <TodoWorkspace v-if="tab === 'todos'" />
       <CalendarWorkspace v-else-if="tab === 'calendar'" />
       <AutomationsView v-else />
@@ -53,34 +53,34 @@
     <Dialog v-model:open="createTodoOpen">
       <DialogContent class="max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>添加 Todo</DialogTitle>
+          <DialogTitle>{{ t('planning.addTodo') }}</DialogTitle>
         </DialogHeader>
         <form @submit.prevent="confirmCreateTodo" class="flex flex-col gap-3">
           <Textarea
             v-model="quickTitle"
-            placeholder="输入任务内容，Enter 创建"
+            :placeholder="t('planning.todoPlaceholder')"
             :rows="2"
             @keydown.enter="onTodoEnterKey"
           />
           <div class="flex flex-wrap gap-2 items-center">
-            <Input
-              v-model="quickDueAtInput"
-              type="date"
-              placeholder="计划完成时间"
+            <DateTimePicker
+              :model-value="quickDueAtInput"
+              @update:model-value="quickDueAtInput = $event"
+              :placeholder="t('planning.plannedDate')"
               class="w-[200px]"
             />
             <Select v-model="quickPriority">
               <SelectTrigger class="w-[120px]"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="high">高优先级</SelectItem>
-                <SelectItem value="medium">中优先级</SelectItem>
-                <SelectItem value="low">低优先级</SelectItem>
+                <SelectItem value="high">{{ t('planning.priorityHigh') }}</SelectItem>
+                <SelectItem value="medium">{{ t('planning.priorityMedium') }}</SelectItem>
+                <SelectItem value="low">{{ t('planning.priorityLow') }}</SelectItem>
               </SelectContent>
             </Select>
             <Select v-model="quickGroupId">
               <SelectTrigger class="min-w-[140px] flex-1"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="__none__">不分组</SelectItem>
+                <SelectItem value="__none__">{{ t('planning.noGroup') }}</SelectItem>
                 <SelectItem v-for="g in todoGroups" :key="g.id" :value="g.id">{{ g.name }}</SelectItem>
               </SelectContent>
             </Select>
@@ -89,7 +89,7 @@
               class="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-lg bg-primary text-primary-foreground font-medium text-[13px] shadow-[0_2px_6px_hsl(var(--primary)/0.25)] transition-all hover:bg-primary/80 disabled:opacity-50 disabled:cursor-not-allowed ml-auto"
               :disabled="!quickTitle.trim() || isCreatingTodo"
             >
-              {{ isCreatingTodo ? '添加中…' : '添加' }}
+              {{ isCreatingTodo ? t('planning.adding') : t('planning.add') }}
             </button>
           </div>
         </form>
@@ -100,12 +100,14 @@
 
 <script setup>
 import { ref, watch, onMounted, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
-import { Plus } from '@lucide/vue'
+import { Plus, ListTodo, CalendarRange, Timer } from '@lucide/vue'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
+import { DateTimePicker } from '@/components/ui/date-time-picker'
 import { usePlanningStore } from '@/stores/planning'
 import { useWorkspaceStore } from '@/stores/workspace'
 import TodoWorkspace from './components/TodoWorkspace.vue'
@@ -113,14 +115,15 @@ import CalendarWorkspace from './components/CalendarWorkspace.vue'
 import AutomationsView from './components/AutomationsView.vue'
 import dayjs from 'dayjs'
 
+const { t } = useI18n()
 const planning = usePlanningStore()
 const ws = useWorkspaceStore()
 
-const tabs = [
-  { id: 'todos', label: 'Todo' },
-  { id: 'calendar', label: '日程' },
-  { id: 'automations', label: '定时任务' },
-]
+const tabs = computed(() => [
+  { id: 'todos', label: t('planning.tabTodo'), icon: ListTodo },
+  { id: 'calendar', label: t('planning.tabCalendar'), icon: CalendarRange },
+  { id: 'automations', label: t('planning.tabAutomation'), icon: Timer },
+])
 
 const tab = computed({
   get: () => planning.tab,
@@ -138,9 +141,9 @@ const quickGroupId = ref('__none__')
 const quickDueAt = ref(null)
 const isCreatingTodo = ref(false)
 
-// 桥接 dayjs 对象和 HTML date input
+// 桥接 dayjs 对象和 DateTimePicker 的 YYYY-MM-DDTHH:mm 格式
 const quickDueAtInput = computed({
-  get: () => quickDueAt.value ? quickDueAt.value.format('YYYY-MM-DD') : '',
+  get: () => quickDueAt.value ? quickDueAt.value.format('YYYY-MM-DDTHH:mm') : '',
   set: (v) => { quickDueAt.value = v ? dayjs(v) : null },
 })
 
@@ -180,7 +183,7 @@ async function confirmCreateTodo() {
     createTodoOpen.value = false
     quickTitle.value = ''
   } catch {
-    toast.error('创建 Todo 失败')
+    toast.error(t('planning.createTodoFailed'))
   } finally {
     isCreatingTodo.value = false
   }
@@ -201,7 +204,7 @@ function createAutomation() {
     const m = /^定时任务\s*(\d+)$/.exec(a.name.trim())
     if (m) maxN = Math.max(maxN, Number(m[1]))
   }
-  draft.name = `定时任务 ${maxN + 1}`
+  draft.name = `${t('planning.defaultAutomationName')} ${maxN + 1}`
   planning.automationDraft = draft
   planning.automationFormOpen = true
 }

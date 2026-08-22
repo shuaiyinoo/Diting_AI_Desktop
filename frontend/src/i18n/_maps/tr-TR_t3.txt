@@ -1,0 +1,208 @@
+Agent workspace'indeki Skills'leri yönetin. Skills, yeniden kullanılabilir Agent akış şablonlarıdır.
+Tür
+Tür kodu
+Sistem komutu
+Organizasyon
+Bitiş
+Bitiş zamanı
+Düzenlemeden sonra otomatik kaydet
+Dosyayı düzenle
+Modeli düzenle
+DingTalk Botunu düzenle
+Feishu Botunu düzenle
+Web araması
+Sohbet bağlantısı
+Arka plan, kenarlık ve metin için gri tonları
+Arka plan desenleri
+Otomatik başlatma başarısız, elle başlatın
+Otomatik güncelleme
+Otomatik algılama
+Otomatik hafıza
+Özel
+Temel renk tonunu, ana rengi ve köşe yuvarlaklığını özelleştir
+Görsel stili ve Markdown yazı boyutunu özelleştir
+Doğal dil görev açıklaması
+Serbest sohbet modu: sohbet hafızasına dayalı çoklu turlu iletişim, bilgi tabanı aranmaz.
+Taslak
+{url} al
+Kimlik bilgisi al
+Adres al
+Depolama istatistikleri alınamadı
+Depolama istatistikleri alma istisnası: {msg}
+Model listesi alınamadı
+Model listesi alma istisnası: {msg}
+Web sayfası al
+Konum, gündem, toplantı bağlantısı veya diğer bağlamı ekleyin...
+Tablo
+Kapsamlı, tek cihazda genel bilgi
+Bağlantıyı kaldır
+Kaldırma başarısız
+Tetikleme anı
+Tetikleme zamanı
+Planlanan bitiş zamanı
+Hafıza dosyası
+Tanınıyor
+Tanıma alanı
+Tanıma başarısız
+Tanıma sonuçları otomatik olarak yapılandırılmış alanlara eşlenir (tutar, tarih, fiş no, satıcı/alıcı vb.); heterojen veriler birleşik bir görünüme normalize edilir, türler arası arama, istatistik ve çoklu biçim dışa aktarımı destekler.
+Tanıma yeteneği
+Bu Skill SKILL.md dosyasını içermeyebilir
+Bu Skill'in başka kaynak dosyası yok
+Bu referansın ilişkili dosyası yok, görüntülenemiyor
+Bu klasörde dosya yok
+Bu modül sayfası geliştirme aşamasında.
+Bu kaydın ilişkili orijinal dosyası yok
+Anlamsal model yapılandırması
+Açıklama
+Soldan bir klasör seçin
+Soldan bir dosya seçin
+Önce bir sohbet oluşturun veya seçin
+Önce yetkili bir klasör ekleyin
+Önce AI tanıma yapın, sonra arşivleyin
+Önce bir Agent projesi seçin
+Önce bir bilgi tabanı klasörü seçin
+Önce bir proje seçin
+Önce yetkili bir klasör seçin
+Önce bir klasör seçin
+İstek başarısız
+İstisna oluştu
+İstek istisnası: {msg}
+İşlemi yürütme iste
+App ID girin
+App Secret girin
+Client ID girin
+Client Secret girin
+Sohbet adı girin
+Ad girin
+Model takma adı girin
+Model adı girin
+Uzak servis adresi girin, örn.: http://192.168.1.100:9527
+Bir bilgi tabanı klasörü seçin.
+Dosyayı oku
+Dosya okuma başarısız
+Yapay zeka yanıt gövdesi yazı boyutunu ayarla
+Diğer yazılımları çağır (exe, bash ve diğer çalıştırılabilir programlar)
+Araştırma
+Diting AI
+Katkı
+Mali ve vergi geri ödemesi
+Hesap risk kontrolü, ciddi durumlarda hesap cezası veya yasaklamaya yol açabilir
+Alıcı/yolcu
+Kaynak dosyası
+Lisanslar ve sertifikalar
+Kimlik kartı, banka kartı, işletme lisansı, pasaport, sosyal güvenlik kartı, HK/Makao/Tayvan belgeleri, hane halkı kaydı, doğum belgesi, evlilik belgesi, boşanma belgesi, mülkiyet belgesi.
+Plaka tanıma, VIN kodu tanıma, sürücü belgesi, araç ruhsatı, motorlu taşıt satış faturası, araç uygunluk belgesi, ikinci el satış faturası.
+Yoklama temposu otomatik olarak yavaşlatıldı
+Yazılım güncellemesi
+Yazılım çağrısı
+Görev içeriğini girin, oluşturmak için Enter'a basın
+Grup adı girin
+Alan adı veya URL girin (varsayılan HTTPS)
+Komut girin... ({'@'} dosyaya referans, / Skill çağır, # MCP kullan, & sohbete referans, Enter gönder)
+Mesaj girin... (Enter gönder, Shift+Enter yeni satır)
+Mesaj girin; Enter gönder, Shift+Enter yeni satır
+Üst sınıra ulaşınca otomatik devre dışı
+Süreç
+Bir kez çalıştır
+Çalışıyor
+Çalışıyor...
+Çalıştırma geçmişi (son 10)
+Çalıştırma başarısız
+Çalışma zamanı
+Çalışma zamanı ortamı
+Maksimum çalıştırma sayısı
+Çalıştırma sıklığı
+Son 1 ay
+Son 1 hafta
+Son 3 ay
+Henüz grup yok, yukarıdan yeni oluşturun
+Henüz hiç model yapılandırılmadı
+Bu şu sonuca yol açabilir:
+Burada henüz görev yok. Sağ üstten "Yeni Todo"ya tıklayarak ekleyin.
+Uygulama ayrıntıları sayfasına gidin, "Kimlik Bilgileri ve Temel Bilgiler"de Client ID (AppKey) ve Client Secret (AppSecret)'ı bulup yukarıdaki yapılandırma formuna kopyalayın.
+Devam ediyor
+Uzak adres kaydedildi
+Uzak adres temizlendi
+Uzak bağlantı
+Bağlanıyor...
+Bağlantı başarısız
+Bağlantı başarılı
+Bağlantı hatası
+Ardışık başarısız {count}
+Bağlantı testi sonucu
+Öncelik seçin
+Sohbet seçin
+Sohbet modu seçin
+Tedarikçi seçin
+Tedarikçi seçildikten sonra otomatik doldurulur
+Grup seçin
+Workspace seçin
+İçeriği görmek için soldan bir dosya seçin
+Yetkili klasör seçin
+Sağlayıcı türü seçin
+Tarih seçin
+Zaman seçin
+Haftanın gününü seçin
+Model seçin
+Kanal seçin
+Bilgi tabanı klasörü seçin
+Renk şeması seçin, sisteme uyabilir
+Proje seçin
+Proje seçin...
+Sıklık seçin
+Tongyi Qianwen
+İletişim
+Feishu, WeChat, DingTalk gibi IM platformları üzerinden Diting Agent ile sohbet edin. Mesajlar otomatik olarak Agent oturumuna yönlendirilir, yanıtlar IM'ye geri gönderilir.
+Akıllı soru-cevap ve anlamsal arama için büyük dil modelini (LLM) yapılandırın. Aynı anda yalnızca bir model etkinleştirilebilir.
+İzinleri yapılandırın ve yayınlayın
+Uzak adresi yapılandır
+Sohbeti yeniden adlandır
+Sohbet yeniden adlandırma başarısız
+Grup yeniden adlandırma başarısız: ad zaten mevcut olabilir
+Yeniden adlandırma başarısız
+Yeniden adlandırma başarılı
+Yeniden yükle
+Yeniden etkinleştir
+Yeniden çıkar
+Yeniden tanı
+Yeniden tanıma başarısız
+Yeniden tanıma tamamlandı
+Yakınlaştırmayı sıfırla
+Önemli: olay aboneliğini yapılandırmadan önce, Diting'de kimlik bilgilerini kaydetmeli ve Stream bağlantısının başarılı olduğunu onaylamalısınız, aksi halde DingTalk arka ucu "Stream moduna erişim başarısız" uyarısı verir.
+Tutar
+Toplam tutar
+DingTalk
+DingTalk Açık Platformu
+Satıcı
+Hata: {msg}
+Ayna kaynağı
+Ayna kaynağı değiştirildi
+Aralık (dakika)
+Kuyruk {count}
+Ek klasör
+Ek klasör ekleme başarısız
+Hız sınırı veya işlev kısıtlaması
+Önce OCR tanıma tamamlanmalı
+İnceleme gerekiyor
+Etkinleştirmek için model ve proje yapılandırması gerekir
+Sayfa
+Sayfa
+Proje
+Proje ve Agent
+Proje adı güncellendi
+Proje adresi
+Proje silindi
+Proje güncellendi
+Proje talimatları
+Proje dosyası
+Önizleme
+Feishu
+Yönetilen tarayıcı ilk kullanımı
+Doğrulama kodu veya insan-doğrulama
+Yüksek öncelik
+Varsayılan 4096
+💡 Yüklemeden sonra Agent içinden şu şekilde kullanılabilir:
+💡 Aracıyı sohbet içinde oluşturması önerilir — yalnızca sohbet içinde istediğiniz otomasyon görevini tanımlayın.
+📂 {topic} · {count} Skills
+🔥 Popüler Top {count}
+(Değiştirmemek için boş bırakın)

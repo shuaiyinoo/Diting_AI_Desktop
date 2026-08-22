@@ -2,7 +2,7 @@
   <div id="app-cross-python" class="page-container">
     <div class="card-grid">
       <div class="feature-card feature-card--full">
-        <div class="feature-card__title">1. 基础控制</div>
+        <div class="feature-card__title">{{ t('crossPage.basicControl') }}</div>
         <div class="feature-card__body">
           <span>
             <Button @click="create()"> 启动 </Button>
@@ -13,7 +13,7 @@
         </div>
       </div>
       <div class="feature-card feature-card--full">
-        <div class="feature-card__title">2. 发送http请求</div>
+        <div class="feature-card__title">{{ t('crossPage.sendHttp') }}</div>
         <div class="feature-card__body">
           <span>
             <Button @click="request(1)"> 前端发送 </Button>
@@ -32,6 +32,11 @@ import { ipc } from '@/utils/ipcRenderer';
 import axios from 'axios';
 import { ref } from 'vue';
 import { toast } from 'vue-sonner';
+import { useI18n } from 'vue-i18n'
+
+
+const { t } = useI18n()
+
 
 const serverUrl = ref('');
 

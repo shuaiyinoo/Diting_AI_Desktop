@@ -11,17 +11,17 @@
       <Badge :variant="available ? 'default' : 'destructive'" class="gap-1">
         <CheckCircle2 v-if="available" class="size-3.5" />
         <AlertCircle v-else class="size-3.5" />
-        {{ available ? '可用' : '不可用' }}
+        {{ available ? t('runtime.available') : t('runtime.unavailable') }}
       </Badge>
     </div>
     <div class="flex flex-col gap-1.5">
       <div class="flex items-center gap-3 py-1">
-        <span class="w-[72px] shrink-0 text-xs text-muted-foreground">来源</span>
+        <span class="w-[72px] shrink-0 text-xs text-muted-foreground">{{ t('runtime.source') }}</span>
         <Badge variant="secondary" class="text-xs">{{ sourceLabel }}</Badge>
       </div>
       <div class="flex items-center gap-3 py-1">
-        <span class="w-[72px] shrink-0 text-xs text-muted-foreground">路径</span>
-        <span class="min-w-0 break-all font-mono text-xs text-foreground">{{ path || '(不可用)' }}</span>
+        <span class="w-[72px] shrink-0 text-xs text-muted-foreground">{{ t('runtime.path') }}</span>
+        <span class="min-w-0 break-all font-mono text-xs text-foreground">{{ path || t('runtime.unavailable') }}</span>
       </div>
     </div>
   </div>
@@ -29,8 +29,11 @@
 
 <script setup>
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { Code, CheckCircle2, AlertCircle } from '@lucide/vue'
 import { Badge } from '@/components/ui/badge'
+
+const { t } = useI18n()
 
 const props = defineProps({
   label: { type: String, required: true },
@@ -41,5 +44,5 @@ const props = defineProps({
   description: { type: String, default: '' },
 })
 
-const sourceLabel = computed(() => props.source === 'bundled' ? '内嵌' : '宿主机')
+const sourceLabel = computed(() => props.source === 'bundled' ? t('runtime.sourceBundled') : t('runtime.sourceHost'))
 </script>

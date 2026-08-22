@@ -1,0 +1,210 @@
+Nova agenda · {start}–{end}
+Nova etiqueta
+Nova tabela
+Nova versão v{version} disponível
+Não foi possível carregar a imagem
+Não foi possível carregar o arquivo
+Não foi possível determinar o caminho do diretório de memória
+Sem remoto
+Data
+Agenda
+Grupo de agenda
+Gerenciamento de grupos de agenda
+Agenda excluída
+Título da agenda
+Dia da semana
+Sim
+Mostrar mais ({count})
+Extração inteligente, reconhecimento e uso integrados
+Não usar por enquanto
+Sem dados de IA
+Sem servidor MCP
+Sem texto OCR
+Sem Skills
+Sem Skills. Crie um workspace primeiro.
+Sem dados de Tools
+Sem conversas
+Sem arquivos de conversa
+Sem notas de versão
+Sem registros para exportar
+Sem diálogos
+Sem registros arquivados
+Sem pastas autorizadas
+Sem pastas
+Sem etiquetas. Digite um nome para criar.
+Sem dados de modelo
+Sem histórico de versão
+Sem vínculo. Após iniciar o Bot, envie mensagens no Feishu para criar o vínculo automaticamente, ou selecione manualmente o projeto e a conversa para o vínculo abaixo.
+Sem arquivos de memória
+Sem texto reconhecido
+Sem resultado de reconhecimento
+Sem conteúdo de descrição
+Sem projetos
+Sem arquivos de projeto
+Extração de IA ainda não realizada
+Mais informações
+Atualização v{version} baixada
+Atualização v{version} pronta
+Atualizado em
+Atualizar tarefa
+Atualizar tarefa {parts}
+Falha ao atualizar nome da conversa
+Falha ao atualizar
+Atualização bem-sucedida
+Registro de atualizações
+Falha ao atualizar nome do projeto
+Falha ao atualizar cor
+Máximo
+Token de saída máximo
+Há atualização disponível. Clique para ver.
+Há atualização
+Há alterações não salvas
+Alterações não salvas\n\nO arquivo atual tem alterações não salvas; ao trocar, serão perdidas. Deseja continuar?
+Não criado
+Não habilitado
+Modelo não habilitado
+Tarefa sem nome
+Conversa sem nome
+Não arquivado
+Nenhuma Skill correspondente encontrada
+Próximos 7 dias
+Não verificado
+Erro desconhecido
+Projeto desconhecido
+Não reconhecido
+Não selecionado
+Arquivo não selecionado
+Reconhecimento local, os dados não saem do computador
+Fonte
+Extremamente alto
+Localizar {pattern}
+Localizar arquivo
+Visualizar
+Veja o uso de disco por categoria de dados do aplicativo e limpe arquivos temporários e logs para liberar espaço.
+Marcar como concluído
+Vantagens principais
+Preenchido automaticamente conforme o fornecedor, não pode ser editado manualmente
+Framework
+Notificação da área de trabalho
+Falha na verificação
+Verificar atualizações
+Modelo
+Alias do modelo
+Nome do modelo
+Bem-vindo ao Diting
+Baixando v{version}
+Inicializando navegador...
+Carregando arquivo...
+Solicitando QR code ao Feishu...
+Pensando...
+Verificando...
+Gerando resposta...
+Gerando resposta. Alterne mais tarde.
+Salvando automaticamente e iniciando Bot...
+Este servidor MCP não tem ferramentas
+Este Todo foi atualizado em outra janela. Recarregue antes de editar.
+Etapa 1: classificação de documentos → Etapa 2: extração estruturada
+A cada N minutos
+A cada {days} dias
+A cada {hours} horas
+A cada {min} minutos
+Todo {day} {time}
+Ponto fixo semanal
+Todo dia {time}
+Ponto fixo diário
+Reutilização diária (padrão)
+Todo dia {day} do mês às {time}
+Ponto fixo mensal
+Não há dados para limpar
+Nota: copie primeiro [powershell.exe] para o diretório [electron-egg/build/extraResources]
+Falha ao registrar
+Falha no chat em streaming
+Testando...
+Falha no teste
+Exceção no teste: {msg}
+Teste bem-sucedido
+Testar conexão
+Navegador
+Adicionar Todo
+Adicionando...
+Adicionar modelo oficial
+Adicionado com sucesso
+Adicionar pasta autorizada
+Adicionar descrição...
+Adicionar arquivo
+Adicionar arquivo à conversa
+Falha ao adicionar arquivo
+Falha ao adicionar pasta
+Adicionar capacidade de robô e salvar conexão
+Adicionar modelo
+Adicionar o primeiro modelo
+Adicionar endereço remoto
+Adicionar Bot DingTalk
+Adicionar Bot Feishu
+Limpar
+Limpando...
+Falha ao limpar
+Exceção ao limpar: {msg}
+Temperatura (Temperature)
+Clique em "Login via QR code" e use o WeChat para escanear o QR code e conectar. Após conectar, envie mensagens no WeChat para interagir com o Diting Agent. As credenciais são salvas com segurança localmente e a conexão é direta na próxima inicialização.
+Clique no botão abaixo para extração estruturada de IA
+Clique para alternar o modo
+Versão
+Histórico de versão
+Efeitos especiais
+Verificação de ambiente
+Gerando...
+Gerar memória do projeto
+Falha ao gerar memória do projeto
+Para executar comandos Git (status, log, commit etc.), detectado no host
+Para executar scripts JavaScript e instalar pacotes npm (baseado no runtime embutido do Electron)
+Para executar scripts Python e instalar pacotes pip
+Interação com o usuário
+Usuário cancelou a seleção
+Descreva uma tarefa em linguagem natural; o agendador cria automaticamente subconversas em segundo plano na frequência definida.
+Descreva em linguagem natural o que você quer que o Agent faça. Por exemplo:\n• Verifique diariamente o status do CI do projeto e resuma as causas das falhas\n• Obtenha a cada hora o resumo das últimas notícias\n• Verifique pedidos não processados no banco de dados e gere automaticamente um plano de tratamento
+Use o "Scan" do app Feishu para escanear; o backend Feishu criará um aplicativo automaticamente. Após a leitura, as credenciais são salvas e o Bot iniciado automaticamente, sem copiar App ID / Secret manualmente.
+Use o "Scan" do app Feishu e siga as instruções para criar o aplicativo
+Sair
+Falha ao sair
+Entrar
+Falha ao entrar
+Província
+Base de conhecimento
+Modo de pesquisa na base de conhecimento: pesquise evidências na base da pasta selecionada e gere respostas com citações.
+SiliconFlow
+Confirmar
+Deseja realmente excluir "{name}"?
+Deseja realmente excluir o modelo «{name}»? Esta operação não pode ser desfeita.
+Deseja realmente excluir esta conversa? A exclusão é irreversível.
+Deseja realmente excluir a conversa «{name}»?
+Deseja realmente excluir o diálogo «{name}»?
+Deseja realmente excluir a pasta «{name}»? Isso apenas remove a autorização, sem excluir os arquivos reais.
+Deseja realmente excluir a pasta «{name}»? Todos os arquivos e dados vetoriais RAG da pasta serão excluídos junto.
+Deseja realmente excluir o projeto «{name}»? Todas as conversas do projeto serão excluídas.
+Deseja realmente remover a vinculação deste chat?
+Confirmar exclusão
+Confirmar exclusão do Todo
+Confirmar exclusão do grupo
+Confirmar exclusão da tarefa agendada
+Confirmar exclusão da agenda
+Confirmar exclusão do modelo «{name}»? Esta operação não pode ser recuperada.
+Confirmar exclusão deste modelo?
+Gerenciamento de disco
+Tipo de nota
+Detalhes da nota
+Falha ao desabilitar
+Exceção ao desabilitar: {msg}
+Falha ao remover etiqueta
+Remover pasta anexa
+Falha ao remover pasta anexa
+O programa não existe
+Valor do imposto
+Atualizar quando ocioso
+Janela
+Executar agora
+Reiniciar agora
+Nº
+Página {current}/{total}
+Aguardando leitura do QR code...
+Aguardando confirmação do QR code...

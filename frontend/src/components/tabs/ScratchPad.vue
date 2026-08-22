@@ -3,8 +3,8 @@
     <!-- 顶部标题栏 -->
     <div class="flex items-center gap-2 px-4 h-11 flex-shrink-0 border-b border-border">
       <Pencil class="size-4 text-primary" />
-      <span class="text-sm font-semibold text-foreground">草稿</span>
-      <span class="text-[11px] text-muted-foreground ml-auto">临时记录 · 自动保存</span>
+      <span class="text-sm font-semibold text-foreground">{{ t('scratchPad.title') }}</span>
+      <span class="text-[11px] text-muted-foreground ml-auto">{{ t('scratchPad.hint') }}</span>
     </div>
 
     <!-- 编辑区 -->
@@ -12,7 +12,7 @@
       <textarea
         v-model="content"
         class="w-full h-full border-none outline-none resize-none text-sm leading-7 font-inherit text-foreground bg-transparent placeholder:text-muted-foreground [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-thumb]:rounded-sm"
-        placeholder="临时记录、想法、备忘..."
+        :placeholder="t('scratchPad.placeholder')"
         @input="onInput"
       ></textarea>
     </div>
@@ -21,7 +21,10 @@
 
 <script setup>
 import { ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { Pencil } from '@lucide/vue'
+
+const { t } = useI18n()
 
 const STORAGE_KEY = 'diting-scratch-pad'
 

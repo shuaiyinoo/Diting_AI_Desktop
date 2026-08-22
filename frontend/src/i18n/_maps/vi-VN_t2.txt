@@ -1,0 +1,210 @@
+Tạo lịch trình mới · {start}–{end}
+Tạo thẻ mới
+Tạo bảng mới
+Phiên bản mới v{version} đã sẵn sàng
+Không thể tải hình ảnh
+Không thể tải tệp này
+Không thể xác định đường dẫn thư mục ký ức
+Không có máy chủ từ xa
+Ngày
+Lịch trình
+Nhóm lịch trình
+Quản lý nhóm lịch trình
+Đã xóa lịch trình
+Tiêu đề lịch trình
+Ngày trong tuần
+Có
+Hiển thị thêm ({count})
+Trích xuất thông minh, nhận diện và sử dụng tích hợp
+Tạm không sử dụng
+Chưa có dữ liệu AI
+Chưa có máy chủ MCP
+Chưa có văn bản OCR
+Chưa có Skills
+Chưa có Skills, vui lòng tạo không gian làm việc trước
+Chưa có dữ liệu Tools
+Chưa có cuộc hội thoại
+Chưa có tệp hội thoại
+Chưa có ghi chú phát hành
+Chưa có bản ghi để xuất
+Chưa có cuộc trò chuyện
+Chưa có bản ghi lưu trữ
+Chưa có thư mục được ủy quyền
+Chưa có thư mục
+Chưa có thẻ, nhập tên để tạo
+Chưa có dữ liệu mô hình
+Chưa có lịch sử phiên bản
+Chưa có liên kết. Sau khi khởi động bot, gửi tin trong Feishu sẽ tự động tạo liên kết, hoặc chọn dự án và cuộc hội thoại cho liên kết thủ công bên dưới.
+Chưa có tệp ký ức
+Chưa có văn bản nhận diện
+Chưa có kết quả nhận diện
+Chưa có nội dung mô tả
+Chưa có dự án
+Chưa có tệp dự án
+Chưa thực hiện trích xuất AI
+Thêm thông tin
+Đã tải xong bản cập nhật v{version}
+Bản cập nhật v{version} đã sẵn sàng
+Cập nhật vào
+Cập nhật tác vụ
+Cập nhật tác vụ {parts}
+Cập nhật tên cuộc hội thoại thất bại
+Cập nhật thất bại
+Cập nhật thành công
+Nhật ký cập nhật
+Cập nhật tên dự án thất bại
+Cập nhật màu thất bại
+Tối đa
+Số token đầu ra tối đa
+Có bản cập nhật khả dụng, nhấp để xem
+Có bản cập nhật
+Có thay đổi chưa được lưu
+Các thay đổi chưa lưu\n\nTệp hiện tại có các thay đổi chưa được lưu, sẽ mất sau khi chuyển. Tiếp tục?
+Chưa tạo
+Chưa bật
+Mô hình chưa được bật
+Tác vụ chưa đặt tên
+Cuộc hội thoại chưa đặt tên
+Chưa lưu trữ
+Không tìm thấy Skills khớp
+7 ngày tới
+Chưa kiểm tra
+Lỗi không xác định
+Dự án không xác định
+Chưa được nhận diện
+Chưa chọn
+Chưa chọn tệp
+Nhận diện cục bộ, dữ liệu không rời khỏi máy tính
+Nguồn
+Rất cao
+Tìm {pattern}
+Tìm tệp
+Xem
+Xem mức chiếm dụng đĩa của từng loại dữ liệu trong ứng dụng, dọn dẹp tệp tạm và nhật ký để giải phóng dung lượng.
+Đánh dấu hoàn thành
+Lợi thế cốt lõi
+Tự động điền theo nhà cung cấp, không thể sửa thủ công
+Khung công tác
+Thông báo trên màn hình
+Kiểm tra thất bại
+Kiểm tra cập nhật
+Mô hình
+Tên thay thế mô hình
+Tên mô hình
+Chào mừng sử dụng Diting
+Đang tải xuống v{version}
+Đang khởi tạo trình duyệt...
+Đang tải tệp...
+Đang yêu cầu mã QR từ Feishu...
+Đang suy nghĩ...
+Đang kiểm tra...
+Đang tạo câu trả lời...
+Đang tạo câu trả lời, vui lòng chuyển đổi sau
+Đang tự động lưu và khởi động bot...
+Máy chủ MCP này hiện chưa có công cụ
+Todo này đã được cập nhật ở cửa sổ khác, vui lòng tải lại trước khi chỉnh sửa.
+Bước 1: Phân loại tài liệu → Bước 2: Trích xuất có cấu trúc
+Mỗi N phút
+Mỗi {days} ngày
+Mỗi {hours} giờ
+Mỗi {min} phút
+Mỗi {day} {time}
+Cố định hàng tuần
+Mỗi ngày {time}
+Cố định hàng ngày
+Tái sử dụng hàng ngày (mặc định)
+Ngày {day} mỗi tháng lúc {time}
+Cố định hàng tháng
+Không có dữ liệu cần dọn dẹp
+Lưu ý: vui lòng sao chép 【powershell.exe】 vào thư mục 【electron-egg/build/extraResources】 trước
+Đăng ký thất bại
+Trò chuyện dòng thất bại
+Đang kiểm tra...
+Kiểm tra thất bại
+Ngoại lệ khi kiểm tra: {msg}
+Kiểm tra thành công
+Kiểm tra kết nối
+Trình duyệt
+Thêm Todo
+Đang thêm...
+Thêm mô hình chính thức
+Thêm thành công
+Thêm thư mục được ủy quyền
+Thêm mô tả...
+Thêm tệp
+Thêm tệp vào cuộc hội thoại
+Thêm tệp thất bại
+Thêm thư mục thất bại
+Thêm năng lực bot và lưu kết nối
+Thêm mô hình
+Thêm mô hình đầu tiên
+Thêm địa chỉ từ xa
+Thêm bot DingTalk
+Thêm bot Feishu
+Dọn dẹp
+Đang dọn dẹp...
+Dọn dẹp thất bại
+Ngoại lệ khi dọn dẹp: {msg}
+Nhiệt độ (Temperature)
+Nhấp «Đăng nhập quét mã», dùng WeChat quét mã QR để kết nối. Sau khi kết nối, gửi tin trong WeChat để tương tác với Diting Agent. Thông tin xác thực được lưu an toàn cục bộ, lần khởi động sau có thể kết nối trực tiếp.
+Nhấp nút bên dưới để trích xuất cấu trúc AI
+Nhấp để chuyển chế độ
+Phiên bản
+Lịch sử phiên bản
+Hiệu ứng đặc biệt
+Kiểm tra môi trường
+Đang tạo...
+Tạo ký ức dự án
+Tạo ký ức dự án thất bại
+Dùng để thực thi lệnh Git (status, log, commit, v.v.), phát hiện từ máy chủ
+Dùng để thực thi tập lệnh JavaScript và cài đặt gói npm (dựa trên thời gian chạy nhúng của Electron)
+Dùng để thực thi tập lệnh Python và cài đặt gói pip
+Tương tác người dùng
+Người dùng đã hủy chọn
+Mô tả một tác vụ bằng ngôn ngữ tự nhiên, bộ lập lịch sẽ tự động tạo cuộc hội thoại con mới ở nền và thực thi theo khoảng thời gian đã đặt.
+Mô tả bằng ngôn ngữ tự nhiên những gì bạn muốn Agent làm. Ví dụ:\n• Kiểm tra trạng thái CI của dự án mỗi sáng, nếu thất bại thì tổng hợp nguyên nhân\n• Lấy bản tóm tắt tin tức mới nhất mỗi giờ\n• Kiểm tra các đơn hàng chưa xử lý trong cơ sở dữ liệu, tự động tạo phương án xử lý
+Dùng «Quét» trong ứng dụng Feishu để quét mã, hậu trường Feishu sẽ tự động tạo một ứng dụng, sau khi quét xong sẽ tự động lưu thông tin xác thực và khởi động bot, không cần sao chép App ID / Secret thủ công.
+Dùng «Quét» trong ứng dụng Feishu và làm theo hướng dẫn để hoàn tất tạo ứng dụng
+Đăng xuất
+Đăng xuất thất bại
+Đăng nhập
+Đăng nhập thất bại
+Tỉnh
+Cơ sở tri thức
+Chế độ tìm kiếm cơ sở tri thức: tìm bằng chứng trong cơ sở tri thức của thư mục đã chọn và tạo câu trả lời kèm trích dẫn.
+SiliconFlow
+Xác nhận
+Bạn có chắc chắn xóa "{name}"?
+Bạn có chắc chắn xóa mô hình «{name}»? Thao tác này không thể hoàn tác.
+Bạn có chắc chắn xóa cuộc hội thoại này? Sau khi xóa sẽ không thể khôi phục.
+Bạn có chắc chắn xóa cuộc hội thoại «{name}»?
+Bạn có chắc chắn xóa cuộc trò chuyện «{name}»?
+Bạn có chắc chắn xóa thư mục «{name}»? Chỉ xóa quyền ủy nhiệm, không xóa tệp thực tế.
+Bạn có chắc chắn xóa thư mục «{name}»? Tất cả tệp và dữ liệu vector RAG trong thư mục này sẽ bị xóa cùng nhau.
+Bạn có chắc chắn xóa dự án «{name}»? Tất cả cuộc hội thoại trong dự án này sẽ bị xóa cùng nhau.
+Bạn có chắc chắn hủy liên kết cuộc trò chuyện này?
+Xác nhận xóa
+Xác nhận xóa Todo
+Xác nhận xóa nhóm
+Xác nhận xóa tác vụ định kỳ
+Xác nhận xóa lịch trình
+Xác nhận xóa mô hình «{name}»? Thao tác này không thể khôi phục.
+Xác nhận xóa mô hình này?
+Quản lý đĩa
+Loại biên lai
+Chi tiết biên lai
+Tắt thất bại
+Ngoại lệ khi tắt: {msg}
+Xóa thẻ thất bại
+Xóa thư mục đính kèm
+Xóa thư mục đính kèm thất bại
+Chương trình không tồn tại
+Số tiền thuế
+Cập nhật khi rảnh
+Cửa sổ
+Chạy ngay
+Khởi động lại ngay
+Số
+Trang {current}/{total}
+Đang chờ quét mã...
+Đang chờ xác nhận quét mã...

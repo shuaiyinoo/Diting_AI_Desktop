@@ -7,14 +7,15 @@
         <span class="text-[13px] font-medium text-foreground">{{ toolbarTitle }}</span>
         <div class="flex items-center gap-2">
           <span v-if="isStreaming" class="flex items-center gap-1.5 text-xs text-primary">
-            <span class="size-1.5 animate-pulse rounded-full bg-primary" />运行中
+            <span class="size-1.5 animate-pulse rounded-full bg-primary" />{{ t('agent.running') }}
           </span>
-          <Tooltip :title="panel4Collapsed ? '展开文件面板' : '收起文件面板'">
+          <Tooltip :title="panel4Collapsed ? t('agent.expandFilePanel') : t('agent.collapseFilePanel')">
             <button
               class="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
               @click="togglePanel4"
             >
-              <component :is="panel4Collapsed ? 'MenuUnfoldOutlined' : 'MenuFoldOutlined'" />
+              <PanelRightOpen v-if="panel4Collapsed" class="size-4" />
+              <PanelRightClose v-else class="size-4" />
             </button>
           </Tooltip>
         </div>
@@ -104,6 +105,7 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
 import { Tooltip } from '@/components/ui/tooltip'
 import { ipc } from '@/utils/ipcRenderer'
@@ -118,9 +120,12 @@ import AgentAskUserPopup from '@/components/agent/AgentAskUserPopup.vue'
 import AgentMessageList from '@/components/agent/AgentMessageList.vue'
 import AgentFilePanel from '@/components/agent/AgentFilePanel.vue'
 import AgentChatInput from '@/components/agent/AgentChatInput.vue'
+import { PanelRightClose, PanelRightOpen } from '@lucide/vue'
 import { hasTaskBlocks } from '@/utils/task-progress'
 import { getModelLogo, LOGO_DEFAULT } from '@/utils/model-logo'
 import { inferProviderType } from '@/utils/provider-presets'
+
+const { t } = useI18n()
 
 const ws = useWorkspaceStore()
 const browserStore = useBrowserStore()
@@ -217,7 +222,7 @@ const isAtBottom = ref(true)
 let pendingScrollToBottom = false
 
 const inputPlaceholder = computed(() =>
-  '输入指令... (@ 引用文件, / 调用 Skill, # 使用 MCP, & 引用会话, Enter 发送)'
+  t('agent.inputPlaceholder')
 )
 
 // ========== 文件面板 ==========
@@ -388,8 +393,8 @@ async function loadFileTree() {
 
 async function onAddFile() {
   const workspaceId = ws.currentAgentProject?.id
-  if (!workspaceId) { toast.warning('请先选择一个 Agent 项目'); return }
-  if (filePanelMode.value === 'session' && !currentSessionId.value) { toast.warning('当前无活动会话'); return }
+  if (!workspaceId) { toast.warning(t('agent.selectProject')); return }
+  if (filePanelMode.value === 'session' && !currentSessionId.value) { toast.warning(t('agent.noActiveSession')); return }
   try {
     const res = await ipc.invoke(ipcApiRoute.piAgent.fileOperation, {
       action: 'add', workspaceId, sessionId: currentSessionId.value, mode: filePanelMode.value,
@@ -398,19 +403,19 @@ async function onAddFile() {
       const data = res.data || {}
       fileTree.value = data.files || []
       attachedDirs.value = data.attachedDirs || []
-      if (res.message && res.message !== '用户取消选择') toast.success(res.message)
+      if (res.message && res.message !== t('agent.userCancelled')) toast.success(res.message)
     } else {
-      toast.error(res.message || '添加文件失败')
+      toast.error(res.message || t('agent.addFileFailed'))
     }
   } catch (err) {
     console.error('[agent] 添加文件失败:', err)
-    toast.error('添加文件失败')
+    toast.error(t('agent.addFileFailed'))
   }
 }
 
 async function onAttachFolder() {
   const workspaceId = ws.currentAgentProject?.id
-  if (!workspaceId) { toast.warning('请先选择一个 Agent 项目'); return }
+  if (!workspaceId) { toast.warning(t('agent.selectProject')); return }
   try {
     const folderPath = await ipc.invoke(ipcApiRoute.os.selectFolder)
     if (!folderPath) return
@@ -419,13 +424,13 @@ async function onAttachFolder() {
     })
     if (res.code === 0) {
       attachedDirs.value = res.data || []
-      toast.success(`已附加文件夹: ${folderPath.split('/').pop()}`)
+      toast.success(t('agent.folderAttached', { name: folderPath.split('/').pop() }))
     } else {
-      toast.error(res.message || '附加文件夹失败')
+      toast.error(res.message || t('agent.attachFolderFailed'))
     }
   } catch (err) {
     console.error('[agent] 附加文件夹失败:', err)
-    toast.error('附加文件夹失败')
+    toast.error(t('agent.attachFolderFailed'))
   }
 }
 
@@ -440,13 +445,13 @@ async function onDetachFolder(dirPath) {
       attachedDirs.value = res.data || []
       expandedAttachedDirs.value.delete(dirPath)
       expandedAttachedDirs.value = new Set(expandedAttachedDirs.value)
-      toast.success('已移除附加文件夹')
+      toast.success(t('agent.folderDetached'))
     } else {
-      toast.error(res.message || '移除附加文件夹失败')
+      toast.error(res.message || t('agent.detachFolderFailed'))
     }
   } catch (err) {
     console.error('[agent] 移除附加文件夹失败:', err)
-    toast.error('移除附加文件夹失败')
+    toast.error(t('agent.detachFolderFailed'))
   }
 }
 
@@ -532,7 +537,7 @@ async function resolvePermission(allow, alwaysAllow = false) {
     })
   } catch (err) {
     console.error('[agent] 响应权限请求失败:', err)
-    toast.error('响应权限请求失败: ' + (err?.message || String(err)))
+    toast.error(t('agent.respondPermissionFailed') + ': ' + (err?.message || String(err)))
   } finally {
     permissionRequest.value = null
     permissionResponding.value = false
@@ -577,7 +582,7 @@ async function submitAskUser() {
     })
   } catch (err) {
     console.error('[agent] 提交 AskUser 回答失败:', err)
-    toast.error('提交回答失败: ' + (err?.message || String(err)))
+    toast.error(t('agent.submitAnswerFailed') + ': ' + (err?.message || String(err)))
   } finally {
     askUserRequest.value = null
     askUserAnswers.clear()
@@ -595,7 +600,7 @@ function dismissAskUser() {
 function onCitationClick(cite) {
   const fileId = cite.documentId ?? cite.fileItemId
   if (fileId === null || fileId === undefined) return
-  tabStore.openFileTab({ name: cite.fileName || '文件', fileItemId: fileId })
+  tabStore.openFileTab({ name: cite.fileName || t('agent.file'), fileItemId: fileId })
 }
 
 // ========== 发送消息 ==========

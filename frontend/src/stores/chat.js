@@ -15,6 +15,7 @@ import { ref, computed, reactive, watch } from 'vue'
 import { ipc } from '@/utils/ipcRenderer'
 import { ipcApiRoute } from '@/api'
 import { useTabStore } from './tab'
+import i18n from '@/i18n'
 
 export const useChatStore = defineStore('chat', () => {
   // ===== State =====
@@ -192,7 +193,7 @@ export const useChatStore = defineStore('chat', () => {
       })
 
       if (!response.ok || !response.body) {
-        const errText = await response.text().catch(() => '请求失败')
+        const errText = await response.text().catch(() => i18n.global.t('storeMsg.requestFailed'))
         throw new Error(errText || `HTTP ${response.status}`)
       }
 
@@ -225,11 +226,11 @@ export const useChatStore = defineStore('chat', () => {
         assistantMsg.pending = false
         // 用户主动取消，不显示错误
         if (!assistantMsg.content) {
-          assistantMsg.content = '已停止生成'
+          assistantMsg.content = i18n.global.t('storeMsg.stopped')
         }
       } else {
         console.error('[ChatStore] sendMessage 异常:', err)
-        assistantMsg.content = `发送失败: ${err?.message || String(err)}`
+        assistantMsg.content = i18n.global.t('storeMsg.sendFailed', { msg: err?.message || String(err) })
       }
     } finally {
       streamingSessions.value.delete(sessionId)

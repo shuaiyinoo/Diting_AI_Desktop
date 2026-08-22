@@ -2,12 +2,15 @@
 import { ref, computed, watch } from 'vue'
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
 import { Calendar } from '@/components/ui/calendar'
-import { Input } from '@/components/ui/input'
+import { TimePicker } from '@/components/ui/time-picker'
 import { Button } from '@/components/ui/button'
 import { Calendar as CalendarIcon, X } from '@lucide/vue'
 import { CalendarDate } from '@internationalized/date'
 import dayjs from 'dayjs'
 import { cn } from '@/lib/utils'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps({
   /** v-model 值：YYYY-MM-DDTHH:mm 格式字符串，或空字符串 */
@@ -15,7 +18,7 @@ const props = defineProps({
   /** 是否禁用 */
   disabled: { type: Boolean, default: false },
   /** placeholder */
-  placeholder: { type: String, default: '选择日期时间' },
+  placeholder: { type: String, default: '' },
   /** 传入 class */
   class: { type: String, default: null },
 })
@@ -24,20 +27,39 @@ const emits = defineEmits(['update:modelValue', 'change'])
 
 const open = ref(false)
 
-// 从 modelValue 解析出 CalendarDate 和时间字符串
-const selectedDate = ref(null)
+// Calendar 重建 key，每次打开 Popover 时递增以强制重建 Calendar
+// 这样 :default-value 和 :default-placeholder 能反映最新的 modelValue
+const calendarKey = ref(0)
+
+// 今天的 CalendarDate
+const todayCalendarDate = (() => {
+  const now = dayjs()
+  return new CalendarDate(now.year(), now.month() + 1, now.date())
+})()
+
+// Calendar 的默认值和默认 placeholder
+// 不传 modelValue，让 CalendarRoot 在 passive 模式下自管理状态
+// 这样 CalendarRoot 内部的 modelValue ref 不会被外部响应式更新干扰
+const calendarDefaultValue = ref(undefined)
+const calendarDefaultPlaceholder = ref(todayCalendarDate)
+
+// 时间字符串
 const timeStr = ref('09:00')
 
-// 将 YYYY-MM-DDTHH:mm 字符串同步到内部状态
+// 将外部 modelValue 字符串同步到 Calendar 的 default-value 和 default-placeholder
+// 注意：default-value 只在组件初始化时生效，后续通过 calendarKey 重建来刷新
 watch(() => props.modelValue, (val) => {
   if (val) {
     const d = dayjs(val)
     if (d.isValid()) {
-      selectedDate.value = new CalendarDate(d.year(), d.month() + 1, d.date())
+      const cd = new CalendarDate(d.year(), d.month() + 1, d.date())
+      calendarDefaultValue.value = cd
+      calendarDefaultPlaceholder.value = cd
       timeStr.value = d.format('HH:mm')
     }
   } else {
-    selectedDate.value = null
+    calendarDefaultValue.value = undefined
+    calendarDefaultPlaceholder.value = todayCalendarDate
     timeStr.value = '09:00'
   }
 }, { immediate: true })
@@ -50,38 +72,68 @@ const displayText = computed(() => {
   return d.format('YYYY-MM-DD HH:mm')
 })
 
-// 传给 Calendar 的 modelValue：null → undefined（避免 CalendarRoot 内 isEqualDay 报错）
-const calendarValue = computed(() => selectedDate.value ?? undefined)
-
 // 构造日期时间字符串
 function buildDateStr(date, time) {
   return `${date.year}-${String(date.month).padStart(2, '0')}-${String(date.day).padStart(2, '0')}T${time}`
 }
 
+// 缓存最近选中的日期，用于时间修改时构建字符串
+const lastSelectedDate = ref(null)
+
 // 当 Calendar 选择日期时更新
 function onDateSelect(date) {
   if (!date) return
-  // date 是 CalendarDate 对象
   const newDateStr = buildDateStr(date, timeStr.value)
   emits('update:modelValue', newDateStr)
   // 不自动关闭，让用户可以同时调整时间
 }
 
-// 当时间输入变化时更新
-function onTimeInput(e) {
-  timeStr.value = e.target.value
-  if (selectedDate.value) {
-    const newDateStr = buildDateStr(selectedDate.value, timeStr.value)
+// 当时间选择器变化时更新
+function onTimeChange(time) {
+  timeStr.value = time || '09:00'
+  if (lastSelectedDate.value) {
+    const newDateStr = buildDateStr(lastSelectedDate.value, timeStr.value)
+    emits('update:modelValue', newDateStr)
+  } else if (calendarDefaultValue.value) {
+    const newDateStr = buildDateStr(calendarDefaultValue.value, timeStr.value)
     emits('update:modelValue', newDateStr)
   }
 }
 
+// 包装 onDateSelect，同时缓存日期
+function handleDateSelect(date) {
+  if (!date) return
+  lastSelectedDate.value = date
+  onDateSelect(date)
+}
+
 // 清除选择
 function clearValue() {
-  selectedDate.value = null
+  lastSelectedDate.value = null
+  calendarDefaultValue.value = undefined
+  calendarDefaultPlaceholder.value = todayCalendarDate
   timeStr.value = '09:00'
   emits('update:modelValue', '')
 }
+
+// 每次 Popover 打开时，递增 key 以重建 Calendar，反映当前 modelValue
+watch(open, (isOpen) => {
+  if (isOpen) {
+    calendarKey.value++
+    // 重新同步内部状态
+    if (props.modelValue) {
+      const d = dayjs(props.modelValue)
+      if (d.isValid()) {
+        const cd = new CalendarDate(d.year(), d.month() + 1, d.date())
+        lastSelectedDate.value = cd
+        timeStr.value = d.format('HH:mm')
+      }
+    } else {
+      lastSelectedDate.value = null
+      timeStr.value = '09:00'
+    }
+  }
+})
 </script>
 
 <template>
@@ -99,17 +151,25 @@ function clearValue() {
         </Button>
       </PopoverTrigger>
       <PopoverContent class="w-auto p-0" align="start">
+        <!--
+          不传 :model-value（始终 undefined），让 CalendarRoot 在 passive 模式下自管理状态。
+          通过 :default-value 初始化选中值，通过 :default-placeholder 初始化显示月份。
+          这样 CalendarRoot 内部的 modelValue 是独立的 ref，不会因外部响应式更新导致
+          watch(modelValue, ...) 回调中 isEqualDay(placeholder.value, ...) 报错。
+        -->
         <Calendar
-          :model-value="calendarValue"
-          @update:model-value="onDateSelect"
+          :key="calendarKey"
+          :default-value="calendarDefaultValue"
+          :default-placeholder="calendarDefaultPlaceholder"
+          :prevent-deselect="true"
+          @update:model-value="handleDateSelect"
         />
         <div class="flex items-center gap-2 border-t border-border/50 p-3">
-          <span class="text-xs font-medium text-muted-foreground">时间</span>
-          <Input
-            type="time"
+          <span class="text-xs font-medium text-muted-foreground shrink-0">{{ t('dateTimePicker.time') }}</span>
+          <TimePicker
             :model-value="timeStr"
-            @input="onTimeInput"
-            class="h-8 w-32 text-sm"
+            @update:model-value="onTimeChange"
+            class="flex-1"
           />
         </div>
       </PopoverContent>

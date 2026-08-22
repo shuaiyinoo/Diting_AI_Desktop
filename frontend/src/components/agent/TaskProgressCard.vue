@@ -29,10 +29,10 @@
             <path d="M9 11l3 3L22 4" />
             <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
           </svg>
-          <span class="text-[13px] font-semibold text-primary">任务进度</span>
+          <span class="text-[13px] font-semibold text-primary">{{ t('taskProgress.title') }}</span>
           <span class="text-[11px] text-primary opacity-70" style="font-variant-numeric: tabular-nums">{{ completedCount }}/{{ totalCount }}</span>
         </div>
-        <button type="button" class="flex size-[22px] items-center justify-center rounded-[5px] border-none bg-transparent text-muted-foreground transition-all hover:bg-accent hover:text-foreground" @click="expanded = false" title="缩小">
+        <button type="button" class="flex size-[22px] items-center justify-center rounded-[5px] border-none bg-transparent text-muted-foreground transition-all hover:bg-accent hover:text-foreground" @click="expanded = false" :title="t('taskProgress.collapse')">
           <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M6 9l6 6 6-6" />
           </svg>
@@ -90,7 +90,10 @@
 
 <script setup>
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { aggregateTaskItems } from '@/utils/task-progress'
+
+const { t } = useI18n()
 
 const props = defineProps({
   blocks: { type: Array, default: () => [] },

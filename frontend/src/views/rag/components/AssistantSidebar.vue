@@ -2,10 +2,10 @@
   <div class="w-[260px] flex-shrink-0 bg-card border-r border-border flex flex-col h-full">
     <!-- 头部 -->
     <div class="flex items-center justify-between px-3.5 py-3 border-b border-border">
-      <span class="text-sm font-semibold text-foreground">会话列表</span>
+      <span class="text-sm font-semibold text-foreground">{{ t('ragSidebar.sessionList') }}</span>
       <Button size="sm" :disabled="disabled" @click="$emit('create')">
         <Plus class="mr-1 size-3.5" />
-        新会话
+        {{ t('ragSidebar.newSession') }}
       </Button>
     </div>
 
@@ -14,7 +14,7 @@
       <div v-if="loading" class="flex items-center justify-center py-8">
         <Spinner class="size-5 text-muted-foreground" />
       </div>
-      <div v-if="!loading && sessions.length === 0" class="py-8 text-center text-sm text-muted-foreground">暂无会话</div>
+      <div v-if="!loading && sessions.length === 0" class="py-8 text-center text-sm text-muted-foreground">{{ t('ragSidebar.noSessions') }}</div>
       <div
         v-for="session in sessions"
         :key="session.sessionId"
@@ -28,7 +28,7 @@
             :class="activeSessionId === session.sessionId ? 'text-primary font-medium' : 'text-foreground'"
             :title="session.title"
           >
-            {{ session.title || '新会话' }}
+            {{ session.title || t('ragSidebar.newSession') }}
           </div>
           <div class="text-[11px] text-muted-foreground mt-0.5">{{ formatDateTime(session.lastMessageAt) }}</div>
         </div>
@@ -42,12 +42,12 @@
             <PopoverContent class="w-auto p-1" align="end" side-offset="4">
               <button class="flex w-full items-center rounded-sm px-2 py-1.5 text-sm hover:bg-accent" @click="onMenuClick('rename', session); menuOpen[session.sessionId] = false">
                 <Pencil class="mr-2 size-4" />
-                <span>重命名</span>
+                <span>{{ t('ragSidebar.rename') }}</span>
               </button>
               <div class="my-1 h-px bg-border"></div>
               <button class="flex w-full items-center rounded-sm px-2 py-1.5 text-sm text-destructive hover:bg-accent" @click="onMenuClick('delete', session); menuOpen[session.sessionId] = false">
                 <Trash2 class="mr-2 size-4" />
-                <span>删除</span>
+                <span>{{ t('ragSidebar.delete') }}</span>
               </button>
             </PopoverContent>
           </Popover>
@@ -59,17 +59,17 @@
     <Dialog v-model:open="renameVisible">
       <DialogContent class="max-w-[420px]">
         <DialogHeader>
-          <DialogTitle>重命名会话</DialogTitle>
+          <DialogTitle>{{ t('ragSidebar.renameTitle') }}</DialogTitle>
         </DialogHeader>
         <Input
           v-model="renameText"
-          placeholder="请输入会话名称"
+          :placeholder="t('ragSidebar.renamePlaceholder')"
           :maxlength="50"
           @keydown.enter="onRenameConfirm"
         />
         <DialogFooter>
-          <Button variant="outline" @click="onRenameCancel">取消</Button>
-          <Button :disabled="renameLoading" @click="onRenameConfirm">确定</Button>
+          <Button variant="outline" @click="onRenameCancel">{{ t('ragSidebar.cancel') }}</Button>
+          <Button :disabled="renameLoading" @click="onRenameConfirm">{{ t('ragSidebar.confirm') }}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -78,6 +78,7 @@
 
 <script setup>
 import { ref, reactive } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { toast } from 'vue-sonner';
 import { Plus, MoreHorizontal, Pencil, Trash2 } from '@lucide/vue';
 import { Button } from '@/components/ui/button';
@@ -105,6 +106,8 @@ defineProps({
   },
 });
 
+const { t } = useI18n();
+
 const emit = defineEmits(['create', 'select', 'rename', 'delete']);
 
 const renameVisible = ref(false);
@@ -116,7 +119,7 @@ const menuOpen = reactive({});
 function onMenuClick(key, session) {
   if (key === 'rename') {
     renameTarget.value = session;
-    renameText.value = session.title || '新会话';
+    renameText.value = session.title || t('ragSidebar.newSession');
     renameVisible.value = true;
   } else if (key === 'delete') {
     onDelete(session);
@@ -127,7 +130,7 @@ function onRenameConfirm() {
   if (!renameTarget.value) return;
   const title = renameText.value.trim();
   if (!title) {
-    toast.warning('会话名称不能为空');
+    toast.warning(t('ragSidebar.nameEmpty'));
     return;
   }
   renameLoading.value = true;
@@ -155,7 +158,7 @@ function formatDateTime(time) {
   const isToday = d.toDateString() === now.toDateString();
   const pad = (n) => String(n).padStart(2, '0');
   if (isToday) {
-    return `今天 ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    return `${t('ragSidebar.today')} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
   }
   return `${d.getMonth() + 1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }

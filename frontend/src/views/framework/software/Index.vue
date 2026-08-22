@@ -5,13 +5,13 @@
         <div class="feature-card__title">
           1. 调用其它软件 (exe、bash等可执行程序)
           <div class="feature-card__subtitle">
-            注: 请先将【powershell.exe】复制到【electron-egg/build/extraResources】目录中
+            {{ t('softwarePage.note') }}
           </div>
         </div>
         <div class="feature-card__body">
           <span>
             {{ soft }}
-            <Button @click="openSoft">执行</Button>
+            <Button @click="openSoft">{{ t('softwarePage.execute') }}</Button>
           </span>
         </div>
       </div>
@@ -25,13 +25,16 @@ import { ipcApiRoute } from '@/api';
 import { ipc } from '@/utils/ipcRenderer';
 import { ref } from 'vue';
 import { toast } from 'vue-sonner';
+import { useI18n } from 'vue-i18n'
 
+
+const { t } = useI18n()
 const soft = ref('powershell.exe');
 
 function openSoft() {
   ipc.invoke(ipcApiRoute.framework.openSoftware, {softName: soft.value}).then(result => {
     if (!result) {
-      toast.error('程序不存在');
+      toast.error(t('softwarePage.notFound'));
     }
   })
 }

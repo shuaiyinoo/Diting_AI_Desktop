@@ -3,7 +3,7 @@
     <!-- 加载中 -->
     <div v-if="loading" class="flex items-center justify-center py-8">
       <Spinner class="size-5 text-muted-foreground" />
-      <span class="ml-2 text-sm text-muted-foreground">加载中…</span>
+      <span class="ml-2 text-sm text-muted-foreground">{{ t('bridge.wechat.loading') }}</span>
     </div>
 
     <template v-else>
@@ -15,7 +15,7 @@
               <Bot class="size-4 text-green-500" />
             </div>
             <div>
-              <div class="text-sm font-semibold text-foreground">微信</div>
+              <div class="text-sm font-semibold text-foreground">{{ t('bridge.wechat.title') }}</div>
               <div class="mt-0.5 flex items-center gap-1.5">
                 <span
                   class="inline-flex h-1.5 w-1.5 rounded-full"
@@ -38,7 +38,7 @@
                 @click="handleStop"
               >
                 <PowerOff class="mr-1 size-3" />
-                停止
+                {{ t('bridge.wechat.stop') }}
               </Button>
               <Button
                 variant="ghost"
@@ -47,7 +47,7 @@
                 @click="handleLogout"
               >
                 <LogOut class="mr-1 size-3" />
-                登出
+                {{ t('bridge.wechat.logout') }}
               </Button>
             </template>
 
@@ -61,7 +61,7 @@
                 @click="handleStart"
               >
                 <Power class="mr-1 size-3" />
-                启动
+                {{ t('bridge.wechat.start') }}
               </Button>
               <Button
                 variant="ghost"
@@ -70,7 +70,7 @@
                 @click="handleLogout"
               >
                 <LogOut class="mr-1 size-3" />
-                登出
+                {{ t('bridge.wechat.logout') }}
               </Button>
             </template>
 
@@ -83,7 +83,7 @@
                 @click="handleLogin"
               >
                 <QrCode class="mr-1 size-3" />
-                扫码登录
+                {{ t('bridge.wechat.scanLogin') }}
               </Button>
             </template>
           </div>
@@ -96,7 +96,7 @@
 
         <!-- 连接成功提示 -->
         <div v-if="isConnected" class="mt-3 rounded-md bg-green-500/10 px-3 py-2 text-[11px] text-green-600">
-          微信已连接，消息将自动接收。
+          {{ t('bridge.wechat.connected') }}
         </div>
       </div>
 
@@ -104,17 +104,17 @@
       <div v-if="showQRCode" class="rounded-lg border border-border bg-card p-4 shadow-sm">
         <div class="mb-2 flex items-center gap-1.5">
           <QrCode class="size-3.5 text-muted-foreground" />
-          <span class="text-xs font-semibold text-foreground">扫码登录</span>
+          <span class="text-xs font-semibold text-foreground">{{ t('bridge.wechat.scanTitle') }}</span>
         </div>
         <div class="flex flex-col items-center gap-2 py-4">
           <div class="rounded-xl border border-border bg-white p-3">
-            <img :src="bridgeState.qrCodeData" alt="微信登录二维码" class="size-48" />
+            <img :src="bridgeState.qrCodeData" :alt="t('bridge.wechat.scanTitle')" class="size-48" />
           </div>
           <p class="text-[11px] text-muted-foreground">
             <span v-if="bridgeState.status === 'scanned'" class="font-medium text-blue-500">
-              已扫码，请在手机上确认登录
+              {{ t('bridge.wechat.scannedTip') }}
             </span>
-            <span v-else>打开微信，扫描二维码登录</span>
+            <span v-else>{{ t('bridge.wechat.scanTip') }}</span>
           </p>
           <Button
             variant="ghost"
@@ -122,7 +122,7 @@
             class="h-7 text-[11px]"
             @click="handleLogin"
           >
-            刷新二维码
+            {{ t('bridge.wechat.refreshQr') }}
           </Button>
         </div>
       </div>
@@ -131,12 +131,10 @@
       <div class="rounded-lg border border-border bg-muted/30 p-3.5">
         <div class="mb-1.5 flex items-center gap-1.5">
           <Info class="size-3.5 text-muted-foreground" />
-          <span class="text-xs font-semibold text-foreground">使用说明</span>
+          <span class="text-xs font-semibold text-foreground">{{ t('bridge.wechat.helpTitle') }}</span>
         </div>
         <p class="text-[11px] leading-relaxed text-muted-foreground">
-          点击「扫码登录」，使用微信扫描二维码即可连接。
-          连接后，在微信中发送消息即可与 Diting Agent 交互。
-          凭证会安全保存在本地，下次启动可直接连接。
+          {{ t('bridge.wechat.helpText') }}
         </p>
       </div>
     </template>
@@ -145,6 +143,9 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 import { toast } from 'vue-sonner'
 import { Bot, Info, Power, PowerOff, LogOut, QrCode } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
@@ -189,12 +190,12 @@ const isAnimating = computed(() => {
 
 const statusText = computed(() => {
   const map = {
-    disconnected: '未连接',
-    waiting_scan: '等待扫码...',
-    scanned: '已扫码，确认中...',
-    connecting: '连接中...',
-    connected: '已连接',
-    error: '连接错误',
+    disconnected: t('bridge.wechat.status.disconnected'),
+    waiting_scan: t('bridge.wechat.status.waitingScan'),
+    scanned: t('bridge.wechat.status.scanned'),
+    connecting: t('bridge.wechat.status.connecting'),
+    connected: t('bridge.wechat.status.connected'),
+    error: t('bridge.wechat.status.error'),
   }
   return map[bridgeState.value.status] || bridgeState.value.status
 })
@@ -214,7 +215,7 @@ async function loadConfig() {
       bridgeState.value = statusRes.data
     }
   } catch (err) {
-    toast.error('加载微信配置失败: ' + (err?.message || err))
+    toast.error(t('bridge.wechat.messages.loadFailed') + ': ' + (err?.message || err))
   } finally {
     loading.value = false
   }
@@ -225,11 +226,11 @@ async function handleLogin() {
   try {
     const res = await ipc.invoke(ipcApiRoute.bridge.wechatStartLogin)
     if (res.code !== 0) {
-      toast.error(res.message || '扫码登录失败')
+      toast.error(res.message || t('bridge.wechat.messages.scanFailed'))
     }
     // 状态会通过事件推送
   } catch (err) {
-    toast.error('登录失败: ' + (err?.message || err))
+    toast.error(t('bridge.wechat.messages.loginFailed') + ': ' + (err?.message || err))
   }
 }
 
@@ -238,12 +239,12 @@ async function handleStart() {
   try {
     const res = await ipc.invoke(ipcApiRoute.bridge.wechatStart)
     if (res.code !== 0) {
-      toast.error(res.message || '启动失败')
+      toast.error(res.message || t('bridge.wechat.messages.startFailed'))
       return
     }
-    toast.success('微信 Bridge 已启动')
+    toast.success(t('bridge.wechat.messages.started'))
   } catch (err) {
-    toast.error('启动失败: ' + (err?.message || err))
+    toast.error(t('bridge.wechat.messages.startFailed') + ': ' + (err?.message || err))
   } finally {
     toggling.value = false
   }
@@ -253,9 +254,9 @@ async function handleStop() {
   toggling.value = true
   try {
     await ipc.invoke(ipcApiRoute.bridge.wechatStop)
-    toast.info('微信 Bridge 已停止')
+    toast.info(t('bridge.wechat.messages.stopped'))
   } catch (err) {
-    toast.error('停止失败: ' + (err?.message || err))
+    toast.error(t('bridge.wechat.messages.stopFailed') + ': ' + (err?.message || err))
   } finally {
     toggling.value = false
   }
@@ -265,9 +266,9 @@ async function handleLogout() {
   try {
     await ipc.invoke(ipcApiRoute.bridge.wechatLogout)
     hasCredentials.value = false
-    toast.info('已退出微信登录')
+    toast.info(t('bridge.wechat.messages.loggedOut'))
   } catch (err) {
-    toast.error('登出失败: ' + (err?.message || err))
+    toast.error(t('bridge.wechat.messages.logoutFailed') + ': ' + (err?.message || err))
   }
 }
 

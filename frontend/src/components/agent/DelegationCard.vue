@@ -9,7 +9,7 @@
           <Loader2 v-if="runningCount > 0" class="size-3.5 shrink-0 animate-spin text-green-500" />
           <CheckCircle2 v-else class="size-3.5 shrink-0 text-green-500" />
           <span class="truncate">
-            {{ runningCount > 0 ? `${runningCount} 个子 Agent 运行中` : '全部完成' }}
+            {{ runningCount > 0 ? t('delegation.running', { count: runningCount }) : t('delegation.allDone') }}
           </span>
         </span>
         <ChevronDown class="size-4 shrink-0 text-muted-foreground" />
@@ -21,10 +21,10 @@
         <div class="flex shrink-0 items-center justify-between border-b border-border/50 bg-green-500/[0.08] px-3 py-2">
           <div class="flex items-center gap-1.5">
             <Cpu class="size-4 text-green-500" />
-            <span class="text-[13px] font-semibold text-green-500">协作子 Agent</span>
+            <span class="text-[13px] font-semibold text-green-500">{{ t('delegation.title') }}</span>
             <span class="rounded-lg bg-green-500/[0.08] px-1.5 text-[11px] font-semibold text-green-500">{{ completedCount }}/{{ totalCount }}</span>
           </div>
-          <Button variant="ghost" size="icon" class="h-5 w-5 cursor-pointer text-muted-foreground hover:text-foreground" @click="expanded = false" title="缩小">
+          <Button variant="ghost" size="icon" class="h-5 w-5 cursor-pointer text-muted-foreground hover:text-foreground" @click="expanded = false" :title="t('delegation.collapse')">
             <ChevronUp class="size-4" />
           </Button>
         </div>
@@ -63,7 +63,7 @@
             <div class="min-w-0 flex-1">
               <div class="flex items-center gap-1.5">
                 <span class="truncate text-xs font-medium text-foreground">{{ item.title }}</span>
-                <span v-if="item.role && item.role !== 'custom'" class="shrink-0 rounded bg-green-500/[0.06] px-1.5 text-[10px] text-green-500">{{ roleLabels[item.role] || item.role }}</span>
+                <span v-if="item.role && item.role !== 'custom'" class="shrink-0 rounded bg-green-500/[0.06] px-1.5 text-[10px] text-green-500">{{ roleLabels.value[item.role] || item.role }}</span>
               </div>
               <div v-if="item.status === 'completed' && item.resultSummary" class="mt-0.5 text-[11px] leading-relaxed text-muted-foreground break-all">
                 {{ item.resultSummary.length > 200 ? item.resultSummary.slice(0, 200) + '...' : item.resultSummary }}
@@ -72,7 +72,7 @@
                 {{ item.error }}
               </div>
               <div v-else-if="item.status === 'running'" class="mt-0.5 text-[11px] text-muted-foreground">
-                处理中...
+                {{ t('delegation.processing') }}
               </div>
             </div>
           </div>
@@ -84,8 +84,11 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { Button } from '@/components/ui/button'
 import { ChevronDown, ChevronUp, Loader2, CheckCircle2, XCircle, Ban, Circle, Cpu } from '@lucide/vue'
+
+const { t } = useI18n()
 
 const props = defineProps({
   delegations: {
@@ -96,13 +99,13 @@ const props = defineProps({
 
 const expanded = ref(true)
 
-const roleLabels = {
-  explore: '探索',
-  research: '调研',
-  implement: '实现',
-  review: '审查',
-  custom: '自定义',
-}
+const roleLabels = computed(() => ({
+  explore: t('delegation.roleExplore'),
+  research: t('delegation.roleResearch'),
+  implement: t('delegation.roleImplement'),
+  review: t('delegation.roleReview'),
+  custom: t('delegation.roleCustom'),
+}))
 
 const totalCount = computed(() => props.delegations.length)
 const completedCount = computed(() => props.delegations.filter((d) => d.status === 'completed' || d.status === 'failed' || d.status === 'cancelled').length)

@@ -22,7 +22,7 @@
           </span>
         </TooltipTrigger>
         <TooltipContent side="top" align="start">
-          {{ updaterStore.hasUpdate ? '有可用更新，点击查看' : '关于/更新' }}
+          {{ updaterStore.hasUpdate ? t('statusBar.hasUpdate') : t('statusBar.about') }}
         </TooltipContent>
       </Tooltip>
 
@@ -58,7 +58,7 @@
             @click="openExternal('https://github.com/shuaiyinoo/Diting_AI_Desktop')"
           >
             <Star class="size-3.5" />
-            <span class="whitespace-nowrap leading-none">贡献</span>
+            <span class="whitespace-nowrap leading-none">{{ t('statusBar.contribute') }}</span>
           </span>
         </TooltipTrigger>
         <TooltipContent side="top">GitHub</TooltipContent>
@@ -75,10 +75,10 @@
             @click="openExternal('https://ditingrag.com/cn/guide/introduction')"
           >
             <Book class="size-3.5" />
-            <span class="whitespace-nowrap leading-none">文档</span>
+            <span class="whitespace-nowrap leading-none">{{ t('statusBar.docs') }}</span>
           </span>
         </TooltipTrigger>
-        <TooltipContent side="top">文档</TooltipContent>
+        <TooltipContent side="top">{{ t('statusBar.docs') }}</TooltipContent>
       </Tooltip>
 
       <span class="mx-0.5 h-3 w-px shrink-0 bg-border" />
@@ -93,11 +93,11 @@
           >
             <Moon v-if="!isDark" class="size-3.5" />
             <Sun v-else class="size-3.5" />
-            <span class="whitespace-nowrap leading-none">{{ isDark ? '白天' : '黑夜' }}</span>
+            <span class="whitespace-nowrap leading-none">{{ isDark ? t('statusBar.lightMode') : t('statusBar.darkMode') }}</span>
           </span>
         </TooltipTrigger>
         <TooltipContent side="top">
-          {{ isDark ? '切换到白天模式' : '切换到黑夜模式' }}
+          {{ isDark ? t('statusBar.switchToLight') : t('statusBar.switchToDark') }}
         </TooltipContent>
       </Tooltip>
 
@@ -113,11 +113,11 @@
             @click="toggleBrowser"
           >
             <Globe class="size-3.5" />
-            <span class="whitespace-nowrap leading-none">浏览器</span>
+            <span class="whitespace-nowrap leading-none">{{ t('statusBar.browser') }}</span>
           </span>
         </TooltipTrigger>
         <TooltipContent side="top">
-          {{ browserStore.panelOpen ? '关闭内置浏览器' : '打开内置浏览器' }}
+          {{ browserStore.panelOpen ? t('statusBar.closeBrowser') : t('statusBar.openBrowser') }}
         </TooltipContent>
       </Tooltip>
 
@@ -132,10 +132,10 @@
             @click="goSettings"
           >
             <Settings class="size-3.5" />
-            <span class="whitespace-nowrap leading-none">设置</span>
+            <span class="whitespace-nowrap leading-none">{{ t('statusBar.settings') }}</span>
           </span>
         </TooltipTrigger>
-        <TooltipContent side="top">设置</TooltipContent>
+        <TooltipContent side="top">{{ t('statusBar.settings') }}</TooltipContent>
       </Tooltip>
     </div>
 
@@ -143,16 +143,16 @@
     <Dialog v-model:open="remoteModalVisible">
       <DialogContent class="max-w-[420px]">
         <DialogHeader>
-          <DialogTitle>配置远程地址</DialogTitle>
+          <DialogTitle>{{ t('statusBar.configRemote') }}</DialogTitle>
         </DialogHeader>
         <Input
           :model-value="remoteInput"
           @update:model-value="remoteInput = $event"
-          placeholder="请输入远程服务地址，如 http://192.168.1.100:9527"
+          :placeholder="t('statusBar.remotePlaceholder')"
         />
         <DialogFooter>
-          <Button variant="outline" @click="remoteModalVisible = false">取消</Button>
-          <Button @click="onSaveRemote">保存</Button>
+          <Button variant="outline" @click="remoteModalVisible = false">{{ t('common.cancel') }}</Button>
+          <Button @click="onSaveRemote">{{ t('common.save') }}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -162,6 +162,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { toast } from 'vue-sonner';
 import {
   RefreshCw, Cloud, Star, Book, Moon, Sun, Globe, Settings,
@@ -178,6 +179,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
 const router = useRouter();
+const { t } = useI18n();
 const tabStore = useTabStore();
 const browserStore = useBrowserStore();
 const updaterStore = useUpdaterStore();
@@ -222,7 +224,7 @@ function onSaveRemote() {
     localStorage.removeItem('remote-address');
   }
   remoteModalVisible.value = false;
-  toast.success('远程地址已保存');
+  toast.success(t('statusBar.remoteSaved'));
 }
 
 function openExternal(url) {

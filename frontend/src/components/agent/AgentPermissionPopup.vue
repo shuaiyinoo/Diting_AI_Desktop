@@ -48,14 +48,14 @@
 
       <!-- 描述区 -->
       <div class="flex-1 min-h-0 overflow-y-auto px-5 py-3.5">
-        <pre class="whitespace-pre-wrap break-words font-mono text-[13px] leading-relaxed text-foreground" style="font-family: var(--font-mono, 'SF Mono', Menlo, Monaco, monospace)">{{ request.description || '请求执行操作' }}</pre>
+        <pre class="whitespace-pre-wrap break-words font-mono text-[13px] leading-relaxed text-foreground" style="font-family: var(--font-mono, 'SF Mono', Menlo, Monaco, monospace)">{{ request.description || t('agentPopup.permissionRequest') }}</pre>
       </div>
 
       <!-- 底部操作区 -->
       <div class="flex shrink-0 justify-end gap-2 border-t border-border px-5 py-3.5">
-        <Button size="small" :disabled="responding" @click="$emit('resolve', false)">拒绝</Button>
-        <Button v-if="request.allowAlways" size="small" variant="outline" :disabled="responding" @click="$emit('resolve', true, true)">总是允许</Button>
-        <Button size="small" :disabled="responding" :loading="responding" @click="$emit('resolve', true)">允许</Button>
+        <Button size="small" :disabled="responding" @click="$emit('resolve', false)">{{ t('agentPopup.reject') }}</Button>
+        <Button v-if="request.allowAlways" size="small" variant="outline" :disabled="responding" @click="$emit('resolve', true, true)">{{ t('agentPopup.allowAlways') }}</Button>
+        <Button size="small" :disabled="responding" :loading="responding" @click="$emit('resolve', true)">{{ t('agentPopup.allow') }}</Button>
       </div>
     </div>
   </Transition>
@@ -63,7 +63,10 @@
 
 <script setup>
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { Button } from '@/components/ui/button'
+
+const { t } = useI18n()
 
 const props = defineProps({
   /** 权限请求对象 */
@@ -104,9 +107,9 @@ function formatToolName(toolName) {
 /** 危险等级标签 */
 function dangerLevelLabel(level) {
   switch (level) {
-    case 'safe': return '安全'
-    case 'dangerous': return '危险'
-    default: return '需确认'
+    case 'safe': return t('agentPopup.dangerSafe')
+    case 'dangerous': return t('agentPopup.dangerDangerous')
+    default: return t('agentPopup.dangerDefault')
   }
 }
 </script>

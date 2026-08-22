@@ -3,7 +3,7 @@
     <!-- ========== 设置菜单 ========== -->
     <div class="flex flex-col overflow-hidden bg-background" :style="{ width: panel2Width + 'px', flexShrink: 0 }">
       <div class="flex h-10 shrink-0 items-center gap-1.5 border-b border-border px-2">
-        <span class="text-[13px] font-medium text-foreground">设置</span>
+        <span class="text-[13px] font-medium text-foreground">{{ t('settings.title') }}</span>
       </div>
       <div class="min-h-0 flex-1 overflow-y-auto px-1.5 py-1">
         <button
@@ -46,6 +46,7 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import {
   Settings, Zap, Plug, Palette, Bot, Monitor, Wrench, Radio, Info, HardDrive,
 } from '@lucide/vue'
@@ -63,6 +64,7 @@ import StoragePanel from './StoragePanel.vue'
 import { useRoute } from 'vue-router'
 
 const route = useRoute()
+const { t } = useI18n()
 
 // ========== 面板布局 ==========
 const workspaceRef = ref(null)
@@ -90,20 +92,20 @@ watch(() => route.query.tab, (newTab) => {
   }
 })
 
-const settingTabs = [
-  { key: 'model', label: '模型管理', icon: Bot },
-  { key: 'skills', label: 'Skills', icon: Zap },
-  { key: 'mcp', label: 'MCP 工具', icon: Plug },
-  { key: 'tools', label: 'Tools', icon: Wrench },
-  { key: 'runtime', label: '环境检测', icon: Monitor },
-  { key: 'general', label: '常规', icon: Settings },
-  { key: 'appearance', label: '外观主题', icon: Palette },
-  { key: 'bridge', label: '远程连接', icon: Radio },
-  { key: 'about', label: '关于/更新', icon: Info },
-  { key: 'storage', label: '磁盘管理', icon: HardDrive },
-]
+const settingTabs = computed(() => [
+  { key: 'model', label: t('settings.tabs.model'), icon: Bot },
+  { key: 'skills', label: t('settings.tabs.skills'), icon: Zap },
+  { key: 'mcp', label: t('settings.tabs.mcp'), icon: Plug },
+  { key: 'tools', label: t('settings.tabs.tools'), icon: Wrench },
+  { key: 'runtime', label: t('settings.tabs.runtime'), icon: Monitor },
+  { key: 'general', label: t('settings.tabs.general'), icon: Settings },
+  { key: 'appearance', label: t('settings.tabs.appearance'), icon: Palette },
+  { key: 'bridge', label: t('settings.tabs.bridge'), icon: Radio },
+  { key: 'about', label: t('settings.tabs.about'), icon: Info },
+  { key: 'storage', label: t('settings.tabs.storage'), icon: HardDrive },
+])
 
-const currentTabLabel = computed(() => settingTabs.find((t) => t.key === activeTab.value)?.label || '')
+const currentTabLabel = computed(() => settingTabs.value.find((tab) => tab.key === activeTab.value)?.label || '')
 
 function onPanel2Resize(delta) {
   panel2Width.value = Math.min(280, Math.max(160, panel2Width.value + delta))

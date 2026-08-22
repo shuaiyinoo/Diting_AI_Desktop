@@ -1,0 +1,52 @@
+Kullanılamaz
+Desteklenmiyor
+Bugün
+Düşük
+Tedarikçi
+Kaydet
+Kaydediliyor...
+Durdur
+Tümü
+Kapat
+Yenile
+İptal
+Planlamayı iptal et
+Mevcut
+Ad
+Hafta
+Araç
+Tamamlandı
+Arşivlendi
+Tanındı
+Genel
+Arşivle
+Topla ve görüntüle
+Beceri
+API sağlayıcı
+Gönderiliyor...
+Ara
+Ara
+Daralt
+Dosya
+Ekranı kapla
+Simge durumuna küçült
+En yeni
+Ay
+Adsız
+Bilinmeyen
+Etiket
+Model yönetimi
+Test
+Koyu
+Ekle
+Durum
+Açık
+Devre dışı bırak
+Yönet
+Sistem
+Güven
+Geri
+Yeniden adlandır
+Hata
+Yüksek
+Koyu

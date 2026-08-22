@@ -1,0 +1,210 @@
+Fatura numarası
+Gönderme başarısız: {msg}
+Arşivlemeyi iptal et
+QR taramasını iptal et
+Salt okunur
+Geçişlenebilir
+"Hakkında/Güncelleme" sayfasında yeniden başlatılabilir
+İsteğe bağlı, örn.: kod üretimi için / belge özetleme için
+Vektörleştiriliyor... kalan {count}
+Hayır
+Agent başlatma başarısız
+Başlatılıyor...
+Başlatma başarısız
+Etkinleştirildikten sonra ayarlanan sıklıkta otomatik çalıştırılır
+Etkinleştirme başarısız
+Etkinleştirme istisnası: {msg}
+Pzt, Sal, Çar, Per, Cum, Cmt, Paz
+Komut çağrısı
+Agent'e danış
+İzin isteğine yanıt verme başarısız
+Yerel ayna
+Uluslararası kaynak
+Görsel
+Köşe yuvarlaklığı
+"Uygulama Yetenekleri"nde bot işlevini etkinleştirin. Ardından Diting'e dönüp "Yapılandırmayı Kaydet"e tıklayın, durum "Bağlandı" olduktan sonra DingTalk arka ucunda olay aboneliğini yapılandırın (Stream modunu seçin).
+"İzin Yönetimi"nde gerekli izinleri talep edin (mesaj gönderme/alma, grup yönetimi vb.), ardından uygulama sürümünü yayınlayın ve kurumsal yöneticinin onayını bekleyin.
+Soldaki sohbette hedefi net belirtin ve açıkça zamanlanmış görev oluşturmak istediğinizi belirtin; Diting Agent görev açıklamasını oluşturur ve dönem, proje ve model gibi yapılandırmayı tamamlar; manuel düzenleme görev açıklamasını ince ayar için daha uygundur.
+AI tanıma işlemi giriş/okuma sayfasında tamamlandıktan sonra arşivlenir, kayıtlar burada görünür
+Sistem dosya yöneticisinde aç
+DingTalk Açık Platformu'nda kurumsal iç uygulama oluşturduktan sonra Client ID ve Client Secret'ı yukarıdaki yapılandırma formuna girin. Mesaj almak için "Stream Modu"nu etkinleştirin; yapılandırmayı kaydettikten sonra otomatik olarak kalıcı WebSocket bağlantısı kurulur. Her Bot farklı proje ve modele bağlanabilir, çoklu Bot eşzamanlı çalışabilir.
+DingTalk Açık Platformu'nda kurumsal iç uygulama oluşturduktan sonra Client ID ve Client Secret'ı buraya girin. Mesaj almak için "Stream Modu"nu etkinleştirin.
+Feishu Açık Platformu'nda uygulama oluşturduktan sonra App ID ve App Secret'ı buraya girin.
+Şehir
+Temel bilgiler
+Temel renk tonu
+KDV faturaları (özel/genel/elektronik/rulo/blockchain), sabit tutarlı faturalar, genel yazdırılmış faturalar, tren bileti, taksi, uçuş yolculuk belgesi, otobüs bileti, köprü geçiş ücreti faturası, gemi bileti, çevrimiçi taksi yolculuk belgesi, alışveriş fişi, banka dekontu, akıllı karışık faturalar.
+İşleniyor...
+Not
+JSON kopyala
+Tam metni kopyala
+Kopyalama başarısız
+Büyük
+Boyut
+Örn.: gpt-4o, deepseek-chat
+Örn.: gpt-4o, deepseek-chat, claude-3-5-sonnet-20241022
+Örn.: https://api.openai.com/v1
+Örn.: benim GPT-4o'm, DeepSeek üretim ortamı
+Örn.: benim GPT-4o'm, DeepSeek üretim ortamı
+Her zaman yeniden kullan
+Yazı tipi
+Depolama kullanımı
+Güvenlik
+Yapılacakları, takvimi ve zamanlanmış görevleri planla
+Yükleniyor...
+Bağımlılık paketleri yüklenirken kullanılan ayna kaynağı, pip ve npm indirme hızını etkiler
+Yerel olarak yükle
+Yükleme başarısız
+Yükleme sayısı
+Tamamen otomatik
+Zamanlanmış görev
+Zamanlanmış görev {count}
+Uygulama
+İnceleme
+Ana bilgisayar
+Diyalog
+Diyalog silindi
+CSV olarak dışa aktar
+Raporu dışa aktar
+Küçük
+Xiaohongshu, X/Twitter, LinkedIn gibi platformlar bu eylemleri otomatikleşmiş etkinlik olarak tanıyabilir.
+Henüz hiçbir model etkinleştirilmedi. Lütfen bir model ekleyin ve etkinleştirin
+Henüz Agent Session tarafından işlemedi
+Farklı bir anahtar kelimeyle arama deneyin
+Bilgi panelini genişlet
+Düşünceyi genişlet
+Dosya panelini genişlet
+Araç listesi
+Araç çağrıları kullanıcı onayı gerektirir
+Kaydedildi
+Durduruldu: {name}
+Üretim durduruldu
+Kapatıldı
+Uluslararası alan adına geçildi
+Oluşturuldu: {name}
+Silindi
+İptal edildi
+Arşivleme iptal edildi
+Boşta yükleme iptal edildi
+Agent başlatıldı
+Agent oturumu başlatıldı, proje hafızası oluşturuluyor...
+Başlatıldı: {name}
+Etkinleştirildi: {name}
+İşlendi
+Yapay zeka JSON kopyalandı
+OCR tam metni kopyalandı
+Panoya kopyalandı
+Boşta yüklenecek şekilde planlandı
+«{slug}» yerele yüklendi ({fileCount} dosya, {workspaceCount} workspace ile eşitlendi)
+CSV dosyası dışa aktarıldı
+Arşivlenen fiş {total} · inceleme bekleyen {needsReview} · toplam tutar ¥{totalAmount}
+Geri yüklendi
+{count} kez yürütüldü
+QR tarandı, onaylanıyor...
+QR tarandı. Girişi telefonunuzdan onaylayın
+Zaten en son sürüm
+Güncellendi
+Eklendi
+Onaylandı
+Devre dışı bırakıldı: {name}
+Ek klasör kaldırıldı
+Bağlantı kaldırıldı
+WeChat oturumu kapatıldı
+{size} serbest bırakıldı, {count} dosya silindi
+Engellendi
+Ek klasör eklendi: {name}
+Uygulama adı
+Gecikme: {latency}ms
+Gecikme: {ms}ms
+Yeni bir sohbet başlat
+Başlangıç zamanı
+Agent'ı çalıştırmaya başla
+Fatura tarihi
+Arşivleme zamanı
+Şu anda etkin
+Mevcut adres
+Şu anda aktif oturum yok
+Giriş ve okuma
+İnceleme bekliyor
+WeChat
+WeChat Bridge durduruldu
+WeChat Bridge başlatıldı
+WeChat bağlandı. Mesajlar otomatik alınacaktır.
+Düşünce derinliği
+Her zaman izin ver
+Toplam
+Geri yükle
+Görevi geri yükle
+Ben
+Riski bildiğimi ve kabul ettiğimi onaylıyorum
+Benim DingTalk Botum
+Benim Feishu Botum
+Veya bağlantıyı tarayıcıda açın
+Tüm görevler tamamlandıktan sonra yükleme otomatik yeniden başlatılır
+Tüm görsel tanıma, metin çıkarma ve yapılandırılmış ayrıştırma yerelde tamamlanır; orijinal görseller ve tanıma sonuçları hiçbir dış sunucuya yüklenmez, böylece veri güvenliği ve gizlilik uyumu temelden sağlanır.
+Tüm araç çağrıları otomatik izin verilir
+Elle ekle
+Elle yazarken yalnızca görevin kendisini yazın
+Yerleşik tarayıcıyı aç
+Orijinal dosyayı aç
+WeChat'i açın ve giriş için QR kodu tarayın
+Klasörü aç
+Dosya görüntüleme penceresi açma başarısız
+Dizin açma başarısız
+{count} kez yürüt
+Yürüt: {cmd}
+Komut yürüt
+Yürütme süreci: {parts}
+Projeyi yürüt
+QR ile oluştur
+QR ile oluşturma başarılı!
+QR ile Feishu Botu oluştur
+QR ile giriş
+QR ile giriş başarısız
+Toplu düzenle
+Reddet
+Belirtilen zaman
+DingTalk Açık Platformu'nda kurumsal iç uygulama oluşturmak için şu adımları izleyin
+Düğme, bağlantı, vurgu gibi vurgu renkleri
+Yetkili klasör
+Keşfet
+Önerilen: Diting Agent'ın oluşturmasına izin verin
+Açıklama
+Yanıtı gönder
+Yanıt gönderme başarısız
+"{pattern}" ara
+"{query}" ara: {count} sonuç bulundu
+Skill adını / işlev açıklamasını arayın...
+Ara: {query}
+Fatura no / satıcı / alıcı arayın...
+Arama başarısız
+Arama başarısız. Ağ bağlantısını kontrol edin.
+Arayın veya yeni etiket girin...
+Özet
+İşlem
+İşlem başarısız
+İşlem istisnası: {msg}
+40'tan fazla ana akım fiş ve belgenin yüksek hassasiyetli tanımayı destekler; finansal geri ödeme, ulaşım, lisans ve sertifikalar gibi temel iş senaryolarını kapsar.
+Bilgi panelini daralt
+Dosya panelini daralt
+Dosya bilgisi
+Dosya listesi
+Dosya adı
+Klasör silindi
+Klasör başarıyla eklendi
+Dosya henüz işlenmedi, otomatik tanımayı bekleyin
+Dosya işlemleri
+Dosya görüntüleme
+Dosya görüntüleme - {name}
+Dosya düzenleme
+Dosya önizleme
+Belge
+Belge soru-cevap
+Belge soru-cevap modu bir bilgi tabanı klasörü seçilmesini gerektirir
+Yeni Todo
+Geçerli projenin son konuşmalarını okuyan ve workspace'teki CLAUDE.md ile otomatik hafıza dosyalarını güncelleyen yeni bir Agent oturumu oluşturun.
+Yeni grup
+Yeni zamanlanmış görev
+Yeni dosya
+Yeni belge
+Yeni takvim

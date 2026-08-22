@@ -12,7 +12,7 @@
       </div>
       <div class="flex items-center gap-1">
         <Button variant="outline" size="sm" class="h-8 gap-1" @click="groupManagerOpen = true">
-          <ListOrdered class="size-4" /> 分组
+          <ListOrdered class="size-4" /> {{ t('calendarWorkspace.group') }}
         </Button>
       </div>
     </div>
@@ -42,9 +42,9 @@
               @mouseleave="hideEventTooltip"
             >{{ ev.title }}</div>
             <div v-if="day.events.length > 2" class="mt-0.5 cursor-pointer px-1 text-[10px] text-muted-foreground hover:text-primary" @click.stop="showAllDayEvents(day)">
-              +{{ day.events.length - 2 }} 更多
+              {{ t('calendarWorkspace.more', { count: day.events.length - 2 }) }}
             </div>
-            <div v-if="day.automationCount" class="mt-0.5 rounded-[3px] bg-primary/[0.08] px-1 text-[10px] text-primary">定时任务 {{ day.automationCount }}</div>
+            <div v-if="day.automationCount" class="mt-0.5 rounded-[3px] bg-primary/[0.08] px-1 text-[10px] text-primary">{{ t('calendarWorkspace.automationCount', { count: day.automationCount }) }}</div>
           </div>
         </div>
       </div>
@@ -81,7 +81,7 @@
             :style="dragPreviewStyle"
           >
             <span v-if="dragEndMin - dragStartMin >= 30" class="block truncate text-[11px] font-medium text-primary">
-              新建日程 · {{ formatMinToTime(dragStartMin) }}–{{ formatMinToTime(dragEndMin) }}
+              {{ t('calendarWorkspace.newEventDragHint', { start: formatMinToTime(dragStartMin), end: formatMinToTime(dragEndMin) }) }}
             </span>
           </div>
           <div
@@ -119,7 +119,7 @@
         <span class="truncate text-[13px] font-semibold text-foreground">{{ hoveredEvent.title }}</span>
       </div>
       <div class="mb-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-        <span v-if="hoveredEvent.allDay">全天</span>
+        <span v-if="hoveredEvent.allDay">{{ t('calendarWorkspace.allDay') }}</span>
         <span v-else>{{ formatEventTime(hoveredEvent) }}</span>
         <span class="text-muted-foreground/70">{{ formatEventDate(hoveredEvent) }}</span>
       </div>
@@ -146,39 +146,39 @@
         <Input
           class="w-full border-none bg-transparent pr-10 text-[17px] font-semibold"
           v-model="detailTitle"
-          placeholder="日程标题"
+          :placeholder="t('calendarWorkspace.eventTitle')"
           @blur="saveField('title')"
           @keydown.enter="$event.target.blur()"
         />
       </div>
       <div class="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto overflow-x-hidden p-4 px-5">
         <div class="flex flex-col gap-3">
-          <h3 class="m-0 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">时间</h3>
+          <h3 class="m-0 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{{ t('calendarWorkspace.time') }}</h3>
           <div class="flex cursor-pointer items-center gap-2 rounded-lg border border-border/50 px-3 py-2">
             <Switch
-              :checked="detailAllDay"
-              @update:checked="detailAllDay = $event; saveAllDay()"
+              :model-value="detailAllDay"
+              @update:model-value="detailAllDay = $event; saveAllDay()"
             />
-            <span>全天</span>
-            <span class="text-[11px] text-muted-foreground">不占用具体小时段</span>
+            <span>{{ t('calendarWorkspace.allDay') }}</span>
+            <span class="text-[11px] text-muted-foreground">{{ t('calendarWorkspace.allDayHint') }}</span>
           </div>
           <div class="flex gap-2">
             <div class="flex flex-1 flex-col">
-              <Label class="mb-1.5 text-[11px] font-medium text-muted-foreground">开始</Label>
+              <Label class="mb-1.5 text-[11px] font-medium text-muted-foreground">{{ t('calendarWorkspace.start') }}</Label>
               <DateTimePicker
                 :model-value="detailStartAtInput"
                 @update:model-value="detailStartAtInput = $event"
-                placeholder="开始时间"
+                :placeholder="t('calendarWorkspace.startTime')"
                 class="h-8 text-[13px]"
                 @change="saveField('startAt')"
               />
             </div>
             <div class="flex flex-1 flex-col">
-              <Label class="mb-1.5 text-[11px] font-medium text-muted-foreground">结束</Label>
+              <Label class="mb-1.5 text-[11px] font-medium text-muted-foreground">{{ t('calendarWorkspace.end') }}</Label>
               <DateTimePicker
                 :model-value="detailEndAtInput"
                 @update:model-value="detailEndAtInput = $event"
-                placeholder="结束时间"
+                :placeholder="t('calendarWorkspace.endTime')"
                 class="h-8 text-[13px]"
                 @change="saveField('endAt')"
               />
@@ -186,22 +186,22 @@
           </div>
         </div>
         <div class="flex flex-col gap-3">
-          <Label class="mb-1.5 block text-[11px] font-medium text-muted-foreground">更多信息</Label>
+          <Label class="mb-1.5 block text-[11px] font-medium text-muted-foreground">{{ t('calendarWorkspace.moreInfo') }}</Label>
           <Textarea
             class="min-h-[80px] resize-y bg-primary/[0.03]"
             v-model="detailNotes"
-            placeholder="补充地点、议程、会议链接或其他上下文…"
+            :placeholder="t('calendarWorkspace.extraInfo')"
             @blur="saveField('notes')"
           />
         </div>
         <div class="flex flex-col gap-3">
-          <h3 class="m-0 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">组织</h3>
+          <h3 class="m-0 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{{ t('calendarWorkspace.organization') }}</h3>
           <div class="flex flex-col">
-            <Label class="mb-1.5 text-[11px] font-medium text-muted-foreground">日程分组</Label>
+            <Label class="mb-1.5 text-[11px] font-medium text-muted-foreground">{{ t('calendarWorkspace.eventGroup') }}</Label>
             <Select v-model="detailGroupId" @update:model-value="saveField('groupId')">
-              <SelectTrigger class="w-full"><SelectValue placeholder="选择分组" /></SelectTrigger>
+              <SelectTrigger class="w-full"><SelectValue :placeholder="t('calendarWorkspace.selectGroup')" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="__none__">不分组</SelectItem>
+                <SelectItem value="__none__">{{ t('calendarWorkspace.noGroup') }}</SelectItem>
                 <SelectItem v-for="g in calendarGroups" :key="g.id" :value="g.id">
                   <span class="inline-flex items-center gap-1.5">
                     <span class="size-2 rounded-full" :style="{ background: groupColor(g) }"></span>
@@ -212,7 +212,7 @@
             </Select>
           </div>
           <div class="flex flex-col" ref="tagFieldRef">
-            <Label class="mb-1.5 text-[11px] font-medium text-muted-foreground">标签</Label>
+            <Label class="mb-1.5 text-[11px] font-medium text-muted-foreground">{{ t('calendarWorkspace.tags') }}</Label>
             <div class="flex flex-wrap items-center gap-1.5">
               <span
                 v-for="tag in selectedEvent.tags"
@@ -236,9 +236,9 @@
       </div>
       <div class="flex shrink-0 items-center justify-between border-t border-border/50 bg-card px-5 py-3">
         <Button variant="destructive" class="gap-1.5" @click="pendingDelete = selectedEvent">
-          <Trash2 class="size-4" /> 删除日程
+          <Trash2 class="size-4" /> {{ t('calendarWorkspace.deleteEvent') }}
         </Button>
-        <span class="text-[11px] text-muted-foreground">编辑后自动保存</span>
+        <span class="text-[11px] text-muted-foreground">{{ t('calendarWorkspace.autoSave') }}</span>
       </div>
     </aside>
 
@@ -250,7 +250,7 @@
             ref="tagSearchInput"
             v-model="tagSearchText"
             class="w-full bg-muted/50 text-[13px]"
-            placeholder="搜索或输入新标签…"
+            :placeholder="t('calendarWorkspace.searchTag')"
             @keydown.enter="onTagSearchEnter"
           />
         </div>
@@ -262,10 +262,10 @@
           </Button>
           <Button v-if="canCreateTag" variant="ghost" class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] font-medium text-primary hover:bg-foreground/5" @click="createAndAddTag">
             <Plus class="size-3" />
-            <span>创建「{{ tagSearchText.trim() }}」</span>
+            <span>{{ t('calendarWorkspace.createTag', { name: tagSearchText.trim() }) }}</span>
           </Button>
           <div v-if="!filteredTags.length && !canCreateTag" class="px-2 py-3 text-center text-xs text-muted-foreground">
-            暂无标签，输入名称可创建
+            {{ t('calendarWorkspace.noTagsHint') }}
           </div>
         </div>
       </div>
@@ -275,12 +275,12 @@
     <Dialog v-model:open="deleteModalOpen">
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>确认删除日程</DialogTitle>
+          <DialogTitle>{{ t('calendarWorkspace.confirmDeleteEvent') }}</DialogTitle>
         </DialogHeader>
-        <p>删除「{{ pendingDelete?.title }}」后无法恢复。</p>
+        <p>{{ t('calendarWorkspace.deleteConfirm', { name: pendingDelete?.title }) }}</p>
         <DialogFooter>
-          <Button variant="outline" @click="deleteModalOpen = false">取消</Button>
-          <Button variant="destructive" @click="confirmDelete">删除</Button>
+          <Button variant="outline" @click="deleteModalOpen = false">{{ t('calendarWorkspace.cancel') }}</Button>
+          <Button variant="destructive" @click="confirmDelete">{{ t('calendarWorkspace.delete') }}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -289,7 +289,7 @@
     <Dialog v-model:open="groupManagerOpen">
       <DialogContent class="max-w-[440px]">
         <DialogHeader>
-          <DialogTitle>日程分组管理</DialogTitle>
+          <DialogTitle>{{ t('calendarWorkspace.groupManage') }}</DialogTitle>
         </DialogHeader>
         <div class="mb-3 border-b border-border/50 pb-3">
           <div v-if="creatingGroup" class="flex items-center gap-1.5">
@@ -297,25 +297,25 @@
               ref="newGroupInputRef"
               :model-value="newGroupName"
               @update:model-value="newGroupName = $event"
-              placeholder="输入分组名称"
+              :placeholder="t('calendarWorkspace.newGroupName')"
               class="h-8 flex-1 text-[13px]"
               @keydown.enter="confirmCreateGroup"
               @keydown.escape="cancelCreateGroup"
             />
-            <Button variant="ghost" size="icon" class="size-8 text-green-600 hover:bg-green-500 hover:text-white" @click="confirmCreateGroup" :disabled="!newGroupName.trim() || savingGroupAction === 'create'" title="确认">
+            <Button variant="ghost" size="icon" class="size-8 text-green-600 hover:bg-green-500 hover:text-white" @click="confirmCreateGroup" :disabled="!newGroupName.trim() || savingGroupAction === 'create'" :title="t('calendarWorkspace.confirm')">
               <Check class="size-4" />
             </Button>
-            <Button variant="ghost" size="icon" class="size-8 text-muted-foreground hover:bg-destructive/10 hover:text-destructive" @click="cancelCreateGroup" title="取消">
+            <Button variant="ghost" size="icon" class="size-8 text-muted-foreground hover:bg-destructive/10 hover:text-destructive" @click="cancelCreateGroup" :title="t('calendarWorkspace.confirm')">
               <X class="size-4" />
             </Button>
           </div>
           <Button v-else variant="outline" class="h-[34px] w-full gap-1.5 border-dashed" @click="startCreateGroup">
-            <Plus class="size-4" /> 新建分组
+            <Plus class="size-4" /> {{ t('calendarWorkspace.newGroup') }}
           </Button>
         </div>
         <div class="flex max-h-[320px] flex-col gap-0.5 overflow-y-auto">
           <div v-if="!calendarGroups.length" class="py-8 text-center text-[13px] text-muted-foreground">
-            还没有分组，点击上方新建
+            {{ t('calendarWorkspace.noGroupsHint') }}
           </div>
           <div v-for="g in calendarGroups" :key="g.id" class="flex h-[38px] items-center gap-2 rounded-md px-1.5 transition-colors hover:bg-primary/[0.04]">
             <template v-if="renamingGroupId === g.id">
@@ -328,10 +328,10 @@
                 @keydown.enter="confirmRenameGroup(g)"
                 @keydown.escape="cancelRenameGroup"
               />
-              <Button variant="ghost" size="icon" class="size-8 text-green-600 hover:bg-green-500 hover:text-white" @click="confirmRenameGroup(g)" :disabled="!renameGroupName.trim() || savingGroupAction === 'rename'" title="确认">
+              <Button variant="ghost" size="icon" class="size-8 text-green-600 hover:bg-green-500 hover:text-white" @click="confirmRenameGroup(g)" :disabled="!renameGroupName.trim() || savingGroupAction === 'rename'" :title="t('calendarWorkspace.confirm')">
                 <Check class="size-4" />
               </Button>
-              <Button variant="ghost" size="icon" class="size-8 text-muted-foreground hover:bg-destructive/10 hover:text-destructive" @click="cancelRenameGroup" title="取消">
+              <Button variant="ghost" size="icon" class="size-8 text-muted-foreground hover:bg-destructive/10 hover:text-destructive" @click="cancelRenameGroup" :title="t('todoWorkspace.cancel')">
                 <X class="size-4" />
               </Button>
             </template>
@@ -357,10 +357,10 @@
                 </div>
               </div>
               <span class="flex-1 truncate text-[13px] text-foreground">{{ g.name }}</span>
-              <Button variant="ghost" size="icon" class="size-[26px] text-muted-foreground opacity-0 hover:bg-primary/10 hover:text-primary" title="重命名" @click="startRenameGroup(g)">
+              <Button variant="ghost" size="icon" class="size-[26px] text-muted-foreground opacity-0 hover:bg-primary/10 hover:text-primary" :title="t('todoWorkspace.reload')" @click="startRenameGroup(g)">
                 <Pencil class="size-3.5" />
               </Button>
-              <Button variant="ghost" size="icon" class="size-[26px] text-muted-foreground opacity-0 hover:bg-destructive/10 hover:text-destructive" title="删除" @click="requestDeleteGroup(g)">
+              <Button variant="ghost" size="icon" class="size-[26px] text-muted-foreground opacity-0 hover:bg-destructive/10 hover:text-destructive" :title="t('todoWorkspace.delete')" @click="requestDeleteGroup(g)">
                 <Trash2 class="size-3.5" />
               </Button>
             </template>
@@ -373,12 +373,12 @@
     <Dialog v-model:open="deleteGroupModalOpen">
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>确认删除分组</DialogTitle>
+          <DialogTitle>{{ t('calendarWorkspace.confirmDeleteGroup') }}</DialogTitle>
         </DialogHeader>
-        <p>删除「{{ pendingDeleteGroup?.name }}」后无法恢复。</p>
+        <p>{{ t('calendarWorkspace.deleteConfirm', { name: pendingDeleteGroup?.name }) }}</p>
         <DialogFooter>
-          <Button variant="outline" @click="deleteGroupModalOpen = false">取消</Button>
-          <Button variant="destructive" :disabled="savingGroupAction === 'delete'" @click="confirmDeleteGroup">删除</Button>
+          <Button variant="outline" @click="deleteGroupModalOpen = false">{{ t('todoWorkspace.cancel') }}</Button>
+          <Button variant="destructive" :disabled="savingGroupAction === 'delete'" @click="confirmDeleteGroup">{{ t('todoWorkspace.delete') }}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -401,9 +401,11 @@ import { Label } from '@/components/ui/label'
 import { DateTimePicker } from '@/components/ui/date-time-picker'
 import { Switch } from '@/components/ui/switch'
 import { usePlanningStore } from '@/stores/planning'
+import { useI18n } from 'vue-i18n'
 import dayjs from 'dayjs'
 
 const toast = useToast()
+const { t } = useI18n()
 const planning = usePlanningStore()
 
 const calendarEvents = computed(() => planning.calendarEvents)
@@ -476,7 +478,7 @@ async function toggleTagFromDropdown(tag) {
   try {
     await planning.updateCalendarEvent({ id: selectedEvent.value.id, tagIds: newIds, expectedUpdatedAt: selectedEvent.value.updatedAt })
   } catch {
-    toast.error('保存标签失败')
+    toast.error(t('calendarWorkspace.saveTagFailed'))
   }
 }
 
@@ -486,7 +488,7 @@ async function removeTagFromEvent(tag) {
   try {
     await planning.updateCalendarEvent({ id: selectedEvent.value.id, tagIds: newIds, expectedUpdatedAt: selectedEvent.value.updatedAt })
   } catch {
-    toast.error('移除标签失败')
+    toast.error(t('calendarWorkspace.removeTagFailed'))
   }
 }
 
@@ -498,7 +500,7 @@ async function createAndAddTag() {
     await toggleTagFromDropdown(newTag)
     tagSearchText.value = ''
   } catch {
-    toast.error('创建标签失败')
+    toast.error(t('calendarWorkspace.createTagFailed'))
   }
 }
 
@@ -545,17 +547,17 @@ function hideEventTooltip() {
 
 function formatEventDate(ev) {
   const s = dayjs(ev.startAt)
-  return s.format('MM月DD日 ddd')
+  return s.format('MM/DD ddd')
 }
 
 onMounted(() => document.addEventListener('click', closeTagDropdown))
 onUnmounted(() => document.removeEventListener('click', closeTagDropdown))
 
 const mode = ref('month')
-const modes = [{ id: 'month', label: '月' }, { id: 'week', label: '周' }]
+const modes = computed(() => [{ id: 'month', label: t('calendarWorkspace.month') }, { id: 'week', label: t('calendarWorkspace.week') }])
 const currentMonth = ref(dayjs().startOf('month'))
 const currentWeekStart = ref(dayjs().startOf('week'))
-const weekdays = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
+const weekdays = computed(() => t('calendarWorkspace.weekdays').split(','))
 
 // 分组预设颜色
 const PRESET_COLORS = ['#2563eb', '#7c3aed', '#db2777', '#dc2626', '#d97706', '#059669', '#0891b2', '#6b7280']
@@ -583,9 +585,9 @@ function eventBg(ev) {
 }
 
 const toolbarTitle = computed(() => {
-  if (mode.value === 'month') return currentMonth.value.format('YYYY年 M月')
+  if (mode.value === 'month') return currentMonth.value.format('YYYY-MM')
   const end = currentWeekStart.value.add(6, 'day')
-  return `${currentWeekStart.value.format('M月D日')} - ${end.format('M月D日')}`
+  return `${currentWeekStart.value.format('MM/DD')} - ${end.format('MM/DD')}`
 })
 
 // ===== 月视图 =====
@@ -842,14 +844,14 @@ watch(() => planning.calendarCreateRequest, (n, o) => {
 async function quickCreateEvent(startDate, endDate) {
   try {
     const event = await planning.createCalendarEvent({
-      title: '新建日程',
+      title: t('calendarWorkspace.newEvent'),
       startAt: startDate.valueOf(),
       endAt: endDate.valueOf(),
       allDay: false,
     })
     selectedEventId.value = event.id
   } catch {
-    toast.error('创建日程失败')
+    toast.error(t('calendarWorkspace.createEventFailed'))
   }
 }
 
@@ -875,7 +877,7 @@ async function saveField(field) {
       await planning.updateCalendarEvent({ id: ev.id, groupId, expectedUpdatedAt: ev.updatedAt })
     }
   } catch {
-    toast.error('保存日程失败')
+    toast.error(t('calendarWorkspace.saveEventFailed'))
   }
 }
 
@@ -911,7 +913,7 @@ async function saveAllDay() {
       })
     }
   } catch {
-    toast.error('保存失败')
+    toast.error(t('calendarWorkspace.saveFailed'))
   }
 }
 
@@ -921,9 +923,9 @@ async function confirmDelete() {
     await planning.deleteCalendarEvent(pendingDelete.value.id)
     selectedEventId.value = null
     pendingDelete.value = null
-    toast.success('日程已删除')
+    toast.success(t('calendarWorkspace.eventDeleted'))
   } catch {
-    toast.error('删除日程失败')
+    toast.error(t('calendarWorkspace.deleteEventFailed'))
   }
 }
 
@@ -966,7 +968,7 @@ async function confirmCreateGroup() {
     const group = await planning.createGroup({ scope: 'calendar', name })
     if (group) { creatingGroup.value = false; newGroupName.value = '' }
   } catch {
-    toast.error('创建分组失败：名称可能已存在')
+    toast.error(t('calendarWorkspace.createGroupFailed'))
   } finally {
     savingGroupAction.value = null
   }
@@ -994,7 +996,7 @@ async function confirmRenameGroup(group) {
     renamingGroupId.value = null
     renameGroupName.value = ''
   } catch {
-    toast.error('重命名分组失败：名称可能已存在')
+    toast.error(t('calendarWorkspace.renameGroupFailed'))
   } finally {
     savingGroupAction.value = null
   }
@@ -1009,7 +1011,7 @@ async function confirmDeleteGroup() {
     await planning.deleteGroup('calendar', pendingDeleteGroup.value.id)
     pendingDeleteGroup.value = null
   } catch {
-    toast.error('删除分组失败')
+    toast.error(t('calendarWorkspace.deleteGroupFailed'))
   } finally {
     savingGroupAction.value = null
   }
@@ -1023,7 +1025,7 @@ async function setGroupColor(group, color) {
   try {
     await planning.updateGroup({ id: group.id, scope: 'calendar', color })
   } catch {
-    toast.error('更新颜色失败')
+    toast.error(t('calendarWorkspace.updateColorFailed'))
   }
 }
 </script>

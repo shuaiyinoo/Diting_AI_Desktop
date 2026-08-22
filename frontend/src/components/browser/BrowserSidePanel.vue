@@ -14,13 +14,13 @@
     <div class="flex h-[42px] shrink-0 items-center gap-1 border-b border-border bg-sidebar px-2">
       <Globe class="size-4 shrink-0 text-primary" />
 
-      <Tooltip title="后退">
+      <Tooltip :title="t('browser.back')">
         <Button variant="ghost" size="icon" class="size-7 text-muted-foreground hover:text-primary disabled:opacity-35 disabled:cursor-not-allowed" :disabled="!browserState?.canGoBack" @click="browserStore.goBackDisplay()"><ArrowLeft class="size-3.5" /></Button>
       </Tooltip>
-      <Tooltip title="前进">
+      <Tooltip :title="t('browser.forward')">
         <Button variant="ghost" size="icon" class="size-7 text-muted-foreground hover:text-primary disabled:opacity-35 disabled:cursor-not-allowed" :disabled="!browserState?.canGoForward" @click="browserStore.goForwardDisplay()"><ArrowRight class="size-3.5" /></Button>
       </Tooltip>
-      <Tooltip title="刷新">
+      <Tooltip :title="t('browser.refresh')">
         <Button variant="ghost" size="icon" class="size-7 text-muted-foreground hover:text-primary disabled:opacity-35 disabled:cursor-not-allowed" :disabled="!browserState" @click="browserStore.reloadDisplay()"><RefreshCw class="size-3.5" /></Button>
       </Tooltip>
 
@@ -28,13 +28,13 @@
         <Input
           v-model="urlInput"
           class="h-7 w-full rounded-md border-border bg-card pr-7 text-xs focus:border-primary focus:ring-primary/10 disabled:opacity-50 disabled:cursor-not-allowed"
-          placeholder="输入域名或 URL（默认 HTTPS）"
+          :placeholder="t('browser.urlPlaceholder')"
           :disabled="riskBlocked"
         />
         <Spinner v-if="browserState?.loading" size="small" class="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
       </form>
 
-      <Tooltip title="关闭浏览器">
+      <Tooltip :title="t('browser.closeBrowser')">
         <Button variant="ghost" size="icon" class="size-7 text-muted-foreground hover:bg-red-500/10 hover:text-red-500" @click="onClose">
           <X class="size-3.5" />
         </Button>
@@ -51,11 +51,11 @@
         @click="browserStore.selectTab(tab.tabId)"
       >
         <Globe class="size-3 shrink-0" />
-        <span class="flex-1 min-w-0 truncate">{{ tab.title || '新建标签页' }}</span>
+        <span class="flex-1 min-w-0 truncate">{{ tab.title || t('browser.newTab') }}</span>
         <span v-if="tab.openedByAgent" class="shrink-0 rounded bg-primary/10 px-1 text-[9px] text-primary">Agent</span>
         <span class="flex size-3.5 shrink-0 items-center justify-center rounded-[3px] text-[10px] opacity-40 transition-all hover:bg-red-500/10 hover:text-red-500 hover:opacity-100" @click.stop="browserStore.closeTab(tab.tabId)"><X /></span>
       </div>
-      <Button variant="ghost" size="icon" class="size-6 shrink-0 rounded-[5px] text-muted-foreground hover:text-primary" @click="browserStore.createDisplayTab()" title="新建标签">
+      <Button variant="ghost" size="icon" class="size-6 shrink-0 rounded-[5px] text-muted-foreground hover:text-primary" @click="browserStore.createDisplayTab()" :title="t('browser.newTabBtn')">
         <Plus class="size-3" />
       </Button>
     </div>
@@ -73,23 +73,23 @@
         <div class="mb-4 flex size-14 items-center justify-center rounded-full bg-amber-500/10">
           <BadgeCheck class="size-6 text-amber-500" />
         </div>
-        <h3 class="mb-4 text-base font-semibold text-foreground">首次使用受管浏览器</h3>
+        <h3 class="mb-4 text-base font-semibold text-foreground">{{ t('browser.risk.title') }}</h3>
         <div class="mb-6 max-w-[320px] text-xs leading-relaxed text-muted-foreground">
-          <p class="mb-2">Agent 可在浏览器中读取、搜索、点击和输入。</p>
-          <p class="mb-2">小红书、X/Twitter、LinkedIn 等平台可能将这些行为识别为自动化活动。</p>
-          <p>这可能导致：</p>
+          <p class="mb-2">{{ t('browser.risk.desc1') }}</p>
+          <p class="mb-2">{{ t('browser.risk.desc2') }}</p>
+          <p>{{ t('browser.risk.desc3') }}</p>
           <ul class="mt-1 list-disc space-y-1 pl-5 text-left">
-            <li>验证码或人机验证</li>
-            <li>限流或功能限制</li>
-            <li>账号风控，严重时可能造成账号处罚或封禁</li>
+            <li>{{ t('browser.risk.captcha') }}</li>
+            <li>{{ t('browser.risk.rateLimit') }}</li>
+            <li>{{ t('browser.risk.accountRisk') }}</li>
           </ul>
         </div>
         <div class="flex w-full max-w-[280px] flex-col gap-2">
           <Button class="h-9 rounded-md text-[13px] font-medium" @click="browserStore.acceptRisk()">
-            我已知悉并承担风险
+            {{ t('browser.risk.accept') }}
           </Button>
           <Button variant="outline" class="h-9 rounded-md text-[13px] text-muted-foreground hover:border-foreground hover:text-foreground" @click="onClose">
-            暂不使用
+            {{ t('browser.risk.decline') }}
           </Button>
         </div>
       </div>
@@ -105,13 +105,13 @@
       <!-- 无浏览器状态时的占位 -->
       <div v-else class="flex h-full flex-col items-center justify-center gap-2 bg-card text-xs text-muted-foreground">
         <Globe class="size-8 opacity-30" />
-        <p>正在初始化浏览器...</p>
+        <p>{{ t('browser.initializing') }}</p>
       </div>
     </div>
 
     <!-- ========== 底部操作账本 ========== -->
     <div v-if="browserStore.lastTrace" class="flex h-7 shrink-0 items-center gap-1.5 border-t border-border bg-sidebar px-2.5 text-[11px]">
-      <span class="shrink-0 font-medium text-primary">Agent 操作</span>
+      <span class="shrink-0 font-medium text-primary">{{ t('browser.agentOperation') }}</span>
       <span class="flex-1 min-w-0 truncate text-muted-foreground">{{ browserStore.lastTrace.summary }}</span>
     </div>
   </div>
@@ -128,9 +128,12 @@ import { Badge } from '@/components/ui/badge'
  * BrowserSidePanel 组件
  */
 import { ref, computed, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { Globe, ArrowLeft, ArrowRight, RefreshCw, X, Plus, BadgeCheck } from '@lucide/vue'
 import { useBrowserStore } from '@/stores/browser'
 import BrowserSlot from './BrowserSlot.vue'
+
+const { t } = useI18n()
 
 const browserStore = useBrowserStore()
 

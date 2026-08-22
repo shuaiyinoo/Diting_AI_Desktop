@@ -78,7 +78,7 @@
             <svg v-else class="size-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M6 9l6 6 6-6" />
             </svg>
-            <span>{{ thinkingExpanded[i] ? '收起' : '展开思考' }}</span>
+            <span>{{ thinkingExpanded[i] ? t('processBlock.collapse') : t('processBlock.expandThinking') }}</span>
           </button>
         </div>
 
@@ -136,7 +136,7 @@
         <svg class="size-3 -rotate-90" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M9 18l6-6-6-6" />
         </svg>
-        <span>收起</span>
+        <span>{{ t('processBlock.collapse') }}</span>
       </button>
     </div>
   </div>
@@ -144,6 +144,9 @@
 
 <script setup>
 import { ref, reactive, computed, watch, nextTick } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps({
   /** 过程块数组（thinking + tool_use） */
@@ -263,9 +266,9 @@ const summary = computed(() => {
     }
   }
   const parts = []
-  if (toolCount > 0) parts.push(`${toolCount} 次工具调用`)
-  if (messageCount > 0) parts.push(`${messageCount} 条消息`)
-  return `执行过程：${parts.join('，') || '过程'}`
+  if (toolCount > 0) parts.push(t('processBlock.toolCalls', { count: toolCount }))
+  if (messageCount > 0) parts.push(t('processBlock.messages', { count: messageCount }))
+  return t('processBlock.summary', { parts: parts.join(', ') || t('processBlock.summaryFallback') })
 })
 
 // ===== 工具名列表 =====
@@ -316,65 +319,65 @@ function getToolPhrase(block) {
   switch (name) {
     case 'Read': {
       const fp = input.file_path || input.path || ''
-      return fp ? `读取 ${shortenPath(fp)}` : '读取文件'
+      return fp ? `${t('processBlock.read')} ${shortenPath(fp)}` : t('processBlock.readFile')
     }
     case 'Write': {
       const fp = input.file_path || input.path || ''
-      return fp ? `写入 ${shortenPath(fp)}` : '写入文件'
+      return fp ? `${t('processBlock.write')} ${shortenPath(fp)}` : t('processBlock.writeFile')
     }
     case 'Edit': {
       const fp = input.file_path || input.path || ''
-      return fp ? `编辑 ${shortenPath(fp)}` : '编辑文件'
+      return fp ? `${t('processBlock.edit')} ${shortenPath(fp)}` : t('processBlock.editFile')
     }
     case 'MultiEdit': {
       const fp = input.file_path || input.path || ''
-      return fp ? `批量编辑 ${shortenPath(fp)}` : '批量编辑'
+      return fp ? `${t('processBlock.multiEdit')} ${shortenPath(fp)}` : t('processBlock.multiEditShort')
     }
     case 'Bash': {
       const cmd = input.command || ''
       if (cmd) {
         const short = cmd.length > 50 ? cmd.slice(0, 50) + '…' : cmd
-        return `执行: ${short}`
+        return t('processBlock.execute', { cmd: short })
       }
-      return '执行命令'
+      return t('processBlock.executeCommand')
     }
     case 'Grep': {
       const pattern = input.pattern || ''
-      return pattern ? `搜索 "${pattern}"` : '搜索'
+      return pattern ? t('processBlock.search', { pattern }) : t('processBlock.searchShort')
     }
     case 'Glob': {
       const pattern = input.pattern || ''
-      return pattern ? `查找 ${pattern}` : '查找文件'
+      return pattern ? t('processBlock.find', { pattern }) : t('processBlock.findFile')
     }
     case 'LS': {
       const path = input.path || ''
-      return path ? `列出 ${shortenPath(path)}` : '列出目录'
+      return path ? t('processBlock.list', { path: shortenPath(path) }) : t('processBlock.listDir')
     }
     case 'WebSearch': {
       const query = input.query || ''
-      return query ? `搜索: ${query}` : '网络搜索'
+      return query ? t('processBlock.webSearch', { query }) : t('processBlock.webSearchShort')
     }
     case 'WebFetch': {
       const url = input.url || ''
-      return url ? `获取 ${url}` : '获取网页'
+      return url ? t('processBlock.webFetch', { url }) : t('processBlock.webFetchShort')
     }
     case 'TaskCreate': {
       const subject = input.subject || ''
-      return subject ? `创建任务: ${subject}` : '创建任务'
+      return subject ? t('processBlock.createTask', { subject }) : t('processBlock.createTaskShort')
     }
     case 'TaskUpdate': {
       const statusMap = {
-        pending: '待处理',
-        in_progress: '进行中',
-        completed: '已完成',
-        blocked: '已阻塞',
-        cancelled: '已取消',
+        pending: t('processBlock.statusPending'),
+        in_progress: t('processBlock.statusInProgress'),
+        completed: t('processBlock.statusCompleted'),
+        blocked: t('processBlock.statusBlocked'),
+        cancelled: t('processBlock.statusCancelled'),
       }
       const parts = []
       if (input.taskId) parts.push(`#${input.taskId}`)
       if (input.status && statusMap[input.status]) parts.push(statusMap[input.status])
       if (input.subject) parts.push(input.subject)
-      return parts.length > 0 ? `更新任务 ${parts.join(' ')}` : '更新任务'
+      return parts.length > 0 ? t('processBlock.updateTask', { parts: parts.join(' ') }) : t('processBlock.updateTaskShort')
     }
     default:
       return name

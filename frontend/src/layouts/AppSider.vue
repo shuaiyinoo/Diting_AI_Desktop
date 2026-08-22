@@ -55,40 +55,42 @@
             ? 'bg-gradient-to-br from-[#1677ff] to-[#4096ff] text-white shadow-[0_2px_8px_rgba(22,119,255,0.3)]'
             : 'bg-transparent text-muted-foreground hover:bg-accent hover:text-accent-foreground',
         ]"
-        :title="'设置'"
+        :title="t('sidebar.settings')"
         @click="menuHandle('menu_setting')"
       >
         <Settings class="size-5 shrink-0" />
-        <span v-if="!isCollapsed" class="overflow-hidden text-ellipsis font-medium tracking-tight">设置</span>
+        <span v-if="!isCollapsed" class="overflow-hidden text-ellipsis font-medium tracking-tight">{{ t('sidebar.settings') }}</span>
       </button>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { File, MessageSquare, Bot, Settings } from '@lucide/vue'
 
 const router = useRouter()
+const { t } = useI18n()
 
 const isCollapsed = ref(true)
 const current = ref('menu_file')
 
-const menuItems = ref([
-  { key: 'menu_file', icon: File, title: '文件', pageName: 'File', params: {} },
-  { key: 'menu_chat', icon: MessageSquare, title: 'Chat', pageName: 'Chat', params: {} },
-  { key: 'menu_agent', icon: Bot, title: 'Agent', pageName: 'Agent', params: {} },
+const menuItems = computed(() => [
+  { key: 'menu_file', icon: File, title: t('sidebar.file'), pageName: 'File', params: {} },
+  { key: 'menu_chat', icon: MessageSquare, title: t('sidebar.chat'), pageName: 'Chat', params: {} },
+  { key: 'menu_agent', icon: Bot, title: t('sidebar.agent'), pageName: 'Agent', params: {} },
 ])
 
-const settingItem = { key: 'menu_setting', icon: Settings, title: '设置', pageName: 'Setting', params: {} }
+const settingItem = computed(() => ({ key: 'menu_setting', icon: Settings, title: t('sidebar.settings'), pageName: 'Setting', params: {} }))
 
-const menuMap = ref({
+const menuMap = computed(() => ({
   menu_file: menuItems.value[0],
   menu_chat: menuItems.value[1],
   menu_agent: menuItems.value[2],
-  menu_setting: settingItem,
-})
+  menu_setting: settingItem.value,
+}))
 
 onMounted(() => {
   menuHandle('menu_file')

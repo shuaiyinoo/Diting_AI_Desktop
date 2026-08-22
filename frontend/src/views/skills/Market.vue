@@ -7,10 +7,10 @@
         @click="$emit('back')"
       >
         <ArrowLeft class="size-4" />
-        返回
+        {{ t('skillsMarket.back') }}
       </button>
       <div class="h-5 w-px bg-border" />
-      <h1 class="text-base font-semibold text-foreground">Skills 市场</h1>
+      <h1 class="text-base font-semibold text-foreground">{{ t('skillsMarket.title') }}</h1>
       <span class="rounded bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">skills.sh</span>
       <div class="ml-auto flex w-full max-w-[420px] items-center gap-2">
         <div class="relative flex-1">
@@ -18,7 +18,7 @@
           <input
             v-model="searchQuery"
             type="text"
-            placeholder="搜索 Skill 名称 / 功能描述..."
+            :placeholder="t('skillsMarket.searchPlaceholder')"
             class="w-full rounded-lg border border-border bg-background py-2 pl-9 pr-3 text-sm text-foreground outline-none transition-all placeholder:text-muted-foreground/60 focus:border-primary focus:ring-2 focus:ring-primary/10"
             @keydown.enter="doSearch"
           />
@@ -26,14 +26,14 @@
         <Button size="sm" class="shrink-0" :disabled="searching" @click="doSearch">
           <Spinner v-if="searching" class="size-4" />
           <Search v-else class="size-4" />
-          搜索
+          {{ t('skillsMarket.search') }}
         </Button>
       </div>
     </div>
 
     <!-- ========== Topic 筛选 ========== -->
     <div class="flex shrink-0 items-center gap-2 border-b border-border px-6 py-2.5">
-      <span class="shrink-0 text-xs font-medium text-muted-foreground">Topic：</span>
+      <span class="shrink-0 text-xs font-medium text-muted-foreground">{{ t('skillsMarket.topic') }}</span>
       <button
         v-for="topic in topicChips"
         :key="topic.slug"
@@ -50,27 +50,27 @@
       <!-- 加载中 -->
       <div v-if="loading" class="flex min-h-[300px] flex-col items-center justify-center gap-2 text-muted-foreground">
         <Spinner class="size-6" />
-        <span class="text-sm">加载中...</span>
+        <span class="text-sm">{{ t('skillsMarket.loading') }}</span>
       </div>
 
       <!-- 空状态 -->
       <div v-else-if="displaySkills.length === 0" class="flex min-h-[300px] flex-col items-center justify-center gap-2 text-muted-foreground">
         <Package class="size-10 opacity-20" />
-        <p class="text-sm">暂无 Skills</p>
-        <p class="max-w-[320px] text-center text-[11px] leading-relaxed">尝试更换关键词搜索</p>
+        <p class="text-sm">{{ t('skillsMarket.noSkills') }}</p>
+        <p class="max-w-[320px] text-center text-[11px] leading-relaxed">{{ t('skillsMarket.noSkillsHint') }}</p>
       </div>
 
       <!-- 技能卡片网格 -->
       <template v-else>
         <!-- 搜索结果标题 -->
         <div v-if="isSearchMode" class="mb-3 text-xs font-medium text-muted-foreground">
-          搜索 "<span class="text-foreground">{{ searchQuery }}</span>" 找到 {{ displaySkills.length }} 个结果
+          {{ t('skillsMarket.searchResult', { query: searchQuery, count: displaySkills.length }) }}
         </div>
         <div v-else-if="activeTopic !== 'all'" class="mb-3 text-xs font-medium text-muted-foreground">
-          📂 {{ topicChips.find(t => t.slug === activeTopic)?.title }} · {{ displaySkills.length }} 个 Skills
+          {{ t('skillsMarket.topicResult', { topic: topicChips.find(tc => tc.slug === activeTopic)?.title || '', count: displaySkills.length }) }}
         </div>
         <div v-else class="mb-3 text-xs font-medium text-muted-foreground">
-          🔥 热门 Top {{ displaySkills.length }}
+          {{ t('skillsMarket.hotTop', { count: displaySkills.length }) }}
         </div>
 
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -157,9 +157,9 @@
         <!-- 说明 / 资源文件 Tab -->
         <div class="flex min-h-0 flex-1 flex-col">
           <div class="flex shrink-0 gap-1 border-b border-border/50 pb-2">
-            <Button variant="ghost" size="sm" class="inline-flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-medium" :class="detailTab === 'body' ? 'border border-border bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:bg-accent'" @click="detailTab = 'body'">说明</Button>
-            <Button variant="ghost" size="sm" class="inline-flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-medium" :class="detailTab === 'files' ? 'border border-border bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:bg-accent'" @click="detailTab = 'files'">
-              资源文件
+          <Button variant="ghost" size="sm" class="inline-flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-medium" :class="detailTab === 'body' ? 'border border-border bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:bg-accent'" @click="detailTab = 'body'">{{ t('skillsMarket.body') }}</Button>
+          <Button variant="ghost" size="sm" class="inline-flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-medium" :class="detailTab === 'files' ? 'border border-border bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:bg-accent'" @click="detailTab = 'files'">
+              {{ t('skillsMarket.resourceFiles') }}
               <span v-if="marketFileCount > 0" class="inline-flex h-4 min-w-[18px] items-center justify-center rounded bg-muted px-1 text-[10px] font-semibold text-muted-foreground">{{ marketFileCount }}</span>
             </Button>
           </div>
@@ -171,8 +171,8 @@
             </div>
             <div v-else-if="!skillBody" class="flex flex-col items-center justify-center gap-2 py-10 text-muted-foreground">
               <FileText class="size-8 opacity-20" />
-              <p class="text-sm">暂无说明内容</p>
-              <p class="max-w-[280px] text-center text-[11px] leading-relaxed">该 Skill 可能不包含 SKILL.md 文件</p>
+              <p class="text-sm">{{ t('skillsMarket.noBody') }}</p>
+              <p class="max-w-[280px] text-center text-[11px] leading-relaxed">{{ t('skillsMarket.noBodyHint') }}</p>
             </div>
             <div v-else class="prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed text-foreground">
               <MarkdownRender
@@ -193,7 +193,7 @@
             </div>
             <template v-else>
               <div v-if="marketFileTree.length === 0" class="flex items-center justify-center py-10 text-xs text-muted-foreground">
-                该 Skill 暂无其他资源文件
+                {{ t('skillsMarket.noResourceFiles') }}
               </div>
               <div v-else class="grid min-h-0 flex-1 grid-cols-1 gap-3 sm:grid-cols-[240px_1fr]">
                 <!-- 左栏：文件树 -->
@@ -212,7 +212,7 @@
                 <!-- 右栏：文件内容 -->
                 <div class="flex min-h-0 min-w-0 flex-col overflow-hidden rounded-lg border border-border/50">
                   <div v-if="!selectedFilePath" class="flex flex-1 items-center justify-center p-6 text-xs text-muted-foreground">
-                    从左侧选择文件查看内容
+                    {{ t('skillsMarket.selectFileLeft') }}
                   </div>
                   <template v-else>
                     <div class="flex shrink-0 items-center justify-between gap-2 border-b border-border/50 bg-muted/30 px-3 py-2">
@@ -231,9 +231,9 @@
       <!-- 底部安装按钮 -->
       <div class="flex shrink-0 items-center gap-2.5 border-t border-border bg-card px-5 py-3.5">
         <span class="mr-auto text-[11px] text-muted-foreground">
-          💡 安装后可在 Agent 中通过
+          {{ t('skillsMarket.installHint') }}
           <code class="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px]">/skill:{{ selectedSkill.slug }}</code>
-          命令调用
+          {{ t('skillsMarket.installCommand') }}
         </span>
         <Button
           size="sm"
@@ -243,7 +243,7 @@
         >
           <Spinner v-if="installingAll" class="size-3.5" />
           <Download v-else class="size-3.5" />
-          安装到本地
+          {{ t('skillsMarket.installTo') }}
         </Button>
       </div>
     </aside>
@@ -253,6 +253,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
 import { ArrowLeft, Download, FileText, Package, Search, Star, X } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
@@ -263,6 +264,7 @@ import MarkdownRender from 'markstream-vue'
 import { isDark } from '@/theme'
 import SkillFileTreeNode from '@/components/skills/SkillFileTreeNode.vue'
 
+const { t } = useI18n()
 const emit = defineEmits(['back', 'installed'])
 
 // ========== 数据 ==========
@@ -294,9 +296,9 @@ const installingAll = ref(false)
 
 // ========== Topic 筛选 ==========
 const topicChips = computed(() => {
-  return [
-    { slug: 'all', title: '全部', skillCount: skills.value.length },
-    ...topics.value.map((t) => ({ slug: t.slug, title: t.title, skillCount: t.skillCount })),
+    return [
+    { slug: 'all', title: t('skillsMarket.all'), skillCount: skills.value.length },
+    ...topics.value.map((tc) => ({ slug: tc.slug, title: tc.title, skillCount: tc.skillCount })),
   ]
 })
 
@@ -305,7 +307,7 @@ const displaySkills = computed(() => {
   if (isSearchMode.value) return skills.value
   if (activeTopic.value === 'all') return skills.value
   // 按 topic 的 skillIds 过滤
-  const topic = topics.value.find((t) => t.slug === activeTopic.value)
+  const topic = topics.value.find((tc) => tc.slug === activeTopic.value)
   if (!topic) return skills.value
   const idSet = new Set(topic.skillIds)
   return skills.value.filter((s) => idSet.has(s.id))
@@ -316,12 +318,12 @@ const detailRows = computed(() => {
   if (!selectedSkill.value) return []
   const s = selectedSkill.value
   return [
-    { label: '名称', value: s.name },
+    { label: t('skillsMarket.name'), value: s.name },
     { label: 'Slug', value: s.slug, mono: true },
-    { label: '来源', value: s.source || '-', mono: true },
-    { label: '仓库', value: s.repo_url || '-', mono: true },
-    { label: '安装数', value: s.installs != null ? String(s.installs) : '-' },
-    { label: '文件数', value: marketFileCount.value > 0 ? `${marketFileCount.value} 个文件` : '-' },
+    { label: t('skillsMarket.source'), value: s.source || '-', mono: true },
+    { label: t('skillsMarket.repo'), value: s.repo_url || '-', mono: true },
+    { label: t('skillsMarket.installs'), value: s.installs != null ? String(s.installs) : '-' },
+    { label: t('skillsMarket.fileCount'), value: marketFileCount.value > 0 ? `${marketFileCount.value} ${t('common.fileCount')}` : '-' },
   ]
 })
 
@@ -342,11 +344,11 @@ async function loadTop100() {
     if (res.code === 0 && res.data) {
       skills.value = res.data
     } else {
-      toast.error(res.message || '加载失败')
+      toast.error(res.message || t('skillsMarket.loadFailed'))
     }
   } catch (err) {
     console.error('[SkillsMarket] 加载Top100失败:', err)
-    toast.error('加载失败，请检查网络连接')
+    toast.error(t('skillsMarket.loadFailedNetwork'))
   } finally {
     loading.value = false
   }
@@ -383,14 +385,14 @@ async function doSearch() {
     if (res.code === 0 && res.data) {
       skills.value = res.data
       if (res.data.length === 0) {
-        toast.info('未找到匹配的 Skills')
+        toast.info(t('skillsMarket.noMatch'))
       }
     } else {
-      toast.error(res.message || '搜索失败')
+      toast.error(res.message || t('skillsMarket.searchFailed'))
     }
   } catch (err) {
     console.error('[SkillsMarket] 搜索失败:', err)
-    toast.error('搜索失败，请检查网络连接')
+    toast.error(t('skillsMarket.searchFailedNetwork'))
   } finally {
     loading.value = false
     searching.value = false
@@ -426,7 +428,7 @@ async function openDetail(skill) {
     }
   } catch (err) {
     console.error('[SkillsMarket] 加载详情失败:', err)
-    toast.error('加载详情失败')
+    toast.error(t('skillsMarket.detailLoadFailed'))
   } finally {
     loadingDetail.value = false
   }
@@ -535,7 +537,7 @@ async function installToAll() {
       skillId: selectedSkill.value.id,
     })
     if (res.code === 0 && res.data) {
-      toast.success(`已安装「${res.data.slug}」到本地（${res.data.fileCount} 个文件，已同步到 ${res.data.workspaceCount} 个工作区）`)
+      toast.success(t('skillsMarket.installed', { slug: res.data.slug, fileCount: res.data.fileCount, workspaceCount: res.data.workspaceCount }))
       emit('installed')
       closeDetail()
     } else {
@@ -543,7 +545,7 @@ async function installToAll() {
     }
   } catch (err) {
     console.error('[SkillsMarket] 安装到本地失败:', err)
-    toast.error('安装失败: ' + (err?.message || String(err)))
+    toast.error(t('skillsMarket.installFailed') + ': ' + (err?.message || String(err)))
   } finally {
     installing.value = false
     installingAll.value = false

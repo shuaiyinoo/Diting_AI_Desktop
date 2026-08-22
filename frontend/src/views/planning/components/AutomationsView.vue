@@ -5,10 +5,10 @@
       <!-- 空状态 -->
       <div v-if="automations.length === 0" class="flex min-h-[300px] flex-1 flex-col items-center justify-center gap-3 text-center">
         <div class="flex size-16 items-center justify-center rounded-full bg-primary/[0.06] text-primary"><Clock class="size-7" /></div>
-        <h3 class="m-0 text-base text-foreground">定时任务</h3>
-        <p class="max-w-[400px] text-[13px] leading-relaxed text-muted-foreground">用自然语言描述一个任务，调度器按设定间隔在后台自动新建子会话执行。</p>
+        <h3 class="m-0 text-base text-foreground">{{ t('automation.title') }}</h3>
+        <p class="max-w-[400px] text-[13px] leading-relaxed text-muted-foreground">{{ t('automation.desc') }}</p>
         <Button size="sm" @click="createNew">
-          <Plus class="size-4" /> 新建定时任务
+          <Plus class="size-4" /> {{ t('automation.createNew') }}
         </Button>
       </div>
 
@@ -16,7 +16,7 @@
       <template v-else>
         <!-- 启用中 -->
         <div v-if="activeAutomations.length" class="mb-5">
-          <div class="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">启用中</div>
+          <div class="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{{ t('automation.activeGroup') }}</div>
           <div
             v-for="a in activeAutomations"
             :key="a.id"
@@ -28,15 +28,15 @@
               <div class="mb-2 line-clamp-2 overflow-hidden text-[13px] text-muted-foreground">{{ a.prompt }}</div>
               <div class="flex flex-wrap gap-1.5">
                 <span class="inline-flex h-5 items-center gap-0.5 rounded bg-primary/[0.08] px-2 text-[11px] font-medium text-primary">{{ scheduleLabel(a) }}</span>
-                <span v-if="a.nextRunAt" class="inline-flex h-5 items-center rounded bg-foreground/[0.04] px-2 text-[11px] text-muted-foreground">下次: {{ formatTime(a.nextRunAt) }}</span>
-                <span v-if="a.lastRunAt" class="inline-flex h-5 items-center rounded bg-foreground/[0.04] px-2 text-[11px] text-muted-foreground">上次: {{ formatTime(a.lastRunAt) }}</span>
-                <span v-if="a.runCount" class="inline-flex h-5 items-center rounded bg-foreground/[0.04] px-2 text-[11px] text-muted-foreground">已执行 {{ a.runCount }} 次</span>
-                <span v-if="a.maxRuns" class="inline-flex h-5 items-center rounded bg-foreground/[0.04] px-2 text-[11px] text-muted-foreground">上限 {{ a.maxRuns }}</span>
+                <span v-if="a.nextRunAt" class="inline-flex h-5 items-center rounded bg-foreground/[0.04] px-2 text-[11px] text-muted-foreground">{{ t('automation.nextRun') }}: {{ formatTime(a.nextRunAt) }}</span>
+                <span v-if="a.lastRunAt" class="inline-flex h-5 items-center rounded bg-foreground/[0.04] px-2 text-[11px] text-muted-foreground">{{ t('automation.lastRun') }}: {{ formatTime(a.lastRunAt) }}</span>
+                <span v-if="a.runCount" class="inline-flex h-5 items-center rounded bg-foreground/[0.04] px-2 text-[11px] text-muted-foreground">{{ t('automation.runCount', { count: a.runCount }) }}</span>
+                <span v-if="a.maxRuns" class="inline-flex h-5 items-center rounded bg-foreground/[0.04] px-2 text-[11px] text-muted-foreground">{{ t('automation.maxRuns', { count: a.maxRuns }) }}</span>
               </div>
             </div>
             <div class="flex shrink-0 gap-1">
               <Button variant="outline" size="sm" class="h-[30px] gap-1 px-2.5 text-xs" :disabled="runningIds.has(a.id)" @click.stop="runNow(a)">
-                <Play class="size-3.5" /> {{ runningIds.has(a.id) ? '运行中…' : '立即运行' }}
+                <Play class="size-3.5" /> {{ runningIds.has(a.id) ? t('automation.running') : t('automation.runNow') }}
               </Button>
               <Button variant="outline" size="sm" class="h-[30px] gap-1 px-2.5 text-xs" @click.stop="togglePause(a)">
                 <PauseCircle v-if="a.active" class="size-3.5" /> <PlayCircle v-else class="size-3.5" />
@@ -50,7 +50,7 @@
 
         <!-- 已暂停 -->
         <div v-if="pausedAutomations.length" class="mb-5">
-          <div class="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">已暂停</div>
+          <div class="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{{ t('automation.pausedGroup') }}</div>
           <div
             v-for="a in pausedAutomations"
             :key="a.id"
@@ -62,12 +62,12 @@
               <div class="mb-2 line-clamp-2 overflow-hidden text-[13px] text-muted-foreground">{{ a.prompt }}</div>
               <div class="flex flex-wrap gap-1.5">
                 <span class="inline-flex h-5 items-center gap-0.5 rounded bg-primary/[0.08] px-2 text-[11px] font-medium text-primary">{{ scheduleLabel(a) }}</span>
-                <span v-if="a.consecutiveFailures" class="inline-flex h-5 items-center gap-0.5 rounded bg-amber-500/10 px-2 text-[11px] text-amber-600">连续失败 {{ a.consecutiveFailures }}</span>
+                <span v-if="a.consecutiveFailures" class="inline-flex h-5 items-center gap-0.5 rounded bg-amber-500/10 px-2 text-[11px] text-amber-600">{{ t('automation.consecutiveFailures', { count: a.consecutiveFailures }) }}</span>
               </div>
             </div>
             <div class="flex shrink-0 gap-1">
               <Button variant="outline" size="sm" class="h-[30px] gap-1 px-2.5 text-xs" @click.stop="togglePause(a)">
-                <PlayCircle class="size-3.5" /> 启用
+                <PlayCircle class="size-3.5" /> {{ t('automation.enable') }}
               </Button>
               <Button variant="outline" size="sm" class="h-[30px] gap-1 px-2.5 text-xs hover:text-destructive hover:bg-destructive/5" @click.stop="confirmDelete(a)">
                 <Trash2 class="size-3.5" />
@@ -78,7 +78,7 @@
 
         <!-- 已完成 -->
         <div v-if="completedAutomations.length" class="mb-5">
-          <div class="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">已完成</div>
+          <div class="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{{ t('automation.completedGroup') }}</div>
           <div
             v-for="a in completedAutomations"
             :key="a.id"
@@ -89,13 +89,13 @@
               <div class="mb-1 text-sm font-semibold text-foreground">{{ a.name }}</div>
               <div class="mb-2 line-clamp-2 overflow-hidden text-[13px] text-muted-foreground">{{ a.prompt }}</div>
               <div class="flex flex-wrap gap-1.5">
-                <span class="inline-flex h-5 items-center gap-0.5 rounded bg-green-500/10 px-2 text-[11px] text-green-600"><Check class="size-3" /> 已完成</span>
-                <span v-if="a.runCount" class="inline-flex h-5 items-center rounded bg-foreground/[0.04] px-2 text-[11px] text-muted-foreground">执行 {{ a.runCount }} 次</span>
+                <span class="inline-flex h-5 items-center gap-0.5 rounded bg-green-500/10 px-2 text-[11px] text-green-600"><Check class="size-3" /> {{ t('automation.completed') }}</span>
+                <span v-if="a.runCount" class="inline-flex h-5 items-center rounded bg-foreground/[0.04] px-2 text-[11px] text-muted-foreground">{{ t('automation.executed', { count: a.runCount }) }}</span>
               </div>
             </div>
             <div class="flex shrink-0 gap-1">
               <Button variant="outline" size="sm" class="h-[30px] gap-1 px-2.5 text-xs" @click.stop="togglePause(a)">
-                <PlayCircle class="size-3.5" /> 重新启用
+                <PlayCircle class="size-3.5" /> {{ t('automation.reenable') }}
               </Button>
               <Button variant="outline" size="sm" class="h-[30px] gap-1 px-2.5 text-xs hover:text-destructive hover:bg-destructive/5" @click.stop="confirmDelete(a)">
                 <Trash2 class="size-3.5" />
@@ -114,7 +114,7 @@
           <!-- 顶部：返回 + 标题 -->
           <div class="flex shrink-0 items-center gap-3 pb-2">
             <Button variant="outline" size="sm" class="shrink-0 gap-1.5" @click="closeForm">
-              <ChevronLeft class="size-4" /> 返回
+              <ChevronLeft class="size-4" /> {{ t('automation.back') }}
             </Button>
             <!-- 双击编辑任务名 -->
             <Input
@@ -122,35 +122,32 @@
               ref="titleInputRef"
               v-model="draft.name"
               class="min-w-0 flex-1 text-base font-semibold"
-              placeholder="任务名称"
+              :placeholder="t('automation.taskName')"
               @blur="titleEditing = false"
               @keydown.enter="titleEditing = false"
               @keydown.esc="titleEditing = false"
             />
             <h3 v-else class="m-0 flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 text-base text-foreground select-none" @dblclick="startEditTitle">
-              <span class="truncate">{{ draft.name || '未命名任务' }}</span>
+              <span class="truncate">{{ draft.name || t('automation.untitled') }}</span>
               <Pencil class="size-3.5 shrink-0 text-muted-foreground" />
             </h3>
           </div>
           <!-- 提示卡片 -->
           <div class="mb-2 flex flex-col gap-1.5 rounded-lg border border-border/50 bg-foreground/[0.04] p-3 px-3.5">
-            <p class="m-0 text-xs font-semibold text-muted-foreground">推荐：让 Diting Agent 创建</p>
-            <p class="m-0 text-xs leading-relaxed text-muted-foreground">在左侧会话里说清目标，并明确表示要求创建定时任务，Diting Agent 会生成任务描述，并补全周期、项目和模型等配置，手动编辑更适合微调任务描述。</p>
-            <p class="m-0 text-xs font-semibold text-muted-foreground">手动编写时，只写任务本身</p>
-            <p class="m-0 text-xs leading-relaxed text-muted-foreground">例：检查 Diting 仓库新增 issue，主动回复问答类问题，不清楚的部分整理到项目级 Context 的 .context/issue-faq.md 文档；真正的 Bug 或请求罗列后发给我，不要记录任何重复的信息。</p>
+            <p class="m-0 text-xs font-semibold text-muted-foreground">{{ t('automation.recommendAgent') }}</p>
+            <p class="m-0 text-xs leading-relaxed text-muted-foreground">{{ t('automation.recommendAgentDesc') }}</p>
+            <p class="m-0 text-xs font-semibold text-muted-foreground">{{ t('automation.manualTip') }}</p>
+            <p class="m-0 text-xs leading-relaxed text-muted-foreground">{{ t('automation.manualExample') }}</p>
           </div>
 
-          <Label class="text-xs font-medium text-muted-foreground">自然语言任务描述</Label>
+          <Label class="text-xs font-medium text-muted-foreground">{{ t('automation.promptLabel') }}</Label>
           <Textarea
             v-model="draft.prompt"
             class="min-h-[200px] flex-1 resize-y text-[13px] leading-relaxed"
-            placeholder="用自然语言描述你想让 Agent 做什么。例如：
-• 每天早上检查项目 CI 状态，如有失败则汇总失败原因
-• 每小时获取最新新闻摘要
-• 检查数据库中未处理的订单，自动生成处理方案"
+            :placeholder="t('automation.promptPlaceholder')"
           />
           <div class="mt-1 text-xs text-muted-foreground">
-            💡 推荐让 Agent 在对话中创建 — 只需在聊天中描述你想要的自动化任务。
+            {{ t('automation.agentCreateHint') }}
           </div>
         </div>
 
@@ -159,16 +156,16 @@
           <div class="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-1 py-1">
           <!-- 启用状态 -->
           <div class="flex flex-col gap-1.5">
-            <Label class="text-xs font-medium text-muted-foreground">状态</Label>
+            <Label class="text-xs font-medium text-muted-foreground">{{ t('automation.statusLabel') }}</Label>
             <div class="flex cursor-pointer items-center gap-2 rounded-lg border border-border/50 px-3 py-2" :class="{ 'opacity-60': !draft.channelId || !draft.workspaceId }">
               <Switch
                 :checked="draft.active"
                 :disabled="!draft.channelId || !draft.workspaceId"
                 @update:checked="draft.active = $event"
               />
-              <span>启用</span>
+              <span>{{ t('automation.enableLabel') }}</span>
               <span class="text-[11px] text-muted-foreground">
-                {{ !draft.channelId || !draft.workspaceId ? '需要配置模型与项目才能启用' : '启用后将按设定频率自动执行' }}
+                {{ !draft.channelId || !draft.workspaceId ? t('automation.enableHint') : t('automation.enableHintActive') }}
               </span>
             </div>
           </div>
@@ -176,20 +173,20 @@
           <!-- 运行频率 + 关联调度控件（同一行） -->
           <div class="flex gap-3">
             <div class="flex min-w-0 flex-1 flex-col gap-1.5">
-              <Label class="text-xs font-medium text-muted-foreground">运行频率</Label>
+              <Label class="text-xs font-medium text-muted-foreground">{{ t('automation.frequencyLabel') }}</Label>
               <Select v-model="draft.scheduleType">
-                <SelectTrigger class="w-full"><SelectValue placeholder="选择频率" /></SelectTrigger>
+                <SelectTrigger class="w-full"><SelectValue :placeholder="t('automation.selectFrequency')" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="interval">每 N 分钟</SelectItem>
-                  <SelectItem value="daily">每天定点</SelectItem>
-                  <SelectItem value="weekly">每周定点</SelectItem>
-                  <SelectItem value="monthly">每月定点</SelectItem>
-                  <SelectItem value="once">仅一次</SelectItem>
+                  <SelectItem value="interval">{{ t('automation.interval') }}</SelectItem>
+                  <SelectItem value="daily">{{ t('automation.daily') }}</SelectItem>
+                  <SelectItem value="weekly">{{ t('automation.weekly') }}</SelectItem>
+                  <SelectItem value="monthly">{{ t('automation.monthly') }}</SelectItem>
+                  <SelectItem value="once">{{ t('automation.once') }}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div v-if="draft.scheduleType === 'interval'" class="flex min-w-0 flex-1 flex-col gap-1.5">
-              <Label class="text-xs font-medium text-muted-foreground">间隔（分钟）</Label>
+              <Label class="text-xs font-medium text-muted-foreground">{{ t('automation.intervalMinutes') }}</Label>
               <Input
                 type="number"
                 :model-value="draft.intervalMinutes"
@@ -200,35 +197,34 @@
               />
             </div>
             <div v-if="draft.scheduleType === 'daily' || draft.scheduleType === 'weekly' || draft.scheduleType === 'monthly'" class="flex min-w-0 flex-1 flex-col gap-1.5">
-              <Label class="text-xs font-medium text-muted-foreground">触发时刻</Label>
-              <Input
-                type="time"
+              <Label class="text-xs font-medium text-muted-foreground">{{ t('automation.triggerTime') }}</Label>
+              <TimePicker
                 :model-value="draftTimeOfDayInput"
                 @update:model-value="draftTimeOfDayInput = $event"
-                class="h-8 text-[13px]"
+                class="text-[13px]"
               />
             </div>
             <div v-if="draft.scheduleType === 'weekly'" class="flex min-w-0 flex-1 flex-col gap-1.5">
-              <Label class="text-xs font-medium text-muted-foreground">星期</Label>
+              <Label class="text-xs font-medium text-muted-foreground">{{ t('automation.weekday') }}</Label>
               <Select v-model="draft.dayOfWeek">
-                <SelectTrigger class="w-full"><SelectValue placeholder="选择星期" /></SelectTrigger>
+                <SelectTrigger class="w-full"><SelectValue :placeholder="t('automation.selectWeekday')" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem :value="0">周日</SelectItem>
-                  <SelectItem v-for="n in 6" :key="n" :value="n">{{ ['周一','周二','周三','周四','周五','周六'][n-1] }}</SelectItem>
+                  <SelectItem :value="0">{{ t('automation.sunday') }}</SelectItem>
+                  <SelectItem v-for="n in 6" :key="n" :value="n">{{ [t('automation.monday'),t('automation.tuesday'),t('automation.wednesday'),t('automation.thursday'),t('automation.friday'),t('automation.saturday')][n-1] }}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div v-if="draft.scheduleType === 'monthly'" class="flex min-w-0 flex-1 flex-col gap-1.5">
-              <Label class="text-xs font-medium text-muted-foreground">日期</Label>
+              <Label class="text-xs font-medium text-muted-foreground">{{ t('automation.monthDay') }}</Label>
               <Select v-model="draft.dayOfMonth">
-                <SelectTrigger class="w-full"><SelectValue placeholder="选择日期" /></SelectTrigger>
+                <SelectTrigger class="w-full"><SelectValue :placeholder="t('automation.selectDay')" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem v-for="n in 31" :key="n" :value="n">{{ n }} 号</SelectItem>
+                  <SelectItem v-for="n in 31" :key="n" :value="n">{{ t('automation.dayN', { n }) }}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div v-if="draft.scheduleType === 'once'" class="flex min-w-0 flex-1 flex-col gap-1.5">
-              <Label class="text-xs font-medium text-muted-foreground">触发时间</Label>
+              <Label class="text-xs font-medium text-muted-foreground">{{ t('automation.scheduledAt') }}</Label>
               <DateTimePicker
                 :model-value="draftScheduledAtInput"
                 @update:model-value="draftScheduledAtInput = $event"
@@ -240,24 +236,24 @@
           <!-- 运行次数上限 + 会话模式（同一行） -->
           <div class="flex gap-3">
             <div class="flex min-w-0 flex-1 flex-col gap-1.5">
-              <Label class="text-xs font-medium text-muted-foreground">运行次数上限</Label>
+              <Label class="text-xs font-medium text-muted-foreground">{{ t('automation.maxRunsLabel') }}</Label>
               <Input
                 type="number"
                 :model-value="draft.maxRuns"
                 @update:model-value="draft.maxRuns = Number($event)"
                 min="0"
-                placeholder="0=不限"
+                :placeholder="t('automation.maxRunsHint')"
                 class="h-8 text-[13px]"
               />
-              <span class="text-xs text-muted-foreground">达到上限后自动停用</span>
+              <span class="text-xs text-muted-foreground">{{ t('automation.maxRunsReached') }}</span>
             </div>
             <div class="flex min-w-0 flex-1 flex-col gap-1.5">
-              <Label class="text-xs font-medium text-muted-foreground">会话模式</Label>
+              <Label class="text-xs font-medium text-muted-foreground">{{ t('automation.sessionMode') }}</Label>
               <Select v-model="draft.sessionMode">
-                <SelectTrigger class="w-full"><SelectValue placeholder="选择会话模式" /></SelectTrigger>
+                <SelectTrigger class="w-full"><SelectValue :placeholder="t('automation.selectSessionMode')" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="daily">每日复用（默认）</SelectItem>
-                  <SelectItem value="reuse">始终复用</SelectItem>
+                  <SelectItem value="daily">{{ t('automation.sessionDaily') }}</SelectItem>
+                  <SelectItem value="reuse">{{ t('automation.sessionReuse') }}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -265,9 +261,9 @@
 
           <!-- 模型 -->
           <div class="flex flex-col gap-1.5">
-            <Label class="text-xs font-medium text-muted-foreground">模型</Label>
+            <Label class="text-xs font-medium text-muted-foreground">{{ t('automation.modelLabel') }}</Label>
             <Select v-model="draft.channelId">
-              <SelectTrigger class="w-full"><SelectValue placeholder="选择渠道" /></SelectTrigger>
+              <SelectTrigger class="w-full"><SelectValue :placeholder="t('automation.selectChannel')" /></SelectTrigger>
               <SelectContent>
                 <SelectItem v-for="c in channels" :key="c.id" :value="c.id">{{ c.name }}</SelectItem>
               </SelectContent>
@@ -276,9 +272,9 @@
 
           <!-- 项目 -->
           <div class="flex flex-col gap-1.5">
-            <Label class="text-xs font-medium text-muted-foreground">项目</Label>
+            <Label class="text-xs font-medium text-muted-foreground">{{ t('automation.projectLabel') }}</Label>
             <Select v-model="draft.workspaceId">
-              <SelectTrigger class="w-full"><SelectValue placeholder="选择工作区" /></SelectTrigger>
+              <SelectTrigger class="w-full"><SelectValue :placeholder="t('automation.selectWorkspace')" /></SelectTrigger>
               <SelectContent>
                 <SelectItem v-for="p in ws.agentProjects" :key="p.id" :value="p.id">{{ p.name }}</SelectItem>
               </SelectContent>
@@ -287,12 +283,12 @@
 
           <!-- 安全警告 -->
           <div class="rounded-lg border border-amber-500/20 bg-amber-500/[0.08] px-3 py-2.5 text-xs leading-relaxed text-amber-700">
-            ⚠️ 此任务将以完全权限无人值守运行，确保任务描述清晰且无高风险操作。
+            {{ t('automation.securityWarn') }}
           </div>
 
           <!-- 运行历史 -->
           <div v-if="draft.id && draft.runHistory?.length" class="flex flex-col gap-1.5">
-            <Label class="text-xs font-medium text-muted-foreground">运行历史（最近 10 条）</Label>
+            <Label class="text-xs font-medium text-muted-foreground">{{ t('automation.runHistory') }}</Label>
             <div
               v-for="(run, i) in draft.runHistory.slice(0, 10)"
               :key="i"
@@ -310,7 +306,7 @@
           <!-- 底部操作（固定在右栏底部） -->
           <div class="flex shrink-0 border-t border-border/50 bg-card pt-2">
             <Button class="h-8 flex-1 gap-1.5" @click="runNowDraft" :disabled="!draft.id">
-              <Play class="size-3.5" /> 运行一次
+              <Play class="size-3.5" /> {{ t('automation.runOnce') }}
             </Button>
           </div>
         </div>
@@ -321,12 +317,12 @@
     <Dialog v-model:open="deleteModalOpen">
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>确认删除定时任务</DialogTitle>
+          <DialogTitle>{{ t('automation.deleteTitle') }}</DialogTitle>
         </DialogHeader>
-        <p>删除「{{ pendingDelete?.name }}」后无法恢复。</p>
+        <p>{{ t('automation.deleteConfirm', { name: pendingDelete?.name }) }}</p>
         <DialogFooter>
-          <Button variant="outline" @click="deleteModalOpen = false">取消</Button>
-          <Button variant="destructive" @click="confirmDeleteAction">删除</Button>
+          <Button variant="outline" @click="deleteModalOpen = false">{{ t('automation.cancel') }}</Button>
+          <Button variant="destructive" @click="confirmDeleteAction">{{ t('automation.delete') }}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -336,6 +332,7 @@
 <script setup>
 import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { useToast } from '@/components/ui/sonner'
+import { useI18n } from 'vue-i18n'
 import {
   Plus, Clock, Play,
   PauseCircle, PlayCircle, Trash2, ChevronLeft, Check, Pencil,
@@ -347,6 +344,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { DateTimePicker } from '@/components/ui/date-time-picker'
+import { TimePicker } from '@/components/ui/time-picker'
 import { Switch } from '@/components/ui/switch'
 import { usePlanningStore } from '@/stores/planning'
 import { useWorkspaceStore } from '@/stores/workspace'
@@ -357,6 +355,7 @@ import { useRouter } from 'vue-router'
 import dayjs from 'dayjs'
 
 const toast = useToast()
+const { t } = useI18n()
 const planning = usePlanningStore()
 const ws = useWorkspaceStore()
 const agentStore = useAgentStore()
@@ -522,7 +521,7 @@ async function runNow(a) {
   runningIds.value.add(a.id)
   try {
     const sessionId = await planning.runAutomationNow(a.id)
-    toast.success('任务已启动')
+    toast.success(t('automation.started'))
     // 跳转到 Agent 对话页面
     if (sessionId) {
       // 切换到 Agent 模式
@@ -539,7 +538,7 @@ async function runNow(a) {
       agentStore.startMessagePolling(sessionId)
     }
   } catch (err) {
-    toast.error(err?.message || '运行失败')
+    toast.error(err?.message || t('automation.runFailed'))
   } finally {
     runningIds.value.delete(a.id)
   }
@@ -558,9 +557,9 @@ async function togglePause(a) {
   const newActive = !a.active
   try {
     await planning.toggleAutomation(a.id, newActive)
-    toast.success(newActive ? '已启用' : '已暂停')
+    toast.success(newActive ? t('automation.enabled') : t('automation.paused'))
   } catch (err) {
-    toast.error(err?.message || '操作失败')
+    toast.error(err?.message || t('automation.operationFailed'))
   }
 }
 
@@ -579,10 +578,10 @@ async function confirmDeleteAction() {
   if (!pendingDelete.value) return
   try {
     await planning.deleteAutomation(pendingDelete.value.id)
-    toast.success('已删除')
+    toast.success(t('automation.deleted'))
     pendingDelete.value = null
   } catch {
-    toast.error('删除失败')
+    toast.error(t('automation.deleteFailed'))
   }
 }
 

@@ -7,7 +7,7 @@
     <div class="flex items-center gap-2.5" style="-webkit-app-region: no-drag">
       <!-- 产品图标 -->
       <div class="flex shrink-0 items-center justify-center">
-        <img src="/favicon-32x32.png" alt="谛听AI" draggable="false" class="h-[22px] w-[22px] rounded" />
+        <img src="/favicon-32x32.png" :alt="t('topBar.appName')" draggable="false" class="h-[22px] w-[22px] rounded" />
       </div>
 
       <!-- 模式切换（已隐藏）
@@ -43,8 +43,8 @@
       class="ml-auto flex items-center gap-2 pl-4"
       style="-webkit-app-region: drag"
     >
-      <div class="text-sm font-bold tracking-wide text-[var(--text-primary)] whitespace-nowrap">谛听AI</div>
-      <div class="text-[11px] tracking-wide text-[var(--text-muted)] whitespace-nowrap">为AI聆听真实</div>
+      <div class="text-sm font-bold tracking-wide text-[var(--text-primary)] whitespace-nowrap">{{ t('topBar.appName') }}</div>
+      <div class="text-[11px] tracking-wide text-[var(--text-muted)] whitespace-nowrap">{{ t('topBar.tagline') }}</div>
     </div>
 
     <!-- Windows 窗口控制按钮 -->
@@ -55,21 +55,21 @@
     >
       <button
         class="flex h-full w-[46px] items-center justify-center text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-hover)]"
-        title="最小化"
+        :title="t('topBar.minimize')"
         @click="winMinimize"
       >
         <svg width="10" height="10" viewBox="0 0 10 10"><path d="M0 5h10" stroke="currentColor" stroke-width="1" /></svg>
       </button>
       <button
         class="flex h-full w-[46px] items-center justify-center text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-hover)]"
-        title="最大化"
+        :title="t('topBar.maximize')"
         @click="winMaximize"
       >
         <svg width="10" height="10" viewBox="0 0 10 10"><rect x="0.5" y="0.5" width="9" height="9" fill="none" stroke="currentColor" stroke-width="1" /></svg>
       </button>
       <button
         class="flex h-full w-[46px] items-center justify-center text-[var(--text-secondary)] transition-colors hover:bg-[#e81123] hover:text-white"
-        title="关闭"
+        :title="t('topBar.close')"
         @click="winClose"
       >
         <svg width="10" height="10" viewBox="0 0 10 10"><path d="M0 0l10 10M10 0L0 10" stroke="currentColor" stroke-width="1" /></svg>
@@ -99,7 +99,10 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { toast } from 'vue-sonner';
+
+const { t } = useI18n();
 import { Plus } from '@lucide/vue';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -165,6 +168,6 @@ function onSaveRemote() {
     }
   }
   modalVisible.value = false;
-  toast.success(remoteAddress.value ? '远程地址已保存' : '远程地址已清除');
+  toast.success(remoteAddress.value ? t('topBarRemote.saved') : t('topBarRemote.cleared'));
 }
 </script>

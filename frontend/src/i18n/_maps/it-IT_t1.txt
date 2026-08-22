@@ -1,0 +1,210 @@
+Numero fattura
+Invio fallito: {msg}
+Annulla archiviazione
+Annulla scansione QR
+Sola lettura
+Commutabile
+È possibile riavviare l'installazione nella pagina "Informazioni/Aggiornamento"
+Facoltativo, es.: per generazione codice / per riepilogo documenti
+Vettorizzazione in corso... rimanenti {count}
+No
+Avvio Agent fallito
+Avvio in corso...
+Avvio fallito
+Dopo l'abilitazione, verrà eseguito automaticamente alla frequenza impostata
+Abilitazione fallita
+Eccezione durante l'abilitazione: {msg}
+Lun, Mar, Mer, Gio, Ven, Sab, Dom
+Chiamata di comando
+Consulta Agent
+Risposta alla richiesta di permesso fallita
+Mirror nazionale
+Fonte internazionale
+Immagine
+Angoli arrotondati
+Abilita la funzione bot in "Capacità app". Torna poi a Diting, clicca "Salva configurazione", conferma che lo stato sia "Connesso" e configura la sottoscrizione eventi nel backend DingTalk (seleziona la modalità Stream).
+Richiedi i permessi necessari in "Gestione permessi" (invio/ricezione messaggi, gestione gruppi ecc.), pubblica la versione dell'app e attendi l'approvazione dell'amministratore aziendale.
+Spiega chiaramente l'obiettivo nella conversazione a sinistra e dichiara esplicitamente di voler creare un'attività pianificata. Diting Agent genererà la descrizione e completerà periodicità, progetto e modello; la modifica manuale è più adatta per rifinire la descrizione.
+Dopo il riconoscimento AI nella pagina di acquisizione, i record appariranno qui
+Apri nel gestore file di sistema
+Dopo aver creato l'app interna aziendale nella Piattaforma Aperta DingTalk, inserisci Client ID e Client Secret nel modulo di configurazione sopra. Abilita la "Modalità Stream" per ricevere messaggi; dopo il salvataggio viene stabilita automaticamente una connessione WebSocket persistente. Ogni bot può collegare progetti e modelli diversi, con supporto a più bot simultanei.
+Dopo aver creato l'app interna aziendale nella Piattaforma Aperta DingTalk, inserisci Client ID e Client Secret qui. Abilita la "Modalità Stream" per ricevere messaggi.
+Dopo aver creato l'app nella Piattaforma Aperta Feishu, inserisci App ID e App Secret qui.
+Città
+Informazioni di base
+Tonalità di base
+Fatture IVA (speciale/comune/elettronica/rotolo/blockchain), fatture a importo fisso, fatture stampate generiche, biglietti treno, taxi, itinerario aereo, biglietti autobus, pedaggio, biglietti traghetto, itinerario ride-hailing, scontrini, ricevute bancarie, fatture miste intelligenti.
+Elaborazione in corso...
+Note
+Copia JSON
+Copia testo completo
+Copia fallita
+Grande
+Dimensione
+Es.: gpt-4o, deepseek-chat
+Es.: gpt-4o, deepseek-chat, claude-3-5-sonnet-20241022
+Es.: https://api.openai.com/v1
+Es.: il mio GPT-4o, ambiente di produzione DeepSeek
+Es.: il mio GPT-4o, ambiente di produzione DeepSeek
+Riutilizza sempre
+Font
+Utilizzo archiviazione
+Sicurezza
+Pianifica attività, calendario e attività programmate
+Installazione in corso...
+Fonte mirror usata durante l'installazione delle dipendenze, influisce sulla velocità di download di pip e npm
+Installa localmente
+Installazione fallita
+Numero di installazioni
+Totalmente automatico
+Attività pianificata
+Attività pianificata {count}
+Implementazione
+Revisione
+Host
+Dialogo
+Dialogo eliminato
+Esporta come CSV
+Esporta report
+Piccolo
+Piattaforme come Xiaohongshu, X/Twitter, LinkedIn potrebbero identificare queste azioni come attività automatizzate.
+Nessun modello è stato ancora abilitato. Aggiungine e abilitane uno.
+Non ancora gestito da Agent Session
+Prova a cercare con un'altra parola chiave
+Espandi pannello informazioni
+Espandi ragionamento
+Espandi pannello file
+Elenco strumenti
+Le chiamate di strumenti richiedono conferma utente
+Salvato
+Arrestato: {name}
+Generazione arrestata
+Chiuso
+Passato al dominio internazionale
+Creato: {name}
+Eliminato
+Annullato
+Archiviazione annullata
+Installazione inattiva annullata
+Agent avviato
+Sessione Agent avviata, generazione memoria progetto in corso...
+Avviato: {name}
+Abilitato: {name}
+Elaborato
+JSON AI copiato
+Testo OCR completo copiato
+Copiato negli appunti
+Installazione inattiva programmata
+«{slug}» installato localmente ({fileCount} file, sincronizzati con {workspaceCount} workspace)
+File CSV esportato
+Fatture archiviate {total} · da revisionare {needsReview} · totale ¥{totalAmount}
+Ripristinato
+Eseguito {count} volte
+QR scansionato, conferma in corso...
+QR scansionato. Conferma l'accesso sul telefono.
+È già l'ultima versione
+Aggiornato
+Aggiunto
+Confermato
+Disabilitato: {name}
+Cartella allegata rimossa
+Associazione rimossa
+Logout WeChat completato
+Liberati {size}, {count} file eliminati
+Bloccato
+Cartella allegata aggiunta: {name}
+Nome app
+Latenza: {latency}ms
+Latenza: {ms}ms
+Avvia una nuova conversazione
+Ora di inizio
+Avvia esecuzione Agent
+Data emissione
+Ora archiviazione
+Attualmente abilitato
+Indirizzo attuale
+Nessuna sessione attiva al momento
+Acquisizione e riconoscimento
+Da revisionare
+WeChat
+WeChat Bridge arrestato
+WeChat Bridge avviato
+WeChat connesso. I messaggi saranno ricevuti automaticamente.
+Profondità di ragionamento
+Consenti sempre
+Totale
+Ripristina
+Ripristina attività
+Io
+Sono consapevole e accetto il rischio
+Il mio bot DingTalk
+Il mio bot Feishu
+Oppure apri il link nel browser
+L'installazione verrà riavviata automaticamente al completamento di tutte le attività
+Tutto il riconoscimento immagini, l'estrazione testo e l'analisi strutturata avvengono localmente; le immagini originali e i risultati non vengono caricati su server esterni, garantendo sicurezza e conformità della privacy.
+Tutte le chiamate di strumenti sono consentite automaticamente
+Aggiungi manualmente
+Quando scrivi manualmente, descrivi solo l'attività stessa
+Apri browser integrato
+Apri file originale
+Apri WeChat e scansiona il codice QR per accedere
+Apri cartella
+Apertura finestra visualizzazione file fallita
+Apertura directory fallita
+Esegui {count} volte
+Esegui: {cmd}
+Esegui comando
+Processo di esecuzione: {parts}
+Esegui progetto
+Crea tramite QR
+Creazione tramite QR riuscita!
+Crea bot Feishu tramite QR
+Accesso tramite QR
+Accesso tramite QR fallito
+Modifica in blocco
+Rifiuta
+Orario specificato
+Crea un'app interna aziendale nella Piattaforma Aperta DingTalk seguendo questi passaggi
+Colori di enfasi come pulsanti, link e evidenziazioni
+Cartella autorizzata
+Esplora
+Consigliato: lascia che Diting Agent crei
+Descrizione
+Invia risposta
+Invio risposta fallito
+Cerca "{pattern}"
+Cerca "{query}": {count} risultati trovati
+Cerca nome Skill / descrizione funzione...
+Cerca: {query}
+Cerca n. fattura / venditore / acquirente...
+Ricerca fallita
+Ricerca fallita. Controlla la connessione di rete.
+Cerca o digita una nuova etichetta...
+Riepilogo
+Operazione
+Operazione fallita
+Eccezione durante l'operazione: {msg}
+Supporta il riconoscimento ad alta precisione di oltre 40 tipi di fatture e documenti, coprendo rimborso finanziario, trasporti, licenze e certificati ecc.
+Comprimi pannello informazioni
+Comprimi pannello file
+Informazioni file
+Elenco file
+Nome file
+Cartella eliminata
+Cartella aggiunta con successo
+File non ancora elaborato. Attendi il riconoscimento automatico.
+Operazioni file
+Visualizzazione file
+Visualizzazione file - {name}
+Modifica file
+Anteprima file
+Documento
+Domande e risposte sui documenti
+La modalità domande sui documenti richiede di selezionare una cartella di base di conoscenza
+Nuovo Todo
+Crea una nuova sessione Agent che legge le conversazioni recenti del progetto corrente e aggiorna i file CLAUDE.md e di memoria automatica nel workspace.
+Nuovo gruppo
+Nuova attività pianificata
+Nuovo file
+Nuovo documento
+Nuovo calendario

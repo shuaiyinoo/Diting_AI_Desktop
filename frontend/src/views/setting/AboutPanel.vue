@@ -1,23 +1,23 @@
 <template>
   <div class="mx-auto max-w-[640px]">
-    <h3 class="flex items-center gap-2 text-base font-semibold text-foreground">关于</h3>
+    <h3 class="flex items-center gap-2 text-base font-semibold text-foreground">{{ t('about.title') }}</h3>
 
     <!-- 基本信息 -->
     <div class="mt-4 rounded-lg border border-border bg-card shadow-sm">
       <div class="flex items-center border-b border-border px-4 py-2.5">
-        <label class="w-[100px] shrink-0 text-xs text-muted-foreground">应用名称</label>
+        <label class="w-[100px] shrink-0 text-xs text-muted-foreground">{{ t('about.appName') }}</label>
         <span class="text-xs text-foreground">Diting</span>
       </div>
       <div class="flex items-center border-b border-border px-4 py-2.5">
-        <label class="w-[100px] shrink-0 text-xs text-muted-foreground">版本</label>
+        <label class="w-[100px] shrink-0 text-xs text-muted-foreground">{{ t('about.version') }}</label>
         <span class="text-xs font-mono text-foreground">v{{ appVersion }}</span>
       </div>
       <div class="flex items-center border-b border-border px-4 py-2.5">
-        <label class="w-[100px] shrink-0 text-xs text-muted-foreground">运行时</label>
+        <label class="w-[100px] shrink-0 text-xs text-muted-foreground">{{ t('about.runtime') }}</label>
         <span class="text-xs text-foreground">Electron + Vue 3</span>
       </div>
       <div class="flex items-center border-b border-border px-4 py-2.5">
-        <label class="w-[100px] shrink-0 text-xs text-muted-foreground">开源协议</label>
+        <label class="w-[100px] shrink-0 text-xs text-muted-foreground">{{ t('about.license') }}</label>
         <a
           href="https://www.apache.org/licenses/LICENSE-2.0"
           target="_blank"
@@ -26,7 +26,7 @@
         >Apache-2.0</a>
       </div>
       <div class="flex items-center px-4 py-2.5">
-        <label class="w-[100px] shrink-0 text-xs text-muted-foreground">项目地址</label>
+        <label class="w-[100px] shrink-0 text-xs text-muted-foreground">{{ t('about.projectUrl') }}</label>
         <a
           href="https://github.com/shuaiyinoo/Diting_AI_Desktop"
           target="_blank"
@@ -40,32 +40,32 @@
     <div class="mt-6 rounded-lg border border-border bg-card shadow-sm">
       <div class="flex items-center justify-between border-b border-border px-4 py-3">
         <div class="flex items-center gap-2">
-          <h4 class="text-sm font-medium text-foreground">软件更新</h4>
+          <h4 class="text-sm font-medium text-foreground">{{ t('about.update.title') }}</h4>
         </div>
         <div class="flex items-center gap-2">
           <!-- 状态文字 -->
-          <span v-if="updaterStore.status === 'checking'" class="text-xs text-muted-foreground">正在检查...</span>
+          <span v-if="updaterStore.status === 'checking'" class="text-xs text-muted-foreground">{{ t('about.update.checking') }}</span>
           <span v-else-if="updaterStore.status === 'available'" class="text-xs text-primary flex items-center gap-1">
             <ExternalLink class="size-3" />
-            新版本 v{{ updaterStore.version }} 可用
+            {{ t('about.update.available', { version: updaterStore.version }) }}
           </span>
           <span v-else-if="updaterStore.status === 'downloading'" class="text-xs text-muted-foreground flex items-center gap-1">
             <Loader2 class="size-3 animate-spin" />
-            正在下载 v{{ updaterStore.version }}
+            {{ t('about.update.downloading', { version: updaterStore.version }) }}
           </span>
           <span v-else-if="updaterStore.status === 'downloaded'" class="text-xs text-primary flex items-center gap-1">
             <CheckCircle2 class="size-3" />
-            更新 v{{ updaterStore.version }} 已就绪
+            {{ t('about.update.downloaded', { version: updaterStore.version }) }}
           </span>
           <span v-else-if="updaterStore.status === 'not-available'" class="text-xs text-muted-foreground flex items-center gap-1">
             <CheckCircle2 class="size-3" />
-            已是最新版本
+            {{ t('about.update.notAvailable') }}
           </span>
           <span v-else-if="updaterStore.status === 'error'" class="text-xs text-destructive flex items-center gap-1" :title="updaterStore.error">
             <AlertCircle class="size-3" />
-            检查失败
+            {{ t('about.update.error') }}
           </span>
-          <span v-else class="text-xs text-muted-foreground">未检查</span>
+          <span v-else class="text-xs text-muted-foreground">{{ t('about.update.notChecked') }}</span>
 
           <!-- 操作按钮 -->
           <button
@@ -74,21 +74,21 @@
             class="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
             <RotateCw class="size-3.5" />
-            立即重启
+            {{ t('about.update.restartNow') }}
           </button>
           <button
             v-if="updaterStore.status === 'downloaded' && !updaterStore.idleInstallScheduled"
             @click="handleInstallWhenIdle"
             class="inline-flex items-center gap-1.5 rounded-md bg-secondary px-3 py-1.5 text-xs font-medium text-secondary-foreground transition-colors hover:bg-secondary/80"
           >
-            空闲时更新
+            {{ t('about.update.updateWhenIdle') }}
           </button>
           <button
             v-if="updaterStore.status === 'downloaded' && updaterStore.idleInstallScheduled"
             @click="handleCancelIdleInstall"
             class="inline-flex items-center gap-1.5 rounded-md bg-secondary px-3 py-1.5 text-xs font-medium text-secondary-foreground transition-colors hover:bg-secondary/80"
           >
-            取消安排
+            {{ t('about.update.cancelSchedule') }}
           </button>
           <button
             v-else-if="updaterStore.status === 'available'"
@@ -96,7 +96,7 @@
             class="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
             <ExternalLink class="size-3.5" />
-            前往下载
+            {{ t('about.update.goToDownload') }}
           </button>
           <button
             v-else
@@ -106,7 +106,7 @@
           >
             <Loader2 v-if="updaterStore.isChecking" class="size-3.5 animate-spin" />
             <RefreshCw v-else class="size-3.5" />
-            检查更新
+            {{ t('about.update.checkNow') }}
           </button>
         </div>
       </div>
@@ -114,7 +114,7 @@
       <!-- 下载进度 -->
       <div v-if="updaterStore.status === 'downloading'" class="border-b border-border px-4 py-3">
         <div class="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
-          <span>正在下载 v{{ updaterStore.version }}</span>
+          <span>{{ t('about.update.downloadProgress', { version: updaterStore.version }) }}</span>
           <span>{{ Math.floor(updaterStore.progress.percent) }}%</span>
         </div>
         <div class="h-2 w-full overflow-hidden rounded-full bg-muted">
@@ -138,7 +138,7 @@
           @click="showReleaseNotes = !showReleaseNotes"
           class="flex w-full items-center justify-between py-2.5 px-4 text-left transition-colors hover:bg-accent/50"
         >
-          <span class="text-xs font-medium">更新日志</span>
+          <span class="text-xs font-medium">{{ t('about.update.releaseNotes') }}</span>
           <ChevronUp v-if="showReleaseNotes" class="size-4 text-muted-foreground" />
           <ChevronDown v-else class="size-4 text-muted-foreground" />
         </button>
@@ -151,7 +151,7 @@
     <!-- 版本历史 -->
     <div class="mt-6 rounded-lg border border-border bg-card shadow-sm">
       <div class="flex items-center justify-between border-b border-border px-4 py-3">
-        <h4 class="text-sm font-medium text-foreground">版本历史</h4>
+        <h4 class="text-sm font-medium text-foreground">{{ t('about.history.title') }}</h4>
         <button
           @click="loadReleases"
           :disabled="loadingReleases"
@@ -159,7 +159,7 @@
         >
           <Loader2 v-if="loadingReleases" class="size-3.5 animate-spin" />
           <RefreshCw v-else class="size-3.5" />
-          刷新
+          {{ t('common.refresh') }}
         </button>
       </div>
 
@@ -167,18 +167,18 @@
         <!-- 加载中 -->
         <div v-if="loadingReleases && releases.length === 0" class="py-8 text-center">
           <Loader2 class="size-5 animate-spin mx-auto text-muted-foreground" />
-          <p class="text-xs text-muted-foreground mt-2">加载中...</p>
+          <p class="text-xs text-muted-foreground mt-2">{{ t('about.history.loading') }}</p>
         </div>
 
         <!-- 加载失败 -->
         <div v-else-if="releasesError" class="py-8 text-center">
-          <p class="text-xs text-muted-foreground">加载失败</p>
+          <p class="text-xs text-muted-foreground">{{ t('about.history.loadFailed') }}</p>
           <p class="text-[11px] text-muted-foreground mt-1">{{ releasesError }}</p>
         </div>
 
         <!-- 空数据 -->
         <div v-else-if="releases.length === 0" class="py-8 text-center">
-          <p class="text-xs text-muted-foreground">暂无版本历史</p>
+          <p class="text-xs text-muted-foreground">{{ t('about.history.empty') }}</p>
         </div>
 
         <!-- 版本列表 -->
@@ -192,7 +192,7 @@
           >
             <div class="flex items-center gap-2 flex-1 min-w-0">
               <span class="text-xs font-mono font-medium truncate">{{ release.tag_name }}</span>
-              <span v-if="index === 0" class="text-[11px] text-primary font-medium shrink-0">最新</span>
+              <span v-if="index === 0" class="text-[11px] text-primary font-medium shrink-0">{{ t('common.latest') }}</span>
               <p v-if="release.name && release.name !== release.tag_name" class="text-[11px] text-muted-foreground truncate">
                 {{ release.name }}
               </p>
@@ -216,12 +216,15 @@
 
 <script setup>
 import { ref, onMounted, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { toast } from 'vue-sonner';
 import {
   RefreshCw, Loader2, CheckCircle2, AlertCircle, ExternalLink, RotateCw,
   ChevronUp, ChevronDown,
 } from '@lucide/vue';
 import { useUpdaterStore } from '@/stores/updater';
+
+const { t } = useI18n();
 
 const updaterStore = useUpdaterStore();
 
@@ -260,8 +263,8 @@ watch(
     }
     // 下载完成后显示 toast 通知
     if (newStatus === 'downloaded') {
-      toast.success(`更新 v${updaterStore.version} 已下载完成`, {
-        description: '可在「关于/更新」页面重启安装',
+      toast.success(t('about.update.downloadComplete', { version: updaterStore.version }), {
+        description: t('about.update.downloadCompleteDesc'),
         duration: 5000,
       });
     }
@@ -273,7 +276,7 @@ watch(
  * 将 GitHub Release body（Markdown 格式）渲染为 HTML
  */
 function renderMarkdown(body) {
-  if (!body) return '<p class="text-muted-foreground italic">暂无发布说明</p>';
+  if (!body) return '<p class="text-muted-foreground italic">' + t('about.history.noNotes') + '</p>';
   let html = body;
 
   // 转义 HTML
@@ -348,7 +351,7 @@ async function loadReleases() {
     }
   } catch (err) {
     console.error('[版本历史] 加载失败:', err);
-    releasesError.value = err?.message || '加载失败';
+    releasesError.value = err?.message || t('about.history.loadFailed');
   } finally {
     loadingReleases.value = false;
   }
@@ -386,8 +389,8 @@ async function handleCheck() {
 async function handleInstallWhenIdle() {
   const result = await updaterStore.installWhenIdle();
   if (result) {
-    toast.info('已安排空闲时安装', {
-      description: '所有任务完成后将自动重启安装',
+    toast.info(t('about.update.idleScheduled'), {
+      description: t('about.update.idleScheduledDesc'),
     });
   }
 }
@@ -397,7 +400,7 @@ async function handleInstallWhenIdle() {
  */
 async function handleCancelIdleInstall() {
   await updaterStore.cancelIdleInstall();
-  toast.info('已取消空闲安装');
+  toast.info(t('about.update.idleCancelled'));
 }
 
 /**
@@ -434,6 +437,6 @@ function formatBytes(bytes) {
  */
 function formatDate(dateStr) {
   const date = new Date(dateStr);
-  return date.toLocaleDateString('zh-CN');
+  return date.toLocaleDateString(locale.value === 'en-US' ? 'en-US' : 'zh-CN');
 }
 </script>

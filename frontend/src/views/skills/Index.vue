@@ -1,43 +1,48 @@
 <template>
   <div class="flex h-full w-full min-w-0 flex-1 flex-col overflow-hidden bg-background">
     <!-- ========== 顶部标签栏 ========== -->
-    <div class="flex shrink-0 items-center gap-1 px-6 pt-3">
-      <div
-        v-for="tab in tabs"
-        :key="tab.key"
-        class="cursor-pointer rounded-lg px-4 py-1.5 text-sm font-medium transition-all"
-        :class="activeTab === tab.key
-          ? 'border border-border bg-background text-foreground shadow-sm'
-          : 'text-muted-foreground hover:bg-accent'"
-        @click="activeTab = tab.key"
-      >
-        {{ tab.label }}
-        <span class="ml-1 text-xs text-muted-foreground">{{ tab.count }}</span>
+    <div class="flex shrink-0 items-center justify-between px-6 pt-3">
+      <div class="flex gap-0.5 rounded-lg bg-muted p-0.5">
+        <button
+          v-for="tab in tabs"
+          :key="tab.key"
+          class="inline-flex h-7 items-center gap-1.5 rounded-md px-3 text-[13px] font-medium transition-all"
+          :class="activeTab === tab.key
+            ? 'bg-primary font-semibold text-primary-foreground shadow-[0_1px_4px_rgba(22,119,255,0.25)] hover:bg-primary/90'
+            : 'bg-transparent text-muted-foreground hover:bg-white/40 hover:text-foreground'"
+          @click="activeTab = tab.key"
+        >
+          <component :is="tab.icon" class="size-4" />
+          <span>{{ tab.label }}</span>
+          <span class="text-xs" :class="activeTab === tab.key ? 'text-primary-foreground/70' : 'text-muted-foreground'">{{ tab.count }}</span>
+        </button>
       </div>
 
-      <!-- Skills 市场按钮（仅 Skills tab 激活时显示） -->
-      <button
-        v-if="activeTab === 'skills'"
-        class="ml-auto inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-1.5 text-sm font-medium text-primary-foreground shadow-sm transition-all hover:bg-primary/80"
-        @click="showMarket = true"
-      >
-        <Store class="size-4" />
-        Skills 市场
-      </button>
+      <div class="flex items-center gap-2">
+        <!-- Skills 市场按钮（仅 Skills tab 激活时显示） -->
+        <button
+          v-if="activeTab === 'skills'"
+          class="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-1.5 text-sm font-medium text-primary-foreground shadow-sm transition-all hover:bg-primary/80"
+          @click="showMarket = true"
+        >
+          <Store class="size-4" />
+          {{ t('skillsPage.market') }}
+        </button>
 
-      <!-- 记忆 Tab 激活时显示项目选择器（右侧） -->
-      <div v-if="activeTab === 'memory'" class="ml-auto flex items-center gap-2">
-        <span class="shrink-0 whitespace-nowrap text-xs font-medium text-muted-foreground">项目选择</span>
-        <Select v-model="selectedWorkspaceSlug" @update:model-value="onWorkspaceChange">
-          <SelectTrigger class="h-8 w-[240px] gap-2 text-sm">
-            <SelectValue placeholder="选择项目..." />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem v-for="ws in workspaces" :key="ws.id" :value="ws.id">
-              {{ ws.name }}
-            </SelectItem>
-          </SelectContent>
-        </Select>
+        <!-- 记忆 Tab 激活时显示项目选择器 -->
+        <template v-if="activeTab === 'memory'">
+          <span class="shrink-0 whitespace-nowrap text-xs font-medium text-muted-foreground">{{ t('skillsPage.projectSelect') }}</span>
+          <Select v-model="selectedWorkspaceSlug" @update:model-value="onWorkspaceChange">
+            <SelectTrigger class="h-8 w-[240px] gap-2 text-sm">
+              <SelectValue :placeholder="t('skillsPage.selectProject')" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem v-for="ws in workspaces" :key="ws.id" :value="ws.id">
+                {{ ws.name }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </template>
       </div>
     </div>
 
@@ -49,20 +54,20 @@
       <!-- ===== Skills Tab ===== -->
       <div v-show="activeTab === 'skills' && !showMarket">
         <div class="mb-3 text-xs font-medium text-muted-foreground">
-          Diting 内置 <span class="text-muted-foreground/70">{{ skills.length }}</span>
+          Diting {{ t('skillsPage.builtin') }} <span class="text-muted-foreground/70">{{ skills.length }}</span>
         </div>
 
         <!-- 加载中 -->
         <div v-if="skillsLoading" class="flex min-h-[200px] flex-col items-center justify-center gap-2 text-muted-foreground">
           <Spinner class="size-5" />
-          <span class="text-sm">加载中...</span>
+          <span class="text-sm">{{ t('skillsPage.loading') }}</span>
         </div>
 
         <!-- 空状态 -->
         <div v-if="!skillsLoading && skills.length === 0" class="flex min-h-[200px] flex-col items-center justify-center gap-2 text-muted-foreground">
           <Zap class="size-10 opacity-20" />
-          <p class="text-sm">暂无 Skills</p>
-          <p class="max-w-[320px] text-center text-[11px] leading-relaxed">Skills 是可复用的 Agent 流程模板，可在 Agent 工作区中通过 / 引用</p>
+          <p class="text-sm">{{ t('skillsPage.noSkills') }}</p>
+          <p class="max-w-[320px] text-center text-[11px] leading-relaxed">{{ t('skillsPage.skillsHint') }}</p>
         </div>
 
         <!-- 分组渲染 -->
@@ -100,10 +105,10 @@
                   />
                 </div>
                 <div class="mb-2 -mt-1 font-mono text-xs text-muted-foreground">{{ skill.slug }}</div>
-                <div class="mb-3.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground">{{ skill.description || '无描述' }}</div>
+                <div class="mb-3.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground">{{ skill.description || t('skillsPage.detail.noDescription') }}</div>
                 <div class="flex flex-wrap items-center gap-2">
-                  <span class="inline-flex items-center rounded bg-blue-500/10 px-2 py-0.5 text-xs font-medium text-blue-600">Diting 内置</span>
-                  <span v-if="skill.hasUpdate" class="inline-flex items-center rounded bg-yellow-500/10 px-2 py-0.5 text-xs font-medium text-yellow-600">有更新</span>
+                  <span class="inline-flex items-center rounded bg-blue-500/10 px-2 py-0.5 text-xs font-medium text-blue-600">{{ t('skillsPage.builtinBadge') }}</span>
+                  <span v-if="skill.hasUpdate" class="inline-flex items-center rounded bg-yellow-500/10 px-2 py-0.5 text-xs font-medium text-yellow-600">{{ t('skillsPage.hasUpdate') }}</span>
                 </div>
               </div>
             </div>
@@ -135,14 +140,14 @@
         <div class="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto overflow-x-hidden p-5">
           <!-- 元数据区 -->
           <div class="flex flex-col gap-3">
-            <h3 class="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">元数据</h3>
+            <h3 class="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{{ t('skillsPage.detail.metadata') }}</h3>
             <div class="overflow-hidden rounded-lg border border-border">
               <div
                 v-for="(row, idx) in [
-                  { label: '名称', value: selectedSkill.name },
-                  { label: '描述', value: selectedSkill.description || '无描述' },
-                  { label: '分组', value: selectedSkill.group || '未分组' },
-                  { label: '位置', value: `skills/${selectedSkill.slug}`, mono: true },
+                  { label: t('skillsPage.detail.name'), value: selectedSkill.name },
+                  { label: t('skillsPage.detail.description'), value: selectedSkill.description || t('skillsPage.detail.noDescription') },
+                  { label: t('skillsPage.detail.groupLabel'), value: selectedSkill.group || t('skillsPage.detail.noGroupLabel') },
+                  { label: t('skillsPage.detail.location'), value: `skills/${selectedSkill.slug}`, mono: true },
                 ]"
                 :key="idx"
                 class="flex items-start gap-3 px-3.5 py-2.5"
@@ -156,9 +161,9 @@
           <!-- 说明 / 资源文件 Tab -->
           <div class="flex min-h-0 flex-1 flex-col">
             <div class="flex shrink-0 gap-1 border-b border-border/50 pb-2">
-              <Button variant="ghost" size="sm" class="inline-flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-medium" :class="detailTab === 'body' ? 'border border-border bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:bg-accent'" @click="detailTab = 'body'">说明</Button>
+              <Button variant="ghost" size="sm" class="inline-flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-medium" :class="detailTab === 'body' ? 'border border-border bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:bg-accent'" @click="detailTab = 'body'">{{ t('skillsPage.detail.body') }}</Button>
               <Button variant="ghost" size="sm" class="inline-flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-medium" :class="detailTab === 'files' ? 'border border-border bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:bg-accent'" @click="detailTab = 'files'">
-                资源文件
+                {{ t('skillsPage.detail.resourceFiles') }}
                 <span v-if="fileCount !== null" class="inline-flex h-4 min-w-[18px] items-center justify-center rounded bg-muted px-1 text-[10px] font-semibold text-muted-foreground">{{ fileCount }}</span>
               </Button>
             </div>
@@ -168,7 +173,7 @@
                 <Spinner class="size-5" />
               </div>
               <div v-else class="prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed text-foreground">
-                <MarkdownRender :content="skillBody || '暂无说明内容'" :render-code-blocks-as-pre="false" :is-dark="isDark" code-block-dark-theme="vitesse-dark" code-block-light-theme="vitesse-light" :themes="['vitesse-dark', 'vitesse-light']" />
+                <MarkdownRender :content="skillBody || t('skillsPage.detail.noBody')" :render-code-blocks-as-pre="false" :is-dark="isDark" code-block-dark-theme="vitesse-dark" code-block-light-theme="vitesse-light" :themes="['vitesse-dark', 'vitesse-light']" />
               </div>
             </div>
             <!-- 资源文件 Tab -->
@@ -178,7 +183,7 @@
               </div>
               <template v-else>
                 <div v-if="skillFileTree.length === 0" class="flex items-center justify-center py-10 text-xs text-muted-foreground">
-                  该 Skill 暂无其他资源文件
+                  {{ t('skillsPage.detail.noResourceFiles') }}
                 </div>
                 <div v-else class="grid min-h-0 flex-1 grid-cols-1 gap-3 sm:grid-cols-[240px_1fr]">
                   <!-- 左栏：文件树 -->
@@ -197,18 +202,18 @@
                   <!-- 右栏：文件内容 -->
                   <div class="flex min-h-0 min-w-0 flex-col overflow-hidden rounded-lg border border-border/50">
                     <div v-if="!selectedFilePath" class="flex flex-1 items-center justify-center p-6 text-xs text-muted-foreground">
-                      从左侧选择文件查看内容
+                      {{ t('skillsPage.detail.selectFileLeft') }}
                     </div>
                     <div v-else-if="loadingFileContent" class="flex flex-1 items-center justify-center">
                       <Spinner class="size-5" />
                     </div>
                     <div v-else-if="!skillFileContent" class="flex flex-1 items-center justify-center p-6 text-xs text-muted-foreground">
-                      无法加载该文件
+                      {{ t('skillsPage.detail.cannotLoadFile') }}
                     </div>
                     <div v-else-if="!skillFileContent.isText" class="flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center text-xs text-muted-foreground">
                       <FileText class="size-6 opacity-30" />
                       <div class="font-mono text-xs">{{ skillFileContent.relativePath }}</div>
-                      <div>二进制文件（{{ formatFileSize(skillFileContent.size) }}），不支持内置预览</div>
+                      <div>{{ t('skillsPage.detail.binaryFile', { size: formatFileSize(skillFileContent.size) }) }}</div>
                     </div>
                     <template v-else>
                       <div class="flex shrink-0 items-center justify-between gap-2 border-b border-border/50 bg-muted/30 px-3 py-2">
@@ -228,17 +233,17 @@
       <!-- ===== MCP Tab ===== -->
       <div v-show="activeTab === 'mcp'">
         <div class="mb-3 text-xs font-medium text-muted-foreground">
-          Diting 内置 <span class="text-muted-foreground/70">{{ mcpServers.length }}</span>
+          Diting {{ t('skillsPage.builtin') }} <span class="text-muted-foreground/70">{{ mcpServers.length }}</span>
         </div>
 
         <div v-if="mcpLoading" class="flex min-h-[200px] flex-col items-center justify-center gap-2 text-muted-foreground">
           <Spinner class="size-5" />
-          <span class="text-sm">加载中...</span>
+          <span class="text-sm">{{ t('skillsPage.loading') }}</span>
         </div>
 
         <div v-if="!mcpLoading && mcpServers.length === 0" class="flex min-h-[200px] flex-col items-center justify-center gap-2 text-muted-foreground">
           <Plug class="size-10 opacity-20" />
-          <p class="text-sm">暂无 MCP 服务器</p>
+          <p class="text-sm">{{ t('skillsPage.mcp.noServers') }}</p>
         </div>
 
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -264,12 +269,12 @@
             </div>
             <div class="mb-3.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground">{{ mcp.description }}</div>
             <div class="flex flex-wrap items-center gap-2">
-              <span class="inline-flex items-center rounded bg-blue-500/10 px-2 py-0.5 text-xs font-medium text-blue-600">内置</span>
+              <span class="inline-flex items-center rounded bg-blue-500/10 px-2 py-0.5 text-xs font-medium text-blue-600">{{ t('skillsPage.builtinBadge') }}</span>
               <span
                 class="inline-flex items-center rounded px-2 py-0.5 text-xs font-medium"
                 :class="mcp.available ? 'bg-green-500/10 text-green-600' : 'bg-muted text-muted-foreground'"
-              >{{ mcp.available ? '可用' : '已关闭' }}</span>
-              <span class="ml-auto inline-flex items-center rounded bg-muted px-2 py-0.5 text-xs text-muted-foreground">内置托管</span>
+              >{{ mcp.available ? t('skillsPage.mcp.available') : t('skillsPage.mcp.closed') }}</span>
+              <span class="ml-auto inline-flex items-center rounded bg-muted px-2 py-0.5 text-xs text-muted-foreground">{{ t('skillsPage.builtinManaged') }}</span>
             </div>
             <div v-if="mcp.tools && mcp.tools.length > 0" class="mt-2 flex flex-wrap gap-1">
               <span
@@ -278,7 +283,7 @@
                 class="inline-flex items-center gap-1 rounded bg-blue-500/5 px-2 py-0.5 text-[11px] text-blue-600"
               >
                 {{ tool.name }}
-                <span v-if="tool.readOnly" class="rounded bg-foreground/5 px-1 text-[9px] text-muted-foreground">只读</span>
+                <span v-if="tool.readOnly" class="rounded bg-foreground/5 px-1 text-[9px] text-muted-foreground">{{ t('tools.readOnly') }}</span>
               </span>
               <span v-if="mcp.tools.length > 4" class="px-1.5 py-0.5 text-[11px] text-muted-foreground">+{{ mcp.tools.length - 4 }}</span>
             </div>
@@ -307,21 +312,21 @@
               <span
                 class="shrink-0 rounded px-1.5 py-0.5 text-[11px] font-medium"
                 :class="selectedMcp.available ? 'bg-green-500/10 text-green-600' : 'bg-muted text-muted-foreground'"
-              >{{ selectedMcp.available ? '可用' : '已关闭' }}</span>
+              >{{ selectedMcp.available ? t('skillsPage.mcp.available') : t('skillsPage.mcp.closed') }}</span>
             </div>
           </div>
           <div class="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto overflow-x-hidden p-5">
             <div class="flex flex-col gap-3">
-              <h3 class="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">元数据</h3>
+              <h3 class="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{{ t('skillsPage.detail.metadata') }}</h3>
               <div class="overflow-hidden rounded-lg border border-border">
                 <div
                   v-for="(row, idx) in [
-                    { label: '名称', value: selectedMcp.displayName },
-                    { label: '描述', value: selectedMcp.description || '无描述' },
-                    { label: '分类', value: selectedMcp.category || '-' },
-                    { label: '状态', value: selectedMcp.available ? '可用' : '不可用' + (selectedMcp.availabilityReason ? `（${selectedMcp.availabilityReason}）` : '') },
-                    { label: '可切换', value: selectedMcp.toggleable ? '是' : '否' },
-                    { label: '工具数', value: `${selectedMcp.tools?.length || 0} 个` },
+                    { label: t('skillsPage.detail.name'), value: selectedMcp.displayName },
+                    { label: t('skillsPage.detail.description'), value: selectedMcp.description || t('skillsPage.detail.noDescription') },
+                    { label: t('skillsPage.mcp.categoryLabel'), value: selectedMcp.category || '-' },
+                    { label: t('skillsPage.mcp.statusLabel'), value: selectedMcp.available ? t('skillsPage.mcp.statusAvailable') : t('skillsPage.mcp.statusUnavailable') + (selectedMcp.availabilityReason ? `（${selectedMcp.availabilityReason}）` : '') },
+                    { label: t('skillsPage.mcp.toggleable'), value: selectedMcp.toggleable ? t('skillsPage.mcp.toggleYes') : t('skillsPage.mcp.toggleNo') },
+                    { label: t('skillsPage.mcp.toolCount'), value: `${selectedMcp.tools?.length || 0} ${t('common.fileCount')}` },
                   ]"
                   :key="idx"
                   class="flex items-start gap-3 px-3.5 py-2.5"
@@ -333,9 +338,9 @@
               </div>
             </div>
             <div class="flex flex-col gap-3">
-              <h3 class="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">工具列表</h3>
+              <h3 class="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{{ t('skillsPage.mcp.toolList') }}</h3>
               <div v-if="!selectedMcp.tools || selectedMcp.tools.length === 0" class="flex items-center justify-center py-10 text-xs text-muted-foreground">
-                此 MCP 服务器暂无工具
+                {{ t('skillsPage.mcp.noTools') }}
               </div>
               <div v-else class="flex flex-col gap-2">
                 <div
@@ -345,9 +350,9 @@
                 >
                   <div class="mb-1.5 flex items-center gap-2">
                     <span class="font-mono text-xs font-semibold text-foreground">{{ tool.name }}</span>
-                    <span v-if="tool.readOnly" class="inline-flex rounded bg-foreground/5 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">只读</span>
+                    <span v-if="tool.readOnly" class="inline-flex rounded bg-foreground/5 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">{{ t('tools.readOnly') }}</span>
                   </div>
-                  <div class="text-[11px] leading-relaxed text-muted-foreground">{{ tool.description || '无描述' }}</div>
+                  <div class="text-[11px] leading-relaxed text-muted-foreground">{{ tool.description || t('skillsPage.detail.noDescription') }}</div>
                 </div>
               </div>
             </div>
@@ -368,14 +373,14 @@
               <FileText class="size-5" />
             </div>
             <div class="min-w-0 flex-1">
-              <div class="text-sm font-semibold text-foreground" :class="activeMemoryCategory === 'project' ? 'text-primary' : ''">项目指令</div>
-              <div class="text-xs text-muted-foreground">Diting 工作区 CLAUDE.md</div>
+              <div class="text-sm font-semibold text-foreground" :class="activeMemoryCategory === 'project' ? 'text-primary' : ''">{{ t('skillsPage.memory.projectInstructions') }}</div>
+              <div class="text-xs text-muted-foreground">{{ t('skillsPage.memory.projectDesc') }}</div>
               <div v-if="memorySummary?.claudeMd?.updatedAt" class="mt-0.5 text-xs text-muted-foreground">
-                更新于 {{ formatDate(memorySummary.claudeMd.updatedAt) }}
+                {{ t('skillsPage.memory.updated') }} {{ formatDate(memorySummary.claudeMd.updatedAt) }}
               </div>
             </div>
             <div class="shrink-0 text-xs text-muted-foreground">
-              {{ memorySummary?.claudeMd?.exists ? formatFileSize(memorySummary.claudeMd.size) : '未创建' }}
+              {{ memorySummary?.claudeMd?.exists ? formatFileSize(memorySummary.claudeMd.size) : t('skillsPage.memory.notCreated') }}
             </div>
           </div>
 
@@ -388,36 +393,36 @@
               <Cloud class="size-5" />
             </div>
             <div class="min-w-0 flex-1">
-              <div class="text-sm font-semibold text-foreground" :class="activeMemoryCategory === 'auto' ? 'text-primary' : ''">自动记忆</div>
-              <div class="text-xs text-muted-foreground">.claude/memory/ 下的主题文件</div>
+              <div class="text-sm font-semibold text-foreground" :class="activeMemoryCategory === 'auto' ? 'text-primary' : ''">{{ t('skillsPage.memory.autoMemory') }}</div>
+              <div class="text-xs text-muted-foreground">{{ t('skillsPage.memory.autoMemoryDesc') }}</div>
               <div class="mt-0.5 text-xs text-muted-foreground">
-                {{ memorySummary?.autoMemory?.fileCount || 0 }} 个文件 · {{ formatFileSize(memorySummary?.autoMemory?.totalSize || 0) }}
+                {{ memorySummary?.autoMemory?.fileCount || 0 }} {{ t('skillsPage.memory.files') }} · {{ formatFileSize(memorySummary?.autoMemory?.totalSize || 0) }}
               </div>
             </div>
-            <div class="shrink-0 text-xs text-muted-foreground">{{ memorySummary?.autoMemory?.fileCount || 0 }} 个文件</div>
+            <div class="shrink-0 text-xs text-muted-foreground">{{ memorySummary?.autoMemory?.fileCount || 0 }} {{ t('skillsPage.memory.files') }}</div>
           </div>
         </div>
 
         <!-- 生成记忆条 -->
         <div class="mb-4 flex flex-shrink-0 items-center gap-4 rounded-xl border border-border bg-card p-[18px]">
           <div class="flex-1">
-            <div class="mb-1 text-sm font-semibold text-foreground">从历史会话生成项目记忆</div>
+            <div class="mb-1 text-sm font-semibold text-foreground">{{ t('skillsPage.memory.generateTitle') }}</div>
             <div class="text-xs leading-relaxed text-muted-foreground">
-              新建一个 Agent 会话，读取当前项目近期的会话，沉淀并更新工作区中的 CLAUDE.md 与 auto memory 文件。
+              {{ t('skillsPage.memory.generateDesc') }}
             </div>
           </div>
           <select
             v-model="generateRange"
             class="cursor-pointer rounded-md border border-border bg-background px-2.5 py-1.5 text-xs text-foreground appearance-none bg-[url('data:image/svg+xml;utf8,<svg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%2710%27%20height=%276%27%20viewBox=%270%200%2010%206%27><path%20d=%27M1%201l4%204%204-4%27%20stroke=%27%238A8884%27%20stroke-width=%271.5%27%20fill=%27none%27%20stroke-linecap=%27round%27/></svg>')] bg-[length:10px_6px] bg-no-repeat bg-[position:right_10px_center] pr-7"
           >
-            <option value="1m">近 1 个月</option>
-            <option value="1w">近 1 周</option>
-            <option value="3m">近 3 个月</option>
-            <option value="all">全部</option>
+            <option value="1m">{{ t('skillsPage.memory.range1m') }}</option>
+            <option value="1w">{{ t('skillsPage.memory.range1w') }}</option>
+            <option value="3m">{{ t('skillsPage.memory.range3m') }}</option>
+            <option value="all">{{ t('skillsPage.memory.rangeAll') }}</option>
           </select>
           <Button class="inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-xs font-medium shadow-sm disabled:opacity-50" :disabled="generatingMemory" @click="generateMemory">
             <Zap class="size-4" />
-            {{ generatingMemory ? '生成中...' : '生成项目记忆' }}
+            {{ generatingMemory ? t('skillsPage.memory.generating') : t('skillsPage.memory.generate') }}
           </Button>
         </div>
 
@@ -426,7 +431,7 @@
           <!-- 左栏：文件列表 -->
           <div class="min-h-0 min-w-0 overflow-y-auto rounded-xl border border-border bg-card py-2">
             <div class="flex items-center justify-between px-4 pb-2 pt-2.5 text-xs font-medium text-muted-foreground">
-              <span>记忆文件</span>
+              <span>{{ t('skillsPage.memory.memoryFiles') }}</span>
               <Button variant="ghost" size="icon" class="cursor-pointer text-muted-foreground hover:text-foreground" @click="loadMemoryData">
                 <RefreshCw class="size-3.5" />
               </Button>
@@ -438,7 +443,7 @@
 
             <template v-else>
               <!-- 项目指令区 -->
-              <div class="px-4 pb-1 pt-2.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">项目指令</div>
+              <div class="px-4 pb-1 pt-2.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{{ t('skillsPage.memory.projectInstructionsLabel') }}</div>
               <div
                 class="flex cursor-pointer items-center gap-2.5 px-4 py-2 text-xs text-foreground transition-colors hover:bg-accent"
                 :class="selectedMemoryFile === 'CLAUDE.md' ? 'bg-accent' : ''"
@@ -446,11 +451,11 @@
               >
                 <FileText class="size-3.5 shrink-0 text-muted-foreground" />
                 <span class="flex-1 truncate">CLAUDE.md</span>
-                <span class="shrink-0 text-xs text-muted-foreground">{{ memorySummary?.claudeMd?.exists ? '已创建' : '未创建' }}</span>
+                <span class="shrink-0 text-xs text-muted-foreground">{{ memorySummary?.claudeMd?.exists ? t('common.enabled') : t('skillsPage.memory.notCreated') }}</span>
               </div>
 
               <!-- Auto Memory 区 -->
-              <div v-if="memoryTree.length > 0" class="px-4 pb-1 pt-2.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">AUTO MEMORY</div>
+              <div v-if="memoryTree.length > 0" class="px-4 pb-1 pt-2.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{{ t('skillsPage.memory.autoMemoryLabel') }}</div>
               <MemoryFileTreeNode
                 v-for="node in memoryTree"
                 :key="node.relativePath"
@@ -461,8 +466,8 @@
               />
 
               <div v-if="memoryTree.length === 0 && !memorySummary?.claudeMd?.exists" class="px-3 py-8 text-center text-xs text-muted-foreground">
-                暂无记忆文件
-                <p class="mt-1 text-[11px]">Agent 会在对话中自动创建记忆文件</p>
+                {{ t('skillsPage.memory.noMemoryFiles') }}
+                <p class="mt-1 text-[11px]">{{ t('skillsPage.memory.memoryHint') }}</p>
               </div>
             </template>
           </div>
@@ -471,29 +476,29 @@
           <div class="flex min-h-0 min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-card">
             <div class="flex shrink-0 items-center justify-between gap-3 border-b border-border px-5 py-3.5">
               <div class="min-w-0">
-                <div class="text-sm font-semibold text-foreground">{{ selectedMemoryFile || '(未选择)' }}</div>
+                <div class="text-sm font-semibold text-foreground">{{ selectedMemoryFile || t('skillsPage.memory.notSelected') }}</div>
                 <div class="truncate font-mono text-xs text-muted-foreground">{{ selectedMemoryFilePath }}</div>
               </div>
               <div class="flex shrink-0 gap-2">
                 <Button variant="outline" size="sm" class="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs text-muted-foreground hover:bg-accent" @click="toggleEditMode">
                   <Eye v-if="memoryEditMode" class="size-3.5" />
                   <Pencil v-else class="size-3.5" />
-                  {{ memoryEditMode ? '预览' : '编辑' }}
+                  {{ memoryEditMode ? t('skillsPage.memory.preview') : t('skillsPage.memory.edit') }}
                 </Button>
                 <Button variant="outline" size="sm" class="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs text-muted-foreground hover:bg-accent" @click="openInFinder">
                   <FolderOpen class="size-3.5" />
-                  打开文件夹
+                  {{ t('skillsPage.memory.openFolder') }}
                 </Button>
                 <Button size="sm" class="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium shadow-sm disabled:cursor-not-allowed disabled:opacity-50" :disabled="!memoryEditMode && !hasUnsavedChanges" @click="saveMemoryContent">
                   <Save class="size-3.5" />
-                  保存
+                  {{ t('skillsPage.memory.save') }}
                 </Button>
               </div>
             </div>
             <div class="min-h-[200px] flex-1 overflow-y-auto px-8 py-6">
               <div v-if="!selectedMemoryFile" class="flex min-h-[200px] flex-col items-center justify-center gap-2 text-muted-foreground">
                 <FileText class="size-10 opacity-20" />
-                <p class="text-sm">选择左侧文件查看内容</p>
+                <p class="text-sm">{{ t('skillsPage.memory.selectFileLeft') }}</p>
               </div>
               <div v-else-if="memoryLoadingContent" class="flex min-h-[200px] items-center justify-center">
                 <Spinner class="size-5" />
@@ -512,7 +517,7 @@
               <!-- 未保存标记 -->
               <div v-if="selectedMemoryFile && hasUnsavedChanges" class="flex items-center gap-1.5 pt-1.5 text-[11px] text-yellow-500">
                 <span class="size-1.5 shrink-0 rounded-full bg-yellow-500" />
-                有未保存的更改
+                {{ t('skillsPage.memory.unsavedChanges') }}
               </div>
             </div>
           </div>
@@ -530,8 +535,9 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
 
 import { ref, computed, onMounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
-import { ChevronDown, Cloud, Eye, FileText, FolderOpen, Pencil, Plug, RefreshCw, Save, Star, Store, X, Zap } from '@lucide/vue'
+import { Brain, ChevronDown, Cloud, Eye, FileText, FolderOpen, Pencil, Plug, RefreshCw, Save, Star, Store, X, Zap } from '@lucide/vue'
 import { ipc } from '@/utils/ipcRenderer'
 import { ipcApiRoute } from '@/api'
 import MemoryFileTreeNode from '@/components/skills/MemoryFileTreeNode.vue'
@@ -546,6 +552,8 @@ import MarketView from '@/views/skills/Market.vue'
 const agentStore = useAgentStore()
 const wsStore = useWorkspaceStore()
 const router = useRouter()
+
+const { t } = useI18n()
 
 // ========== Skills 市场 ==========
 const showMarket = ref(false)
@@ -567,15 +575,15 @@ const collapsedGroups = ref(new Set())
 const groupedSkills = computed(() => {
   const groups = {}
   for (const skill of skills.value) {
-    const g = skill.group || '未分组'
+    const g = skill.group || t('skillsPage.noGroup')
     if (!groups[g]) groups[g] = []
     groups[g].push(skill)
   }
   const orderedKeys = Object.keys(groups).sort((a, b) => {
     if (a === 'proma' || a === 'diting') return -1
     if (b === 'proma' || b === 'diting') return 1
-    if (a === '未分组') return 1
-    if (b === '未分组') return -1
+    if (a === t('skillsPage.noGroup')) return 1
+    if (b === t('skillsPage.noGroup')) return -1
     return a.localeCompare(b)
   })
   const result = {}
@@ -808,9 +816,9 @@ function selectCategory(category) {
 
 // ========== Tab 列表 ==========
 const tabs = computed(() => [
-  { key: 'skills', label: 'Skills', count: skills.value.length },
-  { key: 'mcp', label: 'MCP', count: mcpServers.value.length },
-  { key: 'memory', label: '记忆', count: memoryTotalCount.value },
+  { key: 'skills', label: 'Skills', count: skills.value.length, icon: Zap },
+  { key: 'mcp', label: 'MCP', count: mcpServers.value.length, icon: Plug },
+  { key: 'memory', label: t('skillsPage.memory.autoMemory'), count: memoryTotalCount.value, icon: Brain },
 ])
 
 // ========== 生命周期 ==========
@@ -889,7 +897,7 @@ async function toggleSkill(skill) {
     }
   } catch (err) {
     console.error('[Skills] 切换失败:', err)
-    toast.error('切换失败')
+    toast.error(t('skillsPage.mcp.toggleFailed'))
   }
 }
 
@@ -924,7 +932,7 @@ async function toggleMcp(mcp) {
     }
   } catch (err) {
     console.error('[MCP] 切换失败:', err)
-    toast.error('切换失败')
+    toast.error(t('skillsPage.mcp.toggleFailed'))
   }
 }
 
@@ -955,7 +963,7 @@ async function loadMemoryData() {
 
 function selectMemoryFile(filePath) {
   if (hasUnsavedChanges.value && filePath !== selectedMemoryFile.value) {
-    if (window.confirm('未保存的更改\n\n当前文件有未保存的更改，切换后将丢失。是否继续？')) {
+      if (window.confirm(t('skillsPage.memory.unsavedConfirm'))) {
       hasUnsavedChanges.value = false
       doSelectFile(filePath)
     }
@@ -985,7 +993,7 @@ async function loadMemoryContent(filePath) {
       hasUnsavedChanges.value = false
     } else {
       memoryContent.value = ''
-      toast.error(res.message || '读取文件失败')
+      toast.error(res.message || t('skillsPage.memory.readFailed'))
     }
   } catch (err) {
     console.error('[Memory] 读取失败:', err)
@@ -1013,15 +1021,15 @@ async function saveMemoryContent() {
       content: memoryContent.value,
     })
     if (res.code === 0) {
-      toast.success('已保存')
+      toast.success(t('skillsPage.memory.saved'))
       hasUnsavedChanges.value = false
       loadMemorySummary()
     } else {
-      toast.error(res.message || '保存失败')
+      toast.error(res.message || t('skillsPage.memory.saveFailed'))
     }
   } catch (err) {
     console.error('[Memory] 保存失败:', err)
-    toast.error('保存失败')
+    toast.error(t('skillsPage.memory.saveFailed'))
   }
 }
 
@@ -1044,22 +1052,22 @@ function openInFinder() {
   const wsPath = memorySummary.value?.claudeMd?.path?.replace(/CLAUDE\.md$/, '')
   const dir = autoDir || wsPath
   if (!dir) {
-    toast.warning('无法确定记忆目录路径')
+    toast.warning(t('skillsPage.memory.cannotDeterminePath'))
     return
   }
   ipc.invoke(ipcApiRoute.os.openDirectory, { id: dir })
 }
 
 // ========== 生成项目记忆 ==========
-const RANGE_MAP = {
-  '1w': '近 1 周',
-  '1m': '近 1 个月',
-  '3m': '近 3 个月',
-  'all': '全部',
-}
+  const RANGE_MAP = {
+    '1w': t('skillsPage.memory.range1w'),
+    '1m': t('skillsPage.memory.range1m'),
+    '3m': t('skillsPage.memory.range3m'),
+    'all': t('skillsPage.memory.rangeAll'),
+  }
 
 function buildMemoryPrompt() {
-  const rangeLabel = RANGE_MAP[generateRange.value] || '近 1 个月'
+  const rangeLabel = RANGE_MAP[generateRange.value] || t('skillsPage.memory.range1m')
   return `请为当前项目初始化并沉淀长期记忆。这里的"项目"指系统提示中的"项目根目录"及其关联的 Agent 工作会话；不要把 Diting 工作区笼统当作项目。
 
 处理范围：
@@ -1104,7 +1112,7 @@ async function generateMemory() {
 
   const workspace = workspaces.value.find((w) => w.id === selectedWorkspaceSlug.value)
   if (!workspace) {
-    toast.warning('请先选择一个项目')
+    toast.warning(t('skillsPage.memory.selectProjectFirst'))
     return
   }
 
@@ -1115,7 +1123,7 @@ async function generateMemory() {
       workspace.id,
     )
     if (!session) {
-      toast.error('创建会话失败')
+      toast.error(t('skillsPage.memory.createSessionFailed'))
       return
     }
 
@@ -1135,10 +1143,10 @@ async function generateMemory() {
 
     router.push('/agent').catch((err) => console.error('[Skills] 跳转 Agent 失败:', err))
 
-    toast.success('已启动 Agent 会话，正在生成项目记忆...')
+    toast.success(t('skillsPage.memory.generatingStarted'))
   } catch (err) {
     console.error('[Memory] 生成项目记忆失败:', err)
-    toast.error('生成项目记忆失败: ' + (err?.message || String(err)))
+    toast.error(t('skillsPage.memory.generateFailed') + ': ' + (err?.message || String(err)))
   } finally {
     generatingMemory.value = false
   }

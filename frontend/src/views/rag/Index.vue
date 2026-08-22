@@ -44,6 +44,7 @@
 
 <script setup>
 import { ref, reactive, onMounted, onUnmounted, nextTick } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { toast } from 'vue-sonner';
 import { ipcApiRoute } from '@/api';
 import { ipc } from '@/utils/ipcRenderer';
@@ -51,6 +52,8 @@ import AssistantSidebar from './components/AssistantSidebar.vue';
 import AssistantMessageList from './components/AssistantMessageList.vue';
 import AssistantComposer from './components/AssistantComposer.vue';
 import ModeSwitcher from './components/ModeSwitcher.vue';
+
+const { t } = useI18n();
 
 // ========== HTTP 服务器地址（用于 SSE 流式通信） ==========
 const httpServerUrl = ref('');
@@ -91,11 +94,11 @@ async function loadSessions() {
         await onSelectSession(sessions.value[0].sessionId);
       }
     } else {
-      toast.error(result?.message || '加载会话列表失败');
+      toast.error(result?.message || t('rag.loadSessionsFailed'));
     }
   } catch (err) {
     console.error('[rag] 加载会话列表失败:', err);
-    toast.error('加载会话列表失败');
+    toast.error(t('rag.loadSessionsFailed'));
   } finally {
     sessionsLoading.value = false;
   }
@@ -111,17 +114,17 @@ async function onCreateSession() {
       sessions.value.unshift(session);
       await onSelectSession(session.sessionId);
     } else {
-      toast.error(result?.message || '创建会话失败');
+      toast.error(result?.message || t('rag.createSessionFailed'));
     }
   } catch (err) {
     console.error('[rag] 创建会话失败:', err);
-    toast.error('创建会话失败');
+    toast.error(t('rag.createSessionFailed'));
   }
 }
 
 async function onSelectSession(sessionId) {
   if (asking.value) {
-    toast.warning('正在生成回答，请稍后切换');
+    toast.warning(t('rag.generating'));
     return;
   }
   activeSessionId.value = sessionId;
@@ -143,7 +146,7 @@ async function loadConversationContext(sessionId) {
     }
   } catch (err) {
     console.error('[rag] 加载会话上下文失败:', err);
-    toast.error('加载会话上下文失败');
+    toast.error(t('rag.loadContextFailed'));
   }
 }
 
@@ -181,23 +184,23 @@ async function onRenameSession({ sessionId, title }) {
       title,
     });
     if (result && result.code === 0) {
-      toast.success('重命名成功');
+      toast.success(t('rag.renameSuccess'));
       // 更新本地列表
       const idx = sessions.value.findIndex((s) => s.sessionId === sessionId);
       if (idx >= 0) {
         sessions.value[idx].title = title;
       }
     } else {
-      toast.error(result?.message || '重命名失败');
+      toast.error(result?.message || t('rag.renameFailed'));
     }
   } catch (err) {
     console.error('[rag] 重命名会话失败:', err);
-    toast.error('重命名会话失败');
+    toast.error(t('rag.renameSessionFailed'));
   }
 }
 
 function onDeleteSession(sessionId) {
-  if (!window.confirm('确定删除该会话吗？删除后无法恢复。')) return;
+  if (!window.confirm(t('rag.deleteConfirm'))) return;
   (async () => {
       try {
         const result = await ipc.invoke(ipcApiRoute.assistant.sessionOperation, {
@@ -205,7 +208,7 @@ function onDeleteSession(sessionId) {
           sessionId,
         });
         if (result && result.code === 0) {
-          toast.success('删除成功');
+          toast.success(t('rag.deleteSuccess'));
           // 从列表中移除
           sessions.value = sessions.value.filter((s) => s.sessionId !== sessionId);
           // 如果删除的是当前会话，切到第一个或清空
@@ -218,11 +221,11 @@ function onDeleteSession(sessionId) {
             }
           }
         } else {
-          toast.error(result?.message || '删除失败');
+          toast.error(result?.message || t('rag.deleteFailed'));
         }
       } catch (err) {
         console.error('[rag] 删除会话失败:', err);
-        toast.error('删除会话失败');
+        toast.error(t('rag.deleteSessionFailed'));
       }
   })();
 }
@@ -247,7 +250,7 @@ async function loadFolderList() {
 function onModeSwitch(mode) {
   // 切换模式时不清空消息，保留对话上下文
   if (mode === 'KB_SEARCH' && !selectedFolderId.value) {
-    toast.warning('请先选择一个知识库文件夹');
+    toast.warning(t('rag.selectFolder'));
   }
 }
 
@@ -257,11 +260,11 @@ const messageListRef = ref(null);
 async function onSend(text) {
   if (asking.value) return;
   if (!activeSessionId.value) {
-    toast.warning('请先创建或选择一个会话');
+    toast.warning(t('rag.selectSession'));
     return;
   }
   if (toolMode.value === 'KB_SEARCH' && !selectedFolderId.value) {
-    toast.warning('文档问答模式需要选择一个知识库文件夹');
+    toast.warning(t('rag.kbFolderRequired'));
     return;
   }
 
@@ -312,7 +315,7 @@ async function onSend(text) {
     });
 
     if (!response.ok || !response.body) {
-      const errText = await response.text().catch(() => '流式聊天请求失败');
+      const errText = await response.text().catch(() => t('rag.requestFailed'));
       throw new Error(errText || `HTTP ${response.status}`);
     }
 
@@ -346,7 +349,7 @@ async function onSend(text) {
     assistantMsg.error = err?.message || String(err);
     asking.value = false;
     if (err?.name !== 'AbortError') {
-      toast.error('请求异常: ' + assistantMsg.error);
+      toast.error(t('rag.requestFailed') + ': ' + assistantMsg.error);
     }
   }
   await scrollToBottom();
@@ -422,7 +425,7 @@ function dispatchSseEvent(rawEvent, assistantMsg) {
       if (data && data.error) {
         assistantMsg.error = data.error;
       } else {
-        assistantMsg.error = rawData || '流式聊天失败';
+        assistantMsg.error = rawData || t('rag.streamFailed');
       }
       toast.error(assistantMsg.error);
       break;
@@ -441,7 +444,7 @@ function onStarterPick(prompt) {
  */
 function onCitationClick(cite) {
   if (cite.fileItemId === null || cite.fileItemId === undefined) {
-    toast.warning('该引用无关联文件，无法查看');
+    toast.warning(t('rag.noAssociatedFile'));
     return;
   }
   const windowName = `file-viewer-${cite.fileItemId}`;
@@ -450,13 +453,13 @@ function onCitationClick(cite) {
     type: 'vue',
     content,
     windowName,
-    windowTitle: `文件查看 - ${cite.fileName}`,
+    windowTitle: t('rag.fileViewerTitle', { name: cite.fileName }),
     width: 1200,
     height: 800,
     center: true,
   }).catch((err) => {
     console.error('[rag] 打开文件查看窗口失败:', err);
-    toast.error('打开文件查看窗口失败');
+    toast.error(t('rag.openFileViewerFailed'));
   });
 }
 

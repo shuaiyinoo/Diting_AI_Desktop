@@ -12,7 +12,7 @@
       <div class="shrink-0 border-b border-border/50 px-3.5 py-2.5">
         <Select v-model="selectedFolderId" @update:model-value="onFolderChange">
           <SelectTrigger class="w-full">
-            <SelectValue placeholder="选择授权文件夹" />
+            <SelectValue :placeholder="t('qaPage.selectFolder')" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem v-for="opt in folderOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</SelectItem>
@@ -243,9 +243,11 @@ import { Spinner } from '@/components/ui/spinner';
 import { ipcApiRoute } from '@/api';
 import { ipc } from '@/utils/ipcRenderer';
 import { isDark } from '@/theme';
+import { useI18n } from 'vue-i18n';
 import MarkdownRender from 'markstream-vue';
 
 // ========== HTTP 服务器地址（用于 SSE 流式通信） ==========
+const { t } = useI18n();
 const httpServerUrl = ref('');
 
 async function loadHttpServerUrl() {
@@ -284,7 +286,7 @@ async function loadFolderList() {
     }
   } catch (err) {
     console.error('[qa] 加载文件夹列表失败:', err);
-    toast.error('加载文件夹列表失败');
+    toast.error(t('qaPage.loadFoldersFailed'));
   }
 }
 
@@ -315,11 +317,11 @@ async function loadHistory() {
     if (res.code === 0) {
       historyList.value = res.data || [];
     } else {
-      toast.error(res.message || '加载历史记录失败');
+      toast.error(res.message || t('qaPage.loadHistoryFailed'));
     }
   } catch (err) {
     console.error('[qa] 加载历史记录失败:', err);
-    toast.error('加载历史记录失败');
+    toast.error(t('qaPage.loadHistoryFailed'));
   } finally {
     historyLoading.value = false;
   }
@@ -367,7 +369,7 @@ async function onSelectHistory(record) {
     }
   } catch (err) {
     console.error('[qa] 加载记录详情失败:', err);
-    toast.error('加载记录详情失败');
+    toast.error(t('qaPage.loadDetailFailed'));
   }
 }
 
@@ -484,7 +486,7 @@ async function onAsk() {
     assistantMsg.reasonMessage = err?.message || String(err);
     asking.value = false;
     if (err?.name !== 'AbortError') {
-      toast.error('请求异常: ' + assistantMsg.reasonMessage);
+      toast.error(t('qaPage.requestError', { msg: assistantMsg.reasonMessage }));
     }
   }
 
@@ -668,7 +670,7 @@ function citationIconClass(fileName) {
  */
 function onCitationClick(cite) {
   if (cite.fileItemId === null || cite.fileItemId === undefined) {
-    toast.warning('该引用无关联文件，无法查看');
+    toast.warning(t('qaPage.noFileLinked'));
     return;
   }
   const windowName = `file-viewer-${cite.fileItemId}`;

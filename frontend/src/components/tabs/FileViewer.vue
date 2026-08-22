@@ -21,7 +21,7 @@
       <!-- 加载中 -->
       <div v-if="loading" class="flex-1 flex flex-col items-center justify-center gap-4">
         <Spinner size="large" />
-        <p class="text-sm text-muted-foreground m-0">正在加载文件...</p>
+        <p class="text-sm text-muted-foreground m-0">{{ t('fileViewerTab.loading') }}</p>
       </div>
 
       <!-- 加载失败 -->
@@ -55,7 +55,7 @@
         <!-- 代码/文本 -->
         <div v-else class="h-full flex flex-col">
           <div class="px-5 py-2 text-xs text-muted-foreground bg-muted border-b border-border flex-shrink-0">
-            {{ fileExt || 'txt' }} · {{ lineCount }} 行
+            {{ fileExt || 'txt' }} · {{ t('fileViewerTab.lines', { count: lineCount }) }}
           </div>
           <pre class="flex-1 overflow-auto m-0 p-4 px-5 font-mono text-[13px] leading-relaxed text-foreground bg-card"><code class="font-inherit">{{ textContent }}</code></pre>
         </div>
@@ -66,6 +66,9 @@
 
 <script setup>
 import { Spinner } from '@/components/ui/spinner'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 import { ref, computed, watch, onMounted } from 'vue'
 import { FileWarning } from '@lucide/vue'

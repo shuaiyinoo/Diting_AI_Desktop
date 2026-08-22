@@ -3,7 +3,7 @@
     <!-- 加载中 -->
     <div v-if="loading" class="flex items-center justify-center py-8">
       <Spinner class="size-5 text-muted-foreground" />
-      <span class="ml-2 text-sm text-muted-foreground">加载中…</span>
+      <span class="ml-2 text-sm text-muted-foreground">{{ t('bridge.dingtalk.loading') }}</span>
     </div>
 
     <template v-else>
@@ -37,7 +37,7 @@
               :disabled="getStatus(bot.id)?.status === 'connecting'"
               @click="toggleBot(bot)"
             >
-              {{ bot.enabled ? '停止' : '启动' }}
+              {{ bot.enabled ? t('bridge.dingtalk.stop') : t('bridge.dingtalk.start') }}
             </Button>
             <Button
               variant="ghost"
@@ -45,7 +45,7 @@
               class="h-7 px-2 text-[11px]"
               @click="editBot(bot)"
             >
-              编辑
+              {{ t('bridge.dingtalk.edit') }}
             </Button>
             <Button
               variant="ghost"
@@ -53,7 +53,7 @@
               class="h-7 px-2 text-[11px] text-destructive hover:text-destructive"
               @click="deleteBot(bot)"
             >
-              删除
+              {{ t('bridge.dingtalk.delete') }}
             </Button>
           </div>
         </div>
@@ -76,31 +76,26 @@
         @click="showAddDialog = true"
       >
         <Plus class="size-4" />
-        添加钉钉 Bot
+        {{ t('bridge.dingtalk.addBot') }}
       </button>
 
       <!-- 创建钉钉机器人引导 -->
       <div class="rounded-lg border border-border bg-card p-4 shadow-sm">
         <div class="mb-3 flex items-center gap-1.5">
           <Info class="size-3.5 text-muted-foreground" />
-          <span class="text-xs font-semibold text-foreground">创建钉钉机器人</span>
+          <span class="text-xs font-semibold text-foreground">{{ t('bridge.dingtalk.guide.title') }}</span>
         </div>
-        <p class="mb-3 text-[11px] text-muted-foreground">按以下步骤在钉钉开放平台创建企业内部应用</p>
+        <p class="mb-3 text-[11px] text-muted-foreground">{{ t('bridge.dingtalk.guide.intro') }}</p>
 
         <div class="flex flex-col gap-4">
           <!-- 步骤 1 -->
           <div class="flex flex-col gap-1">
             <div class="flex items-center gap-2">
               <span class="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">1</span>
-              <span class="text-xs font-medium text-foreground">创建企业内部应用</span>
+              <span class="text-xs font-medium text-foreground">{{ t('bridge.dingtalk.guide.step1') }}</span>
             </div>
             <p class="pl-7 text-[11px] text-muted-foreground">
-              前往
-              <a href="#" class="inline-flex items-center gap-0.5 text-primary hover:underline" @click.prevent="openLink('https://open-dev.dingtalk.com')">
-                钉钉开放平台
-                <ExternalLink class="size-3 shrink-0" />
-              </a>
-              ，点击「创建应用」，选择「企业内部开发」，填写应用信息。
+              {{ t('bridge.dingtalk.guide.step1Desc') }}
             </p>
           </div>
 
@@ -108,13 +103,10 @@
           <div class="flex flex-col gap-1">
             <div class="flex items-center gap-2">
               <span class="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">2</span>
-              <span class="text-xs font-medium text-foreground">获取凭证</span>
+              <span class="text-xs font-medium text-foreground">{{ t('bridge.dingtalk.guide.step2') }}</span>
             </div>
             <p class="pl-7 text-[11px] text-muted-foreground">
-              进入应用详情页，在「凭证与基础信息」中找到
-              <span class="font-medium text-foreground">Client ID (AppKey)</span> 和
-              <span class="font-medium text-foreground">Client Secret (AppSecret)</span>，
-              复制到上方配置表单中。
+              {{ t('bridge.dingtalk.guide.step2Desc') }}
             </p>
           </div>
 
@@ -122,12 +114,10 @@
           <div class="flex flex-col gap-1">
             <div class="flex items-center gap-2">
               <span class="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">3</span>
-              <span class="text-xs font-medium text-foreground">添加机器人能力并保存连接</span>
+              <span class="text-xs font-medium text-foreground">{{ t('bridge.dingtalk.guide.step3') }}</span>
             </div>
             <p class="pl-7 text-[11px] text-muted-foreground">
-              在「应用能力」中启用机器人功能。
-              然后回到 Diting，<span class="font-medium text-foreground">先点击「保存配置」</span>，
-              确认状态变为「已连接」后，再去钉钉后台配置事件订阅（选择 Stream 模式）。
+              {{ t('bridge.dingtalk.guide.step3Desc') }}
             </p>
           </div>
 
@@ -135,18 +125,16 @@
           <div class="flex flex-col gap-1">
             <div class="flex items-center gap-2">
               <span class="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">4</span>
-              <span class="text-xs font-medium text-foreground">配置权限并发布</span>
+              <span class="text-xs font-medium text-foreground">{{ t('bridge.dingtalk.guide.step4') }}</span>
             </div>
             <p class="pl-7 text-[11px] text-muted-foreground">
-              在「权限管理」中申请所需权限（消息收发、群组管理等），
-              然后发布应用版本，等待企业管理员审批通过。
+              {{ t('bridge.dingtalk.guide.step4Desc') }}
             </p>
           </div>
 
           <!-- 重要提示 -->
           <div class="ml-7 rounded-lg bg-amber-500/10 p-2.5 text-[11px] text-amber-600 dark:text-amber-400">
-            <span class="font-medium">重要：</span>配置事件订阅前，必须先在 Diting 中保存凭证并确认 Stream 连接成功，
-            否则钉钉后台会提示「Stream 模式接入失败」。
+            {{ t('bridge.dingtalk.guide.important') }}
           </div>
         </div>
       </div>
@@ -155,12 +143,10 @@
       <div class="rounded-lg border border-border bg-muted/30 p-3.5">
         <div class="mb-1.5 flex items-center gap-1.5">
           <Info class="size-3.5 text-muted-foreground" />
-          <span class="text-xs font-semibold text-foreground">使用说明</span>
+          <span class="text-xs font-semibold text-foreground">{{ t('bridge.dingtalk.helpTitle') }}</span>
         </div>
         <p class="text-[11px] leading-relaxed text-muted-foreground">
-          在钉钉开放平台创建企业内部应用后，将 Client ID 和 Client Secret 填入上方配置表单。
-          需要启用"Stream 模式"接收消息，保存配置后自动建立 WebSocket 长连接。
-          每个 Bot 可绑定不同的项目和模型，支持多 Bot 同时运行。
+          {{ t('bridge.dingtalk.helpText') }}
         </p>
       </div>
 
@@ -168,29 +154,28 @@
       <Dialog v-model:open="showAddDialog">
         <DialogContent class="max-w-[480px]">
           <DialogHeader>
-            <DialogTitle>{{ editingBot ? '编辑钉钉 Bot' : '添加钉钉 Bot' }}</DialogTitle>
+            <DialogTitle>{{ editingBot ? t('bridge.dingtalk.edit.editTitle') : t('bridge.dingtalk.edit.addTitle') }}</DialogTitle>
             <DialogDescription>
-              在钉钉开放平台创建企业内部应用后，将 Client ID 和 Client Secret 填入此处。
-              需要启用"Stream 模式"接收消息。
+              {{ t('bridge.dingtalk.edit.description') }}
             </DialogDescription>
           </DialogHeader>
 
           <div class="flex flex-col gap-3 py-2">
             <div class="flex flex-col gap-1">
-              <Label class="text-xs">名称</Label>
-              <Input v-model="form.name" placeholder="我的钉钉 Bot" class="h-8 text-xs" />
+              <Label class="text-xs">{{ t('bridge.dingtalk.edit.name') }}</Label>
+              <Input v-model="form.name" :placeholder="t('bridge.dingtalk.edit.namePlaceholder')" class="h-8 text-xs" />
             </div>
             <div class="flex flex-col gap-1">
               <Label class="text-xs">Client ID</Label>
               <Input v-model="form.clientId" placeholder="dingxxxxxxxx" class="h-8 text-xs font-mono" />
             </div>
             <div class="flex flex-col gap-1">
-              <Label class="text-xs">Client Secret{{ editingBot ? '（留空不修改）' : '' }}</Label>
+              <Label class="text-xs">{{ t('bridge.dingtalk.edit.clientSecret') }}{{ editingBot ? t('bridge.dingtalk.edit.clientSecretHint') : '' }}</Label>
               <Input v-model="form.clientSecret" type="password" placeholder="xxxxxxxxxxxxxxxx" class="h-8 text-xs font-mono" />
             </div>
             <div class="flex items-center gap-2">
               <Switch v-model:checked="form.enabled" />
-              <Label class="text-xs">保存后自动连接</Label>
+              <Label class="text-xs">{{ t('bridge.dingtalk.edit.autoConnect') }}</Label>
             </div>
 
             <!-- 测试连接 -->
@@ -202,7 +187,7 @@
                 :disabled="testing || !form.clientId || !form.clientSecret"
                 @click="testConnection"
               >
-                {{ testing ? '测试中…' : '测试连接' }}
+                {{ testing ? t('bridge.dingtalk.edit.testing') : t('bridge.dingtalk.edit.testConnection') }}
               </Button>
               <span v-if="testResult" class="text-[11px]" :class="testResult.success ? 'text-green-600' : 'text-destructive'">
                 {{ testResult.message }}
@@ -211,9 +196,9 @@
           </div>
 
           <DialogFooter>
-            <Button variant="outline" size="sm" @click="showAddDialog = false">取消</Button>
+            <Button variant="outline" size="sm" @click="showAddDialog = false">{{ t('bridge.dingtalk.edit.cancel') }}</Button>
             <Button size="sm" :disabled="saving" @click="saveBot">
-              {{ saving ? '保存中…' : '保存' }}
+              {{ saving ? t('bridge.dingtalk.edit.saving') : t('bridge.dingtalk.edit.save') }}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -224,6 +209,9 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 import { toast } from 'vue-sonner'
 import { Bell, Plus, Info, ExternalLink } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
@@ -272,7 +260,7 @@ async function loadBots() {
     }
     await loadStatuses()
   } catch (err) {
-    toast.error('加载钉钉 Bot 失败: ' + (err?.message || err))
+    toast.error(t('bridge.dingtalk.edit.loadFailed') + ': ' + (err?.message || err))
   } finally {
     loading.value = false
   }
@@ -295,8 +283,13 @@ function getStatus(botId) {
 
 function getStatusText(botId) {
   const s = getStatus(botId)
-  if (!s) return '未连接'
-  const map = { disconnected: '未连接', connecting: '连接中…', connected: '已连接', error: '错误' }
+  if (!s) return t('bridge.dingtalk.status.disconnected')
+  const map = {
+    disconnected: t('bridge.dingtalk.status.disconnected'),
+    connecting: t('bridge.dingtalk.status.connecting'),
+    connected: t('bridge.dingtalk.status.connected'),
+    error: t('bridge.dingtalk.status.error'),
+  }
   return map[s.status] || s.status
 }
 
@@ -332,15 +325,15 @@ function editBot(bot) {
 
 async function saveBot() {
   if (!form.value.name.trim()) {
-    toast.error('请输入名称')
+    toast.error(t('bridge.dingtalk.edit.inputName'))
     return
   }
   if (!form.value.clientId.trim()) {
-    toast.error('请输入 Client ID')
+    toast.error(t('bridge.dingtalk.edit.inputClientId'))
     return
   }
   if (!editingBot.value && !form.value.clientSecret.trim()) {
-    toast.error('请输入 Client Secret')
+    toast.error(t('bridge.dingtalk.edit.inputClientSecret'))
     return
   }
 
@@ -355,31 +348,31 @@ async function saveBot() {
     }
     const res = await ipc.invoke(ipcApiRoute.bridge.dingtalkSaveBot, args)
     if (res.code === 0) {
-      toast.success(editingBot.value ? '已更新' : '已添加')
+      toast.success(editingBot.value ? t('bridge.dingtalk.edit.updated') : t('bridge.dingtalk.edit.added'))
       showAddDialog.value = false
       await loadBots()
     } else {
-      toast.error(res.message || '保存失败')
+      toast.error(res.message || t('bridge.dingtalk.edit.saveFailed'))
     }
   } catch (err) {
-    toast.error('保存失败: ' + (err?.message || err))
+    toast.error(t('bridge.dingtalk.edit.saveFailed') + ': ' + (err?.message || err))
   } finally {
     saving.value = false
   }
 }
 
 async function deleteBot(bot) {
-  if (!confirm(`确定删除 "${bot.name}" 吗？`)) return
+  if (!confirm(t('bridge.dingtalk.edit.deleteConfirm', { name: bot.name }))) return
   try {
     const res = await ipc.invoke(ipcApiRoute.bridge.dingtalkDeleteBot, { botId: bot.id })
     if (res.code === 0) {
-      toast.success('已删除')
+      toast.success(t('bridge.dingtalk.edit.deleted'))
       await loadBots()
     } else {
-      toast.error(res.message || '删除失败')
+      toast.error(res.message || t('bridge.dingtalk.edit.deleteFailed'))
     }
   } catch (err) {
-    toast.error('删除失败: ' + (err?.message || err))
+    toast.error(t('bridge.dingtalk.edit.deleteFailed') + ': ' + (err?.message || err))
   }
 }
 
@@ -388,18 +381,18 @@ async function toggleBot(bot) {
   try {
     if (isBotRunning(bot.id)) {
       await ipc.invoke(ipcApiRoute.bridge.dingtalkStopBot, { botId: bot.id })
-      toast.success(`已停止: ${bot.name}`)
+      toast.success(t('bridge.dingtalk.edit.stopped', { name: bot.name }))
     } else {
       const res = await ipc.invoke(ipcApiRoute.bridge.dingtalkStartBot, { botId: bot.id })
       if (res.code === 0) {
-        toast.success(`已启动: ${bot.name}`)
+        toast.success(t('bridge.dingtalk.edit.started', { name: bot.name }))
       } else {
-        toast.error(res.message || '启动失败')
+        toast.error(res.message || t('bridge.dingtalk.edit.startFailed'))
       }
     }
     await loadBots()
   } catch (err) {
-    toast.error('操作失败: ' + (err?.message || err))
+    toast.error(t('bridge.dingtalk.edit.operationFailed') + ': ' + (err?.message || err))
   } finally {
     togglingId.value = null
   }

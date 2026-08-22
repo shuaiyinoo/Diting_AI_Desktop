@@ -1,0 +1,52 @@
+Non disponibile
+Non supportato
+Oggi
+Basso
+Fornitore
+Salva
+Salvataggio in corso...
+Ferma
+Tutto
+Chiudi
+Aggiorna
+Annulla
+Annulla pianificazione
+Disponibile
+Nome
+Settimana
+Strumento
+Completato
+Archiviato
+Riconosciuto
+Generale
+Archivia
+Raccogli e consulta
+Competenza
+Provider API
+Invio in corso...
+Cerca
+Cerca
+Comprimi
+File
+Massimizza
+Minimizza
+Più recente
+Mese
+Senza nome
+Sconosciuto
+Etichetta
+Gestione modelli
+Test
+Scuro
+Aggiungi
+Stato
+Chiaro
+Disabilita
+Gestisci
+Sistema
+Confidenza
+Indietro
+Rinomina
+Errore
+Alto
+Scuro

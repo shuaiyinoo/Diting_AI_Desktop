@@ -10,12 +10,12 @@
         >
           {{ selectedSubFolder.name }}
         </span>
-        <span v-else class="text-[13px] font-normal text-app-muted">文件列表</span>
+        <span v-else class="text-[13px] font-normal text-app-muted">{{ t('fileModule.fileList') }}</span>
         <div class="ml-auto flex items-center gap-1">
           <!-- RAG 向量化状态标签 -->
           <Badge v-if="ragProcessing || ragQueueSize > 0" variant="secondary" class="inline-flex items-center gap-1 text-[11px]">
             <Loader2 v-if="ragProcessing" class="size-3.5 animate-spin" />
-            {{ ragProcessing ? `向量化中... 剩余${ragQueueSize}` : `队列 ${ragQueueSize}` }}
+            {{ ragProcessing ? t('fileModule.ragProcessing', { count: ragQueueSize }) : t('fileModule.ragQueue', { count: ragQueueSize }) }}
           </Badge>
           <Tooltip side="bottom">
             <TooltipTrigger as-child>
@@ -26,7 +26,7 @@
                 <RefreshCw class="size-3.5" />
               </button>
             </TooltipTrigger>
-            <TooltipContent>刷新</TooltipContent>
+            <TooltipContent>{{ t('fileModule.refresh') }}</TooltipContent>
           </Tooltip>
           <!-- 新建文件 Popover -->
           <Popover v-model:open="createPopoverVisible">
@@ -39,7 +39,7 @@
                     <Plus class="size-3.5" />
                   </button>
                 </TooltipTrigger>
-                <TooltipContent>新建文件</TooltipContent>
+                <TooltipContent>{{ t('fileModule.newFile') }}</TooltipContent>
               </Tooltip>
             </PopoverTrigger>
             <PopoverContent align="end" side="bottom" class="w-36 p-1">
@@ -49,14 +49,14 @@
                   @click="onCreateFile('docx')"
                 >
                   <FileText class="size-4 text-[#2b579a]" />
-                  <span>文档</span>
+                  <span>{{ t('fileModule.doc') }}</span>
                 </button>
                 <button
                   class="flex items-center gap-2 rounded px-2 py-1.5 text-[13px] text-app-primary transition-colors hover:bg-hover"
                   @click="onCreateFile('xlsx')"
                 >
                   <Sheet class="size-4 text-[#217346]" />
-                  <span>表格</span>
+                  <span>{{ t('fileModule.sheet') }}</span>
                 </button>
                 <button
                   class="flex items-center gap-2 rounded px-2 py-1.5 text-[13px] text-app-primary transition-colors hover:bg-hover"
@@ -100,7 +100,7 @@
           <div v-if="!fileLoading && fileList.length === 0" class="flex min-h-[200px] items-center justify-center">
             <div class="flex flex-col items-center gap-2 text-app-muted">
               <Inbox class="size-10 opacity-40" />
-              <span class="text-sm">该文件夹下暂无文件</span>
+              <span class="text-sm">{{ t('fileModule.noFilesInFolder') }}</span>
             </div>
           </div>
         </div>
@@ -131,6 +131,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
 import { FileCode, FileText, FolderOpen, Inbox, Loader2, Plus, RefreshCw, Sheet } from '@lucide/vue'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -144,6 +145,7 @@ import FilePreviewPanel from '@/components/file/FilePreviewPanel.vue'
 import FileInfoPanel from '@/components/file/FileInfoPanel.vue'
 import PanelDivider from '@/components/layout/PanelDivider.vue'
 
+const { t } = useI18n()
 const toast = useToast()
 const ws = useWorkspaceStore()
 // 使用 storeToRefs 确保 store 的 ref/computed 在 HMR 后仍保持响应式
@@ -182,8 +184,8 @@ const selectedFileStatusTag = computed(() => {
 })
 
 const fileEmptyText = computed(() => {
-  if (!wsSelectedFolderId.value) return '请先选择授权文件夹'
-  return '请从左侧选择一个文件夹'
+  if (!wsSelectedFolderId.value) return t('fileModule.selectFolderFirst')
+  return t('fileModule.selectSubFolder')
 })
 
 // 支持向量化的文件扩展名
@@ -210,15 +212,15 @@ function isFileSupported(fileName) {
 
 function getStatusTag(status, fileName) {
   if (!isFileSupported(fileName)) {
-    return { color: 'default', text: '不支持', title: '不支持的文件格式' }
+    return { color: 'default', text: t('fileModule.status.unsupported'), title: t('fileModule.status.unsupportedTitle') }
   }
   const map = {
-    PENDING: { color: 'orange', text: '待处理' },
-    PROCESSING: { color: 'blue', text: '处理中' },
-    READY: { color: 'green', text: '就绪' },
-    FAILED: { color: 'red', text: '失败' },
+    PENDING: { color: 'orange', text: t('fileModule.status.pending') },
+    PROCESSING: { color: 'blue', text: t('fileModule.status.processing') },
+    READY: { color: 'green', text: t('fileModule.status.ready') },
+    FAILED: { color: 'red', text: t('fileModule.status.failed') },
   }
-  return map[status] || { color: 'default', text: status || '未知' }
+  return map[status] || { color: 'default', text: status || t('fileModule.status.unknown') }
 }
 
 // ========== RAG 向量化 ==========
@@ -240,14 +242,14 @@ const FILE_TYPE_LABELS = {
 async function onCreateFile(ext) {
   createPopoverVisible.value = false
   if (!ws.selectedFolder || !selectedSubFolder.value) {
-    toast.warning('请先选择文件夹')
+    toast.warning(t('fileModule.selectFolder'))
     return
   }
   if (creatingFile.value) return
   creatingFile.value = true
 
   const label = FILE_TYPE_LABELS[ext] || ext
-  const baseName = `新建${label}`
+  const baseName = t(ext === 'docx' ? 'fileModule.newDoc' : ext === 'xlsx' ? 'fileModule.newSheet' : 'fileModule.newDoc')
   const fileName = await generateUniqueFileName(baseName, ext)
 
   try {
@@ -257,15 +259,15 @@ async function onCreateFile(ext) {
       fileName,
     })
     if (result.success && result.fileItem) {
-      toast.success(`已创建: ${fileName}`)
+      toast.success(t('fileModule.created', { name: fileName }))
       await loadFileList()
       onSelectFile(result.fileItem)
     } else {
-      toast.error(result.message || '创建文件失败')
+      toast.error(result.message || t('fileModule.createFailed'))
     }
   } catch (err) {
     console.error('[file] 创建文件失败:', err)
-    toast.error('创建文件失败')
+    toast.error(t('fileModule.createFailed'))
   } finally {
     creatingFile.value = false
   }
@@ -335,7 +337,7 @@ async function loadSubFolderTree(folderId) {
     }
   } catch (err) {
     console.error('[file] 加载子文件夹树失败:', err)
-    toast.error('加载子文件夹树失败')
+    toast.error(t('fileModule.loadSubFolderFailed'))
   } finally {
     subFolderLoading.value = false
   }
@@ -373,7 +375,7 @@ async function loadFileList() {
     }
   } catch (err) {
     console.error('[file] 加载文件列表失败:', err)
-    toast.error('加载文件列表失败')
+    toast.error(t('fileModule.loadFileListFailed'))
   } finally {
     fileLoading.value = false
   }

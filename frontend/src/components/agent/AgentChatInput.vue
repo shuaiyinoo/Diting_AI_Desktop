@@ -46,7 +46,7 @@
                 <img :src="currentModelLogo" :alt="selectedModel" class="size-4 shrink-0 rounded" />
                 <span class="truncate">{{ models.find(m => m.id === selectedModel)?.name || selectedModel }}</span>
               </div>
-              <span v-else class="text-muted-foreground">{{ models.length === 0 ? '未启用模型' : '选择模型' }}</span>
+              <span v-else class="text-muted-foreground">{{ models.length === 0 ? t('chat.noModel') : t('chat.selectModel') }}</span>
             </SelectTrigger>
             <SelectContent>
               <SelectItem v-for="m in models" :key="m.id" :value="m.id">
@@ -89,6 +89,7 @@
 
 <script setup>
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { Select, SelectTrigger, SelectContent, SelectItem } from '@/components/ui/select'
 import RichTextInput from '@/components/agent/RichTextInput.vue'
 import PermissionModeSelector from '@/components/agent/PermissionModeSelector.vue'
@@ -98,6 +99,8 @@ import TaskProgressCard from '@/components/agent/TaskProgressCard.vue'
 import { hasTaskBlocks } from '@/utils/task-progress'
 import { getModelLogo, LOGO_DEFAULT } from '@/utils/model-logo'
 import { inferProviderType } from '@/utils/provider-presets'
+
+const { t } = useI18n()
 
 const props = defineProps({
   /** v-model 绑定值 */

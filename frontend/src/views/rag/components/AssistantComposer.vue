@@ -5,7 +5,7 @@
       <textarea
         v-model="text"
         class="flex-1 border-none bg-transparent resize-none text-sm leading-6 py-1 outline-none max-h-[180px] overflow-y-auto text-foreground"
-        placeholder="输入消息，Enter 发送，Shift+Enter 换行"
+        :placeholder="t('ragComposer.placeholder')"
         :disabled="disabled"
         rows="1"
         @keydown="onKeydown"
@@ -26,7 +26,7 @@
     <!-- 底部提示 -->
     <div class="mt-1.5 text-center">
       <span class="text-[11px] text-muted-foreground/60">
-        {{ disabled ? '正在生成回答...' : '就绪' }}
+        {{ disabled ? t('ragComposer.generating') : t('ragComposer.ready') }}
       </span>
     </div>
   </div>
@@ -34,7 +34,10 @@
 
 <script setup>
 import { ref, computed, nextTick } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { Send, Loader2 } from '@lucide/vue';
+
+const { t } = useI18n();
 
 const props = defineProps({
   disabled: {

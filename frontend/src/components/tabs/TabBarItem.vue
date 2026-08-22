@@ -11,7 +11,7 @@
     <!-- 草稿 Tab：固定图标，无关闭按钮 -->
     <template v-if="isScratch">
       <Pencil class="size-3.5 text-muted-foreground" />
-      <span class="overflow-hidden text-ellipsis max-w-[160px]">草稿</span>
+      <span class="overflow-hidden text-ellipsis max-w-[160px]">{{ t('tabContent.scratch') }}</span>
     </template>
 
     <!-- 会话 Tab -->
@@ -32,7 +32,7 @@
         class="flex items-center justify-center size-[18px] border-none rounded bg-transparent text-muted-foreground cursor-pointer flex-shrink-0 opacity-0 transition-all duration-150 text-[10px] hover:bg-muted hover:text-foreground"
         :class="isActive ? 'opacity-60' : ''"
         :class-group-hover="'group-hover:opacity-100'"
-        title="关闭"
+        :title="t('tabContent.closeTab')"
         @click.stop="$emit('close', tab.id)"
       >
         <X class="size-3" />
@@ -46,7 +46,10 @@
 
 <script setup>
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { Pencil, MessageSquare, Bot, File, X } from '@lucide/vue'
+
+const { t } = useI18n()
 
 const props = defineProps({
   tab: { type: Object, required: true },

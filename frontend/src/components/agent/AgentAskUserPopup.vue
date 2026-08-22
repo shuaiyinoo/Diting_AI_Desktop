@@ -11,7 +11,7 @@
           <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
           <path d="M12 17h.01" />
         </svg>
-        <span class="flex-1 text-sm font-medium">Agent 需要你的回答</span>
+        <span class="flex-1 text-sm font-medium">{{ t('agentPopup.askUserTitle') }}</span>
         <button
           class="flex size-[22px] items-center justify-center rounded-md bg-white/20 text-white transition-all hover:bg-white/35"
           @click="$emit('dismiss')"
@@ -59,7 +59,7 @@
       <!-- 底部操作区 -->
       <div class="flex shrink-0 justify-end gap-2 border-t border-border px-4 py-3">
         <Button size="small" :disabled="!hasAnswer" :loading="responding" @click="$emit('submit')">
-          提交回答
+          {{ t('agentPopup.submitAnswer') }}
         </Button>
       </div>
     </div>
@@ -68,7 +68,10 @@
 
 <script setup>
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { Button } from '@/components/ui/button'
+
+const { t } = useI18n()
 
 const props = defineProps({
   /** AskUser 请求对象 */

@@ -23,7 +23,7 @@
         @update:model-value="onFolderChange"
         :disabled="disabled"
       >
-        <SelectTrigger class="w-full h-8"><SelectValue placeholder="选择知识库文件夹" /></SelectTrigger>
+        <SelectTrigger class="w-full h-8"><SelectValue :placeholder="t('modeSwitcher.selectFolder')" /></SelectTrigger>
         <SelectContent>
           <SelectItem v-for="f in folderList" :key="f.id" :value="f.id">{{ f.path }}</SelectItem>
         </SelectContent>
@@ -32,12 +32,12 @@
 
     <!-- 模式说明 -->
     <div class="text-xs text-muted-foreground leading-relaxed min-h-[18px]">
-      <span v-if="modelValue === 'CHAT'">自由对话模式：基于对话记忆进行多轮交流，不检索知识库。</span>
+      <span v-if="modelValue === 'CHAT'">{{ t('modeSwitcher.chatDesc') }}</span>
       <span v-else-if="modelValue === 'KB_SEARCH' && folderId">
-        知识库检索模式：在所选文件夹的知识库内检索证据并生成带引用的回答。
+        {{ t('modeSwitcher.kbSearchDesc') }}
       </span>
       <span v-else-if="modelValue === 'KB_SEARCH' && !folderId" class="text-amber-500">
-        请选择一个知识库文件夹。
+        {{ t('modeSwitcher.kbSearchWarn') }}
       </span>
     </div>
   </div>
@@ -45,6 +45,7 @@
 
 <script setup>
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { MessageSquare, FileSearch } from '@lucide/vue';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 
@@ -68,12 +69,14 @@ const props = defineProps({
   },
 });
 
+const { t } = useI18n();
+
 const emit = defineEmits(['update:modelValue', 'update:folderId', 'switch']);
 
-const modes = [
-  { value: 'CHAT', label: 'AI 文档', icon: MessageSquare },
-  { value: 'KB_SEARCH', label: '文档问答', icon: FileSearch },
-];
+const modes = computed(() => [
+  { value: 'CHAT', label: t('modeSwitcher.chat'), icon: MessageSquare },
+  { value: 'KB_SEARCH', label: t('modeSwitcher.kbSearch'), icon: FileSearch },
+]);
 
 function onSwitch(mode) {
   if (props.disabled || mode === props.modelValue) return;

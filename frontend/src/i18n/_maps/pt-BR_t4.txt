@@ -1,0 +1,52 @@
+Indisponível
+Não suportado
+Hoje
+Baixo
+Fornecedor
+Salvar
+Salvando...
+Parar
+Tudo
+Fechar
+Atualizar
+Cancelar
+Cancelar agendamento
+Disponível
+Nome
+Semana
+Ferramenta
+Concluído
+Arquivado
+Reconhecido
+Geral
+Arquivar
+Coletar e consultar
+Habilidade
+Provedor de API
+Enviando...
+Pesquisar
+Pesquisar
+Recolher
+Arquivo
+Maximizar
+Minimizar
+Mais recente
+Mês
+Sem nome
+Desconhecido
+Etiqueta
+Gerenciamento de modelos
+Teste
+Escuro
+Adicionar
+Status
+Claro
+Desabilitar
+Gerenciar
+Sistema
+Confiança
+Voltar
+Renomear
+Erro
+Alto
+Escuro

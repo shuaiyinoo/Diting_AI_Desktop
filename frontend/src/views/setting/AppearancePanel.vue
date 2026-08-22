@@ -1,15 +1,37 @@
 <template>
   <div class="mx-auto max-w-[640px]">
-    <h3 class="flex items-center gap-2 text-base font-semibold text-foreground">外观</h3>
-    <p class="mb-4 mt-1.5 text-xs leading-relaxed text-muted-foreground">自定义应用的视觉风格与 Markdown 渲染字号</p>
+    <h3 class="flex items-center gap-2 text-base font-semibold text-foreground">{{ t('appearance.title') }}</h3>
+    <p class="mb-4 mt-1.5 text-xs leading-relaxed text-muted-foreground">{{ t('appearance.subtitle') }}</p>
 
     <!-- 外观设置卡片 -->
     <div class="overflow-hidden rounded-lg border border-border bg-card shadow-sm">
+      <!-- 语言 -->
+      <div class="flex items-center justify-between border-b border-border/50 px-4 py-3.5">
+        <div class="flex-1 min-w-0">
+          <div class="text-[13px] font-medium text-foreground">{{ t('appearance.language.label') }}</div>
+          <div class="mt-0.5 text-[11px] leading-relaxed text-muted-foreground truncate">{{ t('appearance.language.description') }}</div>
+        </div>
+        <div class="shrink-0">
+          <Select v-model="currentLocale" @update:model-value="onLocaleChange">
+            <SelectTrigger class="h-8 w-[180px] gap-2 text-xs">
+              <SelectValue :placeholder="t('appearance.language.label')" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem
+                v-for="opt in LOCALES"
+                :key="opt.value"
+                :value="opt.value"
+              >{{ opt.label }}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
       <!-- 主题模式 -->
       <div class="flex items-center justify-between border-b border-border/50 px-4 py-3.5">
         <div class="flex-1 min-w-0">
-          <div class="text-[13px] font-medium text-foreground">主题模式</div>
-          <div class="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">选择应用的配色方案，支持跟随系统</div>
+          <div class="text-[13px] font-medium text-foreground">{{ t('appearance.themeMode.label') }}</div>
+          <div class="mt-0.5 text-[11px] leading-relaxed text-muted-foreground truncate">{{ t('appearance.themeMode.description') }}</div>
         </div>
         <div class="inline-flex shrink-0 items-center rounded-lg bg-muted p-0.5">
           <button
@@ -17,15 +39,15 @@
             class="inline-flex h-[26px] items-center justify-center rounded-md px-3.5 text-xs font-medium transition-all"
             :class="themeMode === opt.value ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'"
             @click="setThemeMode(opt.value)"
-          >{{ opt.label }}</button>
+          >{{ t('appearance.themeMode.' + opt.value) }}</button>
         </div>
       </div>
 
       <!-- Markdown 字号 -->
       <div class="flex items-center justify-between border-b border-border/50 px-4 py-3.5">
         <div class="flex-1 min-w-0">
-          <div class="text-[13px] font-medium text-foreground">Markdown 字号</div>
-          <div class="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">调整 AI 回复与 Markdown 内容的正文字号</div>
+          <div class="text-[13px] font-medium text-foreground">{{ t('appearance.markdownFontSize.label') }}</div>
+          <div class="mt-0.5 text-[11px] leading-relaxed text-muted-foreground truncate">{{ t('appearance.markdownFontSize.description') }}</div>
         </div>
         <div class="inline-flex shrink-0 items-center rounded-lg bg-muted p-0.5">
           <button
@@ -33,21 +55,21 @@
             class="inline-flex h-[26px] items-center justify-center rounded-md px-3.5 text-xs font-medium transition-all"
             :class="markdownFontSize === opt.value ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'"
             @click="onFontSizeChange(opt.value)"
-          >{{ opt.label }}</button>
+          >{{ t('appearance.radius.' + (opt.value === 'medium' ? 'default' : opt.value)) }}</button>
         </div>
       </div>
 
       <!-- 主题样式定制 -->
       <div class="border-b border-border/50 bg-muted/30 px-4 py-2.5">
-        <div class="text-[13px] font-semibold text-foreground">主题样式定制</div>
-        <div class="mt-0.5 text-[11px] text-muted-foreground">参考 shadcn-vue 主题定制器，自定义基础色调、主色和圆角</div>
+        <div class="text-[13px] font-semibold text-foreground">{{ t('appearance.themeCustomization.title') }}</div>
+        <div class="mt-0.5 text-[11px] text-muted-foreground">{{ t('appearance.themeCustomization.description') }}</div>
       </div>
 
       <!-- 基础色调 — 横向滚动卡片 -->
       <div class="border-b border-border/50 px-4 py-3.5">
         <div class="mb-2.5">
-          <div class="text-[13px] font-medium text-foreground">基础色调</div>
-          <div class="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">控制背景、边框、文字的基础灰色调</div>
+          <div class="text-[13px] font-medium text-foreground">{{ t('appearance.baseColor.label') }}</div>
+          <div class="mt-0.5 text-[11px] leading-relaxed text-muted-foreground truncate">{{ t('appearance.baseColor.description') }}</div>
         </div>
         <div class="base-color-scroll -mx-1 flex gap-2.5 overflow-x-auto px-1 pb-1" style="scrollbar-width: thin;">
           <button
@@ -86,8 +108,8 @@
       <!-- 背景纹样 — 横向滚动卡片 -->
       <div class="border-b border-border/50 px-4 py-3.5">
         <div class="mb-2.5">
-          <div class="text-[13px] font-medium text-foreground">背景纹样</div>
-          <div class="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">中国传统纹样点缀，颜色随主题色调自动适配</div>
+          <div class="text-[13px] font-medium text-foreground">{{ t('appearance.pattern.label') }}</div>
+          <div class="mt-0.5 text-[11px] leading-relaxed text-muted-foreground truncate">{{ t('appearance.pattern.description') }}</div>
         </div>
         <div class="base-color-scroll -mx-1 flex gap-2.5 overflow-x-auto px-1 pb-1" style="scrollbar-width: thin;">
           <button
@@ -128,8 +150,8 @@
       <!-- 主色 -->
       <div class="flex items-center justify-between border-b border-border/50 px-4 py-3.5">
         <div class="flex-1 min-w-0">
-          <div class="text-[13px] font-medium text-foreground">主色</div>
-          <div class="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">控制按钮、链接、高亮等强调元素的颜色</div>
+          <div class="text-[13px] font-medium text-foreground">{{ t('appearance.primaryColor.label') }}</div>
+          <div class="mt-0.5 text-[11px] leading-relaxed text-muted-foreground truncate">{{ t('appearance.primaryColor.description') }}</div>
         </div>
         <div class="flex shrink-0 flex-wrap justify-end gap-1.5" style="max-width: 260px;">
           <button
@@ -148,8 +170,8 @@
       <!-- 圆角 -->
       <div class="flex items-center justify-between px-4 py-3.5">
         <div class="flex-1 min-w-0">
-          <div class="text-[13px] font-medium text-foreground">圆角</div>
-          <div class="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">控制卡片、按钮、输入框等组件的圆角大小</div>
+          <div class="text-[13px] font-medium text-foreground">{{ t('appearance.radius.label') }}</div>
+          <div class="mt-0.5 text-[11px] leading-relaxed text-muted-foreground truncate">{{ t('appearance.radius.description') }}</div>
         </div>
         <div class="inline-flex shrink-0 items-center rounded-lg bg-muted p-0.5">
           <button
@@ -158,25 +180,33 @@
             :class="radiusSize === opt.value ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'"
             :style="{ borderRadius: opt.preview }"
             @click="setRadiusSize(opt.value)"
-          >{{ opt.label }}</button>
+          >{{ t('appearance.radius.' + opt.value) }}</button>
         </div>
       </div>
 
       <!-- 字体 -->
       <div class="flex items-center justify-between border-t border-border/50 px-4 py-3.5">
         <div class="flex-1 min-w-0">
-          <div class="text-[13px] font-medium text-foreground">字体</div>
-          <div class="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">控制全局 UI 界面的字体族，需要联网加载 Google Fonts</div>
+          <div class="text-[13px] font-medium text-foreground">{{ t('appearance.font.label') }}</div>
+          <div class="mt-0.5 text-[11px] leading-relaxed text-muted-foreground truncate">{{ t('appearance.font.description') }}</div>
         </div>
-        <select
-          class="h-8 min-w-[140px] rounded-md border border-border bg-background px-3 text-xs text-foreground outline-none transition-colors hover:border-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20"
-          :value="fontFamily"
-          @change="onFontFamilyChange($event.target.value)"
-        >
-          <optgroup v-for="grp in fontFamilyGroups" :key="grp.group" :label="grp.group">
-            <option v-for="opt in grp.options" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
-          </optgroup>
-        </select>
+        <div class="shrink-0">
+          <Select :model-value="fontFamily" @update:model-value="onFontFamilyChange">
+            <SelectTrigger class="h-8 w-[140px] gap-2 text-xs">
+              <SelectValue :placeholder="t('appearance.font.label')" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup v-for="grp in fontFamilyGroups" :key="grp.group">
+                <SelectLabel class="text-[11px]">{{ grp.group }}</SelectLabel>
+                <SelectItem
+                  v-for="opt in grp.options"
+                  :key="opt.value"
+                  :value="opt.value"
+                >{{ opt.label }}</SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
     </div>
   </div>
@@ -184,8 +214,11 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { Check } from '@lucide/vue'
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem, SelectGroup, SelectLabel } from '@/components/ui/select'
 import { FONT_SIZE_OPTIONS, getMarkdownFontSize, setMarkdownFontSize } from '@/utils/markdown-font-size'
+import { LOCALES, setLocale } from '@/i18n'
 import {
   themeMode, setThemeMode, baseColor, primaryColor, radiusSize,
   fontFamily, fontFamilyMap, setBaseColor, setPrimaryColor, setRadiusSize, setFontFamily,
@@ -193,12 +226,24 @@ import {
   patternMap, setPattern,
 } from '@/theme'
 
+const { t, locale } = useI18n()
+
+/** 当前语言，绑定到 Select 组件 */
+const currentLocale = computed({
+  get: () => locale.value,
+  set: (val) => { /* 由 onLocaleChange 处理 */ },
+})
+
+function onLocaleChange(value) {
+  setLocale(value)
+}
+
 const markdownFontSize = ref('medium')
 
 const themeOptions = [
-  { value: 'light', label: '浅色' },
-  { value: 'dark', label: '深色' },
-  { value: 'system', label: '跟随系统' },
+  { value: 'light' },
+  { value: 'dark' },
+  { value: 'system' },
 ]
 
 // ========== 基础色调选项 — 从 baseColorMap 动态生成 ==========
@@ -306,10 +351,10 @@ const primaryColorOptions = computed(() => {
 })
 
 const radiusOptions = [
-  { value: 'none',    label: '无',   preview: '0px'       },
-  { value: 'small',   label: '小',   preview: '6px'       },
-  { value: 'default',  label: '中',   preview: '8px'       },
-  { value: 'large',    label: '大',   preview: '12px'      },
+  { value: 'none',    preview: '0px'  },
+  { value: 'small',   preview: '6px'  },
+  { value: 'default', preview: '8px'  },
+  { value: 'large',   preview: '12px' },
 ]
 
 const fontGroupOrder = ['系统', '无衬线', '等宽', '衬线']

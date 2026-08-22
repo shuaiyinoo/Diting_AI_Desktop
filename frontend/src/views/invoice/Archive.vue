@@ -3,9 +3,9 @@
     <!-- ========== 顶部工具栏 ========== -->
     <div class="flex shrink-0 items-center gap-3 border-b border-border bg-card px-6 py-3">
       <div>
-        <h1 class="m-0 text-base font-semibold text-foreground">归集查阅</h1>
+        <h1 class="m-0 text-base font-semibold text-foreground">{{ t('archive.title') }}</h1>
         <p class="m-0 mt-0.5 text-xs text-muted-foreground">
-          已归档票据 {{ store.archiveStats.total }} 张 · 待审核 {{ store.archiveStats.needsReview }} · 金额合计 ¥{{ formatAmount(store.archiveStats.totalAmount) }}
+          {{ t('archive.statsLine', { total: store.archiveStats.total, needsReview: store.archiveStats.needsReview, totalAmount: formatAmount(store.archiveStats.totalAmount) }) }}
         </p>
       </div>
       <div class="ml-auto flex items-center gap-2">
@@ -13,14 +13,14 @@
           <TooltipTrigger as-child>
             <Button variant="outline" size="sm" class="gap-1.5" @click="onExport">
               <Download class="size-3.5" />
-              导出报表
+              {{ t('archive.exportReport') }}
             </Button>
           </TooltipTrigger>
-          <TooltipContent>导出为 CSV</TooltipContent>
+          <TooltipContent>{{ t('archive.exportCsv') }}</TooltipContent>
         </Tooltip>
         <Button variant="default" size="sm" class="gap-1.5" @click="goToAgent">
           <Bot class="size-3.5" />
-          咨询 Agent
+          {{ t('archive.askAgent') }}
         </Button>
       </div>
     </div>
@@ -28,19 +28,19 @@
     <!-- ========== 统计卡片 ========== -->
     <div class="grid shrink-0 grid-cols-3 gap-3 p-3.5">
       <div class="rounded-xl border border-border bg-card p-3.5">
-        <div class="mb-1 text-xs text-muted-foreground">待审核</div>
+        <div class="mb-1 text-xs text-muted-foreground">{{ t('archive.needsReview') }}</div>
         <div class="text-xl font-semibold text-foreground">
           {{ store.archiveStats.needsReview }}<small class="ml-0.5 text-xs font-normal text-muted-foreground">张</small>
         </div>
       </div>
       <div class="rounded-xl border border-border bg-card p-3.5">
-        <div class="mb-1 text-xs text-muted-foreground">金额合计</div>
+        <div class="mb-1 text-xs text-muted-foreground">{{ t('archive.totalAmount') }}</div>
         <div class="text-xl font-semibold text-foreground">
           ¥{{ formatAmount(store.archiveStats.totalAmount) }}
         </div>
       </div>
       <div class="rounded-xl border border-border bg-card p-3.5">
-        <div class="mb-1 text-xs text-muted-foreground">已归档</div>
+        <div class="mb-1 text-xs text-muted-foreground">{{ t('archive.archivedTotal') }}</div>
         <div class="text-xl font-semibold text-foreground">
           {{ store.archiveStats.total }}<small class="ml-0.5 text-xs font-normal text-muted-foreground">张</small>
         </div>
@@ -53,7 +53,7 @@
         <Search class="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
         <Input
           v-model="searchKeyword"
-          placeholder="搜索发票号 / 销售方 / 购买方..."
+          :placeholder="t('archive.searchPlaceholder')"
           class="h-8 pl-8 text-xs"
           @keyup.enter="onSearch"
         />
@@ -87,25 +87,25 @@
         class="flex h-full flex-col items-center justify-center text-center text-muted-foreground"
       >
         <Archive class="mb-3 size-12 opacity-20" />
-        <div class="text-sm font-medium text-foreground">暂无归档记录</div>
-        <p class="mt-1 text-xs">在录入识读页面完成 AI 识别后归档，记录将在此处显示</p>
+        <div class="text-sm font-medium text-foreground">{{ t('archive.noRecords') }}</div>
+        <p class="mt-1 text-xs">{{ t('archive.noRecordsHint') }}</p>
       </div>
 
       <!-- 表格 -->
       <Table v-else class="text-[11px]">
         <TableHeader>
           <TableRow class="hover:bg-transparent">
-            <TableHead class="h-9 px-2 text-[10px] uppercase tracking-wide whitespace-nowrap" style="width: 100px;">类型</TableHead>
-            <TableHead class="h-9 px-2 text-[10px] uppercase tracking-wide whitespace-nowrap" style="width: 120px;">发票号</TableHead>
-            <TableHead class="h-9 px-2 text-[10px] uppercase tracking-wide whitespace-nowrap" style="width: 90px;">日期</TableHead>
-            <TableHead class="h-9 px-2 text-right text-[10px] uppercase tracking-wide whitespace-nowrap" style="width: 100px;">金额</TableHead>
-            <TableHead class="h-9 px-2 text-right text-[10px] uppercase tracking-wide whitespace-nowrap" style="width: 100px;">税额</TableHead>
-            <TableHead class="h-9 px-2 text-[10px] uppercase tracking-wide whitespace-nowrap" style="width: 180px;">购买方/乘客</TableHead>
-            <TableHead class="h-9 px-2 text-[10px] uppercase tracking-wide whitespace-nowrap" style="width: 180px;">销售方</TableHead>
-            <TableHead class="h-9 px-2 text-[10px] uppercase tracking-wide whitespace-nowrap" style="width: 70px;">省份</TableHead>
-            <TableHead class="h-9 px-2 text-[10px] uppercase tracking-wide whitespace-nowrap" style="width: 70px;">城市</TableHead>
-            <TableHead class="h-9 px-2 text-right text-[10px] uppercase tracking-wide whitespace-nowrap" style="width: 200px;">摘要</TableHead>
-            <TableHead class="h-9 px-2 text-right text-[10px] uppercase tracking-wide whitespace-nowrap" style="width: 150px;">状态</TableHead>
+            <TableHead class="h-9 px-2 text-[10px] uppercase tracking-wide whitespace-nowrap" style="width: 100px;">{{ t('archive.type') }}</TableHead>
+            <TableHead class="h-9 px-2 text-[10px] uppercase tracking-wide whitespace-nowrap" style="width: 120px;">{{ t('archive.invoiceNo') }}</TableHead>
+            <TableHead class="h-9 px-2 text-[10px] uppercase tracking-wide whitespace-nowrap" style="width: 90px;">{{ t('archive.date') }}</TableHead>
+            <TableHead class="h-9 px-2 text-right text-[10px] uppercase tracking-wide whitespace-nowrap" style="width: 100px;">{{ t('archive.amount') }}</TableHead>
+            <TableHead class="h-9 px-2 text-right text-[10px] uppercase tracking-wide whitespace-nowrap" style="width: 100px;">{{ t('archive.tax') }}</TableHead>
+            <TableHead class="h-9 px-2 text-[10px] uppercase tracking-wide whitespace-nowrap" style="width: 180px;">{{ t('archive.buyerPassenger') }}</TableHead>
+            <TableHead class="h-9 px-2 text-[10px] uppercase tracking-wide whitespace-nowrap" style="width: 180px;">{{ t('archive.seller') }}</TableHead>
+            <TableHead class="h-9 px-2 text-[10px] uppercase tracking-wide whitespace-nowrap" style="width: 70px;">{{ t('archive.province') }}</TableHead>
+            <TableHead class="h-9 px-2 text-[10px] uppercase tracking-wide whitespace-nowrap" style="width: 70px;">{{ t('archive.city') }}</TableHead>
+            <TableHead class="h-9 px-2 text-right text-[10px] uppercase tracking-wide whitespace-nowrap" style="width: 200px;">{{ t('archive.summary') }}</TableHead>
+            <TableHead class="h-9 px-2 text-right text-[10px] uppercase tracking-wide whitespace-nowrap" style="width: 150px;">{{ t('archive.statusCol') }}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -159,8 +159,8 @@
             </TableCell>
             <!-- 状态 -->
             <TableCell class="px-2 py-2 text-right text-[10px] font-medium whitespace-nowrap">
-              <span v-if="record.ai_needs_review === 1" class="text-amber-600">⚠ 待审核</span>
-              <span v-else class="text-green-600">✓ 已核对</span>
+              <span v-if="record.ai_needs_review === 1" class="text-amber-600">{{ t('archive.needsReviewTag') }}</span>
+              <span v-else class="text-green-600">{{ t('archive.verified') }}</span>
             </TableCell>
           </TableRow>
         </TableBody>
@@ -180,11 +180,11 @@
             <Archive class="size-[18px]" />
           </div>
           <div class="min-w-0 flex-1">
-            <div class="overflow-hidden text-ellipsis whitespace-nowrap text-[15px] font-semibold text-foreground">{{ selectedRecord.type_name || selectedRecord.category_display || '票据详情' }}</div>
+            <div class="overflow-hidden text-ellipsis whitespace-nowrap text-[15px] font-semibold text-foreground">{{ selectedRecord.type_name || selectedRecord.category_display || t('archive.receiptDetail') }}</div>
             <div class="mt-0.5 font-mono text-xs text-muted-foreground">{{ selectedRecord.invoice_number || selectedRecord.file_name || '—' }}</div>
           </div>
-          <span v-if="selectedRecord.ai_needs_review === 1" class="shrink-0 rounded bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-600">⚠ 待审核</span>
-          <span v-else class="shrink-0 rounded bg-green-500/10 px-2 py-0.5 text-[11px] font-medium text-green-600">✓ 已核对</span>
+          <span v-if="selectedRecord.ai_needs_review === 1" class="shrink-0 rounded bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-600">{{ t('archive.needsReviewTag') }}</span>
+          <span v-else class="shrink-0 rounded bg-green-500/10 px-2 py-0.5 text-[11px] font-medium text-green-600">{{ t('archive.verified') }}</span>
         </div>
       </div>
 
@@ -192,7 +192,7 @@
       <div class="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto overflow-x-hidden p-5">
         <!-- 基本信息区 -->
         <div class="flex flex-col gap-3">
-          <h3 class="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">基本信息</h3>
+          <h3 class="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{{ t('archive.basicInfo') }}</h3>
           <div class="overflow-hidden rounded-lg border border-border">
             <div
               v-for="(field, idx) in detailFields"
@@ -208,7 +208,7 @@
 
         <!-- AI 结构化数据区 -->
         <div v-if="parsedAiData" class="flex flex-col gap-3">
-          <h3 class="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">AI 结构化数据</h3>
+          <h3 class="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{{ t('archive.aiStructuredData') }}</h3>
           <div class="overflow-hidden rounded-lg border border-border">
             <div
               v-for="(item, idx) in flattenedAiItems"
@@ -224,18 +224,18 @@
 
         <!-- OCR 全文区 -->
         <div v-if="selectedRecord.ocr_text" class="flex flex-col gap-3">
-          <h3 class="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">OCR 全文</h3>
+          <h3 class="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{{ t('archive.ocrFullText') }}</h3>
           <pre class="m-0 max-h-60 overflow-y-auto whitespace-pre-wrap break-all rounded-lg bg-accent p-3 text-[11px] leading-relaxed text-muted-foreground">{{ selectedRecord.ocr_text }}</pre>
         </div>
       </div>
 
       <!-- 底部操作栏 -->
       <div class="flex shrink-0 items-center gap-2 border-t border-border px-5 py-3">
-        <Button variant="outline" size="sm" @click="onCopyOcr">复制全文</Button>
-        <Button variant="outline" size="sm" @click="onCopyAi">复制 JSON</Button>
+        <Button variant="outline" size="sm" @click="onCopyOcr">{{ t('archive.copyOcr') }}</Button>
+        <Button variant="outline" size="sm" @click="onCopyAi">{{ t('archive.copyAi') }}</Button>
         <Button variant="default" size="sm" class="ml-auto gap-1.5" @click="onOpenFile">
           <FileText class="size-3.5" />
-          打开原始文件
+          {{ t('archive.openOriginal') }}
         </Button>
       </div>
     </aside>
@@ -245,6 +245,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
 import {
   Search, Download, Bot, Archive, FileText,
@@ -260,6 +261,7 @@ import { useInvoiceStore } from '@/stores/invoice'
 import { useTabStore } from '@/stores/tab'
 
 const router = useRouter()
+const { t } = useI18n()
 const store = useInvoiceStore()
 const tabStore = useTabStore()
 
@@ -271,7 +273,7 @@ const selectedRecordId = ref(null)
 
 // 大类筛选 chips
 const filterChips = computed(() => {
-  const chips = [{ key: '', label: '全部', count: store.archiveStats.total }]
+  const chips = [{ key: '', label: t('archive.all') || t('common.none'), count: store.archiveStats.total }]
   for (const c of store.archiveStats.categoryCounts) {
     chips.push({
       key: c.category,
@@ -358,20 +360,20 @@ const detailFields = computed(() => {
   if (!selectedRecord.value) return []
   const r = selectedRecord.value
   return [
-    { key: 'type_name', label: '票据类型', value: r.type_name },
-    { key: 'category_display', label: '大类', value: r.category_display },
-    { key: 'invoice_number', label: '发票号码', value: r.invoice_number },
-    { key: 'invoice_code', label: '发票代码', value: r.invoice_code },
-    { key: 'issue_date', label: '开票日期', value: r.issue_date },
-    { key: 'amount_total', label: '价税合计', value: r.amount_total != null ? `¥${formatAmount(r.amount_total)}` : null },
-    { key: 'amount_tax', label: '税额', value: r.amount_tax != null ? `¥${formatAmount(r.amount_tax)}` : null },
-    { key: 'payer_name', label: '购买方/乘客', value: r.payer_name },
-    { key: 'payee_name', label: '销售方', value: r.payee_name },
-    { key: 'province', label: '省份', value: r.province },
-    { key: 'city', label: '城市', value: r.city },
-    { key: 'file_name', label: '文件名', value: r.file_name },
-    { key: 'archived_at', label: '归档时间', value: formatDate(r.archived_at, true) },
-    { key: 'ai_confidence', label: 'AI 置信度', value: r.ai_confidence != null ? `${(r.ai_confidence * 100).toFixed(1)}%` : null },
+    { key: 'type_name', label: t('archive.detailFields.receiptType'), value: r.type_name },
+    { key: 'category_display', label: t('archive.detailFields.category'), value: r.category_display },
+    { key: 'invoice_number', label: t('archive.detailFields.invoiceNumber'), value: r.invoice_number },
+    { key: 'invoice_code', label: t('archive.detailFields.invoiceCode'), value: r.invoice_code },
+    { key: 'issue_date', label: t('archive.detailFields.issueDate'), value: r.issue_date },
+    { key: 'amount_total', label: t('archive.detailFields.totalAmount'), value: r.amount_total != null ? `¥${formatAmount(r.amount_total)}` : null },
+    { key: 'amount_tax', label: t('archive.detailFields.taxAmount'), value: r.amount_tax != null ? `¥${formatAmount(r.amount_tax)}` : null },
+    { key: 'payer_name', label: t('archive.detailFields.payer'), value: r.payer_name },
+    { key: 'payee_name', label: t('archive.detailFields.payee'), value: r.payee_name },
+    { key: 'province', label: t('archive.detailFields.province'), value: r.province },
+    { key: 'city', label: t('archive.detailFields.city'), value: r.city },
+    { key: 'file_name', label: t('archive.detailFields.fileName'), value: r.file_name },
+    { key: 'archived_at', label: t('archive.detailFields.archivedAt'), value: formatDate(r.archived_at, true) },
+    { key: 'ai_confidence', label: t('archive.detailFields.aiConfidence'), value: r.ai_confidence != null ? `${(r.ai_confidence * 100).toFixed(1)}%` : null },
   ]
 })
 
@@ -421,7 +423,7 @@ function getTypeClass(category) {
 
 function formatAiValue(val) {
   if (val == null) return '—'
-  if (typeof val === 'boolean') return val ? '是' : '否'
+  if (typeof val === 'boolean') return val ? t('common.enabled') : t('common.disabled')
   if (Array.isArray(val)) return JSON.stringify(val)
   return String(val)
 }
@@ -429,7 +431,7 @@ function formatAiValue(val) {
 // ========== 操作 ==========
 function onExport() {
   if (store.archiveRecords.length === 0) {
-    toast.warning('暂无可导出的记录')
+    toast.warning(t('archive.noExportable'))
     return
   }
   const headers = ['类型', '发票号', '开票日期', '金额', '税额', '购买方', '销售方', '省份', '城市', '文件名', '归档时间']
@@ -455,27 +457,27 @@ function onExport() {
   a.download = `归档记录_${new Date().toISOString().slice(0, 10)}.csv`
   a.click()
   URL.revokeObjectURL(url)
-  toast.success('已导出 CSV 文件')
+  toast.success(t('archive.exported'))
 }
 
 function onCopyOcr() {
   const text = selectedRecord.value?.ocr_text || ''
   if (!text) {
-    toast.warning('暂无 OCR 文本')
+    toast.warning(t('archive.noOcrText'))
     return
   }
   navigator.clipboard.writeText(text)
-  toast.success('已复制 OCR 全文')
+  toast.success(t('archive.copiedOcr'))
 }
 
 function onCopyAi() {
   const text = selectedRecord.value?.ai_data || ''
   if (!text) {
-    toast.warning('暂无 AI 数据')
+    toast.warning(t('archive.noAiData'))
     return
   }
   navigator.clipboard.writeText(text)
-  toast.success('已复制 AI JSON')
+  toast.success(t('archive.copiedAi'))
 }
 
 function goToAgent() {
@@ -484,11 +486,11 @@ function goToAgent() {
 
 function onOpenFile() {
   if (!selectedRecord.value?.file_path) {
-    toast.warning('该记录没有关联的原始文件')
+    toast.warning(t('archive.noAssociatedFile'))
     return
   }
   tabStore.openFileTab({
-    name: selectedRecord.value.file_name || '文件',
+    name: selectedRecord.value.file_name || t('archive.file'),
     path: selectedRecord.value.file_path,
   })
   closeDetail()

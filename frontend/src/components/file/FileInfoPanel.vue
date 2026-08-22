@@ -2,40 +2,40 @@
   <div class="flex flex-col h-full bg-card overflow-hidden">
     <!-- 头部 -->
     <div class="flex items-center px-3.5 h-10 flex-shrink-0 border-b border-border">
-      <span class="text-[13px] font-semibold text-foreground">文件信息</span>
+      <span class="text-[13px] font-semibold text-foreground">{{ t('fileModule.info.title') }}</span>
     </div>
 
     <!-- 内容区 -->
     <div class="flex-1 overflow-y-auto p-3 px-3.5">
-      <div v-if="!file" class="py-8 text-center text-sm text-muted-foreground">未选择文件</div>
+      <div v-if="!file" class="py-8 text-center text-sm text-muted-foreground">{{ t('fileModule.info.noFile') }}</div>
       <div v-else class="flex flex-col gap-3.5">
         <div class="flex flex-col gap-1">
-          <span class="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">文件名</span>
+          <span class="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">{{ t('fileModule.info.fileName') }}</span>
           <span class="text-[13px] text-foreground break-all leading-relaxed" :title="file.name">{{ file.name }}</span>
         </div>
         <div class="flex flex-col gap-1">
-          <span class="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">大小</span>
+          <span class="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">{{ t('fileModule.info.size') }}</span>
           <span class="text-[13px] text-foreground">{{ formatFileSize(file.size) }}</span>
         </div>
         <div class="flex flex-col gap-1">
-          <span class="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">类型</span>
+          <span class="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">{{ t('fileModule.info.type') }}</span>
           <span class="text-[13px] text-foreground">
             <Badge v-if="file.type" variant="secondary">{{ file.type }}</Badge>
             <span v-else>-</span>
           </span>
         </div>
         <div class="flex flex-col gap-1">
-          <span class="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">修改时间</span>
+          <span class="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">{{ t('fileModule.info.modified') }}</span>
           <span class="text-[13px] text-foreground">{{ formatDateTime(file.mtime) }}</span>
         </div>
         <div class="flex flex-col gap-1">
-          <span class="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">状态</span>
+          <span class="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">{{ t('fileModule.info.status') }}</span>
           <span class="text-[13px] text-foreground">
             <Badge :variant="statusTag.color === 'green' ? 'default' : 'secondary'">{{ statusTag.text }}</Badge>
           </span>
         </div>
         <div v-if="file.path" class="flex flex-col gap-1">
-          <span class="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">路径</span>
+          <span class="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">{{ t('fileModule.info.path') }}</span>
           <span class="text-xs font-mono text-muted-foreground break-all leading-relaxed" :title="file.path">{{ file.path }}</span>
         </div>
       </div>
@@ -45,7 +45,10 @@
 
 <script setup>
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { Badge } from '@/components/ui/badge';
+
+const { t } = useI18n();
 
 const props = defineProps({
   file: { type: Object, default: null },

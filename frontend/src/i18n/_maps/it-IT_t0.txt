@@ -1,0 +1,210 @@
+(Non impostato)
+(Non selezionato)
++{count} altri
+File dei temi in .claude/memory/
+0=illimitato
+0=preciso, 2=creativo, predefinito 0.7
+1. Controllo di base
+11 tipi
+13 tipi
+2. Invia richiesta http
+7 tipi
+Estrazione AI
+Estrazione AI in corso...
+Errore estrazione AI
+Estrazione AI completata
+Documento AI
+Dati strutturati AI
+Confidenza AI
+Riconoscimento AI
+Indirizzo API
+Indirizzo API (Base URL)
+L'Agent creerà automaticamente file di memoria nella conversazione
+L'Agent può leggere, cercare, cliccare e digitare nel browser.
+Strumenti integrati che l'Agent può invocare direttamente (non MCP). Includono operazioni sui file e esecuzione comandi dell'SDK, oltre agli strumenti di runtime e gestione attività personalizzati da Diting.
+Configurazione dello stato del runtime Python / Node.js e della fonte immagine usata dall'Agent durante l'esecuzione degli script. Usa prioritariamente il runtime incorporato e, se non disponibile, torna automaticamente all'ambiente host.
+Competenze dell'Agent
+Operazioni dell'Agent
+L'Agent ha bisogno della tua risposta
+Il Bot "{name}" è stato creato
+Modello Diting Cloud
+Le funzioni del modello Diting Cloud saranno presto disponibili. Resta sintonizzato.
+Integrato in Diting
+Diting workspace CLAUDE.md
+Personalizzato da Diting
+Strumento MCP
+Dimensione font Markdown
+OCR testo intero
+Ricevuta archiviata OCR
+Riconoscimento OCR
+Riconoscimento OCR
+Compatibile con OpenAI (OpenAI / DeepSeek / Moonshot / Qwen ecc.)
+Integrato in SDK
+Marketplace Skills
+Le Skills sono modelli di flusso Agent riutilizzabili, referenziati nel workspace dell'Agent tramite /
+Gestione Skills
+Gruppo di Todo
+Gestione gruppi di Todo
+Argomento:
+cross
+Servizio go
+Servizio http
+Servizio java
+Mirror npm
+Mirror pip
+Servizio python
+Servizio socket
+Database sqlite
+{count} sub-Agent in esecuzione
+{count} aree di riconoscimento
+{count} messaggi
+{count} chiamate di strumenti
+{count} righe
+{count} elementi
+N. {n}
+⚠ Da revisionare
+⚠️ Questa attività verrà eseguita in modo autonomo con pieni permessi. Assicurati che la descrizione sia chiara e senza operazioni ad alto rischio.
+✓ Verificato
+Ultima
+Limite massimo {count}
+Prossima
+Non usare la base di conoscenza
+Senza raggruppamento
+Non occupa fasce orarie specifiche
+Senza il suffisso /chat/completions
+Formato file non supportato
+Tipo file non supportato
+aree di riconoscimento
+Medio
+Priorità media
+Registro temporaneo · salvataggio automatico
+Registri temporanei, idee, promemoria...
+Ascoltare la realtà per l'AI
+Colore principale
+Inviato dal processo principale
+Personalizzazione stile tema
+Modalità tema
+Il codice QR è pronto
+Generazione codice QR fallita. Apri nel browser.
+File binario ({size}), anteprima integrata non supportata
+Trasporti e spostamenti
+Solo una volta
+Solo una volta ({when})
+Genera memoria del progetto dalle conversazioni passate
+Seleziona una conversazione a sinistra per iniziare
+Seleziona un file a sinistra per visualizzare il contenuto
+Seleziona un file a sinistra per vedere il risultato del riconoscimento, oppure esplora la panoramica delle funzioni qui sotto
+Repository
+Totale (prezzo + imposta)
+Attività
+Attività/Calendario
+Attività/Calendario/Todo
+Nome attività
+Attività avviata
+Titolo attività
+Monitoraggio attività
+Avanzamento attività
+Conversazione
+La conversazione non esiste o è stata eliminata
+Elenco conversazioni
+Il nome della conversazione non può essere vuoto
+Nome conversazione aggiornato
+Conversazione eliminata
+Conversazione aggiornata
+File di conversazione
+Modalità conversazione
+Ornamenti di motivi tradizionali, adattati automaticamente al tema
+Posizione
+Priorità bassa
+Istruzioni per l'uso
+Es.: controlla le nuove issue nel repository Diting, rispondi proattivamente alle domande, organizza i dubbi nel documento .context/issue-faq.md nel Context del progetto; elenca i bug o le richieste reali e inviale a me, senza registrare informazioni ripetute.
+Connetti automaticamente dopo il salvataggio
+Salvataggio fallito
+Salvataggio calendario fallito
+Salvataggio etichetta fallito
+Salvataggio configurazione fallito
+Ora modifica
+Arresto fallito
+Consenti
+Metadati
+Tutto il giorno
+Famiglia font UI globale, richiede caricamento online
+Testo completo
+Tutte le attività
+Tutto completato
+Tutte le cartelle
+Tutte le basi di conoscenza
+Informazioni/Aggiornamento
+Conversazioni correlate
+Chiudi browser integrato
+Chiudi browser
+Incorporato
+MCP integrato
+Il server MCP integrato fornisce all'Agent la capacità di chiamare strumenti.
+Strumenti integrati
+Hosting integrato
+Scrivi file
+min
+Passa alla modalità chiara
+Passa alla modalità scura
+Passaggio fallito
+Cambia lingua interfaccia
+Elenca {path}
+Elenca directory
+Creazione Todo fallita
+Crea «{name}»
+Crea attività
+Crea attività: {subject}
+Crea app interna aziendale
+Creazione conversazione fallita
+Creazione gruppo fallita: il nome potrebbe esistere già
+Creazione file fallita
+Creazione calendario fallita
+Creazione etichetta fallita
+Crea bot DingTalk
+Eliminazione Todo fallita
+Dopo aver eliminato «{name}», non sarà possibile recuperarlo.
+Dopo aver eliminato «{name}», {count} Todo al suo interno diventeranno non raggruppati; il contenuto non verrà eliminato.
+Elimina conversazione
+Eliminazione conversazione fallita
+Eliminazione gruppo fallita
+Eliminazione fallita
+Elimina dialogo
+Eliminazione dialogo fallita
+Eccezione durante l'eliminazione: {msg}
+Eliminazione completata
+Elimina cartella
+Elimina cartella\n\nSei sicuro di voler eliminare la cartella «{name}»? Verrà rimossa solo l'autorizzazione, i file reali non verranno eliminati.
+Eliminazione cartella fallita
+Elimina calendario
+Eliminazione calendario fallita
+Elimina progetto
+Eliminazione progetto fallita
+Alias
+Aggiorna codice QR
+Aggiorna stato
+Vai alla Piattaforma Aperta DingTalk, clicca "Crea app", seleziona "Sviluppo interno aziendale" e compila le informazioni dell'app.
+Vai al download
+Inviato dal front-end
+Avanti
+Caricamento contesto conversazione fallito
+Caricamento elenco conversazioni fallito
+Caricamento cronologia fallito
+Caricamento fallito
+Caricamento fallito. Controlla la connessione di rete.
+Caricamento albero sottocartelle fallito
+Caricamento configurazione WeChat fallito
+Caricamento elenco file fallito
+Caricamento file fallito
+Caricamento elenco cartelle fallito
+Caricamento dati panoramica fallito
+Caricamento associazione in corso...
+Caricamento dettagli registro fallito
+Caricamento dettagli fallito
+Caricamento bot DingTalk fallito
+Sub-Agent collaborativo
+Chat singola
+Angoli arrotondati di componenti come schede e pulsanti
+Pericolo
+Codice fattura
+Numero fattura

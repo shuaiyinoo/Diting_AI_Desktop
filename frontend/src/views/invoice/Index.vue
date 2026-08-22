@@ -4,11 +4,11 @@
     <div class="flex min-w-0 flex-col overflow-hidden bg-card" :style="{ width: panelWidth + 'px', flexShrink: 0 }">
       <!-- 顶部工具栏 -->
       <div class="flex h-10 shrink-0 items-center gap-1.5 border-b border-border px-2">
-        <span class="text-sm font-semibold text-foreground">录入识读</span>
+        <span class="text-sm font-semibold text-foreground">{{ t('invoicePage.title') }}</span>
         <div class="ml-auto flex items-center gap-1">
           <Badge v-if="store.ocrProcessing" variant="secondary" class="inline-flex items-center gap-1 text-[11px]">
             <Spinner size="sm" class="size-3" />
-            识别中
+            {{ t('invoicePage.recognizing') }}
           </Badge>
           <Tooltip>
             <TooltipTrigger as-child>
@@ -16,7 +16,7 @@
                 <RefreshCw class="size-3.5" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>刷新</TooltipContent>
+            <TooltipContent>{{ t('invoicePage.refresh') }}</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger as-child>
@@ -24,7 +24,7 @@
                 <Plus class="size-3.5" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>添加授权文件夹</TooltipContent>
+            <TooltipContent>{{ t('invoicePage.addFolder') }}</TooltipContent>
           </Tooltip>
         </div>
       </div>
@@ -32,7 +32,7 @@
       <!-- 授权文件夹列表 -->
       <div class="flex max-h-[200px] shrink-0 flex-col">
         <div class="flex items-center gap-1.5 px-2.5 pb-1 pt-2">
-          <span class="flex-1 text-xs font-medium text-muted-foreground">授权文件夹</span>
+          <span class="flex-1 text-xs font-medium text-muted-foreground">{{ t('invoicePage.authorizedFolders') }}</span>
           <span class="inline-flex h-4 items-center rounded-lg bg-accent px-1.5 text-[11px] text-muted-foreground">{{ store.folderList.length }}</span>
         </div>
         <div class="overflow-y-auto px-1 pb-1">
@@ -51,7 +51,7 @@
             </Button>
           </div>
           <div v-if="!store.folderLoading && store.folderList.length === 0" class="px-2 py-3 text-center text-xs text-muted-foreground">
-            暂无授权文件夹
+            {{ t('invoicePage.noFolders') }}
           </div>
         </div>
       </div>
@@ -62,13 +62,13 @@
       <!-- 文件树区域 -->
       <div class="flex min-h-0 flex-1 flex-col">
         <div class="flex items-center px-2.5 pb-1 pt-2">
-          <span class="flex-1 text-xs font-medium text-muted-foreground">文件列表</span>
+          <span class="flex-1 text-xs font-medium text-muted-foreground">{{ t('invoicePage.fileList') }}</span>
           <div class="flex gap-1">
-            <span class="inline-flex h-4 items-center rounded-lg bg-green-500/10 px-1.5 text-[11px] text-green-600" :title="'已处理 ' + store.stats.processed + '/' + store.stats.total">
+            <span class="inline-flex h-4 items-center rounded-lg bg-green-500/10 px-1.5 text-[11px] text-green-600" :title="t('invoicePage.processed') + ' ' + store.stats.processed + '/' + store.stats.total">
               {{ store.stats.processed }}/{{ store.stats.total }}
             </span>
-            <span v-if="store.stats.archived > 0" class="inline-flex h-4 items-center rounded-lg bg-blue-500/10 px-1.5 text-[11px] text-blue-600" :title="'已归档 ' + store.stats.archived">
-              归档 {{ store.stats.archived }}
+            <span v-if="store.stats.archived > 0" class="inline-flex h-4 items-center rounded-lg bg-blue-500/10 px-1.5 text-[11px] text-blue-600" :title="t('invoicePage.archived') + ' ' + store.stats.archived">
+              {{ t('invoicePage.archive') }} {{ store.stats.archived }}
             </span>
           </div>
         </div>
@@ -83,7 +83,7 @@
           <Spinner v-if="store.fileLoading" size="sm" class="mx-auto py-3" />
           <div v-else-if="flatFileTree.length === 0" class="flex flex-col items-center justify-center gap-2 px-4 py-10 text-xs text-muted-foreground">
             <Folder class="size-7 opacity-40" />
-            <p>{{ store.folderList.length === 0 ? '请先添加授权文件夹' : '该文件夹下暂无文件' }}</p>
+            <p>{{ store.folderList.length === 0 ? t('invoicePage.addFolderFirst') : t('invoicePage.noFiles') }}</p>
           </div>
           <div v-else class="px-0.5">
             <div
@@ -112,7 +112,7 @@
                 <span
                   class="ml-0.5 flex size-4 shrink-0 items-center justify-center rounded-full text-[10px]"
                   :class="node.processed === 1 ? 'bg-green-500/15 text-green-600' : node.processed === 2 ? 'bg-red-500/15 text-red-500' : isSupportedFile(node.name) ? 'bg-accent text-muted-foreground' : 'bg-red-500/10 text-red-500'"
-                  :title="node.processed === 1 ? '已识别' : node.processed === 2 ? '识别失败' : isSupportedFile(node.name) ? '未识别' : '不支持的文件类型'"
+                  :title="node.processed === 1 ? t('invoicePage.recognized') : node.processed === 2 ? t('invoicePage.recognizeFailed') : isSupportedFile(node.name) ? t('invoicePage.notRecognized') : t('invoicePage.unsupportedType')"
                 >
                   <Check v-if="node.processed === 1" class="size-2.5" />
                   <X v-else-if="node.processed === 2 || !isSupportedFile(node.name)" class="size-2.5" />
@@ -121,7 +121,7 @@
                 <span
                   v-if="node.archived === 1"
                   class="ml-0 flex size-4 shrink-0 items-center justify-center rounded-full bg-blue-500/15 text-[10px] text-blue-600"
-                  title="已归档"
+                  :title="t('invoicePage.archived')"
                 >
                   <FolderOpen class="size-2.5" />
                 </span>
@@ -148,23 +148,23 @@
               class="inline-flex items-center rounded-full px-2 py-0.5 text-[11px]"
               :class="store.selectedFile.processed === 1 ? 'bg-green-500/10 text-green-600' : store.selectedFile.processed === 2 ? 'bg-red-500/10 text-red-500' : 'bg-yellow-500/10 text-yellow-600'"
             >
-              {{ store.selectedFile.processed === 1 ? '已识别' : store.selectedFile.processed === 2 ? '识别失败' : '未识别' }}
+              {{ store.selectedFile.processed === 1 ? t('invoicePage.recognized') : store.selectedFile.processed === 2 ? t('invoicePage.recognizeFailed') : t('invoicePage.notRecognized') }}
             </span>
             <span
               class="inline-flex items-center rounded-full px-2 py-0.5 text-[11px]"
               :class="store.selectedFile.archived === 1 ? 'bg-blue-500/10 text-blue-600' : 'bg-accent text-muted-foreground'"
             >
-              {{ store.selectedFile.archived === 1 ? '已归档' : '未归档' }}
+              {{ store.selectedFile.archived === 1 ? t('invoicePage.statusArchived') : t('invoicePage.statusNotArchived') }}
             </span>
           </div>
           <div class="flex shrink-0 items-center gap-1.5">
             <Button variant="outline" size="sm" class="h-7 gap-1.5 text-xs" :disabled="reRecognizing" @click="onReRecognize">
               <RefreshCw v-if="!reRecognizing" class="size-3.5" />
               <Spinner v-else size="sm" class="size-3.5" />
-              重新识别
+              {{ t('invoicePage.reRecognize') }}
             </Button>
             <Button :variant="store.selectedFile.archived === 1 ? 'outline' : 'default'" size="sm" class="h-7 gap-1.5 text-xs" :disabled="store.selectedFile.archived === 0 && !aiData" @click="onToggleArchived">
-              {{ store.selectedFile.archived === 1 ? '取消归档' : '归档' }}
+              {{ store.selectedFile.archived === 1 ? t('invoicePage.unarchive') : t('invoicePage.archive') }}
             </Button>
           </div>
         </div>
@@ -186,8 +186,8 @@
               <!-- 缩放工具栏 -->
               <div class="flex shrink-0 items-center border-b border-border bg-card px-3 py-1.5">
                 <span class="flex-1 text-xs text-muted-foreground">
-                  {{ currentPageOcrBoxes.length }} 个识别区域
-                  <span v-if="pageImages.length > 1" class="font-medium text-primary">· 第 {{ currentPageIdx + 1 }}/{{ pageImages.length }} 页</span>
+                  {{ currentPageOcrBoxes.length }} {{ t('invoicePage.ocrBoxes', { count: currentPageOcrBoxes.length }).replace('{count} ', '') }}
+                  <span v-if="pageImages.length > 1" class="font-medium text-primary">· {{ t('invoicePage.page', { current: currentPageIdx + 1, total: pageImages.length }) }}</span>
                 </span>
                 <div class="flex items-center gap-1">
                   <Button variant="ghost" size="icon" class="size-[26px] text-muted-foreground hover:text-foreground disabled:opacity-40" @click="zoomOut" :disabled="zoom <= 0.1">
@@ -197,7 +197,7 @@
                   <Button variant="ghost" size="icon" class="size-[26px] text-muted-foreground hover:text-foreground disabled:opacity-40" @click="zoomIn" :disabled="zoom >= 5">
                     <ZoomIn class="size-3.5" />
                   </Button>
-                  <Button variant="ghost" size="icon" class="size-[26px] text-muted-foreground hover:text-foreground" title="重置缩放" @click="resetZoom">
+                  <Button variant="ghost" size="icon" class="size-[26px] text-muted-foreground hover:text-foreground" :title="t('invoicePage.resetZoom')" @click="resetZoom">
                     <Expand class="size-3.5" />
                   </Button>
                 </div>
@@ -211,7 +211,7 @@
               >
                 <div v-if="detailLoading" class="flex h-full w-full flex-col items-center justify-center gap-2">
                   <Spinner size="sm" />
-                  <span class="text-xs text-muted-foreground">加载中...</span>
+                  <span class="text-xs text-muted-foreground">{{ t('invoicePage.loading') }}</span>
                 </div>
                 <div v-else-if="currentImageData" class="relative inline-block max-w-full transition-transform" :style="{ transform: `scale(${zoom})`, transformOrigin: 'center' }">
                   <img
@@ -235,7 +235,7 @@
                 </div>
                 <div v-else class="flex flex-col items-center justify-center gap-2 text-[13px] text-muted-foreground">
                   <FileSearch class="size-10 opacity-30" />
-                  <p>无法加载图片</p>
+                  <p>{{ t('invoicePage.loadImageFailed') }}</p>
                 </div>
               </div>
 
@@ -263,13 +263,13 @@
             <!-- 标签页 -->
             <div class="flex shrink-0 gap-1 border-b border-border p-1.5">
               <Button variant="ghost" size="sm" class="rounded-md px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent" :class="resultTab === 'fields' ? 'bg-accent font-semibold text-primary' : ''" @click="resultTab = 'fields'">
-                识别区域 ({{ currentPageOcrBoxes.length }})
+                {{ t('invoicePage.ocrBoxes', { count: currentPageOcrBoxes.length }) }}
               </Button>
               <Button variant="ghost" size="sm" class="rounded-md px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent" :class="resultTab === 'text' ? 'bg-accent font-semibold text-primary' : ''" @click="resultTab = 'text'">
-                全文文本
+                {{ t('invoicePage.fullText') }}
               </Button>
               <Button variant="ghost" size="sm" class="rounded-md px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent" :class="resultTab === 'ai' ? 'bg-accent font-semibold text-primary' : ''" @click="resultTab = 'ai'">
-                AI 识别
+                {{ t('invoicePage.aiExtract') }}
                 <span v-if="aiData" class="ml-0.5 text-[10px] text-green-600">✓</span>
               </Button>
             </div>
@@ -277,8 +277,8 @@
             <!-- 识别区域列表 -->
             <div v-if="resultTab === 'fields'" class="min-h-0 flex-1 overflow-y-auto py-1">
               <div v-if="currentPageOcrBoxes.length === 0" class="flex flex-col items-center justify-center gap-1 px-4 py-10 text-[13px] text-muted-foreground">
-                <p>暂无识别结果</p>
-                <p class="text-[11px] opacity-70" v-if="store.selectedFile.processed === 0">文件尚未处理，请等待自动识别</p>
+                <p>{{ t('invoicePage.noOcrResult') }}</p>
+                <p class="text-[11px] opacity-70" v-if="store.selectedFile.processed === 0">{{ t('invoicePage.notProcessed') }}</p>
               </div>
               <div
                 v-for="(box, idx) in currentPageOcrBoxes"
@@ -290,7 +290,7 @@
               >
                 <span class="min-w-[20px] shrink-0 text-right text-[11px] text-muted-foreground">{{ idx + 1 }}</span>
                 <span class="min-w-0 flex-1 truncate text-xs text-foreground">{{ box.text }}</span>
-                <span class="min-w-[30px] shrink-0 rounded-lg bg-accent px-1.5 py-px text-center text-[10px] text-muted-foreground" :title="'置信度 ' + (box.confidence * 100).toFixed(1) + '%'">
+                <span class="min-w-[30px] shrink-0 rounded-lg bg-accent px-1.5 py-px text-center text-[10px] text-muted-foreground" :title="t('invoicePage.confidence') + ' ' + (box.confidence * 100).toFixed(1) + '%'">
                   {{ (box.confidence * 100).toFixed(0) }}%
                 </span>
               </div>
@@ -301,51 +301,51 @@
               <div class="flex justify-end px-3 py-1.5">
                 <Button variant="ghost" size="sm" class="h-7 gap-1.5 text-xs text-muted-foreground hover:text-foreground" @click="copyOcrText">
                   <Copy class="size-3.5" />
-                  <span>复制全文</span>
+                  <span>{{ t('invoicePage.copyAll') }}</span>
                 </Button>
               </div>
-              <div class="px-3 py-2 text-xs leading-relaxed whitespace-pre-wrap break-all text-foreground">{{ ocrText || '暂无识别文本' }}</div>
+              <div class="px-3 py-2 text-xs leading-relaxed whitespace-pre-wrap break-all text-foreground">{{ ocrText || t('invoicePage.noOcrText') }}</div>
             </div>
 
             <!-- AI 结构化结果 -->
             <div v-if="resultTab === 'ai'" class="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
               <div v-if="aiLoading" class="flex h-[200px] flex-col items-center justify-center gap-3">
                 <Spinner size="sm" />
-                <p class="text-xs text-muted-foreground">AI 提取中...</p>
-                <p class="text-[11px] text-muted-foreground">步骤 1: 文档分类 → 步骤 2: 结构化提取</p>
+                <p class="text-xs text-muted-foreground">{{ t('invoicePage.aiExtracting') }}</p>
+                <p class="text-[11px] text-muted-foreground">{{ t('invoicePage.aiSteps') }}</p>
               </div>
               <div v-else-if="aiData" class="pb-4">
                 <!-- 操作按钮 -->
                 <div class="sticky top-0 z-[1] flex justify-end gap-1 bg-card px-3 pb-2 pt-1">
                   <Button variant="ghost" size="sm" class="h-7 gap-1.5 text-xs text-muted-foreground hover:text-foreground" @click="copyAiData">
                     <Copy class="size-3.5" />
-                    <span>复制 JSON</span>
+                    <span>{{ t('invoicePage.copyJson') }}</span>
                   </Button>
                   <Button variant="ghost" size="sm" class="h-7 gap-1.5 text-xs text-muted-foreground hover:text-foreground" :disabled="aiLoading" @click="onExtractInvoice">
                     <RefreshCw class="size-3.5" />
-                    <span>重新提取</span>
+                    <span>{{ t('invoicePage.reExtract') }}</span>
                   </Button>
                 </div>
 
                 <!-- 文档分类信息 -->
                 <div class="mx-3 mb-1 flex items-center justify-between gap-2 rounded-lg border border-primary/10 bg-gradient-to-br from-primary/5 to-green-500/5 px-3 py-2.5">
                   <div class="flex min-w-0 flex-1 items-center gap-1.5">
-                    <span class="whitespace-nowrap text-[13px] font-semibold text-primary">{{ aiData.category_display || '未知' }}</span>
+                    <span class="whitespace-nowrap text-[13px] font-semibold text-primary">{{ aiData.category_display || t('invoicePage.unknown') }}</span>
                     <span class="text-[13px] text-muted-foreground">/</span>
-                    <span class="truncate text-[13px] font-semibold text-foreground">{{ aiData.type_name || '未知' }}</span>
+                    <span class="truncate text-[13px] font-semibold text-foreground">{{ aiData.type_name || t('invoicePage.unknown') }}</span>
                   </div>
                   <div class="flex shrink-0 items-center gap-1">
                     <span class="inline-flex items-center whitespace-nowrap rounded-lg px-1.5 py-0.5 text-[10px]" :class="aiData.needs_review ? 'bg-yellow-500/10 text-yellow-600' : ''">
-                      {{ (aiData.confidence * 100).toFixed(0) }}% 置信
+                      {{ (aiData.confidence * 100).toFixed(0) }}% {{ t('invoicePage.confidence') }}
                     </span>
-                    <span v-if="aiData.needs_review" class="inline-flex items-center whitespace-nowrap rounded-lg bg-yellow-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-yellow-600">需复核</span>
-                    <span v-else class="inline-flex items-center whitespace-nowrap rounded-lg bg-green-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-green-600">已确认</span>
+                    <span v-if="aiData.needs_review" class="inline-flex items-center whitespace-nowrap rounded-lg bg-yellow-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-yellow-600">{{ t('invoicePage.needsReview') }}</span>
+                    <span v-else class="inline-flex items-center whitespace-nowrap rounded-lg bg-green-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-green-600">{{ t('invoicePage.confirmed') }}</span>
                   </div>
                 </div>
 
                 <!-- 类型编码 -->
                 <div class="flex gap-2 border-b border-black/5 px-3 py-1 text-xs">
-                  <span class="min-w-[80px] shrink-0 text-muted-foreground">类型编码</span>
+                  <span class="min-w-[80px] shrink-0 text-muted-foreground">{{ t('invoicePage.typeCode') }}</span>
                   <span class="flex-1 break-all text-foreground">{{ aiData.type_code || '-' }}</span>
                 </div>
 
@@ -382,13 +382,13 @@
                 </template>
               </div>
               <div v-else class="flex flex-col items-center justify-center gap-1 px-4 py-10 text-[13px] text-muted-foreground">
-                <p>暂未进行 AI 提取</p>
-                <p class="text-[11px] opacity-70">点击下方按钮进行 AI 结构化提取</p>
+                <p>{{ t('invoicePage.aiNotExtracted') }}</p>
+                <p class="text-[11px] opacity-70">{{ t('invoicePage.aiExtractHint') }}</p>
                 <Button variant="default" size="sm" class="mt-3 gap-1.5" :disabled="!ocrText || aiLoading" @click="onExtractInvoice">
                   <Bot class="size-4" />
-                  AI 提取
+                  {{ t('invoicePage.aiExtract') }}
                 </Button>
-                <p v-if="!ocrText" class="mt-2 text-[11px] opacity-70">需先完成 OCR 识别</p>
+                <p v-if="!ocrText" class="mt-2 text-[11px] opacity-70">{{ t('invoicePage.needOcrFirst') }}</p>
               </div>
             </div>
           </div>
@@ -403,21 +403,21 @@
             <div class="text-primary opacity-70">
               <FileSearch class="size-11" />
             </div>
-            <h2 class="m-0 text-[22px] font-bold text-foreground">录入识读</h2>
-            <p class="m-0 text-[13px] text-muted-foreground">从左侧选择文件查看识别结果，或先了解以下能力总览</p>
+            <h2 class="m-0 text-[22px] font-bold text-foreground">{{ t('invoicePage.title') }}</h2>
+            <p class="m-0 text-[13px] text-muted-foreground">{{ t('invoicePage.introHint') }}</p>
           </div>
 
           <!-- 核心优势 -->
           <div class="mb-7">
-            <h3 class="m-0 mb-3.5 border-l-[3px] border-primary pl-2.5 text-[15px] font-semibold text-foreground">核心优势</h3>
+            <h3 class="m-0 mb-3.5 border-l-[3px] border-primary pl-2.5 text-[15px] font-semibold text-foreground">{{ t('invoicePage.coreAdvantages') }}</h3>
             <div class="grid grid-cols-3 gap-3">
               <div class="flex flex-col gap-2.5 rounded-lg border border-border bg-card px-3.5 py-3 transition-shadow hover:shadow-md">
                 <div class="flex size-[34px] shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
                   <BadgeCheck class="size-[18px]" />
                 </div>
                 <div class="min-w-0 flex-1">
-                  <div class="mb-1 text-[13px] font-semibold text-foreground">本地识别，数据不出电脑</div>
-                  <p class="m-0 text-[11px] leading-relaxed text-muted-foreground">所有图片的识别、文字提取、结构化解析都在本地完成，原始图片和识别结果不会上传到任何外部服务器，从根本上保障数据安全与隐私合规。</p>
+                  <div class="mb-1 text-[13px] font-semibold text-foreground">{{ t('invoicePage.advantage1Title') }}</div>
+                  <p class="m-0 text-[11px] leading-relaxed text-muted-foreground">{{ t('invoicePage.advantage1Desc') }}</p>
                 </div>
               </div>
               <div class="flex flex-col gap-2.5 rounded-lg border border-border bg-card px-3.5 py-3 transition-shadow hover:shadow-md">
@@ -425,8 +425,8 @@
                   <LayoutGrid class="size-[18px]" />
                 </div>
                 <div class="min-w-0 flex-1">
-                  <div class="mb-1 text-[13px] font-semibold text-foreground">覆盖全面，一机通识</div>
-                  <p class="m-0 text-[11px] leading-relaxed text-muted-foreground">支持 40+ 种主流票据与证件的高精度识别，涵盖财务报销、交通出行、资质证照等核心业务场景。</p>
+                  <div class="mb-1 text-[13px] font-semibold text-foreground">{{ t('invoicePage.advantage2Title') }}</div>
+                  <p class="m-0 text-[11px] leading-relaxed text-muted-foreground">{{ t('invoicePage.advantage2Desc') }}</p>
                 </div>
               </div>
               <div class="flex flex-col gap-2.5 rounded-lg border border-border bg-card px-3.5 py-3 transition-shadow hover:shadow-md">
@@ -434,8 +434,8 @@
                   <Bot class="size-[18px]" />
                 </div>
                 <div class="min-w-0 flex-1">
-                  <div class="mb-1 text-[13px] font-semibold text-foreground">智能提取，识用一体</div>
-                  <p class="m-0 text-[11px] leading-relaxed text-muted-foreground">识别结果自动映射为结构化字段（金额、日期、票号、销方/购方等），异构数据归一为统一视图，支持跨类型检索、统计与多格式导出。</p>
+                  <div class="mb-1 text-[13px] font-semibold text-foreground">{{ t('invoicePage.advantage3Title') }}</div>
+                  <p class="m-0 text-[11px] leading-relaxed text-muted-foreground">{{ t('invoicePage.advantage3Desc') }}</p>
                 </div>
               </div>
             </div>
@@ -443,28 +443,28 @@
 
           <!-- 识别能力 -->
           <div class="mb-7">
-            <h3 class="m-0 mb-3.5 border-l-[3px] border-primary pl-2.5 text-[15px] font-semibold text-foreground">识别能力</h3>
+            <h3 class="m-0 mb-3.5 border-l-[3px] border-primary pl-2.5 text-[15px] font-semibold text-foreground">{{ t('invoicePage.recognitionCapabilities') }}</h3>
             <div class="grid grid-cols-3 gap-3">
               <div class="flex flex-col rounded-lg border border-border bg-card px-3.5 py-3 transition-shadow hover:shadow-md">
                 <div class="mb-1.5 flex items-center gap-2">
-                  <span class="rounded-md bg-blue-500/10 px-2 py-0.5 text-[11px] font-semibold text-blue-600">财税报销</span>
-                  <span class="rounded-lg bg-accent px-1.5 py-px text-[10px] text-muted-foreground">13 种</span>
+                  <span class="rounded-md bg-blue-500/10 px-2 py-0.5 text-[11px] font-semibold text-blue-600">{{ t('invoicePage.catFinance') }}</span>
+                  <span class="rounded-lg bg-accent px-1.5 py-px text-[10px] text-muted-foreground">{{ t('invoicePage.catFinanceCount') }}</span>
                 </div>
-                <p class="m-0 text-[11px] leading-relaxed text-muted-foreground">增值税发票（专用/普通/电子/卷票/区块链）、定额发票、通用机打发票、火车票、出租车票、飞机行程单、汽车票、过路过桥费发票、船票、网约车行程单、购物小票、银行回单、智能票据混贴。</p>
+                <p class="m-0 text-[11px] leading-relaxed text-muted-foreground">{{ t('invoicePage.catFinanceDesc') }}</p>
               </div>
               <div class="flex flex-col rounded-lg border border-border bg-card px-3.5 py-3 transition-shadow hover:shadow-md">
                 <div class="mb-1.5 flex items-center gap-2">
-                  <span class="rounded-md bg-purple-500/10 px-2 py-0.5 text-[11px] font-semibold text-purple-600">资质证照</span>
-                  <span class="rounded-lg bg-accent px-1.5 py-px text-[10px] text-muted-foreground">11 种</span>
+                  <span class="rounded-md bg-purple-500/10 px-2 py-0.5 text-[11px] font-semibold text-purple-600">{{ t('invoicePage.catCert') }}</span>
+                  <span class="rounded-lg bg-accent px-1.5 py-px text-[10px] text-muted-foreground">{{ t('invoicePage.catCertCount') }}</span>
                 </div>
-                <p class="m-0 text-[11px] leading-relaxed text-muted-foreground">身份证、银行卡、营业执照、护照、社保卡、港澳台证件、户口本、出生证明、结婚证、离婚证、房产证。</p>
+                <p class="m-0 text-[11px] leading-relaxed text-muted-foreground">{{ t('invoicePage.catCertDesc') }}</p>
               </div>
               <div class="flex flex-col rounded-lg border border-border bg-card px-3.5 py-3 transition-shadow hover:shadow-md">
                 <div class="mb-1.5 flex items-center gap-2">
-                  <span class="rounded-md bg-teal-500/10 px-2 py-0.5 text-[11px] font-semibold text-teal-600">交通出行</span>
-                  <span class="rounded-lg bg-accent px-1.5 py-px text-[10px] text-muted-foreground">7 种</span>
+                  <span class="rounded-md bg-teal-500/10 px-2 py-0.5 text-[11px] font-semibold text-teal-600">{{ t('invoicePage.catTransport') }}</span>
+                  <span class="rounded-lg bg-accent px-1.5 py-px text-[10px] text-muted-foreground">{{ t('invoicePage.catTransportCount') }}</span>
                 </div>
-                <p class="m-0 text-[11px] leading-relaxed text-muted-foreground">车牌识别、VIN码识别、驾驶证、行驶证、机动车销售发票、车辆合格证、二手车销售发票。</p>
+                <p class="m-0 text-[11px] leading-relaxed text-muted-foreground">{{ t('invoicePage.catTransportDesc') }}</p>
               </div>
             </div>
           </div>
@@ -487,8 +487,11 @@ import { Folder, File, FileSearch, ChevronDown, ChevronRight, FolderOpen, FileTe
 import { useInvoiceStore } from '@/stores/invoice'
 import PanelDivider from '@/components/layout/PanelDivider.vue'
 import PdfAnnotationViewer from '@/components/invoice/PdfAnnotationViewer.vue'
+import { useI18n } from 'vue-i18n'
+
 
 const store = useInvoiceStore()
+const { t } = useI18n()
 
 // ========== 面板宽度 ==========
 const panelWidth = ref(280)
@@ -581,22 +584,22 @@ function onSelectFolder(folderId) {
 async function onAddFolder() {
   const result = await store.addFolder()
   if (result?.success) {
-    toast.success('文件夹添加成功')
+    toast.success(t('invoicePage.folderAdded'))
     await store.loadFileTree()
-  } else if (result?.message && result.message !== '用户取消选择') {
+  } else if (result?.message && result.message !== t('invoicePage.userCanceled')) {
     toast.warning(result.message)
   }
 }
 
 function onDeleteFolder(folder) {
-  if (!window.confirm(`删除文件夹\n\n确定要删除文件夹「${folder.folder_name}」吗？仅移除授权，不删除实际文件。`)) return;
+  if (!window.confirm(t('invoicePage.folderDeleteConfirm', { name: folder.folder_name }))) return;
   (async () => {
       const result = await store.deleteFolder(folder.id)
       if (result?.success) {
-        toast.success('文件夹已删除')
+        toast.success(t('invoicePage.folderDeleted'))
         await store.loadFileTree()
       } else {
-        toast.error('删除文件夹失败')
+        toast.error(t('invoicePage.folderDeleteFailed'))
       }
   })()
 }
@@ -774,12 +777,12 @@ async function onExtractInvoice() {
       if (result.data.structured_data) {
         editableAiData.value = JSON.parse(JSON.stringify(result.data.structured_data))
       }
-      toast.success('AI 提取成功')
+      toast.success(t('invoicePage.aiExtractSuccess'))
     } else {
-      toast.error(result.error || 'AI 提取失败')
+      toast.error(result.error || t('invoicePage.aiExtractFailed'))
     }
   } catch (err) {
-    toast.error('AI 提取失败: ' + String(err))
+    toast.error(t('invoicePage.aiExtractFailed') + ': ' + String(err))
   } finally {
     aiLoading.value = false
   }
@@ -791,9 +794,9 @@ async function copyAiData() {
     // 复制编辑后的数据
     const fullData = { ...aiData.value, structured_data: editableAiData.value }
     await navigator.clipboard.writeText(JSON.stringify(fullData, null, 2))
-    toast.success('已复制到剪贴板')
+    toast.success(t('invoicePage.copiedToClipboard'))
   } catch {
-    toast.error('复制失败')
+    toast.error(t('invoicePage.copyFailed'))
   }
 }
 
@@ -803,21 +806,21 @@ async function onReRecognize() {
   try {
     const result = await store.reRecognize(store.selectedFile.id)
     if (result.success) {
-      toast.success('重新识别完成')
+      toast.success(t('invoicePage.reRecognized'))
       const file = store.fileTree.find((f) => f.id === store.selectedFile.id)
       if (file) {
         file.processed = 1
       }
       await onSelectFile(store.selectedFile)
     } else {
-      toast.error(result.error || '重新识别失败')
+      toast.error(result.error || t('invoicePage.reRecognizeFailed'))
       const file = store.fileTree.find((f) => f.id === store.selectedFile.id)
       if (file) {
         file.processed = 2
       }
     }
   } catch (err) {
-    toast.error('重新识别失败: ' + String(err))
+    toast.error(t('invoicePage.recognizeFailedMsg') + ': ' + String(err))
   } finally {
     reRecognizing.value = false
   }
@@ -827,14 +830,14 @@ async function onToggleArchived() {
   if (!store.selectedFile) return
   // 未归档时必须先完成 AI 提取
   if (store.selectedFile.archived !== 1 && !aiData.value) {
-    toast.warning('请先进行 AI 识别后再归档')
+    toast.warning(t('invoicePage.needAiFirst'))
     return
   }
   const result = await store.toggleArchived(store.selectedFile.id)
   if (result?.success) {
-    toast.success(result.file.archived === 1 ? '已归档' : '已取消归档')
+    toast.success(result.file.archived === 1 ? t('invoicePage.archivedToast') : t('invoicePage.unarchivedToast'))
   } else {
-    toast.error('操作失败')
+    toast.error(t('invoicePage.operationFailed'))
   }
 }
 
@@ -842,9 +845,9 @@ async function copyOcrText() {
   if (!ocrText.value) return
   try {
     await navigator.clipboard.writeText(ocrText.value)
-    toast.success('已复制到剪贴板')
+    toast.success(t('invoicePage.copiedToClipboard'))
   } catch {
-    toast.error('复制失败')
+    toast.error(t('invoicePage.copyFailed'))
   }
 }
 

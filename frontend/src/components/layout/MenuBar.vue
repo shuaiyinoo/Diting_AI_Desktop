@@ -44,7 +44,7 @@
         <!-- ===== 工具分组 ===== -->
         <div class="mb-0">
           <div class="flex h-[28px] shrink-0 items-center gap-1.5 px-2 mt-2">
-            <span class="flex-1 text-xs font-medium text-muted-foreground">工具</span>
+            <span class="flex-1 text-xs font-medium text-muted-foreground">{{ t('menuBar.tools') }}</span>
           </div>
           <div
             class="relative mb-0.5 flex h-[34px] cursor-pointer items-center gap-2 rounded-[7px] px-2.5 text-sm transition-colors duration-150"
@@ -54,7 +54,7 @@
             @click="navigate('file')"
           >
             <Folder class="size-3.5 shrink-0" :class="ws.activeModule === 'file' ? 'text-primary' : 'text-muted-foreground'" />
-            <span class="flex-1 min-w-0 truncate">文件</span>
+            <span class="flex-1 min-w-0 truncate">{{ t('menuBar.file') }}</span>
             <span class="flex h-4 shrink-0 items-center rounded-full bg-muted px-1.5 text-[11px] leading-none text-muted-foreground">{{ ws.folderList.length }}</span>
           </div>
           <div
@@ -65,7 +65,7 @@
             @click="navigate('invoice')"
           >
             <FileSearch class="size-3.5 shrink-0" :class="ws.activeModule === 'invoice' ? 'text-primary' : 'text-muted-foreground'" />
-            <span class="flex-1 min-w-0 truncate">OCR识别</span>
+            <span class="flex-1 min-w-0 truncate">{{ t('menuBar.ocr') }}</span>
           </div>
           <div
             class="relative mb-0.5 flex h-[34px] cursor-pointer items-center gap-2 rounded-[7px] px-2.5 text-sm transition-colors duration-150"
@@ -75,7 +75,7 @@
             @click="navigate('planning')"
           >
             <CalendarRange class="size-3.5 shrink-0" :class="ws.activeModule === 'planning' ? 'text-primary' : 'text-muted-foreground'" />
-            <span class="flex-1 min-w-0 truncate">任务/日程/Todo</span>
+            <span class="flex-1 min-w-0 truncate">{{ t('menuBar.planning') }}</span>
             <span v-if="planningCount" class="flex h-4 shrink-0 items-center rounded-full bg-muted px-1.5 text-[11px] leading-none text-muted-foreground">{{ planningCount }}</span>
           </div>
           <div
@@ -86,7 +86,7 @@
             @click="navigate('skills')"
           >
             <Zap class="size-3.5 shrink-0" :class="ws.activeModule === 'skills' ? 'text-primary' : 'text-muted-foreground'" />
-            <span class="flex-1 min-w-0 truncate">Agent 技能</span>
+            <span class="flex-1 min-w-0 truncate">{{ t('menuBar.skills') }}</span>
             <span class="flex h-4 shrink-0 items-center rounded-full bg-muted px-1.5 text-[11px] leading-none text-muted-foreground">{{ skillsCount }}</span>
           </div>
         </div>
@@ -94,7 +94,7 @@
         <!-- ===== OCR 子菜单 ===== -->
         <div v-if="ws.activeModule === 'invoice'" class="mb-1">
           <div class="flex h-[28px] shrink-0 items-center gap-1.5 px-2 mt-2">
-            <span class="flex-1 text-xs font-medium text-muted-foreground">OCR</span>
+            <span class="flex-1 text-xs font-medium text-muted-foreground">{{ t('menuBar.ocrSection') }}</span>
           </div>
           <div
             class="relative mb-0.5 flex h-[34px] cursor-pointer items-center gap-2 rounded-[7px] px-2.5 text-sm transition-colors duration-150"
@@ -104,7 +104,7 @@
             @click="navigateOcrSub('recognize')"
           >
             <FileText class="size-3.5 shrink-0" :class="isOcrSubActive('recognize') ? 'text-primary' : 'text-muted-foreground'" />
-            <span class="flex-1 min-w-0 truncate">录入识读</span>
+            <span class="flex-1 min-w-0 truncate">{{ t('menuBar.ocrRecognize') }}</span>
           </div>
           <div
             class="relative mb-0.5 flex h-[34px] cursor-pointer items-center gap-2 rounded-[7px] px-2.5 text-sm transition-colors duration-150"
@@ -114,14 +114,14 @@
             @click="navigateOcrSub('archive')"
           >
             <Inbox class="size-3.5 shrink-0" :class="isOcrSubActive('archive') ? 'text-primary' : 'text-muted-foreground'" />
-            <span class="flex-1 min-w-0 truncate">归集查阅</span>
+            <span class="flex-1 min-w-0 truncate">{{ t('menuBar.ocrArchive') }}</span>
           </div>
         </div>
 
         <!-- ===== 文件分组 ===== -->
         <div v-if="ws.activeModule === 'file'" class="flex min-h-0 flex-1 flex-col">
           <div class="flex h-[28px] shrink-0 items-center gap-1.5 px-2 mt-2">
-            <span class="flex-1 text-xs font-medium text-muted-foreground">文件</span>
+            <span class="flex-1 text-xs font-medium text-muted-foreground">{{ t('menuBar.fileSection') }}</span>
             <span class="text-[11px] text-muted-foreground">{{ ws.folderList.length }}</span>
             <Button variant="ghost" size="icon" class="h-5 w-5 text-muted-foreground hover:text-primary" @click="onAddFolder">
               <Plus class="size-3.5" />
@@ -145,14 +145,14 @@
                 <Eraser class="size-3" />
               </Button>
             </div>
-            <div v-if="!ws.folderLoading && ws.folderList.length === 0" class="px-2 py-3 text-center text-xs text-muted-foreground">暂无文件夹</div>
+            <div v-if="!ws.folderLoading && ws.folderList.length === 0" class="px-2 py-3 text-center text-xs text-muted-foreground">{{ t('menuBar.noFolder') }}</div>
           </div>
         </div>
 
         <!-- ===== 对话分组 ===== -->
         <div v-if="ws.activeModule === 'chat'" class="flex min-h-0 flex-1 flex-col">
           <div class="flex h-[28px] shrink-0 items-center gap-1.5 px-2 mt-2">
-            <span class="flex-1 text-xs font-medium text-muted-foreground">对话</span>
+            <span class="flex-1 text-xs font-medium text-muted-foreground">{{ t('menuBar.conversation') }}</span>
             <Button variant="ghost" size="icon" class="h-5 w-5 text-muted-foreground hover:text-primary" @click="onCreateChat">
               <Plus class="size-3.5" />
             </Button>
@@ -169,19 +169,19 @@
               @click="onSelectChatSession(session.id)"
             >
               <MessageSquare class="size-3.5 shrink-0" :class="ws.currentChatSessionId === session.id ? 'text-primary' : 'text-muted-foreground'" />
-              <span class="flex-1 min-w-0 truncate">{{ session.title || '新会话' }}</span>
+              <span class="flex-1 min-w-0 truncate">{{ session.title || t('menuBar.newSession') }}</span>
               <Button variant="ghost" size="icon" class="h-5 w-5 shrink-0 text-muted-foreground hover:bg-red-500/10 hover:text-red-500" @click.stop="onDeleteChatSession(session)">
                 <Eraser class="size-3" />
               </Button>
             </div>
-            <div v-if="!ws.chatSessionLoading && ws.chatSessions.length === 0" class="px-2 py-3 text-center text-xs text-muted-foreground">暂无对话</div>
+            <div v-if="!ws.chatSessionLoading && ws.chatSessions.length === 0" class="px-2 py-3 text-center text-xs text-muted-foreground">{{ t('menuBar.noConversation') }}</div>
           </div>
         </div>
 
         <!-- ===== 项目分组 ===== -->
         <div v-if="ws.activeModule === 'agent'" class="flex min-h-0 flex-1 flex-col">
           <div class="flex h-[28px] shrink-0 items-center gap-1.5 px-2 mt-2">
-            <span class="flex-1 text-xs font-medium text-muted-foreground">项目</span>
+            <span class="flex-1 text-xs font-medium text-muted-foreground">{{ t('menuBar.project') }}</span>
             <Button variant="ghost" size="icon" class="h-5 w-5 text-muted-foreground hover:text-primary" @click="onCreateProject">
               <Plus class="size-3.5" />
             </Button>
@@ -237,22 +237,22 @@
                     @keydown.escape="cancelEdit"
                     @blur="saveSessionName(sess)"
                   />
-                  <span v-else class="flex-1 min-w-0 truncate" @dblclick.stop="startEditSession(sess)">{{ sess.title || '未命名' }}</span>
+                  <span v-else class="flex-1 min-w-0 truncate" @dblclick.stop="startEditSession(sess)">{{ sess.title || t('menuBar.untitled') }}</span>
                   <Button variant="ghost" size="icon" class="h-5 w-5 shrink-0 text-muted-foreground hover:bg-red-500/10 hover:text-red-500" @click.stop="onDeleteAgentSession(sess, project)">
                     <Eraser class="size-3" />
                   </Button>
                 </div>
-                <div v-if="getProjectSessions(project.id).length === 0" class="py-1.5 pl-7 text-left text-xs text-muted-foreground">暂无会话</div>
+                <div v-if="getProjectSessions(project.id).length === 0" class="py-1.5 pl-7 text-left text-xs text-muted-foreground">{{ t('menuBar.noSession') }}</div>
                 <div
                   v-if="getProjectSessions(project.id).length > 3"
                   class="cursor-pointer select-none py-1 pl-7 text-xs text-muted-foreground transition-colors hover:text-primary"
                   @click.stop="toggleSessionListExpand(project.id)"
                 >
-                  {{ expandedSessionLists.has(project.id) ? '收起' : `显示更多 (${getProjectSessions(project.id).length - 3})` }}
+                  {{ expandedSessionLists.has(project.id) ? t('menuBar.collapse') : t('menuBar.showMore', { count: getProjectSessions(project.id).length - 3 }) }}
                 </div>
               </template>
             </template>
-            <div v-if="!ws.agentProjectLoading && ws.agentProjects.length === 0" class="px-2 py-3 text-center text-xs text-muted-foreground">暂无项目</div>
+            <div v-if="!ws.agentProjectLoading && ws.agentProjects.length === 0" class="px-2 py-3 text-center text-xs text-muted-foreground">{{ t('menuBar.noProject') }}</div>
           </div>
         </div>
       </nav>
@@ -375,7 +375,7 @@
         @click="navigate('setting')"
       >
         <Settings class="size-3.5 shrink-0" :class="ws.activeModule === 'setting' ? 'text-primary' : 'text-muted-foreground'" />
-        <span class="flex-1 min-w-0 truncate">设置</span>
+        <span class="flex-1 min-w-0 truncate">{{ t('menuBar.settings') }}</span>
       </div>
       <Button
         v-else
@@ -397,12 +397,12 @@
           <AlertDialogDescription>{{ deleteDialog.content }}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>取消</AlertDialogCancel>
+          <AlertDialogCancel>{{ t('menuBar.cancel') }}</AlertDialogCancel>
           <AlertDialogAction
             class="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             @click="confirmDelete"
           >
-            确认删除
+            {{ t('menuBar.confirmDelete') }}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -412,6 +412,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRouter, useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { toast } from 'vue-sonner'
@@ -434,6 +435,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction,
 } from '@/components/ui/alert-dialog'
 
+const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const ws = useWorkspaceStore()
@@ -587,7 +589,7 @@ async function navigate(key) {
     if (sessionId) {
       const session = agent.sessions.find(s => s.id === sessionId)
       if (session) {
-        tabStore.openSessionTab('agent', sessionId, session.title || 'Agent 会话')
+        tabStore.openSessionTab('agent', sessionId, session.title || t('sidebar.agent'))
       } else {
         // 上次会话已失效：选中第一个项目的第一个会话
         await selectFirstAgentSession()
@@ -629,19 +631,19 @@ async function onAddFolder() {
   addFolderLoading.value = true
   try {
     const result = await ws.addFolder()
-    if (result?.success) { toast.success('文件夹添加成功'); await loadTotalFileCount() }
+    if (result?.success) { toast.success(t('menuBar.messages.folderAdded')); await loadTotalFileCount() }
     else if (result?.message) toast.warning(result.message)
-  } catch { toast.error('添加文件夹失败') }
+  } catch { toast.error(t('menuBar.messages.folderAddFailed')) }
   finally { addFolderLoading.value = false }
 }
 
 function onDeleteFolder(folder) {
-  openDeleteDialog('删除文件夹', `确定要删除文件夹「${getFolderName(folder.path)}」吗？该文件夹下的所有文件和 RAG 向量数据将被一并删除。`, async () => {
+  openDeleteDialog(t('menuBar.delete.folder'), t('menuBar.delete.folderConfirm', { name: getFolderName(folder.path) }), async () => {
     try {
       const result = await ws.deleteFolder(folder.id)
-      if (result?.success) { toast.success('文件夹已删除'); await loadTotalFileCount() }
-      else toast.error('删除文件夹失败')
-    } catch { toast.error('删除文件夹失败') }
+      if (result?.success) { toast.success(t('menuBar.messages.folderDeleted')); await loadTotalFileCount() }
+      else toast.error(t('menuBar.messages.folderDeleteFailed'))
+    } catch { toast.error(t('menuBar.messages.folderDeleteFailed')) }
   })
 }
 
@@ -649,13 +651,13 @@ async function onCreateChat() {
   await ws.createChatSession()
   if (ws.currentChatSessionId) {
     const session = ws.chatSessions.find(s => s.id === ws.currentChatSessionId)
-    tabStore.openSessionTab('chat', ws.currentChatSessionId, session?.title || '新会话')
+    tabStore.openSessionTab('chat', ws.currentChatSessionId, session?.title || t('menuBar.newSession'))
   }
   ws.setActiveModule('chat')
 }
 
 function onDeleteChatSession(session) {
-  openDeleteDialog('删除对话', `确定要删除对话「${session.title || '新会话'}」吗？`, async () => {
+  openDeleteDialog(t('menuBar.delete.conversation'), t('menuBar.delete.conversationConfirm', { name: session.title || t('menuBar.newSession') }), async () => {
     try {
       const res = await ipc.invoke('controller/assistant/sessionOperation', { action: 'delete', sessionId: session.id })
       if (res.code === 0) {
@@ -667,9 +669,9 @@ function onDeleteChatSession(session) {
             tabStore.openSessionTab('chat', ws.chatSessions[0].id, ws.chatSessions[0].title || 'Chat')
           } else { ws.currentChatSessionId = null }
         }
-        toast.success('对话已删除')
-      } else toast.error(res?.message || '删除对话失败')
-    } catch { toast.error('删除对话失败') }
+        toast.success(t('menuBar.messages.conversationDeleted'))
+      } else toast.error(res?.message || t('menuBar.messages.conversationDeleteFailed'))
+    } catch { toast.error(t('menuBar.messages.conversationDeleteFailed')) }
   })
 }
 
@@ -713,9 +715,9 @@ async function saveProjectName(project) {
     if (res.code === 0 && res.data) {
       const idx = ws.agentProjects.findIndex((p) => p.id === project.id)
       if (idx !== -1) ws.agentProjects[idx] = { ...ws.agentProjects[idx], name: newName }
-      toast.success('项目名称已更新')
-    } else toast.error(res?.message || '更新项目名称失败')
-  } catch { toast.error('更新项目名称失败') }
+      toast.success(t('menuBar.messages.projectNameUpdated'))
+    } else toast.error(res?.message || t('menuBar.messages.projectNameUpdateFailed'))
+  } catch { toast.error(t('menuBar.messages.projectNameUpdateFailed')) }
 }
 
 async function saveSessionName(sess) {
@@ -727,9 +729,9 @@ async function saveSessionName(sess) {
     if (res.code === 0 && res.data) {
       const idx = agent.sessions.findIndex((s) => s.id === sess.id)
       if (idx !== -1) agent.sessions[idx] = { ...agent.sessions[idx], title: newTitle }
-      toast.success('会话名称已更新')
-    } else toast.error(res?.message || '更新会话名称失败')
-  } catch { toast.error('更新会话名称失败') }
+      toast.success(t('menuBar.messages.sessionNameUpdated'))
+    } else toast.error(res?.message || t('menuBar.messages.sessionNameUpdateFailed'))
+  } catch { toast.error(t('menuBar.messages.sessionNameUpdateFailed')) }
 }
 
 // ===== 项目展开/收缩状态 =====
@@ -786,7 +788,7 @@ function onSelectAgentSession(sess, project) {
 }
 
 function onDeleteProject(project) {
-  openDeleteDialog('删除项目', `确定要删除项目「${project.name}」吗？该项目下的所有会话将被一并删除。`, async () => {
+  openDeleteDialog(t('menuBar.delete.project'), t('menuBar.delete.projectConfirm', { name: project.name }), async () => {
     try {
       const res = await ws.deleteAgentProject(project.id)
       if (res && res.code === 0) {
@@ -794,15 +796,15 @@ function onDeleteProject(project) {
           const wid = s.workspaceId || s.workspace_id || s.projectId || ''
           return String(wid) !== String(project.id)
         })
-        toast.success('项目已删除')
+        toast.success(t('menuBar.messages.projectDeleted'))
         await selectNewestSession()
-      } else toast.error(res?.message || '删除项目失败')
-    } catch { toast.error('删除项目失败') }
+      } else toast.error(res?.message || t('menuBar.messages.projectDeleteFailed'))
+    } catch { toast.error(t('menuBar.messages.projectDeleteFailed')) }
   })
 }
 
 function onDeleteAgentSession(sess, project) {
-  openDeleteDialog('删除会话', `确定要删除会话「${sess.title || '未命名'}」吗？`, async () => {
+  openDeleteDialog(t('menuBar.delete.session'), t('menuBar.delete.sessionConfirm', { name: sess.title || t('menuBar.untitled') }), async () => {
     try {
       const res = await ipc.invoke(ipcApiRoute.piAgent.sessionOperation, { action: 'delete', sessionId: sess.id })
       if (res.code === 0) {
@@ -810,9 +812,9 @@ function onDeleteAgentSession(sess, project) {
         delete agent.messagesBySession[sess.id]
         tabStore.closeTab(sess.id)
         if (agent.currentSessionId === sess.id) await selectNewestSession()
-        toast.success('会话已删除')
-      } else toast.error(res?.message || '删除会话失败')
-    } catch { toast.error('删除会话失败') }
+        toast.success(t('menuBar.messages.sessionDeleted'))
+      } else toast.error(res?.message || t('menuBar.messages.sessionDeleteFailed'))
+    } catch { toast.error(t('menuBar.messages.sessionDeleteFailed')) }
   })
 }
 
@@ -827,7 +829,7 @@ async function selectNewestSession() {
 }
 
 function getFolderName(path) {
-  if (!path) return '未命名'
+  if (!path) return t('menuBar.untitled')
   const normalized = path.replace(/\\/g, '/').replace(/\/+$/, '')
   const parts = normalized.split('/')
   return parts[parts.length - 1] || path

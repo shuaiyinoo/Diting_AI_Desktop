@@ -6,15 +6,15 @@
         <div class="flex-1">
           <h2 class="mb-1.5 flex items-center gap-2 text-lg font-semibold">
             <Bot class="text-primary" />
-            语义模型配置
+            {{ t('adjustPage.pageTitle') }}
           </h2>
           <p class="m-0 text-sm text-muted-foreground">
-            配置大语言模型（LLM）用于智能问答与语义检索。同一时间只能启用一个模型。
+            {{ t('adjustPage.pageDesc') }}
           </p>
         </div>
         <Button @click="openAddModal">
           <Plus class="mr-1 size-4" />
-          添加模型
+          {{ t('adjustPage.addModel') }}
         </Button>
       </div>
 
@@ -22,7 +22,7 @@
       <div v-if="enabledModel" class="mt-3.5 flex items-center gap-2.5 rounded-md border border-green-200 bg-green-50 px-3.5 py-2.5 dark:border-green-900 dark:bg-green-950">
         <Badge variant="success" class="gap-1">
           <CheckCircle2 class="size-3.5" />
-          当前启用
+          {{ t('adjustPage.currentEnabled') }}
         </Badge>
         <span class="text-sm font-semibold">{{ enabledModel.name }}</span>
         <span class="text-xs text-muted-foreground">
@@ -32,9 +32,9 @@
       <div v-else class="mt-3.5 flex items-center gap-2.5 rounded-md border border-yellow-200 bg-yellow-50 px-3.5 py-2.5 dark:border-yellow-900 dark:bg-yellow-950">
         <Badge variant="secondary">
           <AlertCircle class="mr-1 size-3.5" />
-          未启用
+          {{ t('adjustPage.disabled') }}
         </Badge>
-        <span class="text-sm text-muted-foreground">尚未启用任何模型，请添加并启用一个模型</span>
+        <span class="text-sm text-muted-foreground">{{ t('adjustPage.notEnabledHint') }}</span>
       </div>
     </Card>
 
@@ -42,49 +42,49 @@
     <Card class="p-0">
       <div v-if="loading" class="flex items-center justify-center py-12">
         <Spinner class="size-5 text-muted-foreground" />
-        <span class="ml-2 text-sm text-muted-foreground">加载中…</span>
+        <span class="ml-2 text-sm text-muted-foreground">{{ t('adjustPage.loading') }}</span>
       </div>
       <table v-else class="w-full text-sm">
         <thead>
           <tr class="border-b bg-muted/50">
-            <th class="px-3 py-2 text-left font-medium">状态</th>
-            <th class="px-3 py-2 text-left font-medium">别名</th>
-            <th class="px-3 py-2 text-left font-medium">提供商</th>
-            <th class="px-3 py-2 text-left font-medium">模型名称</th>
-            <th class="px-3 py-2 text-left font-medium">API 地址</th>
-            <th class="px-3 py-2 text-left font-medium">API Key</th>
-            <th class="px-3 py-2 text-left font-medium">温度</th>
-            <th class="px-3 py-2 text-left font-medium">操作</th>
+<th class="px-3 py-2 text-left font-medium">{{ t('adjustPage.colStatus') }}</th>
+<th class="px-3 py-2 text-left font-medium">{{ t('adjustPage.colAlias') }}</th>
+            <th class="px-3 py-2 text-left font-medium">{{ t('adjustPage.provider') }}</th>
+            <th class="px-3 py-2 text-left font-medium">{{ t('adjustPage.modelName') }}</th>
+            <th class="px-3 py-2 text-left font-medium">{{ t('adjustPage.apiUrl') }}</th>
+            <th class="px-3 py-2 text-left font-medium">{{ t('adjustPage.apiKey') }}</th>
+            <th class="px-3 py-2 text-left font-medium">{{ t('adjustPage.temperature') }}</th>
+            <th class="px-3 py-2 text-left font-medium">{{ t('adjustPage.action') }}</th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="record in modelList" :key="record.id" class="border-b hover:bg-muted/30">
             <td class="px-3 py-2">
-              <Badge v-if="record.enabled === 1" variant="success">已启用</Badge>
-              <Badge v-else variant="secondary">未启用</Badge>
+              <Badge v-if="record.enabled === 1" variant="success">{{ t('adjustPage.enabled') }}</Badge>
+              <Badge v-else variant="secondary">{{ t('adjustPage.disabled') }}</Badge>
             </td>
             <td class="px-3 py-2">{{ record.name }}</td>
             <td class="px-3 py-2">{{ providerLabel(record.provider) }}</td>
             <td class="px-3 py-2">{{ record.model_name }}</td>
             <td class="max-w-[200px] truncate px-3 py-2 text-muted-foreground" :title="record.base_url">
-              {{ record.base_url || '(未设置)' }}
+              {{ record.base_url || t('adjustPage.notSet') }}
             </td>
             <td class="px-3 py-2 font-mono text-xs text-muted-foreground">{{ maskKey(record.api_key) }}</td>
             <td class="px-3 py-2">{{ record.temperature }}</td>
             <td class="px-3 py-2">
               <div class="flex items-center gap-1">
-                <Button v-if="record.enabled !== 1" variant="link" size="sm" @click="handleEnable(record)">启用</Button>
-                <Button v-else variant="link" size="sm" @click="handleDisable(record)">禁用</Button>
+                <Button v-if="record.enabled !== 1" variant="link" size="sm" @click="handleEnable(record)">{{ t('adjustPage.enable') }}</Button>
+                <Button v-else variant="link" size="sm" @click="handleDisable(record)">{{ t('adjustPage.disable') }}</Button>
                 <Button variant="link" size="sm" :disabled="testingId === record.id" @click="handleTest(record)">
-                  {{ testingId === record.id ? '测试中…' : '测试' }}
+                  {{ testingId === record.id ? t('adjustPage.testing') : t('adjustPage.test') }}
                 </Button>
-                <Button variant="link" size="sm" @click="openEditModal(record)">编辑</Button>
-                <Button variant="link" size="sm" class="text-destructive" @click="handleDelete(record)">删除</Button>
+                <Button variant="link" size="sm" @click="openEditModal(record)">{{ t('adjustPage.edit') }}</Button>
+                <Button variant="link" size="sm" class="text-destructive" @click="handleDelete(record)">{{ t('adjustPage.delete') }}</Button>
               </div>
             </td>
           </tr>
           <tr v-if="modelList.length === 0">
-            <td colspan="8" class="py-8 text-center text-sm text-muted-foreground">暂无数据</td>
+            <td colspan="8" class="py-8 text-center text-sm text-muted-foreground">{{ t('adjustPage.noData') }}</td>
           </tr>
         </tbody>
       </table>
@@ -94,56 +94,56 @@
     <Dialog v-model:open="modalVisible">
       <DialogContent class="max-w-[640px]">
         <DialogHeader>
-          <DialogTitle>{{ editingModel ? '编辑模型' : '添加模型' }}</DialogTitle>
+          <DialogTitle>{{ editingModel ? t('adjustPage.edit') : t('adjustPage.addModel') }}</DialogTitle>
         </DialogHeader>
 
         <div class="space-y-4 py-2">
           <!-- 模型别名 -->
           <div class="space-y-1.5">
-            <label class="text-sm font-medium">模型别名 <span class="text-destructive">*</span></label>
-            <Input v-model="formData.name" placeholder="如：我的GPT-4o、DeepSeek生产环境" />
+            <label class="text-sm font-medium">{{ t('adjustPage.modelAlias') }} <span class="text-destructive">*</span></label>
+            <Input v-model="formData.name" :placeholder="t('adjustPage.namePlaceholder')" />
           </div>
 
           <!-- 接口提供商 -->
           <div class="space-y-1.5">
-            <label class="text-sm font-medium">接口提供商</label>
+            <label class="text-sm font-medium">{{ t('adjustPage.provider') }}</label>
             <Select v-model="formData.provider">
               <SelectTrigger>
-                <SelectValue placeholder="选择提供商类型" />
+                <SelectValue :placeholder="t('adjustPage.selectProvider')" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="openai">OpenAI 兼容（OpenAI / DeepSeek / Moonshot / Qwen 等）</SelectItem>
-                <SelectItem value="anthropic">Anthropic Claude</SelectItem>
-                <SelectItem value="google">Google Gemini</SelectItem>
-                <SelectItem value="custom">自定义</SelectItem>
+                <SelectItem value="openai">{{ t('adjustPage.providerOpenai') }}</SelectItem>
+                <SelectItem value="anthropic">{{ t('adjustPage.providerAnthropic') }}</SelectItem>
+                <SelectItem value="google">{{ t('adjustPage.providerGoogle') }}</SelectItem>
+                <SelectItem value="custom">{{ t('adjustPage.providerCustom') }}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <!-- API 地址 -->
           <div class="space-y-1.5">
-            <label class="text-sm font-medium">API 地址 (Base URL)</label>
-            <Input v-model="formData.base_url" placeholder="如：https://api.openai.com/v1" />
+            <label class="text-sm font-medium">{{ t('adjustPage.baseUrlLabel') }}</label>
+            <Input v-model="formData.base_url" :placeholder="t('adjustPage.baseUrlPlaceholder')" />
             <div class="flex flex-wrap gap-1">
               <Button variant="link" size="sm" @click="formData.base_url = 'https://api.openai.com/v1'">OpenAI</Button>
               <Button variant="link" size="sm" @click="formData.base_url = 'https://api.deepseek.com/v1'">DeepSeek</Button>
               <Button variant="link" size="sm" @click="formData.base_url = 'https://api.moonshot.cn/v1'">Moonshot</Button>
-              <Button variant="link" size="sm" @click="formData.base_url = 'https://dashscope.aliyuncs.com/compatible-mode/v1'">通义千问</Button>
-              <Button variant="link" size="sm" @click="formData.base_url = 'https://api.siliconflow.cn/v1'">硅基流动</Button>
+              <Button variant="link" size="sm" @click="formData.base_url = 'https://dashscope.aliyuncs.com/compatible-mode/v1'">{{ t('adjustPage.qwen') }}</Button>
+              <Button variant="link" size="sm" @click="formData.base_url = 'https://api.siliconflow.cn/v1'">{{ t('adjustPage.siliconFlow') }}</Button>
             </div>
-            <p class="text-xs text-muted-foreground">不含 /chat/completions 后缀</p>
+            <p class="text-xs text-muted-foreground">{{ t('adjustPage.baseUrlHint') }}</p>
           </div>
 
           <!-- API Key -->
           <div class="space-y-1.5">
-            <label class="text-sm font-medium">API Key</label>
-            <Input v-model="formData.api_key" type="password" placeholder="sk-..." autocomplete="new-password" />
+            <label class="text-sm font-medium">{{ t('adjustPage.apiKey') }}</label>
+            <Input v-model="formData.api_key" type="password" :placeholder="t('adjustPage.apiKeyPlaceholder')" autocomplete="new-password" />
           </div>
 
           <!-- 模型名称 -->
           <div class="space-y-1.5">
-            <label class="text-sm font-medium">模型名称 <span class="text-destructive">*</span></label>
-            <Input v-model="formData.model_name" placeholder="如：gpt-4o、deepseek-chat、claude-3-5-sonnet-20241022" />
+            <label class="text-sm font-medium">{{ t('adjustPage.modelName') }} <span class="text-destructive">*</span></label>
+            <Input v-model="formData.model_name" :placeholder="t('adjustPage.modelNamePlaceholder')" />
             <div class="flex flex-wrap gap-1">
               <Button variant="link" size="sm" @click="formData.model_name = 'gpt-4o'">gpt-4o</Button>
               <Button variant="link" size="sm" @click="formData.model_name = 'gpt-4o-mini'">gpt-4o-mini</Button>
@@ -157,28 +157,28 @@
           <!-- 温度 + 最大 Token -->
           <div class="flex gap-4">
             <div class="flex-1 space-y-1.5">
-              <label class="text-sm font-medium">温度 (Temperature)</label>
+              <label class="text-sm font-medium">{{ t('adjustPage.temperature') }}</label>
               <Input v-model="formData.temperature" type="number" :min="0" :max="2" :step="0.1" />
-              <p class="text-xs text-muted-foreground">0=精确，2=创造性，默认 0.7</p>
+              <p class="text-xs text-muted-foreground">{{ t('adjustPage.temperatureHint') }}</p>
             </div>
             <div class="flex-1 space-y-1.5">
-              <label class="text-sm font-medium">最大输出 Token</label>
+              <label class="text-sm font-medium">{{ t('adjustPage.maxTokens') }}</label>
               <Input v-model="formData.max_tokens" type="number" :min="1" :max="128000" :step="256" />
-              <p class="text-xs text-muted-foreground">默认 4096</p>
+              <p class="text-xs text-muted-foreground">{{ t('adjustPage.defaultTokens') }}</p>
             </div>
           </div>
 
           <!-- 备注 -->
           <div class="space-y-1.5">
-            <label class="text-sm font-medium">备注</label>
-            <Textarea v-model="formData.remark" :rows="2" placeholder="可选，如：用于代码生成 / 用于文档总结" />
+            <label class="text-sm font-medium">{{ t('adjustPage.remark') }}</label>
+            <Textarea v-model="formData.remark" :rows="2" :placeholder="t('adjustPage.remarkPlaceholder')" />
           </div>
         </div>
 
         <DialogFooter>
-          <Button variant="outline" @click="modalVisible = false">取消</Button>
+          <Button variant="outline" @click="modalVisible = false">{{ t('adjustPage.cancel') }}</Button>
           <Button :disabled="submitting" @click="handleSubmit">
-            {{ submitting ? '提交中…' : '确定' }}
+            {{ submitting ? t('adjustPage.submitting') : t('adjustPage.submit') }}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -188,21 +188,21 @@
     <Dialog v-model:open="testResultVisible">
       <DialogContent class="max-w-[480px]">
         <DialogHeader>
-          <DialogTitle>连通性测试结果</DialogTitle>
+          <DialogTitle>{{ t('adjustPage.testResultTitle') }}</DialogTitle>
         </DialogHeader>
         <div v-if="testResult" class="py-4 text-center">
           <div class="mb-2 flex items-center justify-center gap-2 text-lg font-semibold" :class="testResult.success ? 'text-green-600' : 'text-red-600'">
             <CheckCircle2 v-if="testResult.success" class="size-5" />
             <AlertCircle v-else class="size-5" />
-            {{ testResult.success ? '连接成功' : '连接失败' }}
+            {{ testResult.success ? t('adjustPage.connectSuccess') : t('adjustPage.connectFailed') }}
           </div>
           <p class="text-sm text-muted-foreground">{{ testResult.message }}</p>
           <div v-if="testResult.success" class="mt-2 text-sm text-green-600">
-            延迟：{{ testResult.latencyMs }}ms
+            {{ t('adjustPage.latency', { ms: testResult.latencyMs }) }}
           </div>
         </div>
         <DialogFooter>
-          <Button @click="testResultVisible = false">关闭</Button>
+          <Button @click="testResultVisible = false">{{ t('adjustPage.close') }}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -224,7 +224,10 @@ import { toast } from 'vue-sonner';
 import { AlertCircle, Bot, CheckCircle2, Plus } from '@lucide/vue';
 import { ipcApiRoute } from '@/api';
 import { ipc } from '@/utils/ipcRenderer';
+import { useI18n } from 'vue-i18n'
 
+
+const { t } = useI18n()
 const loading = ref(false);
 const submitting = ref(false);
 const testingId = ref(null);
@@ -274,10 +277,10 @@ async function fetchModels() {
       modelList.value = res.data || [];
       enabledModel.value = modelList.value.find(m => m.enabled === 1) || null;
     } else {
-      toast.error(res.message || '获取模型列表失败');
+      toast.error(res.message || t('adjustPage.fetchFailed'));
     }
   } catch (err) {
-    toast.error('获取模型列表异常: ' + (err?.message || err));
+    toast.error(t('adjustPage.fetchError', { msg: err?.message || err }));
   } finally {
     loading.value = false;
   }
@@ -303,8 +306,8 @@ function openEditModal(record) {
 }
 
 async function handleSubmit() {
-  if (!formData.name.trim()) { toast.error('请输入模型别名'); return; }
-  if (!formData.model_name.trim()) { toast.error('请输入模型名称'); return; }
+  if (!formData.name.trim()) { toast.error(t('adjustPage.nameRequired')); return; }
+  if (!formData.model_name.trim()) { toast.error(t('adjustPage.modelNameRequired')); return; }
 
   submitting.value = true;
   try {
@@ -321,14 +324,14 @@ async function handleSubmit() {
       res = await ipc.invoke(ipcApiRoute.llm.modelOperation, { action: 'add', params });
     }
     if (res.code === 0) {
-      toast.success(res.message || (editingModel.value ? '更新成功' : '添加成功'));
+      toast.success(res.message || (editingModel.value ? t('adjustPage.updateSuccess') : t('adjustPage.addSuccess')));
       modalVisible.value = false;
       fetchModels();
     } else {
-      toast.error(res.message || '操作失败');
+      toast.error(res.message || t('adjustPage.operationFailed'));
     }
   } catch (err) {
-    toast.error('操作异常: ' + (err?.message || err));
+    toast.error(t('adjustPage.operationError', { msg: err?.message || err }));
   } finally {
     submitting.value = false;
   }
@@ -337,26 +340,26 @@ async function handleSubmit() {
 async function handleEnable(record) {
   try {
     const res = await ipc.invoke(ipcApiRoute.llm.modelOperation, { action: 'enable', id: record.id });
-    if (res.code === 0) { toast.success(`已启用: ${record.name}`); fetchModels(); }
-    else { toast.error(res.message || '启用失败'); }
-  } catch (err) { toast.error('启用异常: ' + (err?.message || err)); }
+    if (res.code === 0) { toast.success(t('adjustPage.enabledToast', { name: record.name })); fetchModels(); }
+    else { toast.error(res.message || t('adjustPage.enableFailed')); }
+  } catch (err) { toast.error(t('adjustPage.enableError', { msg: err?.message || err })); }
 }
 
 async function handleDisable(record) {
   try {
     const res = await ipc.invoke(ipcApiRoute.llm.modelOperation, { action: 'disable', id: record.id });
-    if (res.code === 0) { toast.success(`已禁用: ${record.name}`); fetchModels(); }
-    else { toast.error(res.message || '禁用失败'); }
-  } catch (err) { toast.error('禁用异常: ' + (err?.message || err)); }
+    if (res.code === 0) { toast.success(t('adjustPage.disabledToast', { name: record.name })); fetchModels(); }
+    else { toast.error(res.message || t('adjustPage.disableFailed')); }
+  } catch (err) { toast.error(t('adjustPage.disableError', { msg: err?.message || err })); }
 }
 
 async function handleDelete(record) {
   if (!window.confirm(`确定删除模型「${record.name}」吗？`)) return;
   try {
     const res = await ipc.invoke(ipcApiRoute.llm.modelOperation, { action: 'delete', id: record.id });
-    if (res.code === 0) { toast.success('删除成功'); fetchModels(); }
-    else { toast.error(res.message || '删除失败'); }
-  } catch (err) { toast.error('删除异常: ' + (err?.message || err)); }
+    if (res.code === 0) { toast.success(t('adjustPage.deleteSuccess')); fetchModels(); }
+    else { toast.error(res.message || t('adjustPage.deleteFailed')); }
+  } catch (err) { toast.error(t('adjustPage.deleteError', { msg: err?.message || err })); }
 }
 
 async function handleTest(record) {
@@ -367,10 +370,10 @@ async function handleTest(record) {
       testResult.value = res.testResult;
       testResultVisible.value = true;
     } else {
-      toast.error(res.message || '测试失败');
+      toast.error(res.message || t('adjustPage.testFailed'));
     }
   } catch (err) {
-    toast.error('测试异常: ' + (err?.message || err));
+    toast.error(t('adjustPage.testError', { msg: err?.message || err }));
   } finally {
     testingId.value = null;
   }

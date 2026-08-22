@@ -15,7 +15,7 @@
         <div class="flex items-center gap-2">
           <Select v-model="selectedFolderId" @update:model-value="loadAll">
             <SelectTrigger class="w-[200px]">
-              <SelectValue placeholder="全部文件夹" />
+              <SelectValue :placeholder="t('metricsPage.allFolders')" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem :value="null">全部文件夹</SelectItem>
@@ -236,8 +236,10 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { ipcApiRoute } from '@/api';
 import { ipc } from '@/utils/ipcRenderer';
+import { useI18n } from 'vue-i18n';
 
 // ========== 状态 ==========
+const { t } = useI18n();
 const loading = ref(false);
 const overview = ref(null);
 const moduleDistribution = ref([]);
@@ -335,11 +337,11 @@ async function loadOverview() {
       overview.value = res.data;
       moduleDistribution.value = res.data?.moduleDistribution || [];
     } else {
-      toast.error(res.message || '加载概览数据失败');
+      toast.error(res.message || t('metricsPage.loadFailed'));
     }
   } catch (err) {
     console.error('[metrics] 加载概览失败:', err);
-    toast.error('加载概览数据失败');
+    toast.error(t('metricsPage.loadFailed'));
   } finally {
     loading.value = false;
   }

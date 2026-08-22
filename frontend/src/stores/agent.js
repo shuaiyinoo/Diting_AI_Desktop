@@ -15,6 +15,7 @@ import { ref, computed, reactive, watch } from 'vue'
 import { ipc } from '@/utils/ipcRenderer'
 import { ipcApiRoute } from '@/api'
 import { useTabStore } from './tab'
+import i18n from '@/i18n'
 
 export const useAgentStore = defineStore('agent', () => {
   // ===== State =====
@@ -370,7 +371,7 @@ set: (val) => {
       })
 
       if (!response.ok || !response.body) {
-        const errText = await response.text().catch(() => '请求失败')
+        const errText = await response.text().catch(() => i18n.global.t('storeMsg.requestFailed'))
         throw new Error(errText || `HTTP ${response.status}`)
       }
 
@@ -420,11 +421,11 @@ set: (val) => {
           persistSavedBlocks()
         }
         if (!assistantMsg.content && assistantMsg.blocks.length === 0) {
-          assistantMsg.content = '已停止生成'
+          assistantMsg.content = i18n.global.t('storeMsg.stopped')
         }
       } else {
         console.error('[AgentStore] sendMessage 异常:', err)
-        assistantMsg.content = `发送失败: ${err?.message || String(err)}`
+        assistantMsg.content = i18n.global.t('storeMsg.sendFailed', { msg: err?.message || String(err) })
       }
       // 清理统计定时器
       if (statsTimers.has(sessionId)) {
@@ -593,7 +594,7 @@ set: (val) => {
 
       case 'error':
         assistantMsg.pending = false
-        assistantMsg.content += `\n\n[错误] ${data.message || '未知错误'}`
+        assistantMsg.content += `\n\n[错误] ${data.message || i18n.global.t('storeMsg.unknownError')}`
         break
 
       case 'permission_request':

@@ -3,7 +3,7 @@
     <!-- 加载中 -->
     <div v-if="loading" class="flex items-center justify-center py-8">
       <Spinner class="size-5 text-muted-foreground" />
-      <span class="ml-2 text-sm text-muted-foreground">加载中…</span>
+      <span class="ml-2 text-sm text-muted-foreground">{{ t('bridge.feishu.loading') }}</span>
     </div>
 
     <template v-else>
@@ -37,7 +37,7 @@
               :disabled="getStatus(bot.id)?.status === 'connecting' || togglingId === bot.id"
               @click="toggleBot(bot)"
             >
-              {{ isBotRunning(bot.id) ? '停止' : '启动' }}
+              {{ isBotRunning(bot.id) ? t('bridge.feishu.stop') : t('bridge.feishu.start') }}
             </Button>
             <Button
               variant="ghost"
@@ -45,7 +45,7 @@
               class="h-7 px-2 text-[11px]"
               @click="editBot(bot)"
             >
-              编辑
+              {{ t('bridge.feishu.edit') }}
             </Button>
             <Button
               variant="ghost"
@@ -53,7 +53,7 @@
               class="h-7 px-2 text-[11px] text-destructive hover:text-destructive"
               @click="deleteBot(bot)"
             >
-              删除
+              {{ t('bridge.feishu.delete') }}
             </Button>
           </div>
         </div>
@@ -78,7 +78,7 @@
           @click="showRegisterDialog = true"
         >
           <QrCode class="size-4" />
-          扫码创建
+          {{ t('bridge.feishu.scanCreate') }}
         </button>
         <!-- 手动添加按钮 -->
         <button
@@ -86,7 +86,7 @@
           @click="showAddDialog = true"
         >
           <Plus class="size-4" />
-          手动添加
+          {{ t('bridge.feishu.manualAdd') }}
         </button>
       </div>
 
@@ -95,7 +95,7 @@
         <div class="mb-3 flex items-center justify-between">
           <div class="flex items-center gap-2">
             <Link class="size-4 text-muted-foreground" />
-            <span class="text-sm font-semibold text-foreground">聊天绑定</span>
+            <span class="text-sm font-semibold text-foreground">{{ t('bridge.feishu.binding.title') }}</span>
             <span class="rounded-full bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">{{ bindings.length }}</span>
           </div>
           <Button
@@ -105,18 +105,17 @@
             @click="loadBindings"
           >
             <RefreshCw class="size-3 mr-1" />
-            刷新
+            {{ t('bridge.feishu.binding.refresh') }}
           </Button>
         </div>
 
         <div v-if="bindingsLoading" class="flex items-center justify-center py-6">
           <Spinner class="size-4 text-muted-foreground" />
-          <span class="ml-2 text-xs text-muted-foreground">加载绑定中…</span>
+          <span class="ml-2 text-xs text-muted-foreground">{{ t('bridge.feishu.binding.loading') }}</span>
         </div>
 
         <div v-else-if="bindings.length === 0" class="py-6 text-center text-xs text-muted-foreground">
-          暂无绑定。启动 Bot 后在飞书中发送消息即可自动创建绑定，
-          也可在下方手动为绑定选择项目和会话。
+          {{ t('bridge.feishu.binding.empty') }}
         </div>
 
         <div v-else class="flex flex-col gap-2">
@@ -130,7 +129,7 @@
             <div class="mb-2 flex items-center justify-between">
               <div class="flex items-center gap-1.5">
                 <component :is="binding.chatType === 'group' ? Users : User" class="size-3.5 text-muted-foreground" />
-                <span class="text-xs font-medium text-foreground">{{ binding.groupName || (binding.chatType === 'group' ? '群聊' : '单聊') }}</span>
+                <span class="text-xs font-medium text-foreground">{{ binding.groupName || (binding.chatType === 'group' ? t('bridge.feishu.binding.group') : t('bridge.feishu.binding.single')) }}</span>
                 <span class="font-mono text-[10px] text-muted-foreground">{{ binding.chatId.slice(0, 12) }}…</span>
               </div>
               <div class="flex items-center gap-1">
@@ -140,7 +139,7 @@
                   class="h-6 px-1.5 text-[10px]"
                   @click="toggleArchive(binding)"
                 >
-                  {{ binding.archived ? '恢复' : '归档' }}
+                  {{ binding.archived ? t('bridge.feishu.binding.restore') : t('bridge.feishu.binding.archive') }}
                 </Button>
                 <Button
                   variant="ghost"
@@ -148,20 +147,20 @@
                   class="h-6 px-1.5 text-[10px] text-destructive hover:text-destructive"
                   @click="removeBinding(binding)"
                 >
-                  解绑
+                  {{ t('bridge.feishu.binding.unbind') }}
                 </Button>
               </div>
             </div>
 
             <!-- 项目/会话选择器 -->
             <div class="grid grid-cols-[60px_1fr] gap-1.5 items-center">
-              <span class="text-[11px] text-muted-foreground">项目</span>
+              <span class="text-[11px] text-muted-foreground">{{ t('bridge.feishu.binding.project') }}</span>
               <Select
                 :model-value="binding.workspaceId"
                 @update:model-value="(val) => updateBindingWorkspace(binding, val)"
               >
                 <SelectTrigger class="h-7 text-[11px]">
-                  <SelectValue placeholder="选择项目">
+                  <SelectValue :placeholder="t('bridge.feishu.binding.selectProject')">
                     {{ getWorkspaceName(binding.workspaceId) }}
                   </SelectValue>
                 </SelectTrigger>
@@ -176,13 +175,13 @@
                 </SelectContent>
               </Select>
 
-              <span class="text-[11px] text-muted-foreground">会话</span>
+              <span class="text-[11px] text-muted-foreground">{{ t('bridge.feishu.binding.session') }}</span>
               <Select
                 :model-value="binding.sessionId"
                 @update:model-value="(val) => updateBindingSession(binding, val)"
               >
                 <SelectTrigger class="h-7 text-[11px]">
-                  <SelectValue placeholder="选择会话">
+                  <SelectValue :placeholder="t('bridge.feishu.binding.selectSession')">
                     {{ getSessionTitle(binding.sessionId) }}
                   </SelectValue>
                 </SelectTrigger>
@@ -207,10 +206,10 @@
           <DialogHeader>
             <DialogTitle class="flex items-center gap-2">
               <QrCode class="size-4 text-primary" />
-              扫码创建飞书 Bot
+              {{ t('bridge.feishu.register.title') }}
             </DialogTitle>
             <DialogDescription>
-              用飞书 App「扫一扫」扫码，飞书后端将自动创建一个应用，扫码完成后自动保存凭证并启动 Bot，无需手动复制 App ID / Secret。
+              {{ t('bridge.feishu.register.description') }}
             </DialogDescription>
           </DialogHeader>
 
@@ -218,7 +217,7 @@
             <!-- idle: 正在申请二维码 -->
             <div v-if="registerPhase === 'idle'" class="flex flex-col items-center gap-2 py-12">
               <Spinner class="size-6 text-muted-foreground" />
-              <span class="text-sm text-muted-foreground">正在向飞书申请二维码…</span>
+              <span class="text-sm text-muted-foreground">{{ t('bridge.feishu.register.requesting') }}</span>
             </div>
 
             <!-- qrcode: 显示二维码 -->
@@ -227,30 +226,30 @@
                 <img
                   v-if="registerQrcode.dataUrl"
                   :src="registerQrcode.dataUrl"
-                  alt="飞书扫码注册二维码"
+                  :alt="t('bridge.feishu.register.title')"
                   class="block size-[240px]"
                 />
                 <div
                   v-else
                   class="flex size-[240px] items-center justify-center text-xs text-muted-foreground"
                 >
-                  二维码生成失败，请用浏览器打开
+                  {{ t('bridge.feishu.register.qrFailed') }}
                 </div>
               </div>
               <div class="text-center text-sm text-foreground">
-                用飞书 App「扫一扫」，按提示完成应用创建
+                {{ t('bridge.feishu.register.scanTip') }}
               </div>
               <div class="text-center text-[11px] text-muted-foreground">
-                <span v-if="registerStatus?.status === 'polling'">等待扫码确认中…</span>
-                <span v-else-if="registerStatus?.status === 'slow_down'">轮询节奏已自动放慢</span>
-                <span v-else-if="registerStatus?.status === 'domain_switched'">已切换到国际版域名</span>
-                <span v-else>二维码已就绪</span>
+                <span v-if="registerStatus?.status === 'polling'">{{ t('bridge.feishu.register.waitingScan') }}</span>
+                <span v-else-if="registerStatus?.status === 'slow_down'">{{ t('bridge.feishu.register.slowDown') }}</span>
+                <span v-else-if="registerStatus?.status === 'domain_switched'">{{ t('bridge.feishu.register.domainSwitched') }}</span>
+                <span v-else>{{ t('bridge.feishu.register.qrReady') }}</span>
               </div>
               <button
                 class="text-[11px] text-primary hover:underline"
                 @click="openInBrowser"
               >
-                或在浏览器中打开链接
+                {{ t('bridge.feishu.register.openInBrowser') }}
               </button>
             </template>
 
@@ -259,8 +258,8 @@
               <div class="flex size-12 items-center justify-center rounded-full bg-green-500/10">
                 <CheckCircle class="size-6 text-green-500" />
               </div>
-              <span class="text-sm font-medium text-foreground">扫码创建成功！</span>
-              <span class="text-[11px] text-muted-foreground">正在自动保存并启动 Bot…</span>
+              <span class="text-sm font-medium text-foreground">{{ t('bridge.feishu.register.success') }}</span>
+              <span class="text-[11px] text-muted-foreground">{{ t('bridge.feishu.register.autoSaving') }}</span>
             </div>
 
             <!-- error: 注册失败 -->
@@ -268,10 +267,10 @@
               <div class="flex size-12 items-center justify-center rounded-full bg-destructive/10">
                 <AlertCircle class="size-6 text-destructive" />
               </div>
-              <span class="text-sm font-medium text-foreground">注册失败</span>
+              <span class="text-sm font-medium text-foreground">{{ t('bridge.feishu.register.failed') }}</span>
               <span class="max-w-[300px] text-center text-[11px] text-muted-foreground">{{ registerErrorMsg }}</span>
               <Button variant="outline" size="sm" class="mt-2 h-7 text-[11px]" @click="retryRegister">
-                重试
+                {{ t('bridge.feishu.register.retry') }}
               </Button>
             </div>
           </div>
@@ -282,7 +281,7 @@
               size="sm"
               @click="closeRegisterDialog"
             >
-              {{ registerPhase === 'qrcode' ? '取消扫码' : '关闭' }}
+              {{ registerPhase === 'qrcode' ? t('bridge.feishu.register.cancelScan') : t('bridge.feishu.register.close') }}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -292,28 +291,28 @@
       <Dialog v-model:open="showAddDialog">
         <DialogContent class="max-w-[480px]">
           <DialogHeader>
-            <DialogTitle>{{ editingBot ? '编辑飞书 Bot' : '添加飞书 Bot' }}</DialogTitle>
+            <DialogTitle>{{ editingBot ? t('bridge.feishu.edit.editTitle') : t('bridge.feishu.edit.addTitle') }}</DialogTitle>
             <DialogDescription>
-              在飞书开放平台创建应用后，将 App ID 和 App Secret 填入此处。
+              {{ t('bridge.feishu.edit.description') }}
             </DialogDescription>
           </DialogHeader>
 
           <div class="flex flex-col gap-3 py-2">
             <div class="flex flex-col gap-1">
-              <Label class="text-xs">名称</Label>
-              <Input v-model="form.name" placeholder="我的飞书 Bot" class="h-8 text-xs" />
+              <Label class="text-xs">{{ t('bridge.feishu.edit.name') }}</Label>
+              <Input v-model="form.name" :placeholder="t('bridge.feishu.edit.namePlaceholder')" class="h-8 text-xs" />
             </div>
             <div class="flex flex-col gap-1">
               <Label class="text-xs">App ID</Label>
               <Input v-model="form.appId" placeholder="cli_xxxxxxxx" class="h-8 text-xs font-mono" />
             </div>
             <div class="flex flex-col gap-1">
-              <Label class="text-xs">App Secret{{ editingBot ? '（留空不修改）' : '' }}</Label>
+              <Label class="text-xs">{{ t('bridge.feishu.edit.appSecret') }}{{ editingBot ? t('bridge.feishu.edit.appSecretHint') : '' }}</Label>
               <Input v-model="form.appSecret" type="password" placeholder="xxxxxxxxxxxxxxxx" class="h-8 text-xs font-mono" />
             </div>
             <div class="flex items-center gap-2">
               <Switch v-model:checked="form.enabled" />
-              <Label class="text-xs">保存后自动连接</Label>
+              <Label class="text-xs">{{ t('bridge.feishu.edit.autoConnect') }}</Label>
             </div>
 
             <!-- 测试连接 -->
@@ -325,7 +324,7 @@
                 :disabled="testing || !form.appId || !form.appSecret"
                 @click="testConnection"
               >
-                {{ testing ? '测试中…' : '测试连接' }}
+                {{ testing ? t('bridge.feishu.edit.testing') : t('bridge.feishu.edit.testConnection') }}
               </Button>
               <span v-if="testResult" class="text-[11px]" :class="testResult.success ? 'text-green-600' : 'text-destructive'">
                 {{ testResult.message }}
@@ -334,9 +333,9 @@
           </div>
 
           <DialogFooter>
-            <Button variant="outline" size="sm" @click="showAddDialog = false">取消</Button>
+            <Button variant="outline" size="sm" @click="showAddDialog = false">{{ t('bridge.feishu.edit.cancel') }}</Button>
             <Button size="sm" :disabled="saving" @click="saveBot">
-              {{ saving ? '保存中…' : '保存' }}
+              {{ saving ? t('bridge.feishu.edit.saving') : t('bridge.feishu.edit.save') }}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -346,7 +345,10 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { ref, watch, onMounted, onUnmounted, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 import { toast } from 'vue-sonner'
 import { MessageCircle, Plus, QrCode, CheckCircle, AlertCircle, Link, Users, User, RefreshCw } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
@@ -404,7 +406,7 @@ async function loadBots() {
     }
     await loadStatuses()
   } catch (err) {
-    toast.error('加载飞书 Bot 失败: ' + (err?.message || err))
+    toast.error(t('bridge.feishu.edit.loadFailed') + ': ' + (err?.message || err))
   } finally {
     loading.value = false
   }
@@ -427,8 +429,13 @@ function getStatus(botId) {
 
 function getStatusText(botId) {
   const s = getStatus(botId)
-  if (!s) return '未连接'
-  const map = { disconnected: '未连接', connecting: '连接中…', connected: '已连接', error: '错误' }
+  if (!s) return t('bridge.feishu.status.disconnected')
+  const map = {
+    disconnected: t('bridge.feishu.status.disconnected'),
+    connecting: t('bridge.feishu.status.connecting'),
+    connected: t('bridge.feishu.status.connected'),
+    error: t('bridge.feishu.status.error'),
+  }
   return map[s.status] || s.status
 }
 
@@ -465,15 +472,15 @@ function editBot(bot) {
 
 async function saveBot() {
   if (!form.value.name.trim()) {
-    toast.error('请输入名称')
+    toast.error(t('bridge.feishu.edit.inputName'))
     return
   }
   if (!form.value.appId.trim()) {
-    toast.error('请输入 App ID')
+    toast.error(t('bridge.feishu.edit.inputAppId'))
     return
   }
   if (!editingBot.value && !form.value.appSecret.trim()) {
-    toast.error('请输入 App Secret')
+    toast.error(t('bridge.feishu.edit.inputAppSecret'))
     return
   }
 
@@ -488,31 +495,31 @@ async function saveBot() {
     }
     const res = await ipc.invoke(ipcApiRoute.bridge.feishuSaveBot, args)
     if (res.code === 0) {
-      toast.success(editingBot.value ? '已更新' : '已添加')
+      toast.success(editingBot.value ? t('bridge.feishu.edit.updated') : t('bridge.feishu.edit.added'))
       showAddDialog.value = false
       await loadBots()
     } else {
-      toast.error(res.message || '保存失败')
+      toast.error(res.message || t('bridge.feishu.edit.saveFailed'))
     }
   } catch (err) {
-    toast.error('保存失败: ' + (err?.message || err))
+    toast.error(t('bridge.feishu.edit.saveFailed') + ': ' + (err?.message || err))
   } finally {
     saving.value = false
   }
 }
 
 async function deleteBot(bot) {
-  if (!confirm(`确定删除 "${bot.name}" 吗？`)) return
+  if (!confirm(t('bridge.feishu.edit.deleteConfirm', { name: bot.name }))) return
   try {
     const res = await ipc.invoke(ipcApiRoute.bridge.feishuDeleteBot, { botId: bot.id })
     if (res.code === 0) {
-      toast.success('已删除')
+      toast.success(t('bridge.feishu.edit.deleted'))
       await loadBots()
     } else {
-      toast.error(res.message || '删除失败')
+      toast.error(res.message || t('bridge.feishu.edit.deleteFailed'))
     }
   } catch (err) {
-    toast.error('删除失败: ' + (err?.message || err))
+    toast.error(t('bridge.feishu.edit.deleteFailed') + ': ' + (err?.message || err))
   }
 }
 
@@ -522,19 +529,19 @@ async function toggleBot(bot) {
     if (isBotRunning(bot.id)) {
       // 停止
       await ipc.invoke(ipcApiRoute.bridge.feishuStopBot, { botId: bot.id })
-      toast.success(`已停止: ${bot.name}`)
+      toast.success(t('bridge.feishu.edit.stopped', { name: bot.name }))
     } else {
       // 启动
       const res = await ipc.invoke(ipcApiRoute.bridge.feishuStartBot, { botId: bot.id })
       if (res.code === 0) {
-        toast.success(`已启动: ${bot.name}`)
+        toast.success(t('bridge.feishu.edit.started', { name: bot.name }))
       } else {
-        toast.error(res.message || '启动失败')
+        toast.error(res.message || t('bridge.feishu.edit.startFailed'))
       }
     }
     await loadBots()
   } catch (err) {
-    toast.error('操作失败: ' + (err?.message || err))
+    toast.error(t('bridge.feishu.edit.operationFailed') + ': ' + (err?.message || err))
   } finally {
     togglingId.value = null
   }
@@ -571,7 +578,7 @@ async function loadBindings() {
       bindings.value = res.data || []
     }
   } catch (err) {
-    toast.error('加载绑定列表失败: ' + (err?.message || err))
+    toast.error(t('bridge.feishu.binding.updateFailed') + ': ' + (err?.message || err))
   } finally {
     bindingsLoading.value = false
   }
@@ -604,13 +611,13 @@ async function loadSessions() {
 /** 获取工作区名称 */
 function getWorkspaceName(workspaceId) {
   const ws = workspaces.value.find((w) => w.id === workspaceId)
-  return ws?.name || '未知项目'
+  return ws?.name || t('bridge.feishu.binding.unknownProject')
 }
 
 /** 获取会话标题 */
 function getSessionTitle(sessionId) {
   const s = sessions.value.find((item) => item.id === sessionId)
-  return s?.title || (sessionId ? sessionId.slice(0, 8) : '未选择')
+  return s?.title || (sessionId ? sessionId.slice(0, 8) : t('bridge.feishu.binding.noSession'))
 }
 
 /** 获取指定工作区下的会话列表 */
@@ -627,13 +634,13 @@ async function updateBindingWorkspace(binding, workspaceId) {
       workspaceId,
     })
     if (res.code === 0) {
-      toast.success('项目已更新')
+      toast.success(t('bridge.feishu.binding.projectUpdated'))
       await loadBindings()
     } else {
-      toast.error(res.message || '更新失败')
+      toast.error(res.message || t('bridge.feishu.binding.updateFailed'))
     }
   } catch (err) {
-    toast.error('更新失败: ' + (err?.message || err))
+    toast.error(t('bridge.feishu.binding.updateFailed') + ': ' + (err?.message || err))
   }
 }
 
@@ -645,10 +652,10 @@ async function updateBindingSession(binding, sessionId) {
       sessionId,
     })
     if (res.code === 0) {
-      toast.success('会话已更新')
+      toast.success(t('bridge.feishu.binding.sessionUpdated'))
       await loadBindings()
     } else {
-      toast.error(res.message || '更新失败')
+      toast.error(res.message || t('bridge.feishu.binding.updateFailed'))
     }
   } catch (err) {
     toast.error('更新失败: ' + (err?.message || err))
@@ -664,31 +671,31 @@ async function toggleArchive(binding) {
       archived,
     })
     if (res.code === 0) {
-      toast.success(archived ? '已归档' : '已恢复')
+      toast.success(archived ? t('bridge.feishu.binding.archived') : t('bridge.feishu.binding.restored'))
       await loadBindings()
     } else {
-      toast.error(res.message || '操作失败')
+      toast.error(res.message || t('bridge.feishu.edit.operationFailed'))
     }
   } catch (err) {
-    toast.error('操作失败: ' + (err?.message || err))
+    toast.error(t('bridge.feishu.edit.operationFailed') + ': ' + (err?.message || err))
   }
 }
 
 /** 移除绑定 */
 async function removeBinding(binding) {
-  if (!confirm(`确定解除该聊天的绑定吗？\n${binding.groupName || (binding.chatType === 'group' ? '群聊' : '单聊')}`)) return
+  if (!confirm(`${t('bridge.feishu.binding.unbindConfirm')}\n${binding.groupName || (binding.chatType === 'group' ? t('bridge.feishu.binding.group') : t('bridge.feishu.binding.single'))}`)) return
   try {
     const res = await ipc.invoke(ipcApiRoute.bridge.feishuRemoveBinding, {
       chatId: binding.chatId,
     })
     if (res.code === 0) {
-      toast.success('已解除绑定')
+      toast.success(t('bridge.feishu.binding.unbound'))
       await loadBindings()
     } else {
-      toast.error(res.message || '解除失败')
+      toast.error(res.message || t('bridge.feishu.binding.unbindFailed'))
     }
   } catch (err) {
-    toast.error('解除失败: ' + (err?.message || err))
+    toast.error(t('bridge.feishu.binding.unbindFailed') + ': ' + (err?.message || err))
   }
 }
 
@@ -720,9 +727,9 @@ async function startRegister() {
       await handleRegisterSuccess(res.data)
     } else {
       // SDK abort 时不显示错误
-      if (res.message !== '已取消') {
+      if (res.message !== t('bridge.feishu.register.cancelled')) {
         registerPhase.value = 'error'
-        registerErrorMsg.value = res.message || '注册失败'
+        registerErrorMsg.value = res.message || t('bridge.feishu.register.failed')
       }
     }
   } catch (err) {
@@ -737,7 +744,7 @@ async function startRegister() {
 /** 扫码成功后：保存配置 + 自动启动 Bot */
 async function handleRegisterSuccess(result) {
   try {
-    const botName = `飞书 Bot ${bots.value.length + 1}`
+    const botName = `${t('bridge.platforms.feishu')} Bot ${bots.value.length + 1}`
     const saveRes = await ipc.invoke(ipcApiRoute.bridge.feishuSaveBot, {
       name: botName,
       enabled: true,
@@ -745,12 +752,12 @@ async function handleRegisterSuccess(result) {
       appSecret: result.appSecret,
     })
     if (saveRes.code === 0) {
-      toast.success(`Bot "${botName}" 已创建`)
+      toast.success(t('bridge.feishu.register.botCreated', { name: botName }))
       // 自动启动 Bot（不阻塞 UI）
       try {
         await ipc.invoke(ipcApiRoute.bridge.feishuStartBot, { botId: saveRes.data.id })
       } catch (err) {
-        toast.error('自动启动失败，请手动启动: ' + (err?.message || err))
+        toast.error(t('bridge.feishu.register.autoStartFailed') + ': ' + (err?.message || err))
       }
       await loadBots()
       // 延迟关闭对话框
@@ -758,12 +765,12 @@ async function handleRegisterSuccess(result) {
         showRegisterDialog.value = false
       }, 1500)
     } else {
-      toast.error(saveRes.message || '保存配置失败')
+      toast.error(saveRes.message || t('bridge.feishu.register.saveConfigFailed'))
       registerPhase.value = 'error'
       registerErrorMsg.value = saveRes.message || '保存配置失败'
     }
   } catch (err) {
-    toast.error('保存配置失败: ' + (err?.message || err))
+    toast.error(t('bridge.feishu.register.saveConfigFailed') + ': ' + (err?.message || err))
     registerPhase.value = 'error'
     registerErrorMsg.value = String(err?.message || err)
   }

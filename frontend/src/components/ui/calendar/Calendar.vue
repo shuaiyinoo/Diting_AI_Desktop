@@ -83,7 +83,7 @@ const emits = defineEmits(['update:modelValue', 'update:placeholder'])
           </CalendarGridHead>
           <CalendarGridBody>
             <CalendarGridRow
-              v-for="(weekDates, index) in month"
+              v-for="(weekDates, index) in month.rows"
               :key="`weekDate-${index}`"
               class="mt-2 flex w-full"
             >

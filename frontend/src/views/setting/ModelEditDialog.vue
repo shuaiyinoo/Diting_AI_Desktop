@@ -12,10 +12,10 @@
         <img :src="currentLogo" :alt="formData.provider" class="size-9 rounded-lg" />
         <div class="min-w-0 flex-1">
           <div class="truncate text-[15px] font-semibold text-foreground">
-            {{ editingModel ? '编辑模型' : '添加模型' }}
+            {{ editingModel ? t('model.edit.editTitle') : t('model.edit.addTitle') }}
           </div>
           <div class="mt-0.5 text-xs text-muted-foreground">
-            {{ formData.provider ? PROVIDER_LABELS[formData.provider] : '选择供应商' }}
+            {{ formData.provider ? PROVIDER_LABELS[formData.provider] : t('model.edit.selectProvider') }}
           </div>
         </div>
         <button
@@ -32,14 +32,14 @@
       <div class="space-y-4">
         <!-- 供应商选择（下拉列表） -->
         <div class="space-y-1.5">
-          <label class="text-sm font-medium">供应商</label>
+          <label class="text-sm font-medium">{{ t('model.edit.provider') }}</label>
           <Select v-model="formData.provider" @update:model-value="handleProviderChange">
             <SelectTrigger class="w-full">
               <div v-if="formData.provider" class="flex items-center gap-2">
                 <img :src="getProviderLogo(formData.provider)" :alt="PROVIDER_LABELS[formData.provider]" class="size-4 shrink-0 rounded" />
                 <span>{{ PROVIDER_LABELS[formData.provider] }}</span>
               </div>
-              <span v-else class="text-muted-foreground">选择供应商</span>
+              <span v-else class="text-muted-foreground">{{ t('model.edit.selectProvider') }}</span>
             </SelectTrigger>
             <SelectContent>
               <SelectItem
@@ -58,20 +58,20 @@
 
         <!-- 模型别名 -->
         <div class="space-y-1.5">
-          <label class="text-sm font-medium">模型别名 <span class="text-destructive">*</span></label>
-          <Input v-model="formData.name" placeholder="如：我的 GPT-4o、DeepSeek 生产环境" />
+          <label class="text-sm font-medium">{{ t('model.edit.modelAlias') }} <span class="text-destructive">*</span></label>
+          <Input v-model="formData.name" :placeholder="t('model.edit.modelAliasPlaceholder')" />
         </div>
 
         <!-- Base URL（只读，由供应商选择自动填充） -->
         <div class="space-y-1.5">
-          <label class="text-sm font-medium">API 地址 (Base URL)</label>
-          <Input :model-value="formData.base_url" readonly placeholder="选择供应商后自动填充" class="bg-muted/50 text-muted-foreground" />
-          <p class="text-xs text-muted-foreground">根据供应商自动填充，不可手动修改</p>
+          <label class="text-sm font-medium">{{ t('model.edit.baseUrl') }}</label>
+          <Input :model-value="formData.base_url" readonly :placeholder="t('model.edit.baseUrlPlaceholder')" class="bg-muted/50 text-muted-foreground" />
+          <p class="text-xs text-muted-foreground">{{ t('model.edit.baseUrlHint') }}</p>
         </div>
 
         <!-- API Key -->
         <div class="space-y-1.5">
-          <label class="text-sm font-medium">API Key</label>
+          <label class="text-sm font-medium">{{ t('model.edit.apiKey') }}</label>
           <div class="flex gap-2">
             <Input
               v-model="formData.api_key"
@@ -89,8 +89,8 @@
 
         <!-- 模型名称（含预设快捷选择） -->
         <div class="space-y-1.5">
-          <label class="text-sm font-medium">模型名称 <span class="text-destructive">*</span></label>
-          <Input v-model="formData.model_name" placeholder="如：gpt-4o、deepseek-chat" />
+          <label class="text-sm font-medium">{{ t('model.edit.modelName') }} <span class="text-destructive">*</span></label>
+          <Input v-model="formData.model_name" :placeholder="t('model.edit.modelNamePlaceholder')" />
           <div v-if="presetModels.length > 0" class="flex flex-wrap gap-1.5">
             <button
               v-for="model in presetModels"
@@ -110,10 +110,10 @@
 
     <!-- 固定底部操作栏 -->
     <div class="flex shrink-0 items-center gap-2.5 border-t border-border bg-card px-5 py-3.5">
-      <Button variant="outline" @click="close">取消</Button>
+      <Button variant="outline" @click="close">{{ t('common.cancel') }}</Button>
       <Button :disabled="submitting" class="ml-auto" @click="handleSubmit">
         <Loader2 v-if="submitting" class="mr-1.5 size-4 animate-spin" />
-        {{ submitting ? '提交中…' : (editingModel ? '保存' : '添加') }}
+        {{ submitting ? t('model.edit.submitting') : (editingModel ? t('model.edit.save') : t('model.edit.add')) }}
       </Button>
     </div>
   </aside>
@@ -121,6 +121,7 @@
 
 <script setup>
 import { ref, reactive, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
 import { Eye, EyeOff, Loader2, X } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
@@ -137,6 +138,8 @@ import {
   inferProviderType,
 } from '@/utils/provider-presets'
 import { getProviderLogo, getModelLogoById, LOGO_DEFAULT } from '@/utils/model-logo'
+
+const { t } = useI18n()
 
 defineProps({
   /** 编辑模式下传入已有记录，创建模式传 null */
@@ -226,8 +229,8 @@ function handleProviderChange(type) {
 }
 
 async function handleSubmit() {
-  if (!formData.name.trim()) { toast.error('请输入模型别名'); return }
-  if (!formData.model_name.trim()) { toast.error('请输入模型名称'); return }
+  if (!formData.name.trim()) { toast.error(t('model.edit.inputAlias')); return }
+  if (!formData.model_name.trim()) { toast.error(t('model.edit.inputModelName')); return }
 
   submitting.value = true
   try {
@@ -250,11 +253,11 @@ async function handleSubmit() {
       res = await ipc.invoke(ipcApiRoute.llm.modelOperation, { action: 'add', params })
     }
     if (res.code === 0) {
-      toast.success(res.message || (editingModel.value ? '更新成功' : '添加成功'))
+      toast.success(res.message || (editingModel.value ? t('model.edit.saveSuccess') : t('model.edit.addSuccess')))
       open.value = false
       emit('saved')
     } else {
-      toast.error(res.message || '操作失败')
+      toast.error(res.message || t('model.edit.operationFailed'))
     }
   } catch (err) {
     toast.error('操作异常: ' + (err?.message || err))

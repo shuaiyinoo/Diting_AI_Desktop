@@ -5,21 +5,21 @@
       <div class="flex-1">
         <h3 class="flex items-center gap-2 text-base font-semibold text-foreground">
           <Bot class="size-5 text-primary" />
-          语义模型配置
+          {{ t('model.title') }}
         </h3>
         <p class="mt-1.5 text-xs leading-relaxed text-muted-foreground">
-          配置大语言模型（LLM）用于智能问答与语义检索。同一时间只能启用一个模型。
+          {{ t('model.subtitle') }}
         </p>
       </div>
       <div class="flex items-center gap-2">
         <Button variant="outline" size="sm" class="h-8 gap-1.5 px-3.5 text-[13px]" @click="handleAddCloud">
           <Cloud class="size-4" />
-          Diting Cloud 模型
+          {{ t('model.addCloud') }}
           <span class="ml-1 rounded bg-blue-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-blue-600">BETA</span>
         </Button>
         <Button size="sm" class="h-8 gap-1.5 px-3.5 text-[13px]" @click="handleAdd">
           <Plus class="size-4" />
-          添加官方模型
+          {{ t('model.addOfficial') }}
         </Button>
       </div>
     </div>
@@ -33,7 +33,7 @@
       <div class="flex flex-1 items-center gap-2">
         <Badge variant="default" class="gap-1">
           <CheckCircle2 class="size-3" />
-          当前启用
+          {{ t('model.currentEnabled') }}
         </Badge>
         <span class="text-sm font-semibold text-foreground">{{ enabledModel.name }}</span>
         <span class="text-xs text-muted-foreground">{{ enabledModel.model_name }}</span>
@@ -46,16 +46,16 @@
       <div class="flex flex-1 items-center gap-2">
         <Badge variant="secondary" class="gap-1">
           <AlertCircle class="size-3" />
-          未启用
+          {{ t('model.notEnabled') }}
         </Badge>
-        <span class="text-sm text-muted-foreground">尚未启用任何模型，请添加并启用一个模型</span>
+        <span class="text-sm text-muted-foreground">{{ t('model.notEnabledHint') }}</span>
       </div>
     </div>
 
     <!-- 加载中 -->
     <div v-if="loading" class="flex items-center justify-center py-16">
       <Spinner class="size-5 text-muted-foreground" />
-      <span class="ml-2 text-sm text-muted-foreground">加载中…</span>
+      <span class="ml-2 text-sm text-muted-foreground">{{ t('model.loading') }}</span>
     </div>
 
     <!-- 模型卡片列表 -->
@@ -82,16 +82,16 @@
           </div>
           <Badge v-if="record.enabled === 1" variant="default" class="shrink-0 gap-1">
             <CheckCircle2 class="size-3" />
-            启用
+            {{ t('model.enabled') }}
           </Badge>
-          <Badge v-else variant="secondary" class="shrink-0">未启用</Badge>
+          <Badge v-else variant="secondary" class="shrink-0">{{ t('model.notEnabledBadge') }}</Badge>
         </div>
 
         <!-- 卡片中部：供应商 + URL -->
         <div class="mb-2.5 space-y-1">
           <div class="flex items-center gap-1.5 text-xs text-muted-foreground">
             <Globe class="size-3 shrink-0" />
-            <span class="truncate" :title="record.base_url">{{ record.base_url || '(未设置)' }}</span>
+            <span class="truncate" :title="record.base_url">{{ record.base_url || t('common.notSet') }}</span>
           </div>
           <div class="flex items-center gap-1.5 text-xs text-muted-foreground">
             <Key class="size-3 shrink-0" />
@@ -108,7 +108,7 @@
             class="h-7 px-2 text-xs"
             @click="handleEnable(record)"
           >
-            启用
+            {{ t('model.enable') }}
           </Button>
           <Button
             v-else
@@ -117,7 +117,7 @@
             class="h-7 px-2 text-xs"
             @click="handleDisable(record)"
           >
-            禁用
+            {{ t('model.disable') }}
           </Button>
           <Button
             variant="link"
@@ -127,7 +127,7 @@
             @click="handleTest(record)"
           >
             <Loader2 v-if="testingId === record.id" class="mr-1 size-3 animate-spin" />
-            {{ testingId === record.id ? '测试中' : '测试' }}
+            {{ testingId === record.id ? t('model.testing') : t('model.test') }}
           </Button>
           <Button
             variant="link"
@@ -135,7 +135,7 @@
             class="h-7 px-2 text-xs text-destructive hover:text-destructive"
             @click="handleDelete(record)"
           >
-            删除
+            {{ t('common.delete') }}
           </Button>
         </div>
       </div>
@@ -144,10 +144,10 @@
     <!-- 空状态 -->
     <div v-else class="flex flex-col items-center justify-center rounded-lg border border-dashed border-border py-16">
       <Bot class="mb-3 size-10 text-muted-foreground/50" />
-      <p class="text-sm text-muted-foreground">还没有配置任何模型</p>
+      <p class="text-sm text-muted-foreground">{{ t('model.empty') }}</p>
       <Button variant="outline" size="sm" class="mt-3" @click="handleAdd">
         <Plus class="mr-1 size-4" />
-        添加第一个模型
+        {{ t('model.addFirst') }}
       </Button>
     </div>
 
@@ -161,15 +161,15 @@
     <AlertDialog v-model:open="deleteDialogOpen">
       <AlertDialogContent class="max-w-[400px]">
         <AlertDialogHeader>
-          <AlertDialogTitle>确认删除</AlertDialogTitle>
+          <AlertDialogTitle>{{ t('model.deleteConfirm') }}</AlertDialogTitle>
           <AlertDialogDescription>
-            确定删除模型「{{ deleteTarget?.name }}」吗？此操作不可撤销。
+            {{ t('model.deleteConfirmText', { name: deleteTarget?.name }) }}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>取消</AlertDialogCancel>
+          <AlertDialogCancel>{{ t('common.cancel') }}</AlertDialogCancel>
           <AlertDialogAction class="bg-destructive text-destructive-foreground hover:bg-destructive/90" @click="confirmDelete">
-            删除
+            {{ t('common.delete') }}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -179,6 +179,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
 import { Bot, Plus, CheckCircle2, AlertCircle, Globe, Key, Loader2, Cloud } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
@@ -201,6 +202,8 @@ import { getModelLogo } from '@/utils/model-logo'
 import ModelEditDialog from './ModelEditDialog.vue'
 import ModelTestDialog from './ModelTestDialog.vue'
 
+const { t } = useI18n()
+
 defineEmits(['enable', 'disable', 'test', 'delete'])
 
 const loading = ref(false)
@@ -220,7 +223,7 @@ async function fetchModels() {
   try {
     const res = await ipc.invoke(ipcApiRoute.llm.modelOperation, { action: 'list' })
     if (res.code === 0) list.value = res.data || []
-    else toast.error(res.message || '获取模型列表失败')
+    else toast.error(res.message || t('model.listFailed'))
   } catch (err) {
     toast.error('获取模型列表异常: ' + (err?.message || err))
   } finally {
@@ -229,7 +232,7 @@ async function fetchModels() {
 }
 
 function maskKey(key) {
-  if (!key) return '(未设置)'
+  if (!key) return t('common.notSet')
   if (key.length <= 8) return '****'
   return key.substring(0, 4) + '****' + key.substring(key.length - 4)
 }
@@ -239,7 +242,7 @@ function handleAdd() {
 }
 
 function handleAddCloud() {
-  toast.info('Diting Cloud 模型功能即将上线，敬请期待')
+  toast.info(t('model.cloudComingSoon'))
 }
 
 function handleEdit(record) {
@@ -250,13 +253,13 @@ async function handleEnable(record) {
   try {
     const res = await ipc.invoke(ipcApiRoute.llm.modelOperation, { action: 'enable', id: record.id })
     if (res.code === 0) {
-      toast.success(`已启用: ${record.name}`)
+      toast.success(t('model.enableSuccess', { name: record.name }))
       fetchModels()
     } else {
-      toast.error(res.message || '启用失败')
+      toast.error(res.message || t('model.enableFailed'))
     }
   } catch (err) {
-    toast.error('启用异常: ' + (err?.message || err))
+    toast.error(t('modelError.enableError', { msg: err?.message || err }))
   }
 }
 
@@ -264,13 +267,13 @@ async function handleDisable(record) {
   try {
     const res = await ipc.invoke(ipcApiRoute.llm.modelOperation, { action: 'disable', id: record.id })
     if (res.code === 0) {
-      toast.success(`已禁用: ${record.name}`)
+      toast.success(t('model.disableSuccess', { name: record.name }))
       fetchModels()
     } else {
-      toast.error(res.message || '禁用失败')
+      toast.error(res.message || t('model.disableFailed'))
     }
   } catch (err) {
-    toast.error('禁用异常: ' + (err?.message || err))
+    toast.error(t('modelError.disableError', { msg: err?.message || err }))
   }
 }
 
@@ -285,13 +288,13 @@ async function confirmDelete() {
   try {
     const res = await ipc.invoke(ipcApiRoute.llm.modelOperation, { action: 'delete', id: record.id })
     if (res.code === 0) {
-      toast.success('删除成功')
+      toast.success(t('model.deleteSuccess'))
       fetchModels()
     } else {
-      toast.error(res.message || '删除失败')
+      toast.error(res.message || t('model.deleteFailed'))
     }
   } catch (err) {
-    toast.error('删除异常: ' + (err?.message || err))
+    toast.error(t('modelError.deleteError', { msg: err?.message || err }))
   } finally {
     deleteTarget.value = null
   }
@@ -304,10 +307,10 @@ async function handleTest(record) {
     if (res.code === 0 && res.testResult) {
       testDialogRef.value?.show(res.testResult)
     } else {
-      toast.error(res.message || '测试失败')
+      toast.error(res.message || t('model.testFailed'))
     }
   } catch (err) {
-    toast.error('测试异常: ' + (err?.message || err))
+    toast.error(t('modelError.testError', { msg: err?.message || err }))
   } finally {
     testingId.value = null
   }

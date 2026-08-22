@@ -32,6 +32,7 @@ dayjs.extend(quarterOfYear);
 import { enableKatex, enableMermaid } from 'markstream-vue';
 import components from './components/global';
 import Router from './router/index';
+import i18n from './i18n';
 import { initMarkdownFontSize } from './utils/markdown-font-size';
 
 // 启用 Mermaid 图表和 KaTeX 数学公式渲染（需对应 peer 依赖已安装）
@@ -49,4 +50,4 @@ for (const i in components) {
 // 初始化 Markdown 字号（从 localStorage 读取并应用到 DOM）
 initMarkdownFontSize();
 
-app.use(createPinia()).use(Router).mount('#app')
+app.use(createPinia()).use(Router).use(i18n).mount('#app')
