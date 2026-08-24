@@ -71,6 +71,8 @@
                     smooth-streaming="auto"
                     :render-code-blocks-as-pre="false"
                     :is-dark="isDark" code-block-dark-theme="vitesse-dark" code-block-light-theme="vitesse-light" :themes="['vitesse-dark', 'vitesse-light']"
+                    custom-id="chat"
+                    :mermaid-props="{ isStrict: true, showCopyButton: true, showFullscreenButton: true, showZoomControls: true, enableMermaidInteractions: true, onRenderError: handleMermaidError }"
                   />
                   <!-- 流式呼吸脉冲点 -->
                   <span v-if="msg.pending" class="streaming-dot ml-1 inline-block size-[7px] rounded-full bg-primary align-text-bottom" />
@@ -493,6 +495,18 @@ async function sendMessage() {
 /** 停止生成 */
 function stopGeneration() {
   chatStore.stopGeneration()
+}
+
+/**
+ * Mermaid 渲染错误兜底
+ * 当 Mermaid 代码块语法错误无法渲染时，以 <pre> 展示原始代码，不抛默认报错
+ */
+function handleMermaidError(_err, code, container) {
+  const pre = document.createElement('pre')
+  pre.className = 'text-xs font-mono whitespace-pre-wrap p-3 rounded-lg border border-border bg-secondary/50 text-muted-foreground overflow-x-auto'
+  pre.textContent = code
+  container.replaceChildren(pre)
+  return true // 阻止默认错误展示
 }
 
 /**

@@ -29,8 +29,9 @@ dayjs.extend(weekOfYear);
 dayjs.extend(weekYear);
 dayjs.extend(quarterOfYear);
 
-import { enableKatex, enableMermaid } from 'markstream-vue';
+import { enableKatex, enableMermaid, setCustomComponents } from 'markstream-vue';
 import components from './components/global';
+import WidgetNode from './components/chat/WidgetNode.vue';
 import Router from './router/index';
 import i18n from './i18n';
 import { initMarkdownFontSize } from './utils/markdown-font-size';
@@ -38,6 +39,10 @@ import { initMarkdownFontSize } from './utils/markdown-font-size';
 // 启用 Mermaid 图表和 KaTeX 数学公式渲染（需对应 peer 依赖已安装）
 enableMermaid();
 enableKatex();
+
+// 注册自定义 widget 组件：LLM 输出 ```widget fence 时由 WidgetNode 渲染
+// 使用 scoped ID 'chat' 避免影响其他页面的 MarkdownRender
+setCustomComponents('chat', { widget: WidgetNode });
 
 const app = createApp(App)
 app.config.productionTip = false

@@ -488,6 +488,71 @@ Diting 已集成 Python、Node.js 和 Git 运行时，优先使用内嵌环境�
 4. 安装新依赖时使用 InstallPackage 工具，不要直接调用 pip/npm 命令
 `)
 
+  // 可视化输出规范（Mermaid + widget 自由 SVG）
+  parts.push(`
+## 可视化输出规范
+当用户需要"看"而非"读"时，优先用内联图表代替大段文字。
+选择路线：
+- Mermaid 路线（标准图）：流程图 / 时序图 / 类图 / 状态图 / 简单架构图 / 甘特图。输出为 \`\`\`mermaid 代码块。
+  - 适合节点数 ≤15、关系清晰的标准化图表。Mermaid 语法简洁、流式渐进渲染体验好。
+  - 示例：
+    \`\`\`mermaid
+    flowchart LR
+      A[客户端] --> B[后端]
+    \`\`\`
+- widget 路线（定制图）：架构对比图 / 时间线 / 美术图 / 仪表盘 / 多分区容器 / Mermaid 无法表达的复杂布局。
+  - 适合需要分组容器、语义色板、多层级对比、自定义排版的场景。输出为 \`\`\`widget 代码块，内部为完整 <svg>…</svg> 片段。
+
+## widget SVG 设计规范（产出高质量、美观的 SVG）
+当输出 \`\`\`widget 代码块时，必须遵守以下设计规范：
+
+### 画布
+- viewBox 起始 "0 0 680"，高度按内容自适应（如 "0 0 680 412"）。
+- 根 <svg> 必须设 width="100%"，不要设固定像素宽度。
+- 加 role="img" 属性，配 <title> 和 <desc> 描述无障碍语义。
+
+### 颜色（使用 CSS 变量实现主题跟随）
+优先使用以下 CSS 变量，亮/暗模式自动切换：
+- 文字主色：var(--w-text-primary)
+- 文字次色：var(--w-text-secondary)
+- 文字弱色：var(--w-text-tertiary)
+- 边框主色：var(--w-border-primary)
+- 边框次色：var(--w-border-secondary)
+- 背景主色：var(--w-bg-primary)
+- 背景次色：var(--w-bg-secondary)
+- 强调色：var(--w-accent)
+
+当需要语义色（如"成功/警告/危险"）时，使用硬编码色板（含浅底深字搭配）：
+- 蓝色系（主品牌/信息）：底 #E6F1FB，边 #185FA5，字 #042C53，浅底 #B5D4F4
+- 绿色系（成功/通过）：底 #E1F5EE，边 #0F6E56，字 #04342C，浅底 #9FE1CB
+- 黄色系（警告/待定）：底 #FEF3C7，边 #92400E，字 #451A03，浅底 #FDE68A
+- 红色系（危险/拒绝）：底 #FEE2E2，边 #B91C1C，字 #450A0A，浅底 #FCA5A5
+- 灰色系（中性/容器）：底 #F1EFE8，边 #B4B2A9，字 #2C2C2A
+
+### 字体
+- 所有文字使用 font-family="var(--w-font-sans)"。
+- 正文 12-13px、标题 14-15px、大号数字/强调 20-22px。
+- 文字必须设 text-anchor 和 dominant-baseline 属性（居中用 "middle" + "central"）。
+
+### 布局
+- 容器矩形用 rx="8"~"20" 圆角，stroke-width="0.5" 细描边。
+- 节点间距 16-24px，留白充足，不要拥挤。
+- 箭头用 <defs><marker> 定义，stroke-width="1.5"，markerWidth/Height="6"。
+- 虚线用 stroke-dasharray="3 3" 或 "4 3"。
+- 分组容器（大背景框）用 rx="20" 大圆角，内部卡片用 rx="8"~"12" 小圆角。
+
+### 暗色模式
+- 使用上述 CSS 变量即可自动适配暗色主题。
+- 语义色（蓝/绿/黄/红/灰）在暗色下也用同样的硬编码值（它们已经过亮度校准，暗底上可读）。
+- 不要使用 currentColor 或依赖外部 CSS 的 inherit。
+
+### 禁止
+- 不要使用 <script> 标签或事件处理器（onload、onclick 等）。
+- 不要引用外部图片或 CSS 文件。
+- 不要用 currentColor 作为唯一颜色源（暗色下会失效）。
+- 不要输出 <html>、<body> 等非 SVG 标签。
+5. 不要口头解释"下面是图"，直接给出 fence 即可。`)
+
   // 注意：Skills 列表由 Pi SDK 通过 formatSkillsForPrompt() 自动注入系统提示词，
   // 不需要在此手动列出。SDK 会从 ResourceLoader.getSkills() 获取并通过 XML 格式注入。
 
@@ -1255,7 +1320,7 @@ ${output}` }],
   const delegationContext = {
     parentSessionId: sessionId,
     channelId: channel.id,
-    modelId: model,
+    modelId: model.id,
     workspaceSlug: workspace?.slug,
     createChildSession,
   }
@@ -1499,12 +1564,12 @@ ${output}` }],
       if (!a) {
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({ error: `定时任务不存在: ${id}` }) }],
-          details: { error: `定时任务不存在: ${id}` },
+          details: { error: `定时任务不存在: ${id}` } as Record<string, unknown>,
         }
       }
       return {
         content: [{ type: 'text' as const, text: JSON.stringify({ automation: a }) }],
-        details: { automation: a },
+        details: { automation: a } as Record<string, unknown>,
       }
     },
   }) as unknown as ToolDefinition)
@@ -1602,13 +1667,13 @@ ${output}` }],
       if (!automation) {
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({ error: `定时任务不存在: ${id}` }) }],
-          details: { error: `定时任务不存在: ${id}` },
+          details: { error: `定时任务不存在: ${id}` } as Record<string, unknown>,
         }
       }
       broadcastAutomationsChanged()
       return {
         content: [{ type: 'text' as const, text: JSON.stringify({ automation, message: '定时任务已更新。' }) }],
-        details: { automation },
+        details: { automation } as Record<string, unknown>,
       }
     },
   }) as unknown as ToolDefinition)
@@ -1650,12 +1715,12 @@ ${output}` }],
         await runAutomationNow(id)
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({ success: true, message: '定时任务已触发执行。' }) }],
-          details: { success: true },
+          details: { success: true } as Record<string, unknown>,
         }
       } catch (err) {
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({ success: false, error: err instanceof Error ? err.message : '运行失败' }) }],
-          details: { success: false, error: err instanceof Error ? err.message : '运行失败' },
+          details: { success: false, error: err instanceof Error ? err.message : '运行失败' } as Record<string, unknown>,
         }
       }
     },
@@ -2044,7 +2109,7 @@ ${output}` }],
   // 配置浏览器会话的 profile 和工作区隔离
   browserController.configureSession(sessionId, {
     profileKey: resolveBrowserProfileKey(workspace?.id, sessionId),
-    allowedRoots: workspace ? [workspace.path || ''].filter(Boolean) : [],
+    allowedRoots: workspace ? [workspace.projectPath || ''].filter(Boolean) : [],
     executionSource: 'user',
   })
 
@@ -2231,7 +2296,7 @@ ${output}` }],
     }),
     async execute(_toolCallId: string, params: Record<string, unknown>, signal?: AbortSignal) {
       const p = params as { url?: string }
-      const state = await browserController.createNewTab(sessionId, p.url, signal)
+      const state = await browserController.createNewTab(sessionId, p.url)
       return { content: [{ type: 'text' as const, text: JSON.stringify({ tabId: state.activeTabId, url: state.url, title: state.title }) }], details: { tabId: state.activeTabId, url: state.url, title: state.title } }
     },
   }) as unknown as ToolDefinition)
@@ -2280,7 +2345,7 @@ ${output}` }],
     }),
     async execute(_toolCallId: string, params: Record<string, unknown>, signal?: AbortSignal) {
       const p = params as { path: string; tabId?: string }
-      const allowedRoots = workspace ? [workspace.path || ''].filter(Boolean) : []
+      const allowedRoots = workspace ? [workspace.projectPath || ''].filter(Boolean) : []
       const state = await browserController.previewOpen(sessionId, p.path, p.tabId, allowedRoots, cwd, signal)
       return { content: [{ type: 'text' as const, text: JSON.stringify({ tabId: state.activeTabId, url: state.url, title: state.title }) }], details: { tabId: state.activeTabId, url: state.url, title: state.title } }
     },
