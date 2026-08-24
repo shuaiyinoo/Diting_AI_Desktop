@@ -622,6 +622,8 @@ export default {
     expandFilePanel: 'Expand file panel',
     collapseFilePanel: 'Collapse file panel',
     swapPanels: 'Swap panels left/right',
+    showCodeEditor: 'Show code editor',
+    hideCodeEditor: 'Hide code editor',
     inputPlaceholder: "Type a command... ({'@'} files, / skills, # MCP, & sessions, Enter to send)",
     selectProject: 'Please select an Agent project first',
     noActiveSession: 'No active session',
@@ -631,9 +633,19 @@ export default {
     detachFolderFailed: 'Failed to detach folder',
     folderAttached: 'Folder attached: {name}',
     folderDetached: 'Folder detached',
+    gitStatusRefreshed: 'Git status refreshed',
     respondPermissionFailed: 'Failed to respond to permission request',
     submitAnswerFailed: 'Failed to submit answer',
     file: 'File',
+  },
+
+  // ========== Agent 代码编辑器 ==========
+  agentCodeEditor: {
+    noFileOpened: 'No file opened',
+    emptyHint: 'Click a file from the file panel to preview and edit here',
+    binaryNotSupported: 'Binary files are not supported in the editor',
+    openFailed: 'Failed to open file',
+    closeAllAndHide: 'Close all files and hide editor',
   },
 
   // ========== RAG ==========
@@ -1077,6 +1089,8 @@ export default {
     addFileToSession: 'Add file to session',
     addFile: 'Add File',
     attachFolder: 'Attach Folder',
+    attached: 'Attached',
+    refreshGitStatus: 'Refresh Git Status',
   },
 
   // ========== Browser ==========

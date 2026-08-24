@@ -558,6 +558,8 @@ set: (val) => {
           blocks[foundIdx].result = data.result || ''
           blocks[foundIdx].isError = data.isError || false
         }
+        // 转发给前端（用于检测文件修改类工具，触发 git 状态刷新）
+        onEvent?.(eventName, data)
         break
       }
 
@@ -579,6 +581,8 @@ set: (val) => {
 
       case 'complete':
         assistantMsg.pending = false
+        // 转发给前端（用于触发 git 状态和文件列表刷新）
+        onEvent?.(eventName, data)
         break
 
       case 'rag_citations': {

@@ -30,6 +30,17 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     localStorage.setItem(PANEL_SWAP_KEY, String(panelSwapped.value))
   }
 
+  // ===== Agent 代码编辑器面板状态 =====
+  // codeEditorVisible: 控制中间代码编辑器面板的显示/隐藏（默认隐藏，用户手动打开）
+  const CODE_EDITOR_VISIBLE_KEY = 'agent:codeEditorVisible'
+  const codeEditorVisible = ref(localStorage.getItem(CODE_EDITOR_VISIBLE_KEY) === 'true')
+
+  /** 切换代码编辑器面板的显示/隐藏 */
+  function toggleCodeEditor() {
+    codeEditorVisible.value = !codeEditorVisible.value
+    localStorage.setItem(CODE_EDITOR_VISIBLE_KEY, String(codeEditorVisible.value))
+  }
+
   // ===== 当前活跃模块 =====
   const activeModule = ref('chat')
 
@@ -290,6 +301,8 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     // Agent 面板布局
     panelSwapped,
     togglePanelSwap,
+    codeEditorVisible,
+    toggleCodeEditor,
     // 文件模块
     folderList,
     folderLoading,

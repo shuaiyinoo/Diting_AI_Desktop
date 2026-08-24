@@ -51,11 +51,12 @@
           <div
             class="flex cursor-pointer items-center gap-1 py-1 pr-2 transition-colors hover:bg-accent/30"
             :style="{ paddingLeft: '8px' }"
-            @click="$emit('toggle-attached-dir', dirPath)"
+            @click="$emit('toggle-attached-dir', dirPath, dirPath)"
           >
             <component :is="expandedAttachedDirs.has(dirPath) ? ChevronDown : ChevronRight" class="size-2.5 text-muted-foreground" />
             <Folder :size="14" class="shrink-0 text-muted-foreground" />
             <span class="min-w-0 flex-1 truncate text-[12px] text-foreground" :title="dirPath">{{ getDirName(dirPath) }}</span>
+            <span class="shrink-0 rounded bg-primary/10 px-1 py-0.5 text-[10px] font-medium text-primary">{{ t('agentFilePanel.attached') }}</span>
             <Button variant="ghost" size="icon" class="size-4 shrink-0 text-muted-foreground hover:text-destructive" :title="t('agentFilePanel.removeFolder')" @click.stop="$emit('detach-folder', dirPath)">
               <X class="size-3.5" />
             </Button>
@@ -65,14 +66,33 @@
             <div
               v-for="child in flattenAttachedDir(dirPath)"
               :key="child.path"
-              class="flex cursor-pointer items-center gap-1 py-1 pr-2 transition-colors hover:bg-accent/30"
+              class="flex cursor-pointer items-center gap-1 py-1 pr-2 transition-colors"
+              :class="child.path === activeFileId ? 'bg-accent/40 text-accent-foreground' : 'hover:bg-accent/30'"
               :style="{ paddingLeft: 8 + child.depth * 16 + 'px' }"
-              @click="child.isDir ? $emit('toggle-attached-dir', child.path) : $emit('open-attached-file', dirPath, child.relativePath)"
+              @click="child.isDir ? $emit('toggle-attached-dir', child.path, child.attachedRoot) : $emit('open-attached-file', dirPath, child.relativePath)"
             >
               <component v-if="child.isDir" :is="child.expanded ? ChevronDown : ChevronRight" class="size-2.5 text-muted-foreground" />
               <span v-else class="inline-block w-[10px]" />
-              <component :is="child.isDir ? Folder : FileText" :size="14" class="shrink-0 text-muted-foreground" />
-              <span class="min-w-0 flex-1 truncate text-[12px] text-foreground">{{ child.name }}</span>
+              <!-- 文件夹：Folder 图标 + 文件名 + 变更圆点（后置） -->
+              <template v-if="child.isDir">
+                <Folder :size="14" class="shrink-0 text-muted-foreground" />
+                <span class="min-w-0 flex-1 truncate text-[12px]" :class="[
+                  child.path === activeFileId ? 'text-accent-foreground font-medium' : '',
+                  child.gitStatus === 'untracked' || child.gitStatus === 'added' ? 'text-red-500' : child.gitStatus === 'modified' ? 'text-green-500' : 'text-foreground'
+               ]">{{ child.name }}</span>
+                <span v-if="child.gitStatus === 'untracked' || child.gitStatus === 'added'" class="size-1.5 shrink-0 rounded-full bg-red-500" />
+                <span v-else-if="child.gitStatus === 'modified'" class="size-1.5 shrink-0 rounded-full bg-green-500" />
+              </template>
+              <!-- 文件：FileText 图标 + 文件名 + A/M 标记（后置） -->
+              <template v-else>
+                <FileText :size="14" class="shrink-0" :class="child.path === activeFileId ? 'text-accent-foreground' : 'text-muted-foreground'" />
+                <span class="min-w-0 flex-1 truncate text-[12px]" :class="[
+                  child.path === activeFileId ? 'text-accent-foreground font-medium' : '',
+                  child.gitStatus === 'untracked' || child.gitStatus === 'added' ? 'text-red-500' : child.gitStatus === 'modified' ? 'text-green-500' : 'text-foreground'
+               ]">{{ child.name }}</span>
+                <span v-if="child.gitStatus === 'untracked' || child.gitStatus === 'added'" class="shrink-0 text-[10px] font-bold text-red-500">A</span>
+                <span v-else-if="child.gitStatus === 'modified'" class="shrink-0 text-[10px] font-bold text-green-500">M</span>
+              </template>
             </div>
           </template>
         </div>
@@ -122,6 +142,17 @@
         <FolderPlus class="size-3.5" />
         <span>{{ t('agentFilePanel.attachFolder') }}</span>
       </Button>
+      <!-- 刷新 Git 状态（仅项目模式且有附加文件夹时显示） -->
+      <Button
+        v-if="mode === 'project' && attachedDirs.length > 0"
+        variant="ghost"
+        size="icon"
+        class="shrink-0 size-8 text-muted-foreground hover:text-primary"
+        :title="t('agentFilePanel.refreshGitStatus')"
+        @click="$emit('refresh-git-status')"
+      >
+        <RefreshCw class="size-3.5" />
+      </Button>
     </div>
   </div>
 </template>
@@ -129,7 +160,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Folder, File, ChevronDown, ChevronRight, FolderOpen, FileText, X, Paperclip, FolderPlus } from '@lucide/vue'
+import { Folder, File, ChevronDown, ChevronRight, FolderOpen, FileText, X, Paperclip, FolderPlus, RefreshCw } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 
 const { t } = useI18n()
@@ -155,12 +186,14 @@ const props = defineProps({
   sessionPath: { type: String, default: '' },
   /** 项目路径 */
   projectPath: { type: String, default: '' },
+  /** 代码编辑器中当前活跃文件 ID（用于高亮联动） */
+  activeFileId: { type: String, default: null },
 })
 
 defineEmits([
   'switch-mode', 'add-file', 'attach-folder', 'detach-folder',
   'toggle-dir', 'open-file', 'toggle-attached-dir', 'open-attached-file',
-  'open-folder',
+  'open-folder', 'refresh-git-status',
 ])
 
 /** 根据面板位置计算边框 class */
@@ -231,12 +264,53 @@ function flattenAttachedDir(dirPath, depth = 1, attachedRoot = dirPath) {
       name, path: childFullPath, isDir: item.isDir, size: item.size || 0,
       depth, isAttached: true, attachedRoot,
       relativePath: rootRelativePath, expanded: isExpanded,
+      gitStatus: item.gitStatus || null,
     })
     if (item.isDir && isExpanded) {
       result.push(...flattenAttachedDir(childFullPath, depth + 1, attachedRoot))
     }
   }
   return result
+}
+
+/**
+ * 获取文件夹的 git 状态（通过递归检查子文件是否有变更）
+ * 返回 'added'（新增/未跟踪）、'modified'（修改）、或 null（无变更）
+ */
+function getDirGitStatus(dirFullPath, attachedRoot) {
+  // 检查该目录的直接子项中是否有 git 状态
+  const children = props.attachedDirChildren[dirFullPath] || []
+  let hasAdded = false
+  let hasModified = false
+
+  for (const child of children) {
+    if (child.gitStatus === 'untracked' || child.gitStatus === 'added') {
+      hasAdded = true
+    } else if (child.gitStatus === 'modified') {
+      hasModified = true
+    }
+  }
+
+  // 如果直接子项有状态，优先返回
+  if (hasAdded) return 'added'
+  if (hasModified) return 'modified'
+
+  // 如果直接子项无状态，递归检查子目录
+  // 通过 expandedAttachedDirs 检查已展开的子目录
+  for (const child of children) {
+    if (child.isDir) {
+      const subDirPath = `${dirFullPath}/${child.path}`
+      // 递归检查子目录（如果已加载）
+      const subChildren = props.attachedDirChildren[subDirPath]
+      if (subChildren) {
+        const subStatus = getDirGitStatus(subDirPath, attachedRoot)
+        if (subStatus === 'added') return 'added'
+        if (subStatus === 'modified') return 'modified'
+      }
+    }
+  }
+
+  return null
 }
 
 /** 从完整路径提取目录名 */

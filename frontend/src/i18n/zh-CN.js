@@ -622,6 +622,8 @@ export default {
     expandFilePanel: '展开文件面板',
     collapseFilePanel: '收起文件面板',
     swapPanels: '左右交换面板',
+    showCodeEditor: '显示代码编辑器',
+    hideCodeEditor: '隐藏代码编辑器',
     inputPlaceholder: "输入指令... ({'@'} 引用文件, / 调用 Skill, # 使用 MCP, & 引用会话, Enter 发送)",
     selectProject: '请先选择一个 Agent 项目',
     noActiveSession: '当前无活动会话',
@@ -631,9 +633,19 @@ export default {
     detachFolderFailed: '移除附加文件夹失败',
     folderAttached: '已附加文件夹: {name}',
     folderDetached: '已移除附加文件夹',
+    gitStatusRefreshed: 'Git 状态已刷新',
     respondPermissionFailed: '响应权限请求失败',
     submitAnswerFailed: '提交回答失败',
     file: '文件',
+  },
+
+  // ========== Agent 代码编辑器 ==========
+  agentCodeEditor: {
+    noFileOpened: '未打开文件',
+    emptyHint: '从文件面板点击文件以在此预览和编辑',
+    binaryNotSupported: '二进制文件不支持在编辑器中预览',
+    openFailed: '打开文件失败',
+    closeAllAndHide: '关闭所有文件并隐藏编辑器',
   },
 
   // ========== RAG 知识库 ==========
@@ -1077,6 +1089,8 @@ export default {
     addFileToSession: '添加文件到会话',
     addFile: '添加文件',
     attachFolder: '附加文件夹',
+    attached: '附加',
+    refreshGitStatus: '刷新 Git 状态',
   },
 
   // ========== 浏览器组件 ==========
