@@ -621,6 +621,7 @@ export default {
     running: '运行中',
     expandFilePanel: '展开文件面板',
     collapseFilePanel: '收起文件面板',
+    swapPanels: '左右交换面板',
     inputPlaceholder: "输入指令... ({'@'} 引用文件, / 调用 Skill, # 使用 MCP, & 引用会话, Enter 发送)",
     selectProject: '请先选择一个 Agent 项目',
     noActiveSession: '当前无活动会话',

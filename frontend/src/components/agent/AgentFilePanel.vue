@@ -1,5 +1,5 @@
 <template>
-  <div class="flex h-full flex-col overflow-hidden border-l border-border bg-background" :style="{ width: width + 'px', flexShrink: 0 }">
+  <div class="flex h-full flex-col overflow-hidden bg-background" :class="borderSideClass" :style="{ width: width + 'px', flexShrink: 0 }">
     <!-- 顶部：文件模式切换 -->
     <div class="flex h-10 shrink-0 items-center gap-1 border-b border-border px-2">
       <Button
@@ -139,6 +139,8 @@ const props = defineProps({
   width: { type: Number, default: 300 },
   /** 面板模式 */
   mode: { type: String, default: 'session' },
+  /** 边框方向：'left'（文件面板在右侧，左边框）或 'right'（文件面板在左侧，右边框） */
+  borderSide: { type: String, default: 'left' },
   /** 文件树数据（扁平列表） */
   fileTree: { type: Array, default: () => [] },
   /** 附加目录列表 */
@@ -160,6 +162,11 @@ defineEmits([
   'toggle-dir', 'open-file', 'toggle-attached-dir', 'open-attached-file',
   'open-folder',
 ])
+
+/** 根据面板位置计算边框 class */
+const borderSideClass = computed(() =>
+  props.borderSide === 'right' ? 'border-r border-border' : 'border-l border-border',
+)
 
 /** 路径层级 > 3 时使用左侧省略 */
 const sessionPathNeedsEllipsis = computed(() => {

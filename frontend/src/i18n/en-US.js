@@ -621,6 +621,7 @@ export default {
     running: 'Running',
     expandFilePanel: 'Expand file panel',
     collapseFilePanel: 'Collapse file panel',
+    swapPanels: 'Swap panels left/right',
     inputPlaceholder: "Type a command... ({'@'} files, / skills, # MCP, & sessions, Enter to send)",
     selectProject: 'Please select an Agent project first',
     noActiveSession: 'No active session',

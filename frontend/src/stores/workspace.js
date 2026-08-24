@@ -19,6 +19,17 @@ export const useWorkspaceStore = defineStore('workspace', () => {
   // ===== 顶部模式：Chat / Agent =====
   const appMode = ref('chat')
 
+  // ===== Agent 面板布局状态 =====
+  // panelSwapped: false = 左聊天右文件（默认），true = 左文件右聊天
+  const PANEL_SWAP_KEY = 'agent:panelSwapped'
+  const panelSwapped = ref(localStorage.getItem(PANEL_SWAP_KEY) === 'true')
+
+  /** 切换 Agent 聊天面板与文件面板的左右位置 */
+  function togglePanelSwap() {
+    panelSwapped.value = !panelSwapped.value
+    localStorage.setItem(PANEL_SWAP_KEY, String(panelSwapped.value))
+  }
+
   // ===== 当前活跃模块 =====
   const activeModule = ref('chat')
 
@@ -276,6 +287,9 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     menuWidth,
     appMode,
     activeModule,
+    // Agent 面板布局
+    panelSwapped,
+    togglePanelSwap,
     // 文件模块
     folderList,
     folderLoading,

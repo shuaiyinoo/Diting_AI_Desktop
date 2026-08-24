@@ -1,7 +1,8 @@
 <template>
   <div class="flex h-full w-full overflow-hidden bg-background" ref="workspaceRef">
     <!-- ========== Chat 面板 ========== -->
-    <div class="relative flex min-w-0 flex-1 flex-col">
+    <!-- 使用 CSS order 控制左右位置：默认 order-0（左），交换后 order-2（右） -->
+    <div class="relative flex min-w-0 flex-1 flex-col" :class="ws.panelSwapped ? 'order-2' : 'order-0'">
       <!-- 顶部工具栏 -->
       <div class="flex h-10 shrink-0 items-center justify-between border-b border-border px-4">
         <span class="text-[13px] font-medium text-foreground">{{ toolbarTitle }}</span>
@@ -9,6 +10,14 @@
           <span v-if="isStreaming" class="flex items-center gap-1.5 text-xs text-primary">
             <span class="size-1.5 animate-pulse rounded-full bg-primary" />{{ t('agent.running') }}
           </span>
+          <Tooltip :title="t('agent.swapPanels')">
+            <button
+              class="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+              @click="ws.togglePanelSwap"
+            >
+              <ArrowLeftRight class="size-4" />
+            </button>
+          </Tooltip>
           <Tooltip :title="panel4Collapsed ? t('agent.expandFilePanel') : t('agent.collapseFilePanel')">
             <button
               class="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
@@ -77,8 +86,8 @@
     </div>
 
     <!-- ========== 文件面板 ========== -->
+    <!-- 使用 CSS order 控制左右位置：默认 order-2（右），交换后 order-0（左） -->
     <template v-if="!panel4Collapsed">
-      <PanelDivider @resize="onPanel4Resize" />
       <AgentFilePanel
         :width="panel4Width"
         :mode="filePanelMode"
@@ -89,6 +98,8 @@
         :expanded-dirs="expandedDirs"
         :session-path="sessionPathDisplay"
         :project-path="projectPathDisplay"
+        :border-side="ws.panelSwapped ? 'right' : 'left'"
+        :class="ws.panelSwapped ? 'order-0' : 'order-2'"
         @switch-mode="switchFileMode"
         @add-file="onAddFile"
         @attach-folder="onAttachFolder"
@@ -99,6 +110,7 @@
         @open-attached-file="openAttachedFile"
         @open-folder="openFolderHandler"
       />
+      <PanelDivider class="order-1" @resize="onPanel4Resize" />
     </template>
   </div>
 </template>
@@ -120,7 +132,7 @@ import AgentAskUserPopup from '@/components/agent/AgentAskUserPopup.vue'
 import AgentMessageList from '@/components/agent/AgentMessageList.vue'
 import AgentFilePanel from '@/components/agent/AgentFilePanel.vue'
 import AgentChatInput from '@/components/agent/AgentChatInput.vue'
-import { PanelRightClose, PanelRightOpen } from '@lucide/vue'
+import { PanelRightClose, PanelRightOpen, ArrowLeftRight } from '@lucide/vue'
 import { hasTaskBlocks } from '@/utils/task-progress'
 import { getModelLogo, LOGO_DEFAULT } from '@/utils/model-logo'
 import { inferProviderType } from '@/utils/provider-presets'
@@ -192,7 +204,9 @@ watch(() => browserStore.forceFilePanelCollapsed, (forced) => {
 })
 
 function onPanel4Resize(delta) {
-  panel4Width.value = Math.min(400, Math.max(240, panel4Width.value - delta))
+  // 交换布局时拖拽方向反转：向右拖增大文件面板宽度
+  const adjusted = ws.panelSwapped ? delta : -delta
+  panel4Width.value = Math.min(400, Math.max(240, panel4Width.value + adjusted))
 }
 
 // ========== 数据 ==========
