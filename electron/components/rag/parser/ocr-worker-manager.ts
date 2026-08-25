@@ -103,11 +103,16 @@ class OcrWorkerManager {
 
   /**
    * 获取子进程脚本路径（惰性写入临时文件）
+   *
+   * 脚本必须位于项目根目录下，确保 ESM 模块解析能找到 node_modules。
+   * 系统临时目录（/tmp）下没有 node_modules，会导致 import 失败。
    */
   private getScriptPath(): string {
     if (this.workerScriptPath) return this.workerScriptPath;
 
-    const tmpDir = path.join(os.tmpdir(), 'diting-ocr');
+    // 使用项目根目录下的临时目录，确保 ESM 能解析到 node_modules
+    const projectRoot = process.cwd();
+    const tmpDir = path.join(projectRoot, '.ocr-tmp');
     try { mkdirSync(tmpDir, { recursive: true }); } catch {}
     this.workerScriptPath = path.join(tmpDir, 'ocr-worker.mjs');
     writeFileSync(this.workerScriptPath, WORKER_SCRIPT, 'utf-8');
@@ -124,9 +129,17 @@ class OcrWorkerManager {
     const scriptPath = this.getScriptPath();
     logger.info('[OcrWorkerManager] 启动 OCR 子进程...');
 
+    // 确定项目根目录（node_modules 所在目录）
+    const projectRoot = process.cwd();
+    const nodeModulesPath = path.join(projectRoot, 'node_modules');
+
     this.worker = fork(scriptPath, [], {
-      stdio: ['pipe', 'pipe', 'pipe'],
-      env: { ...process.env },
+      stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
+      env: {
+        ...process.env,
+        NODE_PATH: nodeModulesPath,
+      },
+      cwd: projectRoot,
     });
 
     // 监听 stdout（JSON Line 响应）

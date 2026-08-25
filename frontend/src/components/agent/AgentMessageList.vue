@@ -117,27 +117,6 @@
       </div>
     </div>
   </template>
-
-  <!-- 用户消息浮动指示器 -->
-  <div v-if="userMessages.length > 0" class="absolute right-2 top-1/2 z-10 -translate-y-1/2 flex flex-col items-end gap-[5px]">
-    <button
-      v-for="(um, idx) in userMessages"
-      :key="um.id"
-      class="block w-1 rounded-full transition-all"
-      :class="railHoverIdx === idx ? 'h-[18px] bg-primary' : 'h-[14px] bg-muted-foreground/30 hover:bg-muted-foreground/50'"
-      @mouseenter="$emit('rail-hover', idx)"
-      @mouseleave="$emit('rail-hover', -1)"
-      @click="$emit('jump', um.id)"
-    />
-    <!-- 悬浮预览 -->
-    <div
-      v-if="railHoverIdx >= 0"
-      class="absolute right-3 max-w-[260px] rounded-lg border border-border bg-popover px-3 py-2 text-xs leading-relaxed text-popover-foreground shadow-lg"
-      :style="{ top: railPreviewOffset + 'px' }"
-    >
-      {{ userMessages[railHoverIdx].content }}
-    </div>
-  </div>
 </template>
 
 <script setup>
@@ -160,26 +139,16 @@ const props = defineProps({
   modelName: { type: String, default: '' },
   /** 消息统计 Map */
   messageStats: { type: Object, default: () => ({}) },
-  /** 悬浮指示器当前索引 */
-  railHoverIdx: { type: Number, default: -1 },
   /** 模型 logo URL */
   modelLogo: { type: String, default: '' },
 })
 
-defineEmits(['citation-click', 'rail-hover', 'jump'])
+defineEmits(['citation-click'])
 
 /** 只筛选用户消息 */
 const userMessages = computed(() =>
   props.messages.filter((m) => m.role === 'user')
 )
-
-/** 悬浮预览偏移量 */
-const railPreviewOffset = computed(() => {
-  if (props.railHoverIdx < 0) return 0
-  const spacing = 9
-  const padding = 8
-  return padding + props.railHoverIdx * spacing
-})
 
 /** 从 blocks 中筛选过程块 */
 function getProcessBlocks(blocks) {

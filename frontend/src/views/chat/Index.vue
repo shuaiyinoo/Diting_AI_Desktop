@@ -184,23 +184,74 @@
     </div>
 
     <!-- ========== 用户消息浮动指示器 ========== -->
-    <div v-if="userMessages.length > 0" class="absolute right-3 top-1/2 z-10 flex -translate-y-1/2 flex-col items-end gap-1.5 px-1 py-2">
-      <button
-        v-for="(um, idx) in userMessages"
-        :key="um.id"
-        class="h-[3px] w-5 cursor-pointer rounded-sm border-none bg-border p-0 transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] hover:h-[5px] hover:w-7 hover:bg-primary hover:shadow-[0_0_8px_rgba(22,119,255,0.3)]"
-        :class="railHoverIdx === idx ? 'h-[5px] w-7 bg-primary shadow-[0_0_8px_rgba(22,119,255,0.3)]' : ''"
-        @mouseenter="railHoverIdx = idx"
-        @mouseleave="railHoverIdx = -1"
-        @click="jumpToMessage(um.id)"
-      />
-      <!-- 悬浮预览 -->
+    <!-- 外层 pointer-events-none：鼠标穿透到下层，不影响滚动等操作 -->
+    <div
+      v-if="userMessages.length > 0"
+      class="absolute right-3 top-1/2 z-10 -translate-y-1/2 pointer-events-none"
+    >
+      <!-- 整体容器：尺寸固定不变，仅边框颜色切换 -->
       <div
-        v-if="railHoverIdx >= 0"
-        class="pointer-events-none absolute right-full top-0 mr-2.5 w-[200px] max-w-[200px] break-words rounded-lg border border-border bg-card px-3 py-2 text-xs leading-relaxed text-foreground shadow-[0_4px_16px_rgba(0,0,0,0.1)]"
-        :style="{ transform: `translateY(${railPreviewOffset}px)` }"
+        class="flex items-start gap-2 rounded-md border border-transparent px-2 py-2 transition-colors duration-200"
+        :class="railHovering ? 'border-border bg-card shadow-[0_2px_12px_rgba(0,0,0,0.08)]' : ''"
       >
-        {{ userMessages[railHoverIdx].content }}
+        <!-- 左侧：文字列（始终占位，hover 时可见） -->
+        <div class="flex flex-col gap-2">
+          <div
+            v-for="(um, idx) in userMessages"
+            :key="um.id"
+            class="flex h-5 items-center"
+          >
+            <div
+              class="w-[180px] shrink-0 truncate text-right text-xs leading-5 transition-colors duration-150"
+              :class="railHovering
+                ? (railHoverIdx === idx ? 'opacity-100 text-primary font-medium' : 'opacity-100 text-muted-foreground')
+                : 'opacity-0'"
+            >
+              {{ um.content }}
+            </div>
+          </div>
+        </div>
+
+        <!-- 右侧：bar 列 -->
+        <div class="flex flex-col gap-2">
+          <div
+            v-for="(um, idx) in userMessages"
+            :key="um.id"
+            class="flex h-5 w-7 shrink-0 items-center justify-end"
+          >
+            <div
+              class="rounded-full transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]"
+              :class="railHoverIdx === idx
+                ? 'w-7 h-[5px] bg-primary shadow-[0_0_8px_rgba(22,119,255,0.3)]'
+                : 'w-5 h-[3px] bg-border'"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- 触发层：绝对定位覆盖区域，pointer-events-auto 恢复鼠标事件 -->
+      <!-- 未显示时：仅覆盖 bar 列（窄 28px），鼠标进入触发显示 -->
+      <!-- 显示后：覆盖整个容器（宽），鼠标离开才隐藏 -->
+      <div
+        class="absolute top-0 cursor-pointer pointer-events-auto"
+        :class="railHovering ? 'inset-0 z-10' : 'right-2 bottom-0 z-20'"
+        :style="railHovering ? {} : { width: '28px' }"
+        @mouseenter="railHovering = true"
+        @mouseleave="railHovering = false; railHoverIdx = -1"
+      >
+        <!-- hover 索引更新层：覆盖整个容器宽度的每一行（文字+bar） -->
+        <div
+          v-if="railHovering"
+          class="absolute inset-0 flex flex-col gap-2 py-2 pointer-events-auto"
+        >
+          <div
+            v-for="(um, idx) in userMessages"
+            :key="um.id"
+            class="flex h-5 items-center pr-2"
+            @mouseenter="railHoverIdx = idx"
+            @click.stop="jumpToMessage(um.id)"
+          />
+        </div>
       </div>
     </div>
   </div>
@@ -363,19 +414,12 @@ let pendingScrollToBottom = false
 
 // ========== 浮动指示器：用户消息导航 ==========
 const railHoverIdx = ref(-1)
+const railHovering = ref(false)
 
 /** 只筛选用户消息 */
 const userMessages = computed(() =>
   messages.value.filter((m) => m.role === 'user')
 )
-
-/** 悬浮预览偏移量：跟随当前 bar 垂直位置 */
-const railPreviewOffset = computed(() => {
-  if (railHoverIdx.value < 0) return 0
-  const spacing = 9
-  const padding = 8
-  return padding + railHoverIdx.value * spacing
-})
 
 /** 跳转到指定消息 */
 function jumpToMessage(msgId) {

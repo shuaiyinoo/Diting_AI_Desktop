@@ -33,17 +33,14 @@
           @submit="submitAskUser"
           @dismiss="dismissAskUser"
         />
-        <div class="relative min-h-0 flex-1 overflow-y-auto" ref="messagesRef" @scroll="onMessagesScroll">
+        <div class="min-h-0 flex-1 overflow-y-auto" ref="messagesRef" @scroll="onMessagesScroll">
           <AgentMessageList
             :messages="messages"
             :is-streaming="isStreaming"
             :model-name="selectedModel || 'Agent'"
             :model-logo="aiLogo"
             :message-stats="messageStats"
-            :rail-hover-idx="railHoverIdx"
             @citation-click="onCitationClick"
-            @rail-hover="railHoverIdx = $event"
-            @jump="jumpToMessage"
           />
         </div>
         <AgentChatInput
@@ -66,6 +63,69 @@
           @focus="inputFocused = true"
           @blur="inputFocused = false"
         />
+        <!-- ========== 用户消息浮动指示器（固定在面板右侧，不随滚动） ========== -->
+        <div
+          v-if="userMessages.length > 0"
+          class="pointer-events-none absolute right-3 top-1/2 z-10 -translate-y-1/2"
+        >
+          <div
+            class="flex items-start gap-2 rounded-md border border-transparent px-2 py-2 transition-colors duration-200"
+            :class="railHovering ? 'border-border bg-card shadow-[0_2px_12px_rgba(0,0,0,0.08)]' : ''"
+          >
+            <div class="flex flex-col gap-2">
+              <div
+                v-for="(um, idx) in userMessages"
+                :key="um.id"
+                class="flex h-5 items-center"
+              >
+                <div
+                  class="w-[180px] shrink-0 truncate text-right text-xs leading-5 transition-colors duration-150"
+                  :class="railHovering
+                    ? (railHoverIdx === idx ? 'opacity-100 text-primary font-medium' : 'opacity-100 text-muted-foreground')
+                    : 'opacity-0'"
+                >
+                  {{ um.content }}
+                </div>
+              </div>
+            </div>
+
+            <div class="flex flex-col gap-2">
+              <div
+                v-for="(um, idx) in userMessages"
+                :key="um.id"
+                class="flex h-5 w-7 shrink-0 items-center justify-end"
+              >
+                <div
+                  class="rounded-full transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]"
+                  :class="railHoverIdx === idx
+                    ? 'w-7 h-[5px] bg-primary shadow-[0_0_8px_rgba(22,119,255,0.3)]'
+                    : 'w-5 h-[3px] bg-border'"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="absolute top-0 cursor-pointer pointer-events-auto"
+            :class="railHovering ? 'inset-0 z-10' : 'right-0 bottom-0 z-20'"
+            :style="railHovering ? {} : { width: '28px' }"
+            @mouseenter="railHovering = true"
+            @mouseleave="railHovering = false; railHoverIdx = -1"
+          >
+            <div
+              v-if="railHovering"
+              class="absolute inset-0 flex flex-col gap-2 py-2 pointer-events-auto"
+            >
+              <div
+                v-for="(um, idx) in userMessages"
+                :key="um.id"
+                class="flex h-5 items-center pr-2"
+                @mouseenter="railHoverIdx = idx"
+                @click.stop="jumpToMessage(um.id)"
+              />
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- 编辑器 + 分隔条（编辑器左侧分隔条调编辑器宽度） -->
@@ -191,17 +251,14 @@
           @submit="submitAskUser"
           @dismiss="dismissAskUser"
         />
-        <div class="relative min-h-0 flex-1 overflow-y-auto" ref="messagesRef" @scroll="onMessagesScroll">
+        <div class="min-h-0 flex-1 overflow-y-auto" ref="messagesRef" @scroll="onMessagesScroll">
           <AgentMessageList
             :messages="messages"
             :is-streaming="isStreaming"
             :model-name="selectedModel || 'Agent'"
             :model-logo="aiLogo"
             :message-stats="messageStats"
-            :rail-hover-idx="railHoverIdx"
             @citation-click="onCitationClick"
-            @rail-hover="railHoverIdx = $event"
-            @jump="jumpToMessage"
           />
         </div>
         <AgentChatInput
@@ -224,6 +281,69 @@
           @focus="inputFocused = true"
           @blur="inputFocused = false"
         />
+        <!-- ========== 用户消息浮动指示器（固定在面板右侧，不随滚动） ========== -->
+        <div
+          v-if="userMessages.length > 0"
+          class="pointer-events-none absolute right-3 top-1/2 z-10 -translate-y-1/2"
+        >
+          <div
+            class="flex items-start gap-2 rounded-md border border-transparent px-2 py-2 transition-colors duration-200"
+            :class="railHovering ? 'border-border bg-card shadow-[0_2px_12px_rgba(0,0,0,0.08)]' : ''"
+          >
+            <div class="flex flex-col gap-2">
+              <div
+                v-for="(um, idx) in userMessages"
+                :key="um.id"
+                class="flex h-5 items-center"
+              >
+                <div
+                  class="w-[180px] shrink-0 truncate text-right text-xs leading-5 transition-colors duration-150"
+                  :class="railHovering
+                    ? (railHoverIdx === idx ? 'opacity-100 text-primary font-medium' : 'opacity-100 text-muted-foreground')
+                    : 'opacity-0'"
+                >
+                  {{ um.content }}
+                </div>
+              </div>
+            </div>
+
+            <div class="flex flex-col gap-2">
+              <div
+                v-for="(um, idx) in userMessages"
+                :key="um.id"
+                class="flex h-5 w-7 shrink-0 items-center justify-end"
+              >
+                <div
+                  class="rounded-full transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]"
+                  :class="railHoverIdx === idx
+                    ? 'w-7 h-[5px] bg-primary shadow-[0_0_8px_rgba(22,119,255,0.3)]'
+                    : 'w-5 h-[3px] bg-border'"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="absolute top-0 cursor-pointer pointer-events-auto"
+            :class="railHovering ? 'inset-0 z-10' : 'right-0 bottom-0 z-20'"
+            :style="railHovering ? {} : { width: '28px' }"
+            @mouseenter="railHovering = true"
+            @mouseleave="railHovering = false; railHoverIdx = -1"
+          >
+            <div
+              v-if="railHovering"
+              class="absolute inset-0 flex flex-col gap-2 py-2 pointer-events-auto"
+            >
+              <div
+                v-for="(um, idx) in userMessages"
+                :key="um.id"
+                class="flex h-5 items-center pr-2"
+                @mouseenter="railHoverIdx = idx"
+                @click.stop="jumpToMessage(um.id)"
+              />
+            </div>
+          </div>
+        </div>
       </div>
     </template>
   </div>
@@ -395,6 +515,7 @@ const messageStats = computed(() => agentStore.messageStats)
 
 // ========== 用户消息导航 ==========
 const railHoverIdx = ref(-1)
+const railHovering = ref(false)
 
 const userMessages = computed(() =>
   messages.value.filter((m) => m.role === 'user')
