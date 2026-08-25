@@ -1036,6 +1036,76 @@ return { success: false, message: `不支持的文件类型: ${fileItem.name}` }
   }
 
   /**
+   * 创建新文件（仅本地协议）
+   * 在指定文件夹的根目录下创建空文件，并入库
+   *
+   * @param args.folderId 授权文件夹 ID
+   * @param args.parentId 父目录 ID（0 = 根目录）
+   * @param args.fileName 文件名（含后缀）
+   * @returns 创建结果 + 文件项
+   */
+  async createFile(args: {
+    folderId: number;
+    parentId: number;
+    fileName: string;
+  }): Promise<{ success: boolean; fileItem?: FileItem; message?: string }> {
+    const { folderId, parentId, fileName } = args;
+
+    const folder = filedbService.getFolderById(folderId);
+    if (!folder) {
+      return { success: false, message: '授权文件夹不存在' };
+    }
+
+    const protocol = folder.protocol || 'local';
+    if (protocol !== 'local') {
+      return { success: false, message: '仅支持本地文件夹创建文件' };
+    }
+
+    // 确定文件在磁盘上的完整路径
+    const parentItem = parentId > 0 ? filedbService.getFileItemById(parentId) : null;
+    const parentDir = parentItem ? path.join(folder.path, parentItem.relative_path) : folder.path;
+    const filePath = path.join(parentDir, fileName);
+    const relativePath = path.relative(folder.path, filePath);
+
+    // 检查文件是否已存在
+    if (fs.existsSync(filePath)) {
+      return { success: false, message: '同名文件已存在' };
+    }
+
+    try {
+      // 创建空文件（Markdown 文件以空内容创建）
+      const ext = path.extname(fileName).toLowerCase();
+      const initialContent = ext === '.md' ? `# ${path.basename(fileName, ext)}\n\n` : '';
+      fs.writeFileSync(filePath, initialContent, 'utf-8');
+
+      // 入库
+      const stat = fs.statSync(filePath);
+      const insertStmt = (filedbService as any).db.prepare(
+        `INSERT INTO ${(filedbService as any).itemTableName} (folder_id, parent_id, name, type, size, mtime, relative_path, is_dir, status)
+         VALUES (@folderId, @parentId, @name, @type, @size, @mtime, @relativePath, 0, 'PENDING')`
+      );
+      const info = insertStmt.run({
+        folderId,
+        parentId,
+        name: fileName,
+        type: ext.replace('.', '') || 'file',
+        size: stat.size,
+        mtime: stat.mtime.toISOString(),
+        relativePath,
+      });
+
+      const fileItem = filedbService.getFileItemById(Number(info.lastInsertRowid));
+      logger.info(`[FileController] 创建文件成功: ${fileName}, id=${info.lastInsertRowid}`);
+
+      return { success: true, fileItem: fileItem || undefined };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      logger.error(`[FileController] 创建文件失败: ${fileName}:`, err);
+      return { success: false, message: `创建文件失败: ${msg}` };
+    }
+  }
+
+  /**
    * 重命名文件
    * @param args.fileItemId 文件项 ID
    * @param args.newName 新文件名（含后缀）

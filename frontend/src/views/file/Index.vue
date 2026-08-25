@@ -36,42 +36,33 @@
             </TooltipTrigger>
             <TooltipContent>{{ t('fileModule.refresh') }}</TooltipContent>
           </Tooltip>
-          <!-- 新建文件 Popover -->
-          <Popover v-model:open="createPopoverVisible">
+          <!-- 新建文件 Popover（仅本地文件夹显示） -->
+          <Popover v-if="isLocalFolder" v-model:open="createPopoverVisible">
             <PopoverTrigger as-child>
-              <Tooltip side="bottom">
-                <TooltipTrigger as-child>
-                  <button
-                    class="inline-flex size-7 items-center justify-center rounded-md text-app-secondary transition-colors hover:bg-hover hover:text-app-primary"
-                  >
-                    <Plus class="size-3.5" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>{{ t('fileModule.newFile') }}</TooltipContent>
-              </Tooltip>
+              <button
+                class="inline-flex size-7 items-center justify-center rounded-md text-app-secondary transition-colors hover:bg-hover hover:text-app-primary"
+                :title="t('fileModule.newFile')"
+              >
+                <Plus class="size-3.5" />
+              </button>
             </PopoverTrigger>
-            <PopoverContent align="end" side="bottom" class="w-36 p-1">
+            <PopoverContent align="end" side="bottom" class="w-56 p-1">
               <div class="flex flex-col gap-0.5">
+                <!-- 创建 Markdown 文件 -->
                 <button
                   class="flex items-center gap-2 rounded px-2 py-1.5 text-[13px] text-app-primary transition-colors hover:bg-hover"
-                  @click="onCreateFile('docx')"
-                >
-                  <FileText class="size-4 text-[#2b579a]" />
-                  <span>{{ t('fileModule.doc') }}</span>
-                </button>
-                <button
-                  class="flex items-center gap-2 rounded px-2 py-1.5 text-[13px] text-app-primary transition-colors hover:bg-hover"
-                  @click="onCreateFile('xlsx')"
-                >
-                  <Sheet class="size-4 text-[#217346]" />
-                  <span>{{ t('fileModule.sheet') }}</span>
-                </button>
-                <button
-                  class="flex items-center gap-2 rounded px-2 py-1.5 text-[13px] text-app-primary transition-colors hover:bg-hover"
-                  @click="onCreateFile('md')"
+                  @click="onCreateMarkdownFile"
                 >
                   <FileCode class="size-4 text-[#6c757d]" />
-                  <span>MD</span>
+                  <span>{{ t('fileModule.createMarkdown') }}</span>
+                </button>
+                <!-- 分析链接 -->
+                <button
+                  class="flex items-center gap-2 rounded px-2 py-1.5 text-[13px] text-app-primary transition-colors hover:bg-hover"
+                  @click="onOpenLinkDialog"
+                >
+                  <Link class="size-4 text-primary" />
+                  <span>{{ t('fileModule.analyzeLink') }}</span>
                 </button>
               </div>
             </PopoverContent>
@@ -180,6 +171,31 @@
         <FileInfoPanel :file="ws.selectedFile" :status-tag="selectedFileStatusTag" />
       </div>
     </template>
+
+    <!-- 分析链接弹窗 -->
+    <Dialog v-model:open="linkDialogVisible">
+      <DialogContent class="max-w-md">
+        <DialogHeader>
+          <DialogTitle>{{ t('fileModule.analyzeLinkTitle') }}</DialogTitle>
+          <DialogDescription>{{ t('fileModule.analyzeLinkDesc') }}</DialogDescription>
+        </DialogHeader>
+        <div class="flex flex-col gap-3 py-2">
+          <Input
+            v-model="linkUrl"
+            :placeholder="t('fileModule.linkUrlPlaceholder')"
+            class="text-sm"
+            @keyup.enter="onAnalyzeLink"
+          />
+        </div>
+        <DialogFooter>
+          <Button variant="outline" @click="linkDialogVisible = false">{{ t('fileModule.cancel') }}</Button>
+          <Button :disabled="!linkUrl.trim() || analyzingLink" @click="onAnalyzeLink">
+            <Loader2 v-if="analyzingLink" class="size-4 mr-1 animate-spin" />
+            {{ t('fileModule.analyzeAndOrganize') }}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   </div>
 </template>
 
@@ -188,16 +204,20 @@ import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
 import {
-  FileCode, FileText, FolderOpen, Inbox, Loader2, Plus, RefreshCw, Sheet,
-  ChevronDown, ChevronRight, Folder,
+  FileCode, FileText, FolderOpen, Inbox, Loader2, Plus, RefreshCw,
+  ChevronDown, ChevronRight, Folder, Link,
 } from '@lucide/vue'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { useToast } from '@/components/ui/sonner'
 import { ipcApiRoute } from '@/api'
 import { ipc } from '@/utils/ipcRenderer'
 import { useWorkspaceStore } from '@/stores/workspace'
+import { useAgentStore } from '@/stores/agent'
 import FilePreviewPanel from '@/components/file/FilePreviewPanel.vue'
 import FileInfoPanel from '@/components/file/FileInfoPanel.vue'
 import PanelDivider from '@/components/layout/PanelDivider.vue'
@@ -205,7 +225,14 @@ import PanelDivider from '@/components/layout/PanelDivider.vue'
 const { t } = useI18n()
 const toast = useToast()
 const ws = useWorkspaceStore()
+const agentStore = useAgentStore()
 const { selectedFolderId: wsSelectedFolderId, selectedFolder: wsSelectedFolder, selectedFile: wsSelectedFile, selectedFileId: wsSelectedFileId } = storeToRefs(ws)
+
+// ========== 本地文件夹判断 ==========
+const isLocalFolder = computed(() => {
+  if (!wsSelectedFolder.value) return false
+  return (wsSelectedFolder.value.protocol || 'local') === 'local'
+})
 
 // ========== 面板宽度 & 折叠状态 ==========
 const workspaceRef = ref(null)
@@ -238,13 +265,10 @@ const rootTree = ref([])
 const createPopoverVisible = ref(false)
 const creatingFile = ref(false)
 
-const FILE_TYPE_LABELS = {
-  docx: '文档',
-  xlsx: '表格',
-  pptx: '演示文稿',
-  pdf: 'PDF',
-  md: 'MD',
-}
+// ========== 分析链接 ==========
+const linkDialogVisible = ref(false)
+const linkUrl = ref('')
+const analyzingLink = ref(false)
 
 const selectedFileStatusTag = computed(() => {
   if (!ws.selectedFile) return { color: 'default', text: '-' }
@@ -299,6 +323,23 @@ function getStatusBadgeClass(status, fileName) {
     FAILED: 'bg-red-500/15 text-red-600 dark:text-red-400',
   }
   return map[status] || 'bg-muted text-muted-foreground'
+}
+
+async function generateUniqueFileName(baseName, ext) {
+  let name = `${baseName}.${ext}`
+  let counter = 1
+  // 从所有缓存的文件中检查重名
+  const existingNames = new Set()
+  for (const files of Object.values(dirFileCache)) {
+    for (const f of files) {
+      existingNames.add(f.name)
+    }
+  }
+  while (existingNames.has(name)) {
+    name = `${baseName}${counter}.${ext}`
+    counter++
+  }
+  return name
 }
 
 // ========== 扁平化树 ==========
@@ -539,8 +580,8 @@ async function refreshOpenDirs() {
 const ragQueueSize = ref(0)
 const ragProcessing = ref(false)
 
-// ========== 新建文件 ==========
-async function onCreateFile(ext) {
+// ========== 新建 Markdown 文件 ==========
+async function onCreateMarkdownFile() {
   createPopoverVisible.value = false
   if (!ws.selectedFolder) {
     toast.warning(t('fileModule.selectFolder'))
@@ -549,10 +590,10 @@ async function onCreateFile(ext) {
   if (creatingFile.value) return
   creatingFile.value = true
 
-  const baseName = t(ext === 'docx' ? 'fileModule.newDoc' : ext === 'xlsx' ? 'fileModule.newSheet' : 'fileModule.newDoc')
-  const fileName = await generateUniqueFileName(baseName, ext)
+  const baseName = t('fileModule.newDoc')
+  const fileName = await generateUniqueFileName(baseName, 'md')
 
-  // 找到当前展开的第一个目录作为父目录（优先根节点）
+  // 找到根节点作为父目录
   let parentId = 0
   if (rootTree.value.length > 0) {
     parentId = rootTree.value[0].id
@@ -568,6 +609,7 @@ async function onCreateFile(ext) {
       toast.success(t('fileModule.created', { name: fileName }))
       // 刷新该目录的文件列表
       await loadDirFiles(parentId)
+      // 选中并打开新创建的文件
       onSelectFile(result.fileItem)
     } else {
       toast.error(result.message || t('fileModule.createFailed'))
@@ -580,21 +622,91 @@ async function onCreateFile(ext) {
   }
 }
 
-async function generateUniqueFileName(baseName, ext) {
-  let name = `${baseName}.${ext}`
-  let counter = 1
-  // 从所有缓存的文件中检查重名
-  const existingNames = new Set()
-  for (const files of Object.values(dirFileCache)) {
-    for (const f of files) {
-      existingNames.add(f.name)
+// ========== 分析链接 ==========
+function onOpenLinkDialog() {
+  createPopoverVisible.value = false
+  linkUrl.value = ''
+  linkDialogVisible.value = true
+}
+
+async function onAnalyzeLink() {
+  const url = linkUrl.value.trim()
+  if (!url || analyzingLink.value) return
+  if (!ws.selectedFolder) {
+    toast.warning(t('fileModule.selectFolder'))
+    return
+  }
+
+  analyzingLink.value = true
+  try {
+    const folderPath = ws.selectedFolder.path
+
+    // 查找或创建名为"链接整理"的项目
+    if (ws.agentProjects.length === 0) {
+      await ws.loadAgentProjects()
     }
+    let project = ws.agentProjects.find((p) => p.name === '链接整理')
+    if (!project) {
+      // 创建项目
+      const res = await ipc.invoke(ipcApiRoute.piAgent.workspaceOperation, {
+        action: 'create',
+        name: '链接整理',
+      })
+      if (res.code === 0 && res.data) {
+        ws.agentProjects.unshift(res.data)
+        project = res.data
+      }
+    }
+    if (!project) {
+      toast.error(t('fileModule.createProjectFailed'))
+      return
+    }
+    ws.selectAgentProject(project.id)
+
+    // 加载会话列表
+    await agentStore.loadSessions()
+
+    // 查找或创建名为“分析链接”的会话
+    let session = agentStore.sessions.find((s) => {
+      const wid = s.workspaceId || s.workspace_id || s.projectId || ''
+      return String(wid) === String(project.id) && (s.title || '') === '分析链接'
+    })
+    if (!session) {
+      const createRes = await ipc.invoke(ipcApiRoute.piAgent.sessionOperation, {
+        action: 'create',
+        title: '分析链接',
+        workspaceId: project.id,
+      })
+      if (createRes.code === 0 && createRes.data) {
+        agentStore.sessions.unshift(createRes.data)
+        session = createRes.data
+      }
+    }
+    if (!session) {
+      toast.error(t('fileModule.createSessionFailed'))
+      return
+    }
+
+    // 构造提示词
+    const prompt = `请分析指定的链接 ${url} 并详细整理成 md 文档保存在 ${folderPath} 文件夹中`
+
+    // 设置 pendingPrompt，在 AgentView onMounted 时自动发送
+    agentStore.pendingPrompt = { sessionId: session.id, message: prompt }
+
+    // 切换到 Agent 会话
+    await agentStore.selectSession(session.id)
+    ws.setActiveModule('agent')
+    ws.setAppMode('agent')
+
+    // 关闭弹窗
+    linkDialogVisible.value = false
+    toast.success(t('fileModule.analyzeLinkStarted'))
+  } catch (err) {
+    console.error('[file] 分析链接失败:', err)
+    toast.error(t('fileModule.analyzeLinkFailed'))
+  } finally {
+    analyzingLink.value = false
   }
-  while (existingNames.has(name)) {
-    name = `${baseName}${counter}.${ext}`
-    counter++
-  }
-  return name
 }
 
 // ========== 协议标签辅助函数 ==========
