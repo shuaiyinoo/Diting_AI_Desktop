@@ -62,9 +62,15 @@
     "vite": "^7.3.3",
     "vite-plugin-compression": "^0.5.1"
   },
+  "overrides": {
+    "@tiptap/extension-bubble-menu": "3.29.2",
+    "@tiptap/extension-floating-menu": "3.29.2"
+  },
   "pnpm": {
     "overrides": {
-      "shiki": "3.23.0"
+      "shiki": "3.23.0",
+      "@tiptap/extension-bubble-menu": "3.29.2",
+      "@tiptap/extension-floating-menu": "3.29.2"
     }
   }
 }

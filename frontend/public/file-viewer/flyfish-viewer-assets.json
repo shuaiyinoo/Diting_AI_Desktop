@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-07-17T23:32:32.900Z",
+  "generatedAt": "2026-08-25T01:34:44.955Z",
   "rendererAssetManifests": [
     {
       "rendererId": "model",
@@ -172,7 +172,7 @@
           "kind": "wasm-directory",
           "target": "public",
           "required": true,
-          "defaultPath": "wasm/cad/",
+          "defaultPath": "wasm/cad/0.8.0/",
           "optionPath": "cad.wasmPath",
           "description": "@flyfish-dev/cad-viewer WebAssembly directory for DWG/DXF helpers."
         },
@@ -182,7 +182,7 @@
           "kind": "worker",
           "target": "public",
           "required": true,
-          "defaultPath": "wasm/cad/dwg-worker.js",
+          "defaultPath": "wasm/cad/0.8.0/dwg-worker.js",
           "optionPath": "cad.workerUrl",
           "description": "DWG worker entry used by @flyfish-dev/cad-viewer."
         },
@@ -192,7 +192,7 @@
           "kind": "wasm",
           "target": "public",
           "required": true,
-          "defaultPath": "wasm/cad/dwfv-render.wasm",
+          "defaultPath": "wasm/cad/0.8.0/dwfv-render.wasm",
           "optionPath": "cad.dwfWasmUrl",
           "description": "DWF/DWFx/XPS raster WebAssembly module used by @flyfish-dev/cad-viewer."
         },
@@ -202,7 +202,7 @@
           "kind": "script",
           "target": "public",
           "required": true,
-          "defaultPath": "wasm/cad/libredwg-web.js",
+          "defaultPath": "wasm/cad/0.8.0/libredwg-web.js",
           "description": "LibreDWG JavaScript runtime loaded by the CAD DWG worker for offline parsing."
         },
         {
@@ -211,8 +211,44 @@
           "kind": "wasm",
           "target": "public",
           "required": true,
-          "defaultPath": "wasm/cad/libredwg-web.wasm",
+          "defaultPath": "wasm/cad/0.8.0/libredwg-web.wasm",
           "description": "LibreDWG WebAssembly runtime loaded by the CAD DWG worker for offline parsing."
+        },
+        {
+          "id": "cad-legacy-dwg-worker",
+          "rendererId": "cad",
+          "kind": "worker",
+          "target": "public",
+          "required": false,
+          "defaultPath": "wasm/cad/dwg-worker.js",
+          "description": "Unversioned compatibility alias for deployments that explicitly configured the former DWG worker path."
+        },
+        {
+          "id": "cad-legacy-dwf-wasm",
+          "rendererId": "cad",
+          "kind": "wasm",
+          "target": "public",
+          "required": false,
+          "defaultPath": "wasm/cad/dwfv-render.wasm",
+          "description": "Unversioned compatibility alias for deployments that explicitly configured the former DWF runtime path."
+        },
+        {
+          "id": "cad-legacy-libredwg-script",
+          "rendererId": "cad",
+          "kind": "script",
+          "target": "public",
+          "required": false,
+          "defaultPath": "wasm/cad/libredwg-web.js",
+          "description": "Unversioned compatibility alias for the former LibreDWG JavaScript runtime path."
+        },
+        {
+          "id": "cad-legacy-libredwg-wasm",
+          "rendererId": "cad",
+          "kind": "wasm",
+          "target": "public",
+          "required": false,
+          "defaultPath": "wasm/cad/libredwg-web.wasm",
+          "description": "Unversioned compatibility alias for the former LibreDWG WebAssembly runtime path."
         }
       ]
     },
@@ -362,6 +398,107 @@
       ]
     },
     {
+      "rendererId": "apple-pages",
+      "assets": [
+        {
+          "id": "apple-pages-iwork-worker",
+          "rendererId": "apple-pages",
+          "kind": "worker",
+          "target": "public",
+          "required": true,
+          "defaultPath": "vendor/iwork/iwork.worker.js",
+          "packagePath": "@file-viewer/renderer-iwork/worker/iwork.worker.js",
+          "optionPath": "iwork.workerUrl",
+          "description": "Module Worker for bounded ZIP, Snappy, IWA/Protobuf and iWork 09 XML/APXL parsing."
+        }
+      ]
+    },
+    {
+      "rendererId": "apple-numbers",
+      "assets": [
+        {
+          "id": "apple-numbers-iwork-worker",
+          "rendererId": "apple-numbers",
+          "kind": "worker",
+          "target": "public",
+          "required": true,
+          "defaultPath": "vendor/iwork/iwork.worker.js",
+          "packagePath": "@file-viewer/renderer-iwork/worker/iwork.worker.js",
+          "optionPath": "iwork.workerUrl",
+          "description": "Module Worker for bounded ZIP, Snappy, IWA/Protobuf and iWork 09 XML/APXL parsing."
+        }
+      ]
+    },
+    {
+      "rendererId": "apple-keynote",
+      "assets": [
+        {
+          "id": "apple-keynote-iwork-worker",
+          "rendererId": "apple-keynote",
+          "kind": "worker",
+          "target": "public",
+          "required": true,
+          "defaultPath": "vendor/iwork/iwork.worker.js",
+          "packagePath": "@file-viewer/renderer-iwork/worker/iwork.worker.js",
+          "optionPath": "iwork.workerUrl",
+          "description": "Module Worker for bounded ZIP, Snappy, IWA/Protobuf and iWork 09 XML/APXL parsing."
+        }
+      ]
+    },
+    {
+      "rendererId": "office-hangul",
+      "assets": [
+        {
+          "id": "hangul-worker",
+          "rendererId": "office-hangul",
+          "kind": "worker",
+          "target": "public",
+          "required": true,
+          "defaultPath": "vendor/hangul/hangul.worker.js",
+          "packagePath": "@file-viewer/renderer-hangul/worker/hangul.worker.js",
+          "optionPath": "hangul.workerUrl",
+          "description": "Module Worker for bounded HWP v5 CFB and HWPX ZIP/XML parsing."
+        }
+      ]
+    },
+    {
+      "rendererId": "office-wordperfect",
+      "assets": [
+        {
+          "id": "wordperfect-worker",
+          "rendererId": "office-wordperfect",
+          "kind": "worker",
+          "target": "public",
+          "required": true,
+          "defaultPath": "vendor/wordperfect/wordperfect.worker.js",
+          "packagePath": "@file-viewer/renderer-wordperfect/worker/wordperfect.worker.js",
+          "optionPath": "wordPerfect.workerUrl",
+          "description": "Module Worker for bounded WordPerfect signature detection and parsing."
+        },
+        {
+          "id": "wordperfect-libwpd-wasm",
+          "rendererId": "office-wordperfect",
+          "kind": "wasm",
+          "target": "public",
+          "required": true,
+          "defaultPath": "vendor/wordperfect/libwpd.wasm",
+          "packagePath": "@file-viewer/renderer-wordperfect/worker/libwpd.wasm",
+          "optionPath": "wordPerfect.wasmUrl",
+          "description": "MPL-2.0 libwpd/librevenge WebAssembly parser lazy-loaded by the WordPerfect Worker."
+        },
+        {
+          "id": "wordperfect-libwpd-module",
+          "rendererId": "office-wordperfect",
+          "kind": "script",
+          "target": "public",
+          "required": true,
+          "defaultPath": "vendor/wordperfect/libwpd.mjs",
+          "packagePath": "@file-viewer/renderer-wordperfect/worker/libwpd.mjs",
+          "description": "Emscripten ES module loader for the MPL-2.0 libwpd/librevenge WebAssembly runtime."
+        }
+      ]
+    },
+    {
       "rendererId": "typst",
       "assets": [
         {
@@ -417,7 +554,7 @@
   ],
   "validation": {
     "valid": true,
-    "checkedAt": "2026-07-17T23:32:32.900Z",
+    "checkedAt": "2026-08-25T01:34:44.955Z",
     "assets": [
       {
         "id": "model-occt-worker",
@@ -565,7 +702,7 @@
         "kind": "wasm-directory",
         "target": "public",
         "required": true,
-        "relativePath": "wasm/cad/",
+        "relativePath": "wasm/cad/0.8.0/",
         "exists": true,
         "description": "@flyfish-dev/cad-viewer WebAssembly directory for DWG/DXF helpers."
       },
@@ -575,7 +712,7 @@
         "kind": "worker",
         "target": "public",
         "required": true,
-        "relativePath": "wasm/cad/dwg-worker.js",
+        "relativePath": "wasm/cad/0.8.0/dwg-worker.js",
         "exists": true,
         "description": "DWG worker entry used by @flyfish-dev/cad-viewer."
       },
@@ -585,7 +722,7 @@
         "kind": "wasm",
         "target": "public",
         "required": true,
-        "relativePath": "wasm/cad/dwfv-render.wasm",
+        "relativePath": "wasm/cad/0.8.0/dwfv-render.wasm",
         "exists": true,
         "description": "DWF/DWFx/XPS raster WebAssembly module used by @flyfish-dev/cad-viewer."
       },
@@ -595,7 +732,7 @@
         "kind": "script",
         "target": "public",
         "required": true,
-        "relativePath": "wasm/cad/libredwg-web.js",
+        "relativePath": "wasm/cad/0.8.0/libredwg-web.js",
         "exists": true,
         "description": "LibreDWG JavaScript runtime loaded by the CAD DWG worker for offline parsing."
       },
@@ -605,9 +742,49 @@
         "kind": "wasm",
         "target": "public",
         "required": true,
-        "relativePath": "wasm/cad/libredwg-web.wasm",
+        "relativePath": "wasm/cad/0.8.0/libredwg-web.wasm",
         "exists": true,
         "description": "LibreDWG WebAssembly runtime loaded by the CAD DWG worker for offline parsing."
+      },
+      {
+        "id": "cad-legacy-dwg-worker",
+        "rendererId": "cad",
+        "kind": "worker",
+        "target": "public",
+        "required": false,
+        "relativePath": "wasm/cad/dwg-worker.js",
+        "exists": true,
+        "description": "Unversioned compatibility alias for deployments that explicitly configured the former DWG worker path."
+      },
+      {
+        "id": "cad-legacy-dwf-wasm",
+        "rendererId": "cad",
+        "kind": "wasm",
+        "target": "public",
+        "required": false,
+        "relativePath": "wasm/cad/dwfv-render.wasm",
+        "exists": true,
+        "description": "Unversioned compatibility alias for deployments that explicitly configured the former DWF runtime path."
+      },
+      {
+        "id": "cad-legacy-libredwg-script",
+        "rendererId": "cad",
+        "kind": "script",
+        "target": "public",
+        "required": false,
+        "relativePath": "wasm/cad/libredwg-web.js",
+        "exists": true,
+        "description": "Unversioned compatibility alias for the former LibreDWG JavaScript runtime path."
+      },
+      {
+        "id": "cad-legacy-libredwg-wasm",
+        "rendererId": "cad",
+        "kind": "wasm",
+        "target": "public",
+        "required": false,
+        "relativePath": "wasm/cad/libredwg-web.wasm",
+        "exists": true,
+        "description": "Unversioned compatibility alias for the former LibreDWG WebAssembly runtime path."
       },
       {
         "id": "docx-worker",
@@ -740,6 +917,76 @@
         "description": "Optional Spreadsheet worker for off-main-thread styled-exceljs workbook parsing."
       },
       {
+        "id": "apple-pages-iwork-worker",
+        "rendererId": "apple-pages",
+        "kind": "worker",
+        "target": "public",
+        "required": true,
+        "relativePath": "vendor/iwork/iwork.worker.js",
+        "exists": true,
+        "description": "Module Worker for bounded ZIP, Snappy, IWA/Protobuf and iWork 09 XML/APXL parsing."
+      },
+      {
+        "id": "apple-numbers-iwork-worker",
+        "rendererId": "apple-numbers",
+        "kind": "worker",
+        "target": "public",
+        "required": true,
+        "relativePath": "vendor/iwork/iwork.worker.js",
+        "exists": true,
+        "description": "Module Worker for bounded ZIP, Snappy, IWA/Protobuf and iWork 09 XML/APXL parsing."
+      },
+      {
+        "id": "apple-keynote-iwork-worker",
+        "rendererId": "apple-keynote",
+        "kind": "worker",
+        "target": "public",
+        "required": true,
+        "relativePath": "vendor/iwork/iwork.worker.js",
+        "exists": true,
+        "description": "Module Worker for bounded ZIP, Snappy, IWA/Protobuf and iWork 09 XML/APXL parsing."
+      },
+      {
+        "id": "hangul-worker",
+        "rendererId": "office-hangul",
+        "kind": "worker",
+        "target": "public",
+        "required": true,
+        "relativePath": "vendor/hangul/hangul.worker.js",
+        "exists": true,
+        "description": "Module Worker for bounded HWP v5 CFB and HWPX ZIP/XML parsing."
+      },
+      {
+        "id": "wordperfect-worker",
+        "rendererId": "office-wordperfect",
+        "kind": "worker",
+        "target": "public",
+        "required": true,
+        "relativePath": "vendor/wordperfect/wordperfect.worker.js",
+        "exists": true,
+        "description": "Module Worker for bounded WordPerfect signature detection and parsing."
+      },
+      {
+        "id": "wordperfect-libwpd-wasm",
+        "rendererId": "office-wordperfect",
+        "kind": "wasm",
+        "target": "public",
+        "required": true,
+        "relativePath": "vendor/wordperfect/libwpd.wasm",
+        "exists": true,
+        "description": "MPL-2.0 libwpd/librevenge WebAssembly parser lazy-loaded by the WordPerfect Worker."
+      },
+      {
+        "id": "wordperfect-libwpd-module",
+        "rendererId": "office-wordperfect",
+        "kind": "script",
+        "target": "public",
+        "required": true,
+        "relativePath": "vendor/wordperfect/libwpd.mjs",
+        "exists": true,
+        "description": "Emscripten ES module loader for the MPL-2.0 libwpd/librevenge WebAssembly runtime."
+      },
+      {
         "id": "typst-compiler-wasm",
         "rendererId": "typst",
         "kind": "wasm",
@@ -784,7 +1031,7 @@
     "missingOptional": []
   },
   "generatedBy": "@file-viewer/vite-plugin",
-  "copiedAt": "2026-08-24T14:23:15.408Z",
+  "copiedAt": "2026-08-25T03:11:45.197Z",
   "rendererIds": [
     "pdf",
     "ofd",
@@ -796,11 +1043,18 @@
     "office-word-binary",
     "open-document",
     "spreadsheet-openxml",
+    "spreadsheet-dbf",
+    "apple-pages",
+    "apple-numbers",
+    "apple-keynote",
+    "office-wordperfect",
+    "office-hangul",
     "drawing",
     "model",
     "archive",
     "email",
     "epub",
+    "ebook-fb2",
     "umd",
     "code",
     "markdown",
@@ -820,7 +1074,7 @@
       "copied": true,
       "required": true,
       "sourcePackage": "file-viewer-copy-assets",
-      "sourceVersion": "2.2.2"
+      "sourceVersion": "2.3.6"
     },
     {
       "rendererId": "model",
@@ -829,7 +1083,7 @@
       "copied": true,
       "required": true,
       "sourcePackage": "file-viewer-copy-assets",
-      "sourceVersion": "2.2.2"
+      "sourceVersion": "2.3.6"
     },
     {
       "rendererId": "model",
@@ -838,7 +1092,7 @@
       "copied": true,
       "required": true,
       "sourcePackage": "file-viewer-copy-assets",
-      "sourceVersion": "2.2.2"
+      "sourceVersion": "2.3.6"
     },
     {
       "rendererId": "model",
@@ -847,7 +1101,7 @@
       "copied": true,
       "required": true,
       "sourcePackage": "file-viewer-copy-assets",
-      "sourceVersion": "2.2.2"
+      "sourceVersion": "2.3.6"
     },
     {
       "rendererId": "model",
@@ -856,7 +1110,7 @@
       "copied": true,
       "required": true,
       "sourcePackage": "file-viewer-copy-assets",
-      "sourceVersion": "2.2.2"
+      "sourceVersion": "2.3.6"
     },
     {
       "rendererId": "drawing",
@@ -865,7 +1119,7 @@
       "copied": true,
       "required": true,
       "sourcePackage": "file-viewer-copy-assets",
-      "sourceVersion": "2.2.2"
+      "sourceVersion": "2.3.6"
     },
     {
       "rendererId": "drawing",
@@ -874,7 +1128,7 @@
       "copied": true,
       "required": true,
       "sourcePackage": "file-viewer-copy-assets",
-      "sourceVersion": "2.2.2"
+      "sourceVersion": "2.3.6"
     },
     {
       "rendererId": "pdf",
@@ -883,7 +1137,7 @@
       "copied": true,
       "required": true,
       "sourcePackage": "file-viewer-copy-assets",
-      "sourceVersion": "2.2.2"
+      "sourceVersion": "2.3.6"
     },
     {
       "rendererId": "pdf",
@@ -892,7 +1146,7 @@
       "copied": true,
       "required": true,
       "sourcePackage": "file-viewer-copy-assets",
-      "sourceVersion": "2.2.2"
+      "sourceVersion": "2.3.6"
     },
     {
       "rendererId": "pdf",
@@ -901,7 +1155,7 @@
       "copied": true,
       "required": true,
       "sourcePackage": "file-viewer-copy-assets",
-      "sourceVersion": "2.2.2"
+      "sourceVersion": "2.3.6"
     },
     {
       "rendererId": "pdf",
@@ -910,7 +1164,7 @@
       "copied": true,
       "required": true,
       "sourcePackage": "file-viewer-copy-assets",
-      "sourceVersion": "2.2.2"
+      "sourceVersion": "2.3.6"
     },
     {
       "rendererId": "pdf",
@@ -919,7 +1173,7 @@
       "copied": true,
       "required": true,
       "sourcePackage": "file-viewer-copy-assets",
-      "sourceVersion": "2.2.2"
+      "sourceVersion": "2.3.6"
     },
     {
       "rendererId": "archive",
@@ -928,7 +1182,7 @@
       "copied": true,
       "required": true,
       "sourcePackage": "file-viewer-copy-assets",
-      "sourceVersion": "2.2.2"
+      "sourceVersion": "2.3.6"
     },
     {
       "rendererId": "archive",
@@ -937,52 +1191,88 @@
       "copied": true,
       "required": true,
       "sourcePackage": "file-viewer-copy-assets",
-      "sourceVersion": "2.2.2"
+      "sourceVersion": "2.3.6"
     },
     {
       "rendererId": "cad",
       "id": "cad-wasm-directory",
-      "to": "/Users/mac/Documents/DITING/Diting_AI_Desktop/frontend/public/file-viewer/wasm/cad",
+      "to": "/Users/mac/Documents/DITING/Diting_AI_Desktop/frontend/public/file-viewer/wasm/cad/0.8.0",
       "copied": true,
       "required": true,
       "sourcePackage": "file-viewer-copy-assets",
-      "sourceVersion": "2.2.2"
+      "sourceVersion": "2.3.6"
     },
     {
       "rendererId": "cad",
       "id": "cad-dwg-worker",
-      "to": "/Users/mac/Documents/DITING/Diting_AI_Desktop/frontend/public/file-viewer/wasm/cad/dwg-worker.js",
+      "to": "/Users/mac/Documents/DITING/Diting_AI_Desktop/frontend/public/file-viewer/wasm/cad/0.8.0/dwg-worker.js",
       "copied": true,
       "required": true,
       "sourcePackage": "file-viewer-copy-assets",
-      "sourceVersion": "2.2.2"
+      "sourceVersion": "2.3.6"
     },
     {
       "rendererId": "cad",
       "id": "cad-dwf-wasm",
-      "to": "/Users/mac/Documents/DITING/Diting_AI_Desktop/frontend/public/file-viewer/wasm/cad/dwfv-render.wasm",
+      "to": "/Users/mac/Documents/DITING/Diting_AI_Desktop/frontend/public/file-viewer/wasm/cad/0.8.0/dwfv-render.wasm",
       "copied": true,
       "required": true,
       "sourcePackage": "file-viewer-copy-assets",
-      "sourceVersion": "2.2.2"
+      "sourceVersion": "2.3.6"
     },
     {
       "rendererId": "cad",
       "id": "cad-libredwg-script",
-      "to": "/Users/mac/Documents/DITING/Diting_AI_Desktop/frontend/public/file-viewer/wasm/cad/libredwg-web.js",
+      "to": "/Users/mac/Documents/DITING/Diting_AI_Desktop/frontend/public/file-viewer/wasm/cad/0.8.0/libredwg-web.js",
       "copied": true,
       "required": true,
       "sourcePackage": "file-viewer-copy-assets",
-      "sourceVersion": "2.2.2"
+      "sourceVersion": "2.3.6"
     },
     {
       "rendererId": "cad",
       "id": "cad-libredwg-wasm",
-      "to": "/Users/mac/Documents/DITING/Diting_AI_Desktop/frontend/public/file-viewer/wasm/cad/libredwg-web.wasm",
+      "to": "/Users/mac/Documents/DITING/Diting_AI_Desktop/frontend/public/file-viewer/wasm/cad/0.8.0/libredwg-web.wasm",
       "copied": true,
       "required": true,
       "sourcePackage": "file-viewer-copy-assets",
-      "sourceVersion": "2.2.2"
+      "sourceVersion": "2.3.6"
+    },
+    {
+      "rendererId": "cad",
+      "id": "cad-legacy-dwg-worker",
+      "to": "/Users/mac/Documents/DITING/Diting_AI_Desktop/frontend/public/file-viewer/wasm/cad/dwg-worker.js",
+      "copied": true,
+      "required": false,
+      "sourcePackage": "file-viewer-copy-assets",
+      "sourceVersion": "2.3.6"
+    },
+    {
+      "rendererId": "cad",
+      "id": "cad-legacy-dwf-wasm",
+      "to": "/Users/mac/Documents/DITING/Diting_AI_Desktop/frontend/public/file-viewer/wasm/cad/dwfv-render.wasm",
+      "copied": true,
+      "required": false,
+      "sourcePackage": "file-viewer-copy-assets",
+      "sourceVersion": "2.3.6"
+    },
+    {
+      "rendererId": "cad",
+      "id": "cad-legacy-libredwg-script",
+      "to": "/Users/mac/Documents/DITING/Diting_AI_Desktop/frontend/public/file-viewer/wasm/cad/libredwg-web.js",
+      "copied": true,
+      "required": false,
+      "sourcePackage": "file-viewer-copy-assets",
+      "sourceVersion": "2.3.6"
+    },
+    {
+      "rendererId": "cad",
+      "id": "cad-legacy-libredwg-wasm",
+      "to": "/Users/mac/Documents/DITING/Diting_AI_Desktop/frontend/public/file-viewer/wasm/cad/libredwg-web.wasm",
+      "copied": true,
+      "required": false,
+      "sourcePackage": "file-viewer-copy-assets",
+      "sourceVersion": "2.3.6"
     },
     {
       "rendererId": "office-word-openxml",
@@ -991,7 +1281,7 @@
       "copied": true,
       "required": false,
       "sourcePackage": "file-viewer-copy-assets",
-      "sourceVersion": "2.2.2"
+      "sourceVersion": "2.3.6"
     },
     {
       "rendererId": "office-word-openxml",
@@ -1000,7 +1290,7 @@
       "copied": true,
       "required": false,
       "sourcePackage": "file-viewer-copy-assets",
-      "sourceVersion": "2.2.2"
+      "sourceVersion": "2.3.6"
     },
     {
       "rendererId": "office-presentation-binary",
@@ -1009,7 +1299,7 @@
       "copied": true,
       "required": true,
       "sourcePackage": "file-viewer-copy-assets",
-      "sourceVersion": "2.2.2"
+      "sourceVersion": "2.3.6"
     },
     {
       "rendererId": "office-presentation-binary",
@@ -1018,7 +1308,7 @@
       "copied": true,
       "required": true,
       "sourcePackage": "file-viewer-copy-assets",
-      "sourceVersion": "2.2.2"
+      "sourceVersion": "2.3.6"
     },
     {
       "rendererId": "office-presentation-binary",
@@ -1027,7 +1317,7 @@
       "copied": true,
       "required": true,
       "sourcePackage": "file-viewer-copy-assets",
-      "sourceVersion": "2.2.2"
+      "sourceVersion": "2.3.6"
     },
     {
       "rendererId": "office-presentation-binary",
@@ -1036,7 +1326,7 @@
       "copied": true,
       "required": true,
       "sourcePackage": "file-viewer-copy-assets",
-      "sourceVersion": "2.2.2"
+      "sourceVersion": "2.3.6"
     },
     {
       "rendererId": "office-presentation-binary",
@@ -1045,7 +1335,7 @@
       "copied": true,
       "required": true,
       "sourcePackage": "file-viewer-copy-assets",
-      "sourceVersion": "2.2.2"
+      "sourceVersion": "2.3.6"
     },
     {
       "rendererId": "office-presentation-binary",
@@ -1054,7 +1344,7 @@
       "copied": true,
       "required": true,
       "sourcePackage": "file-viewer-copy-assets",
-      "sourceVersion": "2.2.2"
+      "sourceVersion": "2.3.6"
     },
     {
       "rendererId": "office-presentation-binary",
@@ -1063,7 +1353,7 @@
       "copied": true,
       "required": true,
       "sourcePackage": "file-viewer-copy-assets",
-      "sourceVersion": "2.2.2"
+      "sourceVersion": "2.3.6"
     },
     {
       "rendererId": "office-presentation-binary",
@@ -1072,7 +1362,7 @@
       "copied": true,
       "required": true,
       "sourcePackage": "file-viewer-copy-assets",
-      "sourceVersion": "2.2.2"
+      "sourceVersion": "2.3.6"
     },
     {
       "rendererId": "office-presentation-binary",
@@ -1081,7 +1371,7 @@
       "copied": true,
       "required": true,
       "sourcePackage": "file-viewer-copy-assets",
-      "sourceVersion": "2.2.2"
+      "sourceVersion": "2.3.6"
     },
     {
       "rendererId": "office-presentation",
@@ -1090,7 +1380,7 @@
       "copied": true,
       "required": false,
       "sourcePackage": "file-viewer-copy-assets",
-      "sourceVersion": "2.2.2"
+      "sourceVersion": "2.3.6"
     },
     {
       "rendererId": "spreadsheet-openxml",
@@ -1099,7 +1389,70 @@
       "copied": true,
       "required": false,
       "sourcePackage": "file-viewer-copy-assets",
-      "sourceVersion": "2.2.2"
+      "sourceVersion": "2.3.6"
+    },
+    {
+      "rendererId": "apple-pages",
+      "id": "apple-pages-iwork-worker",
+      "to": "/Users/mac/Documents/DITING/Diting_AI_Desktop/frontend/public/file-viewer/vendor/iwork/iwork.worker.js",
+      "copied": true,
+      "required": true,
+      "sourcePackage": "file-viewer-copy-assets",
+      "sourceVersion": "2.3.6"
+    },
+    {
+      "rendererId": "apple-numbers",
+      "id": "apple-numbers-iwork-worker",
+      "to": "/Users/mac/Documents/DITING/Diting_AI_Desktop/frontend/public/file-viewer/vendor/iwork/iwork.worker.js",
+      "copied": true,
+      "required": true,
+      "sourcePackage": "file-viewer-copy-assets",
+      "sourceVersion": "2.3.6"
+    },
+    {
+      "rendererId": "apple-keynote",
+      "id": "apple-keynote-iwork-worker",
+      "to": "/Users/mac/Documents/DITING/Diting_AI_Desktop/frontend/public/file-viewer/vendor/iwork/iwork.worker.js",
+      "copied": true,
+      "required": true,
+      "sourcePackage": "file-viewer-copy-assets",
+      "sourceVersion": "2.3.6"
+    },
+    {
+      "rendererId": "office-hangul",
+      "id": "hangul-worker",
+      "to": "/Users/mac/Documents/DITING/Diting_AI_Desktop/frontend/public/file-viewer/vendor/hangul/hangul.worker.js",
+      "copied": true,
+      "required": true,
+      "sourcePackage": "file-viewer-copy-assets",
+      "sourceVersion": "2.3.6"
+    },
+    {
+      "rendererId": "office-wordperfect",
+      "id": "wordperfect-worker",
+      "to": "/Users/mac/Documents/DITING/Diting_AI_Desktop/frontend/public/file-viewer/vendor/wordperfect/wordperfect.worker.js",
+      "copied": true,
+      "required": true,
+      "sourcePackage": "file-viewer-copy-assets",
+      "sourceVersion": "2.3.6"
+    },
+    {
+      "rendererId": "office-wordperfect",
+      "id": "wordperfect-libwpd-wasm",
+      "to": "/Users/mac/Documents/DITING/Diting_AI_Desktop/frontend/public/file-viewer/vendor/wordperfect/libwpd.wasm",
+      "copied": true,
+      "required": true,
+      "sourcePackage": "file-viewer-copy-assets",
+      "sourceVersion": "2.3.6"
+    },
+    {
+      "rendererId": "office-wordperfect",
+      "id": "wordperfect-libwpd-module",
+      "to": "/Users/mac/Documents/DITING/Diting_AI_Desktop/frontend/public/file-viewer/vendor/wordperfect/libwpd.mjs",
+      "copied": true,
+      "required": true,
+      "sourcePackage": "file-viewer-copy-assets",
+      "sourceVersion": "2.3.6"
     },
     {
       "rendererId": "typst",
@@ -1108,7 +1461,7 @@
       "copied": true,
       "required": true,
       "sourcePackage": "file-viewer-copy-assets",
-      "sourceVersion": "2.2.2"
+      "sourceVersion": "2.3.6"
     },
     {
       "rendererId": "typst",
@@ -1117,7 +1470,7 @@
       "copied": true,
       "required": true,
       "sourcePackage": "file-viewer-copy-assets",
-      "sourceVersion": "2.2.2"
+      "sourceVersion": "2.3.6"
     },
     {
       "rendererId": "typst",
@@ -1126,7 +1479,7 @@
       "copied": true,
       "required": true,
       "sourcePackage": "file-viewer-copy-assets",
-      "sourceVersion": "2.2.2"
+      "sourceVersion": "2.3.6"
     },
     {
       "rendererId": "data-asset",
@@ -1135,7 +1488,7 @@
       "copied": true,
       "required": false,
       "sourcePackage": "file-viewer-copy-assets",
-      "sourceVersion": "2.2.2"
+      "sourceVersion": "2.3.6"
     }
   ]
 }
