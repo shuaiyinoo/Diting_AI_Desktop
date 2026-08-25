@@ -2,6 +2,8 @@
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
+import type { AuthorizedFolder } from '../../service/database/filedb';
+import { createAdapter, type ProtocolConfig } from './adapter/AdapterFactory';
 
 // 文件信息接口
 export interface FileInfo {
@@ -41,7 +43,6 @@ export class FolderScanner {
             stream.on('error', reject);
         });
     }
-
     // 递归扫描目录，返回 FileInfo[]
     static async scanDirectory(dir: string, baseDir: string = dir): Promise<FileInfo[]> {
         const results: FileInfo[] = [];
@@ -82,57 +83,38 @@ export class FolderScanner {
         };
     }
 
-    // 扫描目录，同时收集文件夹和文件信息（不计算 MD5，性能优先）
-    static async scanWithFolders(rootDir: string): Promise<ScanItem[]> {
-        if (!fs.existsSync(rootDir)) {
-            throw new Error(`目录不存在: ${rootDir}`);
+    /**
+     * 扫描授权文件夹，返回 ScanItem[]
+     *
+     * 根据 folder.protocol 选择对应的适配器：
+     *   - local：使用 LocalAdapter（封装 fs 递归扫描）
+     *   - ftp/ftps/sftp/smb/webdav/s3：使用对应的远程适配器
+     *
+     * @param folder 授权文件夹记录（含 protocol 和 protocol_config）
+     */
+    static async scanWithFolders(folder: AuthorizedFolder): Promise<ScanItem[]> {
+        // 构建适配器配置
+        const config: ProtocolConfig = {
+            protocol: (folder.protocol || 'local') as ProtocolConfig['protocol'],
+            // 解析 protocol_config JSON
+            ...(folder.protocol_config ? JSON.parse(folder.protocol_config) : {}),
+            // 对于本地协议，path 就是本地路径
+            ...(folder.protocol === 'local' || !folder.protocol ? { host: folder.path } : {}),
+        };
+
+        // 创建适配器并扫描
+        const adapter = createAdapter(config);
+
+        // 确定扫描根路径
+        let scanPath: string;
+        if (config.protocol === 'local') {
+            scanPath = folder.path;
+        } else {
+            // 远程协议：path 字段存储的是远程根路径
+            scanPath = folder.path;
         }
-        const results: ScanItem[] = [];
-        await this._scanRecursive(rootDir, '', results);
-        return results;
-    }
 
-    // 递归扫描内部方法
-    private static async _scanRecursive(
-        dir: string,
-        parentRelativePath: string,
-        results: ScanItem[]
-    ): Promise<void> {
-        const items = await fs.promises.readdir(dir, { withFileTypes: true });
-
-        for (const item of items) {
-            const fullPath = path.join(dir, item.name);
-            const relativePath = parentRelativePath
-                ? `${parentRelativePath}/${item.name}`
-                : item.name;
-
-            const stats = await fs.promises.stat(fullPath);
-
-            if (item.isDirectory()) {
-                results.push({
-                    name: item.name,
-                    relativePath,
-                    parentPath: parentRelativePath,
-                    isDir: true,
-                    size: 0,
-                    mtime: stats.mtime.toISOString(),
-                    type: 'folder',
-                });
-                // 递归扫描子目录
-                await this._scanRecursive(fullPath, relativePath, results);
-            } else {
-                const ext = path.extname(item.name);
-                results.push({
-                    name: item.name,
-                    relativePath,
-                    parentPath: parentRelativePath,
-                    isDir: false,
-                    size: stats.size,
-                    mtime: stats.mtime.toISOString(),
-                    type: ext || 'file',
-                });
-            }
-        }
+        return adapter.listFiles(scanPath);
     }
 }
 

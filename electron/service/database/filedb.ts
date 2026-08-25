@@ -11,6 +11,12 @@ export interface AuthorizedFolder {
   folder_name: string;
   add_time: string;
   sync_enabled: number;
+  /** 协议类型：local / ftp / ftps / sftp / smb / webdav / s3 */
+  protocol: string;
+  /** 协议连接配置（JSON 字符串，仅远程协议有值） */
+  protocol_config: string | null;
+  /** 文件夹别名（用户自定义名称，可选） */
+  alias: string | null;
 }
 
 /** 文件状态：待处理/处理中/就绪/失败 */
@@ -98,6 +104,7 @@ class FiledbService extends BasedbService {
 
     // 表结构迁移：为旧表补充新字段（ALTER TABLE 幂等检测）
     this._migrateFileItemTable();
+    this._migrateFolderTable();
   }
 
   /**
@@ -122,10 +129,10 @@ class FiledbService extends BasedbService {
   }
 
   /**
-   * 添加授权文件夹
+   * 添加授权文件夹（本地）
    */
-  addFolder(folderPath: string): AuthorizedFolder {
-    const folderName = folderPath.split(/[\\/]/).pop() || folderPath;
+  addFolder(folderPath: string, alias?: string): AuthorizedFolder {
+    const folderName = alias || folderPath.split(/[\\/]/).pop() || folderPath;
     const addTime = new Date().toISOString();
 
     // 检查是否已存在
@@ -135,10 +142,61 @@ class FiledbService extends BasedbService {
     }
 
     const stmt = this.db.prepare(
-      `INSERT INTO ${this.folderTableName} (path, folder_name, add_time, sync_enabled) VALUES (?, ?, ?, 0)`
+      `INSERT INTO ${this.folderTableName} (path, folder_name, add_time, sync_enabled, protocol) VALUES (?, ?, ?, 0, 'local')`
     );
     const info = stmt.run(folderPath, folderName, addTime);
     return this.db.prepare(`SELECT * FROM ${this.folderTableName} WHERE id = ?`).get(info.lastInsertRowid) as AuthorizedFolder;
+  }
+
+  /**
+   * 添加远程协议文件夹
+   */
+  addRemoteFolder(params: {
+    protocol: string;
+    path: string;
+    alias?: string;
+    config: Record<string, unknown>;
+  }): AuthorizedFolder {
+    const folderName = params.alias || params.path.split(/[\\/]/).pop() || params.path;
+    const addTime = new Date().toISOString();
+    const configJson = JSON.stringify(params.config);
+
+    // 检查是否已存在（同协议 + 同路径）
+    const existing = this.db.prepare(
+      `SELECT * FROM ${this.folderTableName} WHERE protocol = ? AND path = ?`
+    ).get(params.protocol, params.path);
+    if (existing) {
+      throw new Error('该文件夹已添加');
+    }
+
+    const stmt = this.db.prepare(
+      `INSERT INTO ${this.folderTableName} (path, folder_name, add_time, sync_enabled, protocol, protocol_config, alias)
+       VALUES (?, ?, ?, 0, ?, ?, ?)`
+    );
+    const info = stmt.run(params.path, folderName, addTime, params.protocol, configJson, params.alias || null);
+    return this.db.prepare(`SELECT * FROM ${this.folderTableName} WHERE id = ?`).get(info.lastInsertRowid) as AuthorizedFolder;
+  }
+
+  /**
+   * 更新远程协议文件夹配置
+   *
+   * 修改连接参数（host/port/username/password/remotePath 等），
+   * 保留 id 和已扫描的文件记录。
+   */
+  updateRemoteFolder(id: number, params: {
+    protocol: string;
+    path: string;
+    alias?: string;
+    config: Record<string, unknown>;
+  }): AuthorizedFolder | null {
+    const folderName = params.alias || params.path.split(/[\\/]/).pop() || params.path;
+    const configJson = JSON.stringify(params.config);
+
+    this.db.prepare(
+      `UPDATE ${this.folderTableName} SET path = ?, folder_name = ?, protocol = ?, protocol_config = ?, alias = ? WHERE id = ?`
+    ).run(params.path, folderName, params.protocol, configJson, params.alias || null, id);
+
+    return this.db.prepare(`SELECT * FROM ${this.folderTableName} WHERE id = ?`).get(id) as AuthorizedFolder | null;
   }
 
   /**
@@ -334,7 +392,7 @@ class FiledbService extends BasedbService {
 
     // 引入 FolderScanner（延迟导入避免循环依赖）
     const FolderScanner = (await import('../../components/file/FolderScanner')).default;
-    const scanItems = await FolderScanner.scanWithFolders(folder.path);
+    const scanItems = await FolderScanner.scanWithFolders(folder);
 
     // 获取数据库中现有的所有文件/文件夹记录
     const existingItems = this.db.prepare(
@@ -488,6 +546,24 @@ class FiledbService extends BasedbService {
    */
   getFolderById(folderId: number): AuthorizedFolder | null {
     return this.db.prepare(`SELECT * FROM ${this.folderTableName} WHERE id = ?`).get(folderId) as AuthorizedFolder | null;
+  }
+
+  /**
+   * 迁移 authorized_folder 表：补充 protocol / protocol_config / alias 字段
+   */
+  private _migrateFolderTable(): void {
+    const columns = this.db.prepare(`PRAGMA table_info(${this.folderTableName})`).all() as { name: string }[];
+    const colNames = new Set(columns.map(c => c.name));
+
+    if (!colNames.has('protocol')) {
+      this.db.exec(`ALTER TABLE ${this.folderTableName} ADD COLUMN protocol TEXT DEFAULT 'local';`);
+    }
+    if (!colNames.has('protocol_config')) {
+      this.db.exec(`ALTER TABLE ${this.folderTableName} ADD COLUMN protocol_config TEXT;`);
+    }
+    if (!colNames.has('alias')) {
+      this.db.exec(`ALTER TABLE ${this.folderTableName} ADD COLUMN alias TEXT;`);
+    }
   }
 }
 

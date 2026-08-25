@@ -19,6 +19,7 @@ import { getDingTalkMultiBotConfig } from '../service/bridge/dingtalk-config';
 import { autoUpdaterService } from '../service/os/auto_updater';
 import { updaterController } from '../controller/updater';
 import { cleanupUpdater } from '../service/os/auto_updater';
+import { ocrWorkerManager } from '../components/rag/parser/ocr-worker-manager';
 
 /**
  * 创建启动过场动画窗口
@@ -232,6 +233,13 @@ class Lifecycle {
       dingtalkBridgeManager.stopAll();
     } catch (err) {
       logger.error('[lifecycle] Bridge 停止失败:', err);
+    }
+
+    // 清理 OCR 子进程
+    try {
+      ocrWorkerManager.destroy();
+    } catch (err) {
+      logger.error('[lifecycle] OCR 子进程清理失败:', err);
     }
   }
 }

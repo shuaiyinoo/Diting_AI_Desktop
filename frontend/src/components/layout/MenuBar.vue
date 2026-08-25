@@ -138,9 +138,19 @@
                 : 'text-muted-foreground hover:bg-accent hover:text-foreground'"
               @click="onSelectFolder(folder.id)"
             >
-              <Folder class="size-3.5 shrink-0" :class="ws.selectedFolderId === folder.id ? 'text-primary' : 'text-muted-foreground'" />
-              <span class="flex-1 min-w-0 truncate" :title="getFolderName(folder.path)">{{ getFolderName(folder.path) }}</span>
+              <!-- 协议缩写标签 -->
+              <span
+                class="flex h-[18px] w-[30px] shrink-0 items-center justify-center rounded-[4px] text-[9px] font-bold leading-none tracking-wide"
+                :class="getProtocolBadgeClass(folder.protocol || 'local', ws.selectedFolderId === folder.id)"
+                :title="getProtocolLabel(folder.protocol || 'local')"
+              >
+                {{ getProtocolBadge(folder.protocol || 'local') }}
+              </span>
+              <span class="flex-1 min-w-0 truncate" :title="getFolderDisplayName(folder)">{{ getFolderDisplayName(folder) }}</span>
               <span v-if="folder.file_count != null" class="flex h-4 shrink-0 items-center rounded-full bg-muted px-1.5 text-[11px] leading-none text-muted-foreground">{{ folder.file_count }}</span>
+              <Button variant="ghost" size="icon" class="h-5 w-5 shrink-0 text-muted-foreground hover:bg-accent hover:text-primary" @click.stop="onEditFolder(folder)" :title="t('addFolder.edit')">
+                <Pencil class="size-3" />
+              </Button>
               <Button variant="ghost" size="icon" class="h-5 w-5 shrink-0 text-muted-foreground hover:bg-red-500/10 hover:text-red-500" @click.stop="onDeleteFolder(folder)">
                 <Eraser class="size-3" />
               </Button>
@@ -407,6 +417,9 @@
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+
+    <!-- 添加文件夹弹窗（支持本地 + 网络协议） -->
+    <AddFolderDialog ref="addFolderDialogRef" @added="onFolderAdded" />
   </div>
 </template>
 
@@ -419,7 +432,7 @@ import { toast } from 'vue-sonner'
 import {
   PanelLeftClose, PanelLeftOpen, MessageSquare, Bot, Folder, FileSearch,
   CalendarRange, Zap, FileText, Inbox, Plus, Eraser, ChevronDown, ChevronRight,
-  Settings,
+  Settings, Pencil,
 } from '@lucide/vue'
 import { ipc } from '@/utils/ipcRenderer'
 import { ipcApiRoute } from '@/api'
@@ -430,6 +443,7 @@ import { useTabStore } from '@/stores/tab'
 import { Spinner } from '@/components/ui/spinner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import AddFolderDialog from '@/components/file/AddFolderDialog.vue'
 import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
   AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction,
@@ -446,6 +460,7 @@ const tabStore = useTabStore()
 const { activeModule, selectedFolderId, selectedFile, selectedFileId } = storeToRefs(ws)
 
 const addFolderLoading = ref(false)
+const addFolderDialogRef = ref(null)
 
 // ===== 删除确认弹窗状态 =====
 const deleteDialog = ref({ open: false, title: '', content: '', action: null })
@@ -504,7 +519,7 @@ const recentItems = computed(() => {
   if (activeModule.value === 'file') {
     return ws.folderList.slice(0, 5).map((f) => ({
       id: f.id,
-      char: getFolderName(f.path).charAt(0),
+      char: getFolderDisplayName(f).charAt(0),
       active: selectedFolderId.value === f.id,
       onClick: () => onSelectFolder(f.id),
     }))
@@ -579,24 +594,41 @@ async function navigate(key) {
   }
   ws.setActiveModule(key)
   if (key === 'chat') {
-    const sessionId = ws.currentChatSessionId
-    if (sessionId) {
-      const session = ws.chatSessions.find(s => s.id === sessionId)
-      tabStore.openSessionTab('chat', sessionId, session?.title || 'Chat')
-    } else { tabStore.enterTabMode() }
+    // 优先激活已有的 chat tab，避免重复创建导致顺序变化
+    const existingChatTab = tabStore.tabs.find(t => t.type === 'chat')
+    if (existingChatTab) {
+      tabStore.activateTab(existingChatTab.id)
+      ws.currentChatSessionId = existingChatTab.sessionId
+    } else {
+      const sessionId = ws.currentChatSessionId
+      if (sessionId) {
+        const session = ws.chatSessions.find(s => s.id === sessionId)
+        tabStore.openSessionTab('chat', sessionId, session?.title || 'Chat')
+      } else { tabStore.enterTabMode() }
+    }
   } else if (key === 'agent') {
-    const sessionId = agent.currentSessionId
-    if (sessionId) {
-      const session = agent.sessions.find(s => s.id === sessionId)
-      if (session) {
-        tabStore.openSessionTab('agent', sessionId, session.title || t('sidebar.agent'))
-      } else {
-        // 上次会话已失效：选中第一个项目的第一个会话
-        await selectFirstAgentSession()
+    // 优先激活已有的 agent tab，避免重复创建导致顺序变化
+    const existingAgentTab = tabStore.tabs.find(t => t.type === 'agent')
+    if (existingAgentTab) {
+      tabStore.activateTab(existingAgentTab.id)
+      // 确保消息已加载
+      if (!agent.messagesBySession[existingAgentTab.sessionId]) {
+        agent.loadMessages(existingAgentTab.sessionId)
       }
     } else {
-      // 无活跃会话：选中第一个项目的第一个会话
-      await selectFirstAgentSession()
+      const sessionId = agent.currentSessionId
+      if (sessionId) {
+        const session = agent.sessions.find(s => s.id === sessionId)
+        if (session) {
+          tabStore.openSessionTab('agent', sessionId, session.title || t('sidebar.agent'))
+        } else {
+          // 上次会话已失效：选中第一个项目的第一个会话
+          await selectFirstAgentSession()
+        }
+      } else {
+        // 无活跃会话：选中第一个项目的第一个会话
+        await selectFirstAgentSession()
+      }
     }
   }
 }
@@ -628,17 +660,23 @@ function onSelectChatSession(sessionId) {
 }
 
 async function onAddFolder() {
-  addFolderLoading.value = true
-  try {
-    const result = await ws.addFolder()
-    if (result?.success) { toast.success(t('menuBar.messages.folderAdded')); await loadTotalFileCount() }
-    else if (result?.message) toast.warning(result.message)
-  } catch { toast.error(t('menuBar.messages.folderAddFailed')) }
-  finally { addFolderLoading.value = false }
+addFolderDialogRef.value?.show()
+}
+
+/** 编辑文件夹配置 */
+function onEditFolder(folder) {
+  addFolderDialogRef.value?.showEdit(folder)
+}
+
+/** 文件夹添加成功回调（由弹窗组件触发） */
+async function onFolderAdded() {
+  await ws.loadFolderList()
+  toast.success(t('menuBar.messages.folderAdded'))
+  await loadTotalFileCount()
 }
 
 function onDeleteFolder(folder) {
-  openDeleteDialog(t('menuBar.delete.folder'), t('menuBar.delete.folderConfirm', { name: getFolderName(folder.path) }), async () => {
+  openDeleteDialog(t('menuBar.delete.folder'), t('menuBar.delete.folderConfirm', { name: getFolderDisplayName(folder) }), async () => {
     try {
       const result = await ws.deleteFolder(folder.id)
       if (result?.success) { toast.success(t('menuBar.messages.folderDeleted')); await loadTotalFileCount() }
@@ -829,10 +867,67 @@ async function selectNewestSession() {
 }
 
 function getFolderName(path) {
-  if (!path) return t('menuBar.untitled')
-  const normalized = path.replace(/\\/g, '/').replace(/\/+$/, '')
-  const parts = normalized.split('/')
-  return parts[parts.length - 1] || path
+if (!path) return t('menuBar.untitled')
+const normalized = path.replace(/\\/g, '/').replace(/\/+$/, '')
+const parts = normalized.split('/')
+return parts[parts.length - 1] || path
+}
+
+/** 获取文件夹显示名称：优先使用 alias，其次 folder_name，最后从 path 提取 */
+function getFolderDisplayName(folder) {
+if (!folder) return t('menuBar.untitled')
+// 优先使用 alias
+if (folder.alias) return folder.alias
+// 其次使用 folder_name
+if (folder.folder_name) return folder.folder_name
+// 最后从 path 提取
+return getFolderName(folder.path)
+}
+
+// ═══════════════════════════════════════════
+// 协议标签辅助函数
+// ═══════════════════════════════════════════
+
+/** 协议 → 缩写标签文本 */
+function getProtocolBadge(protocol) {
+  const map = {
+    local: 'LOC',
+    ftp: 'FTP',
+    ftps: 'FTPS',
+    sftp: 'SFTP',
+    smb: 'SMB',
+    webdav: 'DAV',
+    s3: 'S3',
+  }
+  return map[protocol] || 'LOC'
+}
+
+/** 协议 → 完整标签（tooltip 用） */
+function getProtocolLabel(protocol) {
+  const map = {
+    local: t('addFolder.protocols.local'),
+    ftp: t('addFolder.protocols.ftp'),
+    ftps: t('addFolder.protocols.ftps'),
+    sftp: t('addFolder.protocols.sftp'),
+    smb: t('addFolder.protocols.smb'),
+    webdav: t('addFolder.protocols.webdav'),
+    s3: t('addFolder.protocols.s3'),
+  }
+  return map[protocol] || t('addFolder.protocols.local')
+}
+
+/** 协议 → 标签样式类（选中状态也保持协议颜色，用行背景区分选中） */
+function getProtocolBadgeClass(protocol, _isSelected) {
+  const map = {
+    local: 'bg-blue-500/15 text-blue-600 dark:text-blue-400',
+    ftp: 'bg-cyan-500/15 text-cyan-600 dark:text-cyan-400',
+    ftps: 'bg-teal-500/15 text-teal-600 dark:text-teal-400',
+    sftp: 'bg-violet-500/15 text-violet-600 dark:text-violet-400',
+    smb: 'bg-amber-500/15 text-amber-600 dark:text-amber-400',
+    webdav: 'bg-pink-500/15 text-pink-600 dark:text-pink-400',
+    s3: 'bg-green-500/15 text-green-600 dark:text-green-400',
+  }
+  return map[protocol] || map.local
 }
 
 // 监听 Bridge 创建会话事件（飞书/微信/钉钉等 IM Bridge 创建会话后通知前端刷新）

@@ -9,6 +9,7 @@ import FolderScanner from '../components/file/FolderScanner';
 import SyncService from '../components/file/SyncService';
 import type { SyncScanResult } from '../components/file/SyncService';
 import { ragService, isVectorSupported } from '../components/rag';
+import { createAdapter, type ProtocolConfig } from '../components/file/adapter/AdapterFactory';
 
 // 文件变化通知通道
 const SYNC_CHANGE_CHANNEL = 'controller/file/onSyncChange';
@@ -166,7 +167,7 @@ class FileController {
       logger.info(`[FileController] 添加授权文件夹: ${folderPath}, id=${folder.id}`);
 
       // 3. 递归扫描文件夹
-      const scanItems = await FolderScanner.scanWithFolders(folderPath);
+      const scanItems = await FolderScanner.scanWithFolders(folder);
       logger.info(`[FileController] 扫描完成，共 ${scanItems.length} 项`);
 
       // 4. 批量入库（文件状态默认为 PENDING）
@@ -198,6 +199,441 @@ class FileController {
         folderList: filedbService.getFolderList(),
         message: msg,
       };
+    }
+  }
+
+  /**
+   * 添加远程协议文件夹（FTP/FTPS/SFTP/SMB/WebDAV/S3）
+   *
+   * 流程：参数校验 → 入库 → 立即返回 → 后台异步扫描 → 入库 → 轮询监听 → 入队向量化
+   *
+   * 远程扫描可能耗时较长（网络延迟 + 递归遍历），采用异步模式：
+   *   1. 立即入库并返回 success，前端关闭弹窗
+   *   2. 后台执行扫描，通过 REMOTE_SCAN_DONE_CHANNEL 通知前端刷新
+   */
+  async addRemoteFolder(args: {
+    protocol: string;
+    alias?: string;
+    // 通用
+    host?: string;
+    port?: number;
+    remotePath?: string;
+    username?: string;
+    password?: string;
+    // SFTP
+    privateKeyPath?: string;
+    // SMB
+    share?: string;
+    subPath?: string;
+    domain?: string;
+    // WebDAV
+    url?: string;
+    // S3
+    endpoint?: string;
+    region?: string;
+    bucket?: string;
+    prefix?: string;
+    accessKey?: string;
+    secretKey?: string;
+    forcePathStyle?: boolean;
+  }, event?: IpcMainEvent): Promise<{ success: boolean; folder?: AuthorizedFolder; folderList: AuthorizedFolder[]; message?: string }> {
+    try {
+      const protocol = args.protocol;
+
+      // 1. 构建存储路径和配置
+      let folderPath: string;
+      const config: Record<string, unknown> = { protocol };
+
+      if (protocol === 'local') {
+        // 本地协议：path 即为本地路径
+        folderPath = args.host || args.remotePath || '';
+        config.host = folderPath;
+      } else if (protocol === 'ftp' || protocol === 'ftps') {
+        folderPath = args.remotePath || '/';
+        config.host = args.host;
+        config.port = args.port;
+        config.username = args.username;
+        config.password = args.password;
+        config.remotePath = args.remotePath;
+      } else if (protocol === 'sftp') {
+        folderPath = args.remotePath || '/';
+        config.host = args.host;
+        config.port = args.port;
+        config.username = args.username;
+        config.password = args.password;
+        config.remotePath = args.remotePath;
+        config.privateKeyPath = args.privateKeyPath;
+      } else if (protocol === 'smb') {
+        folderPath = args.subPath || '\\';
+        config.host = args.host;
+        config.port = args.port;
+        config.share = args.share;
+        config.subPath = args.subPath;
+        config.domain = args.domain;
+        config.username = args.username;
+        config.password = args.password;
+      } else if (protocol === 'webdav') {
+        folderPath = args.remotePath || '/';
+        config.url = args.url;
+        config.remotePath = args.remotePath;
+        config.username = args.username;
+        config.password = args.password;
+      } else if (protocol === 's3') {
+        folderPath = args.prefix || '';
+        config.endpoint = args.endpoint;
+        config.region = args.region;
+        config.bucket = args.bucket;
+        config.prefix = args.prefix;
+        config.accessKey = args.accessKey;
+        config.secretKey = args.secretKey;
+        config.forcePathStyle = args.forcePathStyle;
+      } else {
+        return { success: false, folderList: filedbService.getFolderList(), message: `不支持的协议: ${protocol}` };
+      }
+
+      // 2. 存入数据库
+      let folder: AuthorizedFolder;
+      if (protocol === 'local') {
+        folder = filedbService.addFolder(folderPath, args.alias);
+      } else {
+        folder = filedbService.addRemoteFolder({
+          protocol,
+          path: folderPath,
+          alias: args.alias,
+          config,
+        });
+      }
+      logger.info(`[FileController] 添加文件夹 (${protocol}): ${folderPath}, id=${folder.id}`);
+
+      // 3. 本地协议同步扫描（快），远程协议异步扫描（慢）
+      if (protocol === 'local') {
+        // 本地：同步扫描，速度快
+        try {
+          const scanItems = await FolderScanner.scanWithFolders(folder);
+          logger.info(`[FileController] 本地扫描完成，共 ${scanItems.length} 项`);
+          filedbService.batchAddFileItems(folder.id, scanItems);
+          SyncService.watchFolder(folder);
+
+          const pendingFiles = filedbService.getFilesByStatus(folder.id, 'PENDING');
+          const ingestItems = pendingFiles
+            .filter(f => isVectorSupported(f.name))
+            .map(f => ({ fileItemId: f.id, folderId: f.folder_id, folderPath: folder.path }));
+          ragService.enqueueIngestBatch(ingestItems);
+        } catch (scanErr) {
+          logger.error(`[FileController] 本地扫描失败 folderId=${folder.id}:`, scanErr);
+        }
+      } else {
+        // 远程协议：异步扫描，避免 IPC 超时
+        logger.info(`[FileController] 远程协议 ${protocol}，启动后台异步扫描 folderId=${folder.id}`);
+
+        // 异步扫描，不阻塞 IPC 响应
+        this._scanRemoteFolderAsync(folder, event).catch(err => {
+          logger.error(`[FileController] 后台远程扫描异常 folderId=${folder.id}:`, err);
+        });
+      }
+
+      return {
+        success: true,
+        folder,
+        folderList: filedbService.getFolderList(),
+      };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      logger.error('[FileController] 添加远程文件夹失败:', msg);
+      return {
+        success: false,
+        folderList: filedbService.getFolderList(),
+        message: msg,
+      };
+    }
+  }
+
+  /**
+   * 更新远程协议文件夹配置
+   *
+   * 修改连接参数后：
+   *   1. 更新数据库记录
+   *   2. 清空旧文件记录
+   *   3. 后台重新扫描
+   *   4. 通知前端刷新
+   */
+  async updateRemoteFolder(args: {
+    folderId: number;
+    protocol: string;
+    alias?: string;
+    host?: string;
+    port?: number;
+    remotePath?: string;
+    username?: string;
+    password?: string;
+    privateKeyPath?: string;
+    share?: string;
+    subPath?: string;
+    domain?: string;
+    url?: string;
+    endpoint?: string;
+    region?: string;
+    bucket?: string;
+    prefix?: string;
+    accessKey?: string;
+    secretKey?: string;
+    forcePathStyle?: boolean;
+  }, event?: IpcMainEvent): Promise<{ success: boolean; folder?: AuthorizedFolder; folderList: AuthorizedFolder[]; message?: string }> {
+    try {
+      const { folderId, protocol, ...rest } = args;
+
+      // 1. 构建存储路径和配置
+      let folderPath: string;
+      const config: Record<string, unknown> = { protocol };
+
+      if (protocol === 'local') {
+        folderPath = rest.host || rest.remotePath || '';
+        config.host = folderPath;
+      } else if (protocol === 'ftp' || protocol === 'ftps') {
+        folderPath = rest.remotePath || '/';
+        config.host = rest.host;
+        config.port = rest.port;
+        config.username = rest.username;
+        config.password = rest.password;
+        config.remotePath = rest.remotePath;
+      } else if (protocol === 'sftp') {
+        folderPath = rest.remotePath || '/';
+        config.host = rest.host;
+        config.port = rest.port;
+        config.username = rest.username;
+        config.password = rest.password;
+        config.remotePath = rest.remotePath;
+        config.privateKeyPath = rest.privateKeyPath;
+      } else if (protocol === 'smb') {
+        folderPath = rest.subPath || '\\';
+        config.host = rest.host;
+        config.port = rest.port;
+        config.share = rest.share;
+        config.subPath = rest.subPath;
+        config.domain = rest.domain;
+        config.username = rest.username;
+        config.password = rest.password;
+      } else if (protocol === 'webdav') {
+        folderPath = rest.remotePath || '/';
+        config.url = rest.url;
+        config.remotePath = rest.remotePath;
+        config.username = rest.username;
+        config.password = rest.password;
+      } else if (protocol === 's3') {
+        folderPath = rest.prefix || '';
+        config.endpoint = rest.endpoint;
+        config.region = rest.region;
+        config.bucket = rest.bucket;
+        config.prefix = rest.prefix;
+        config.accessKey = rest.accessKey;
+        config.secretKey = rest.secretKey;
+        config.forcePathStyle = rest.forcePathStyle;
+      } else {
+        return { success: false, folderList: filedbService.getFolderList(), message: `不支持的协议: ${protocol}` };
+      }
+
+      // 2. 更新数据库
+      const folder = filedbService.updateRemoteFolder(folderId, {
+        protocol,
+        path: folderPath,
+        alias: rest.alias,
+        config,
+      });
+
+      if (!folder) {
+        return { success: false, folderList: filedbService.getFolderList(), message: '文件夹不存在' };
+      }
+
+      logger.info(`[FileController] 更新文件夹配置 (${protocol}): ${folderPath}, id=${folderId}`);
+
+      // 3. 清空旧文件记录 + 停止旧监听
+      SyncService.unwatchFolder(folderId);
+      filedbService.clearFileItems(folderId);
+
+      // 4. 重新扫描（本地同步，远程异步）
+      if (protocol === 'local') {
+        try {
+          const scanItems = await FolderScanner.scanWithFolders(folder);
+          filedbService.batchAddFileItems(folder.id, scanItems);
+          SyncService.watchFolder(folder);
+          const pendingFiles = filedbService.getFilesByStatus(folder.id, 'PENDING');
+          const ingestItems = pendingFiles
+            .filter(f => isVectorSupported(f.name))
+            .map(f => ({ fileItemId: f.id, folderId: f.folder_id, folderPath: folder.path }));
+          ragService.enqueueIngestBatch(ingestItems);
+        } catch (scanErr) {
+          logger.error(`[FileController] 编辑后本地扫描失败 folderId=${folder.id}:`, scanErr);
+        }
+      } else {
+        logger.info(`[FileController] 编辑后启动后台远程扫描 folderId=${folder.id}`);
+        this._scanRemoteFolderAsync(folder, event).catch(err => {
+          logger.error(`[FileController] 编辑后远程扫描异常 folderId=${folder.id}:`, err);
+        });
+      }
+
+      return {
+        success: true,
+        folder,
+        folderList: filedbService.getFolderList(),
+      };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      logger.error('[FileController] 更新远程文件夹失败:', msg);
+      return {
+        success: false,
+        folderList: filedbService.getFolderList(),
+        message: msg,
+      };
+    }
+  }
+
+  /** 远程扫描完成通知通道 */
+  private static readonly REMOTE_SCAN_DONE_CHANNEL = 'controller/file/onRemoteScanDone';
+
+  /**
+   * 后台异步扫描远程文件夹
+   *
+   * 扫描完成后：
+   *   1. 批量入库文件
+   *   2. 启动轮询监听
+   *   3. 入队向量化
+   *   4. 通过 IPC 事件通知前端刷新
+   */
+  private async _scanRemoteFolderAsync(folder: AuthorizedFolder, event?: IpcMainEvent): Promise<void> {
+    const startTime = Date.now();
+    logger.info(`[FileController] 开始后台远程扫描 folderId=${folder.id} (${folder.protocol})`);
+
+    try {
+      // 1. 扫描远程目录
+      const scanItems = await FolderScanner.scanWithFolders(folder);
+      const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+      logger.info(`[FileController] 远程扫描完成 folderId=${folder.id}，共 ${scanItems.length} 项，耗时 ${elapsed}s`);
+
+      // 2. 批量入库
+      filedbService.batchAddFileItems(folder.id, scanItems);
+
+      // 3. 启动轮询监听
+      SyncService.watchFolder(folder);
+
+      // 4. 获取所有 PENDING 文件，入队向量化
+      const pendingFiles = filedbService.getFilesByStatus(folder.id, 'PENDING');
+      const ingestItems = pendingFiles
+        .filter(f => isVectorSupported(f.name))
+        .map(f => ({ fileItemId: f.id, folderId: f.folder_id, folderPath: folder.path }));
+      ragService.enqueueIngestBatch(ingestItems);
+
+      logger.info(`[FileController] 远程文件夹就绪 folderId=${folder.id}: ${scanItems.length} 项，入队 ${ingestItems.length} 个向量化`);
+
+      // 5. 通知前端扫描完成
+      if (event) {
+        try {
+          event.sender.send(FileController.REMOTE_SCAN_DONE_CHANNEL, {
+            folderId: folder.id,
+            success: true,
+            itemCount: scanItems.length,
+            queuedCount: ingestItems.length,
+          });
+        } catch {
+          // event 可能已断开
+        }
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      logger.error(`[FileController] 后台远程扫描失败 folderId=${folder.id}:`, msg);
+
+      // 通知前端扫描失败
+      if (event) {
+        try {
+          event.sender.send(FileController.REMOTE_SCAN_DONE_CHANNEL, {
+            folderId: folder.id,
+            success: false,
+            message: msg,
+          });
+        } catch {
+          // event 可能已断开
+        }
+      }
+    }
+  }
+
+  /**
+   * 测试远程协议连接
+   *
+   * 不入库，仅验证连接是否可用。
+   */
+  async testRemoteConnection(args: {
+    protocol: string;
+    host?: string;
+    port?: number;
+    remotePath?: string;
+    username?: string;
+    password?: string;
+    privateKeyPath?: string;
+    share?: string;
+    subPath?: string;
+    domain?: string;
+    url?: string;
+    endpoint?: string;
+    region?: string;
+    bucket?: string;
+    prefix?: string;
+    accessKey?: string;
+    secretKey?: string;
+    forcePathStyle?: boolean;
+  }): Promise<{ success: boolean; message?: string }> {
+    try {
+      const { createAdapter } = await import('../components/file/adapter/AdapterFactory');
+      const adapter = createAdapter(args as never);
+      const result = await adapter.testConnection();
+      await adapter.close?.();
+      return result;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      logger.error('[FileController] 测试远程连接失败:', msg);
+      return { success: false, message: msg };
+    }
+  }
+
+  /**
+   * 浏览远程目录（单层，非递归）
+   *
+   * 用于前端添加文件夹时的远程路径选择器：
+   * 用户填入主机/端口/用户名/密码后，逐级浏览服务器目录树选择目标路径。
+   *
+   * @param args 连接参数（与 testRemoteConnection 相同）
+   * @param args.dirPath 要列出的目录路径，空或 '/' 表示根目录
+   * @returns 目录条目列表
+   */
+  async browseRemotePath(args: {
+    protocol: string;
+    dirPath?: string;
+    host?: string;
+    port?: number;
+    username?: string;
+    password?: string;
+    privateKeyPath?: string;
+    share?: string;
+    subPath?: string;
+    domain?: string;
+    url?: string;
+    endpoint?: string;
+    region?: string;
+    bucket?: string;
+    prefix?: string;
+    accessKey?: string;
+    secretKey?: string;
+    forcePathStyle?: boolean;
+  }): Promise<{ success: boolean; entries?: Array<{ name: string; isDir: boolean; size: number; mtime?: string }>; message?: string }> {
+    try {
+      const { createAdapter } = await import('../components/file/adapter/AdapterFactory');
+      const adapter = createAdapter(args as never);
+      const entries = await adapter.listDir(args.dirPath || '/');
+      await adapter.close?.();
+      return { success: true, entries };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      logger.error('[FileController] 浏览远程目录失败:', msg);
+      return { success: false, message: msg };
     }
   }
 
@@ -241,6 +677,55 @@ class FileController {
       }
     }
     return { success: true };
+  }
+
+  /**
+   * 重新扫描单个文件夹
+   *
+   * 本地协议：智能同步扫描（保留 hash/status）
+   * 远程协议：从服务器拉取最新文件结构，全量清空后重新入库
+   */
+  async refreshFolder(args: { folderId: number }): Promise<{ success: boolean; message?: string }> {
+    const { folderId } = args;
+    const folder = filedbService.getFolderById(folderId);
+    if (!folder) {
+      return { success: false, message: '文件夹不存在' };
+    }
+
+    const protocol = folder.protocol || 'local';
+    logger.info(`[FileController] 手动刷新文件夹 folderId=${folderId} (${protocol})`);
+
+    try {
+      if (protocol === 'local') {
+        // 本地：智能同步扫描
+        const result = await filedbService.syncScanFolder(folderId);
+        this.handleSyncResultForRag({ folderId, ...result });
+        logger.info(`[FileController] 本地刷新完成 folderId=${folderId}: added=${result.added.length}, deleted=${result.deleted.length}, changed=${result.changed.length}`);
+      } else {
+        // 远程：清空旧记录后重新全量扫描
+        SyncService.unwatchFolder(folderId);
+        filedbService.clearFileItems(folderId);
+
+        const scanItems = await FolderScanner.scanWithFolders(folder);
+        filedbService.batchAddFileItems(folderId, scanItems);
+        SyncService.watchFolder(folder);
+
+        // 入队向量化
+        const pendingFiles = filedbService.getFilesByStatus(folderId, 'PENDING');
+        const ingestItems = pendingFiles
+          .filter(f => isVectorSupported(f.name))
+          .map(f => ({ fileItemId: f.id, folderId: f.folder_id, folderPath: folder.path }));
+        ragService.enqueueIngestBatch(ingestItems);
+
+        logger.info(`[FileController] 远程刷新完成 folderId=${folderId}: ${scanItems.length} 项，入队 ${ingestItems.length} 个向量化`);
+      }
+
+      return { success: true };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      logger.error(`[FileController] 刷新文件夹失败 folderId=${folderId}:`, msg);
+      return { success: false, message: msg };
+    }
   }
 
   /**
@@ -390,6 +875,9 @@ return { success: false, message: `不支持的文件类型: ${fileItem.name}` }
   /**
    * 获取文件信息（不包含文件内容）
    * 用于前端预检查文件是否存在、是否可查看
+   *
+   * 本地协议：检查磁盘文件是否存在
+   * 远程协议：数据库记录即为服务端最新扫描结果，直接返回
    */
   getFileInfo(args: { fileItemId: number }): {
     success: boolean;
@@ -404,15 +892,24 @@ return { success: false, message: `不支持的文件类型: ${fileItem.name}` }
       return { success: false, message: '文件记录不存在' };
     }
 
-    const filePath = this.resolveFilePath(fileItemId);
-    if (!filePath) {
+    const folder = filedbService.getFolderById(fileItem.folder_id);
+    if (!folder) {
       return { success: false, message: '文件所在授权文件夹不存在' };
     }
 
-    if (!fs.existsSync(filePath)) {
-      return { success: false, message: '文件在磁盘上不存在，可能已被删除或移动' };
+    const protocol = folder.protocol || 'local';
+
+    if (protocol === 'local') {
+      const filePath = this.resolveFilePath(fileItemId);
+      if (!filePath) {
+        return { success: false, message: '文件所在授权文件夹不存在' };
+      }
+      if (!fs.existsSync(filePath)) {
+        return { success: false, message: '文件在磁盘上不存在，可能已被删除或移动' };
+      }
     }
 
+    // 远程协议：数据库记录即为服务端最新扫描结果，直接返回
     return {
       success: true,
       name: fileItem.name,
@@ -422,37 +919,63 @@ return { success: false, message: `不支持的文件类型: ${fileItem.name}` }
   }
 
   /**
-   * 读取本地文件内容并返回给前端
+   * 读取文件内容并返回给前端
    * 前端将其包装为 File 对象传给 @file-viewer/vue3-full 组件
+   *
+   * 本地协议：直接读取磁盘文件
+   * 远程协议：通过适配器从远程服务器下载文件内容
    *
    * @returns 包含文件二进制数据的对象，buffer 为 Node Buffer（IPC 序列化为 Uint8Array）
    */
-  getFileData(args: { fileItemId: number }): {
+  async getFileData(args: { fileItemId: number }): Promise<{
     success: boolean;
     buffer?: Buffer;
     name?: string;
     size?: number;
     type?: string;
     message?: string;
-  } {
+  }> {
     const { fileItemId } = args;
     const fileItem = filedbService.getFileItemById(fileItemId);
     if (!fileItem) {
       return { success: false, message: '文件记录不存在' };
     }
 
-    const filePath = this.resolveFilePath(fileItemId);
-    if (!filePath) {
+    const folder = filedbService.getFolderById(fileItem.folder_id);
+    if (!folder) {
       return { success: false, message: '文件所在授权文件夹不存在' };
     }
 
-    if (!fs.existsSync(filePath)) {
-      return { success: false, message: '文件在磁盘上不存在，可能已被删除或移动' };
-    }
+    const protocol = folder.protocol || 'local';
 
     try {
-      const buffer = fs.readFileSync(filePath);
-      logger.info(`[FileController] 读取文件成功: ${fileItem.name}, size=${buffer.length}`);
+      let buffer: Buffer;
+
+      if (protocol === 'local') {
+        // 本地文件：直接读取磁盘
+        const filePath = this.resolveFilePath(fileItemId);
+        if (!filePath) {
+          return { success: false, message: '文件所在授权文件夹不存在' };
+        }
+        if (!fs.existsSync(filePath)) {
+          return { success: false, message: '文件在磁盘上不存在，可能已被删除或移动' };
+        }
+        buffer = fs.readFileSync(filePath);
+      } else {
+        // 远程文件：通过适配器从服务器下载
+        const config: ProtocolConfig = {
+          protocol: protocol as ProtocolConfig['protocol'],
+          ...(folder.protocol_config ? JSON.parse(folder.protocol_config) : {}),
+        };
+        const adapter = createAdapter(config);
+        try {
+          buffer = await adapter.readFile(fileItem.relative_path);
+        } finally {
+          await adapter.close?.();
+        }
+      }
+
+      logger.info(`[FileController] 读取文件成功: ${fileItem.name}, size=${buffer.length}, protocol=${protocol}`);
       return {
         success: true,
         buffer,
@@ -462,8 +985,53 @@ return { success: false, message: `不支持的文件类型: ${fileItem.name}` }
       };
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      logger.error(`[FileController] 读取文件失败: ${filePath}:`, err);
+      logger.error(`[FileController] 读取文件失败: ${fileItem.name} (${protocol}):`, err);
       return { success: false, message: `读取文件失败: ${msg}` };
+    }
+  }
+
+  /**
+   * 保存文件内容到磁盘
+   * 仅支持本地协议文件
+   *
+   * @param args.fileItemId 文件项 ID
+   * @param args.buffer 文件内容（Uint8Array）
+   * @returns 保存结果
+   */
+  async saveFileData(args: { fileItemId: number; buffer: Uint8Array }): Promise<{
+    success: boolean;
+    message?: string;
+  }> {
+    const { fileItemId, buffer } = args;
+    const fileItem = filedbService.getFileItemById(fileItemId);
+    if (!fileItem) {
+      return { success: false, message: '文件记录不存在' };
+    }
+
+    const folder = filedbService.getFolderById(fileItem.folder_id);
+    if (!folder) {
+      return { success: false, message: '文件所在授权文件夹不存在' };
+    }
+
+    const protocol = folder.protocol || 'local';
+    if (protocol !== 'local') {
+      return { success: false, message: '仅支持本地文件保存' };
+    }
+
+    try {
+      const filePath = this.resolveFilePath(fileItemId);
+      if (!filePath) {
+        return { success: false, message: '文件所在授权文件夹不存在' };
+      }
+
+      const data = Buffer.from(buffer);
+      fs.writeFileSync(filePath, data);
+      logger.info(`[FileController] 保存文件成功: ${fileItem.name}, size=${data.length}`);
+      return { success: true };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      logger.error(`[FileController] 保存文件失败: ${fileItem.name}:`, err);
+      return { success: false, message: `保存文件失败: ${msg}` };
     }
   }
 

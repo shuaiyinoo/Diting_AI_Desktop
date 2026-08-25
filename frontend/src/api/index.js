@@ -74,6 +74,8 @@ const ipcApiRoute = {
     addFolder: 'controller/file/addFolder',
     getFolderList: 'controller/file/getFolderList',
     getSubFolders: 'controller/file/getSubFolders',
+    // 重新扫描单个文件夹（远程从服务器拉取最新结构）
+    refreshFolder: 'controller/file/refreshFolder',
     getFiles: 'controller/file/getFiles',
     deleteFolder: 'controller/file/deleteFolder',
     toggleSync: 'controller/file/toggleSync',
@@ -85,6 +87,8 @@ const ipcApiRoute = {
     getRagStats: 'controller/file/getRagStats',
     checkFileSupported: 'controller/file/checkFileSupported',
     onRagProgress: 'controller/file/onRagProgress',
+    // 远程扫描完成通知
+    onRemoteScanDone: 'controller/file/onRemoteScanDone',
     // 文件查看
     getFileInfo: 'controller/file/getFileInfo',
     getFileData: 'controller/file/getFileData',
@@ -94,6 +98,14 @@ const ipcApiRoute = {
     saveFileData: 'controller/file/saveFileData',
     // 重命名文件
     renameFile: 'controller/file/renameFile',
+    // 添加网络协议文件夹（FTP/FTPS/SFTP/SMB/WebDAV/S3）
+    addRemoteFolder: 'controller/file/addRemoteFolder',
+    // 更新远程协议文件夹配置
+    updateRemoteFolder: 'controller/file/updateRemoteFolder',
+    // 测试远程连接
+    testRemoteConnection: 'controller/file/testRemoteConnection',
+    // 浏览远程目录（单层，用于路径选择器）
+    browseRemotePath: 'controller/file/browseRemotePath',
   },
 
   // LLM 模型管理

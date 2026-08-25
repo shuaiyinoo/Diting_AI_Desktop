@@ -20,21 +20,6 @@
 
 import { createI18n } from 'vue-i18n'
 import zhCN from './zh-CN.js'
-import zhTW from './zh-TW.js'
-import enUS from './en-US.js'
-import jaJP from './ja-JP.js'
-import koKR from './ko-KR.js'
-import frFR from './fr-FR.js'
-import deDE from './de-DE.js'
-import ruRU from './ru-RU.js'
-import esES from './es-ES.js'
-import thTH from './th-TH.js'
-import viVN from './vi-VN.js'
-import trTR from './tr-TR.js'
-import ptBR from './pt-BR.js'
-import arSA from './ar-SA.js'
-import itIT from './it-IT.js'
-import hiIN from './hi-IN.js'
 
 /** 支持的语言列表（用于下拉框渲染） */
 export const LOCALES = [
@@ -75,39 +60,78 @@ function getStoredLocale() {
 /** 当前语言 */
 const initialLocale = getStoredLocale()
 
+/**
+ * 懒加载语言包映射表
+ * 仅 zh-CN 和 en-US 在构建时打包（en-US 作为 fallback），
+ * 其余语言在运行时按需加载，避免 Vite 构建时将 17 个语言文件
+ * 全部加载到内存中导致 OOM。
+ */
+const lazyLocales = {
+  'zh-TW': () => import('./zh-TW.js'),
+  'en-US': () => import('./en-US.js'),
+  'ja-JP': () => import('./ja-JP.js'),
+  'ko-KR': () => import('./ko-KR.js'),
+  'fr-FR': () => import('./fr-FR.js'),
+  'de-DE': () => import('./de-DE.js'),
+  'ru-RU': () => import('./ru-RU.js'),
+  'es-ES': () => import('./es-ES.js'),
+  'th-TH': () => import('./th-TH.js'),
+  'vi-VN': () => import('./vi-VN.js'),
+  'tr-TR': () => import('./tr-TR.js'),
+  'pt-BR': () => import('./pt-BR.js'),
+  'ar-SA': () => import('./ar-SA.js'),
+  'it-IT': () => import('./it-IT.js'),
+  'hi-IN': () => import('./hi-IN.js'),
+}
+
 const i18n = createI18n({
   legacy: false, // 使用 Composition API 模式
   locale: initialLocale,
   fallbackLocale: 'en-US',
   messages: {
     'zh-CN': zhCN,
-    'zh-TW': zhTW,
-    'en-US': enUS,
-    'ja-JP': jaJP,
-    'ko-KR': koKR,
-    'fr-FR': frFR,
-    'de-DE': deDE,
-    'ru-RU': ruRU,
-    'es-ES': esES,
-    'th-TH': thTH,
-    'vi-VN': viVN,
-    'tr-TR': trTR,
-    'pt-BR': ptBR,
-    'ar-SA': arSA,
-    'it-IT': itIT,
-    'hi-IN': hiIN,
   },
 })
+
+/**
+ * 按需加载非中文语言包
+ * 初始语言非 zh-CN 时异步加载对应语言包
+ */
+async function loadInitialLocale() {
+  if (initialLocale !== 'zh-CN' && lazyLocales[initialLocale]) {
+    const mod = await lazyLocales[initialLocale]()
+    i18n.global.setLocaleMessage(initialLocale, mod.default)
+  }
+}
+loadInitialLocale()
+
+/** 已加载过的语言包缓存 */
+const loadedLocales = new Set(['zh-CN'])
+
+/**
+ * 确保语言包已加载（懒加载）
+ * @param {string} locale - 语言代码
+ */
+async function ensureLocaleLoaded(locale) {
+  if (loadedLocales.has(locale)) return
+  if (lazyLocales[locale]) {
+    const mod = await lazyLocales[locale]()
+    i18n.global.setLocaleMessage(locale, mod.default)
+    loadedLocales.add(locale)
+  }
+}
 
 /**
  * 切换语言并持久化
  * @param {string} locale - 语言代码，如 'zh-CN' / 'en-US'
  */
-export function setLocale(locale) {
+export async function setLocale(locale) {
   if (!LOCALES.some((l) => l.value === locale)) {
     console.warn(`[i18n] 不支持的语言: ${locale}`)
     return
   }
+  // 懒加载目标语言包（zh-CN 已在构建时打包，无需加载）
+  await ensureLocaleLoaded(locale)
   i18n.global.locale.value = locale
   localStorage.setItem(STORAGE_KEY, locale)
 }

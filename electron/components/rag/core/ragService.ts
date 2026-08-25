@@ -23,11 +23,13 @@
 import path from 'node:path';
 import fs from 'node:fs';
 import fsp from 'node:fs/promises';
+import os from 'node:os';
 import { createHash } from 'node:crypto';
 import { getDataDir } from 'ee-core/ps';
 import { logger } from 'ee-core/log';
 
 import { filedbService } from '../../../service/database/filedb';
+import { createAdapter, type ProtocolConfig } from '../../file/adapter/AdapterFactory';
 import { RagDatabase } from '../database/ragdb';
 import { KeywordSearchService } from '../database/keyword-search';
 import {
@@ -354,6 +356,9 @@ class RagService {
 
   /**
    * 执行向量化任务（文件模块）
+   *
+   * 本地文件：直接读取磁盘
+   * 远程文件：通过适配器下载到临时目录，解析后清理
    */
   private async executeIngest(task: QueueTask & { type: 'ingest' }): Promise<void> {
     const { fileItemId, folderId, folderPath } = task;
@@ -379,22 +384,66 @@ class RagService {
       return;
     }
 
-    // 构建完整文件路径
-    const fullPath = relativePath ? path.join(folderPath, relativePath) : folderPath;
-
-    // 文件不存在 → 标记失败
-    if (!fs.existsSync(fullPath)) {
-      filedbService.updateFileStatus(fileItemId, 'FAILED', `文件不存在: ${fullPath}`);
+    // 查询文件夹信息，判断协议
+    const folder = filedbService.getFolderById(folderId);
+    if (!folder) {
+      filedbService.updateFileStatus(fileItemId, 'FAILED', '授权文件夹不存在');
       this.progressCallback?.({ type: 'skip', fileItemId, fileName, queueSize: this.queue.length, status: 'FAILED' });
       return;
     }
 
-    // 读取文件并计算哈希
-    const fileBuffer = await fsp.readFile(fullPath);
+    const protocol = folder.protocol || 'local';
+    const isRemote = protocol !== 'local';
+
+    // 获取文件内容（本地直接读，远程通过适配器下载）
+    let fileBuffer: Buffer;
+    let tempFilePath: string | null = null;
+    let filePathForParsing: string;
+
+    try {
+      if (isRemote) {
+        // 远程文件：通过适配器下载
+        const config: ProtocolConfig = {
+          protocol: protocol as ProtocolConfig['protocol'],
+          ...(folder.protocol_config ? JSON.parse(folder.protocol_config) : {}),
+        };
+        const adapter = createAdapter(config);
+        try {
+          fileBuffer = await adapter.readFile(relativePath);
+        } finally {
+          await adapter.close?.();
+        }
+
+        // 写入临时文件供解析器使用（解析器需要文件路径）
+        tempFilePath = path.join(os.tmpdir(), `diting-rag-${fileItemId}-${fileName}`);
+        await fsp.writeFile(tempFilePath, fileBuffer);
+        filePathForParsing = tempFilePath;
+        logger.info(`[RagService] 远程文件已下载到临时目录: ${fileName}, size=${fileBuffer.length}`);
+      } else {
+        // 本地文件：直接读取磁盘
+        const fullPath = relativePath ? path.join(folderPath, relativePath) : folderPath;
+        if (!fs.existsSync(fullPath)) {
+          filedbService.updateFileStatus(fileItemId, 'FAILED', `文件不存在: ${fullPath}`);
+          this.progressCallback?.({ type: 'skip', fileItemId, fileName, queueSize: this.queue.length, status: 'FAILED' });
+          return;
+        }
+        fileBuffer = await fsp.readFile(fullPath);
+        filePathForParsing = fullPath;
+      }
+    } catch (readErr) {
+      const msg = readErr instanceof Error ? readErr.message : String(readErr);
+      filedbService.updateFileStatus(fileItemId, 'FAILED', `文件读取失败: ${msg}`);
+      this.progressCallback?.({ type: 'skip', fileItemId, fileName, queueSize: this.queue.length, status: 'FAILED' });
+      return;
+    }
+
+    // 计算哈希
     const newFileHash = createHash('sha256').update(fileBuffer).digest('hex');
 
     // hash 未变化且已 READY → 跳过（秒传）
     if (oldFileHash && oldFileHash === newFileHash && fileStatus === 'READY') {
+      // 清理临时文件
+      if (tempFilePath) { await fsp.unlink(tempFilePath).catch(() => {}); }
       this.progressCallback?.({ type: 'skip', fileItemId, fileName, queueSize: this.queue.length, status: 'READY' });
       return;
     }
@@ -412,8 +461,8 @@ class RagService {
 
     try {
       // 1. 解析文档（异步，不阻塞事件循环）
-      logger.info(`[RagService] 开始解析文档: ${fileName}`);
-      const rawText = await parseDocument(fullPath);
+      logger.info(`[RagService] 开始解析文档: ${fileName} (protocol=${protocol})`);
+      const rawText = await parseDocument(filePathForParsing);
       logger.info(`[RagService] 解析完成: ${fileName}, 文本长度=${rawText.length}`);
 
       // 2. 文本清理
@@ -504,6 +553,11 @@ class RagService {
       logger.error(`[RagService] 文件处理失败: ${fileName} (id=${fileItemId}) - ${reason}`);
       filedbService.updateFileStatus(fileItemId, 'FAILED', reason);
       this.progressCallback?.({ type: 'ingest', fileItemId, fileName, queueSize: this.queue.length, status: 'FAILED' });
+    } finally {
+      // 清理临时文件（远程文件下载的副本）
+      if (tempFilePath) {
+        await fsp.unlink(tempFilePath).catch(() => {});
+      }
     }
   }
 

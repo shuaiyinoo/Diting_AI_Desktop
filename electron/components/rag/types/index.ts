@@ -118,18 +118,18 @@ export const SUPPORTED_VECTOR_EXTENSIONS = [
   // Text & Markdown
   '.txt', '.md', '.markdown', '.djot', '.rst', '.org', '.rtf',
   // Email & Archives
-  '.eml', '.msg', '.zip', '.tar', '.tgz', '.gz', '.7z',
+  //'.eml', '.msg', '.zip', '.tar', '.tgz', '.gz', '.7z',
   // Academic & Scientific
-  '.bib', '.biblatex', '.ris', '.nbib', '.enw', '.csl',
-  '.tex', '.latex', '.typst', '.jats', '.ipynb', '.docbook',
+  //'.bib', '.biblatex', '.ris', '.nbib', '.enw', '.csl',
+  //'.tex', '.latex', '.typst', '.jats', '.ipynb', '.docbook',
   // Documentation
-  '.opml', '.pod', '.mdoc', '.troff',
+  //'.opml', '.pod', '.mdoc', '.troff',
   // Common Code (tree-sitter)
-  '.js', '.jsx', '.ts', '.tsx', '.mjs', '.cjs',
-  '.py', '.pyw', '.go', '.java', '.c', '.h', '.cpp', '.hpp', '.cc', '.cxx',
-  '.rs', '.rb', '.php', '.sh', '.bash', '.zsh', '.sql',
-  '.kt', '.swift', '.scala', '.clj', '.cljs', '.ex', '.exs',
-  '.lua', '.r', '.dart', '.vue', '.svelte',
+  //'.js', '.jsx', '.ts', '.tsx', '.mjs', '.cjs',
+  //'.py', '.pyw', '.go', '.java', '.c', '.h', '.cpp', '.hpp', '.cc', '.cxx',
+  //'.rs', '.rb', '.php', '.sh', '.bash', '.zsh', '.sql',
+  //'.kt', '.swift', '.scala', '.clj', '.cljs', '.ex', '.exs',
+  //'.lua', '.r', '.dart', '.vue', '.svelte',
 ];
 
 /** 不需要向量化的系统/临时文件名 */

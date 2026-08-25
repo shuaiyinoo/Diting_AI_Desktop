@@ -1,48 +1,94 @@
 <template>
   <div class="flex flex-col h-full w-full bg-card">
-    <!-- 顶部标题栏 -->
-    <div class="flex items-center gap-2 px-4 h-11 flex-shrink-0 border-b border-border">
-      <Pencil class="size-4 text-primary" />
-      <span class="text-sm font-semibold text-foreground">{{ t('scratchPad.title') }}</span>
-      <span class="text-[11px] text-muted-foreground ml-auto">{{ t('scratchPad.hint') }}</span>
+    <!-- 编辑区（顶部直接是工具栏 + 编辑器） -->
+    <div class="flex-1 min-h-0 overflow-hidden">
+      <MdTtEditor
+        ref="editorRef"
+        v-model="content"
+        :editable="true"
+        :placeholder="t('scratchPad.placeholder')"
+        @change="onContentChange"
+      />
     </div>
 
-    <!-- 编辑区 -->
-    <div class="flex-1 min-h-0 overflow-hidden px-4 py-3">
-      <textarea
-        v-model="content"
-        class="w-full h-full border-none outline-none resize-none text-sm leading-7 font-inherit text-foreground bg-transparent placeholder:text-muted-foreground [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-thumb]:rounded-sm"
-        :placeholder="t('scratchPad.placeholder')"
-        @input="onInput"
-      ></textarea>
+    <!-- 底部状态栏 -->
+    <div class="flex items-center gap-2 h-7 flex-shrink-0 border-t border-border px-3">
+      <!-- 左侧标签 -->
+      <span class="text-[11px] text-muted-foreground">临时笔记 / Todo草稿 / 剪贴板暂存</span>
+
+      <div class="flex-1" />
+
+      <!-- 右侧保存状态 -->
+      <Transition name="fade">
+        <span v-if="saving" class="flex items-center gap-1 text-[11px] text-muted-foreground">
+          <Loader2 class="size-3 animate-spin" />
+          <span>保存中…</span>
+        </span>
+        <span v-else class="text-[11px] text-muted-foreground">临时记录 · 自动保存</span>
+      </Transition>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Pencil } from '@lucide/vue'
+import { Loader2 } from '@lucide/vue'
+import MdTtEditor from '@/components/common/MdTtEditor.vue'
 
 const { t } = useI18n()
 
 const STORAGE_KEY = 'diting-scratch-pad'
 
 const content = ref(localStorage.getItem(STORAGE_KEY) || '')
+const editorRef = ref(null)
+const saving = ref(false)
 
 let saveTimer = null
+let savedContent = content.value
 
-function onInput() {
+/** 立即保存到 localStorage，并显示保存动画 */
+function saveNow() {
+  if (content.value === savedContent) return
+  saving.value = true
+  localStorage.setItem(STORAGE_KEY, content.value)
+  savedContent = content.value
+  // 短暂延迟后隐藏动画
+  setTimeout(() => {
+    saving.value = false
+  }, 400)
+}
+
+function onContentChange() {
   // 防抖保存：输入后 500ms 保存
   if (saveTimer) clearTimeout(saveTimer)
   saveTimer = setTimeout(() => {
-    localStorage.setItem(STORAGE_KEY, content.value)
+    saveNow()
     saveTimer = null
   }, 500)
 }
 
-// 组件卸载时立即保存
-watch(content, () => {
-  localStorage.setItem(STORAGE_KEY, content.value)
+// 组件卸载时立即同步保存
+onBeforeUnmount(() => {
+  if (saveTimer) {
+    clearTimeout(saveTimer)
+    saveTimer = null
+  }
+  // 同步保存，不显示动画
+  if (content.value !== savedContent) {
+    localStorage.setItem(STORAGE_KEY, content.value)
+    savedContent = content.value
+  }
 })
 </script>
+
+<style scoped>
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+</style>

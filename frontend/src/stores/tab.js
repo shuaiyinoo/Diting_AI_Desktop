@@ -72,14 +72,19 @@ export const useTabStore = defineStore('tab', () => {
       fileItemId: file.fileItemId ?? null,
     }
 
-    // 保留草稿 + 保留会话标签 + 替换已有的 file 标签
-    const kept = tabs.value.filter((t) => {
-      if (t.id === SCRATCH_PAD_ID) return true   // 保留草稿
-      if (t.id === FILE_TAB_ID) return false       // 替换已有文件标签
-      return true                                  // 保留会话标签
-    })
+    // 确保草稿始终在第一位
+    const hasScratch = tabs.value.some((t) => t.id === SCRATCH_PAD_ID)
+    if (!hasScratch) {
+      tabs.value = [createScratchPadTab(), ...tabs.value]
+    }
 
-    tabs.value = [...kept, newTab]
+    // 在已有 file 标签的位置原位替换，没有则追加到末尾
+    const existingIdx = tabs.value.findIndex((t) => t.id === FILE_TAB_ID)
+    if (existingIdx !== -1) {
+      tabs.value = tabs.value.map((t) => t.id === FILE_TAB_ID ? newTab : t)
+    } else {
+      tabs.value = [...tabs.value, newTab]
+    }
     activeTabId.value = FILE_TAB_ID
     tabMode.value = true
   }
@@ -88,6 +93,8 @@ export const useTabStore = defineStore('tab', () => {
    * 策略：顶部保留 [草稿?, chat-tab?, agent-tab?]
    * - 打开 chat 标签时，替换已有的 chat 标签，保留 agent 标签
    * - 打开 agent 标签时，替换已有的 agent 标签，保留 chat 标签
+   * - 如果同类型标签的 sessionId 相同，仅激活不替换
+   * - 新标签在已有同类型标签的位置原位替换，保持顺序不变
    * @param {string} type - 'chat' | 'agent' | 'scratch'
    * @param {string} sessionId - 会话 ID
    * @param {string} title - 标签标题
@@ -101,16 +108,30 @@ export const useTabStore = defineStore('tab', () => {
       return
     }
 
+    // 如果同类型标签已存在且 sessionId 相同，仅激活不替换
+    const existingTab = tabs.value.find((t) => t.type === type)
+    if (existingTab && existingTab.sessionId === sessionId) {
+      activeTabId.value = existingTab.id
+      tabMode.value = true
+      tabMru.value = [sessionId, ...tabMru.value.filter((id) => id !== sessionId)].slice(0, 50)
+      return
+    }
+
     const newTab = { id: sessionId, type, sessionId, title }
 
-    // 保留草稿 + 保留不同类型的已有标签 + 替换同类型标签
-    const kept = tabs.value.filter((t) => {
-      if (t.id === SCRATCH_PAD_ID) return true  // 保留草稿
-      if (t.type === type) return false           // 替换同类型
-      return true                                  // 保留不同类型
-    })
+    // 确保草稿始终在第一位
+    const hasScratch = tabs.value.some((t) => t.id === SCRATCH_PAD_ID)
+    if (!hasScratch) {
+      tabs.value = [createScratchPadTab(), ...tabs.value]
+    }
 
-    tabs.value = [...kept, newTab]
+    // 在已有同类型标签的位置原位替换，没有则追加到末尾
+    const existingIdx = tabs.value.findIndex((t) => t.type === type)
+    if (existingIdx !== -1) {
+      tabs.value = tabs.value.map((t) => t.type === type ? newTab : t)
+    } else {
+      tabs.value = [...tabs.value, newTab]
+    }
     activeTabId.value = newTab.id
     tabMode.value = true
 
@@ -141,12 +162,19 @@ export const useTabStore = defineStore('tab', () => {
       }
     }
 
-    // 所有会话标签关闭后退出 Tab 模式
+    // 所有会话标签关闭后退出 Tab 模式，但保留草稿
     const hasSession = tabs.value.some((t) => t.type !== 'scratch')
     if (!hasSession) {
       tabMode.value = false
-      tabs.value = []
-      activeTabId.value = null
+      // 保留草稿 tab，不清空 tabs
+      const scratchTab = tabs.value.find((t) => t.id === SCRATCH_PAD_ID)
+      if (scratchTab) {
+        tabs.value = [scratchTab]
+        activeTabId.value = SCRATCH_PAD_ID
+      } else {
+        tabs.value = []
+        activeTabId.value = null
+      }
     }
 
     // 清理 MRU

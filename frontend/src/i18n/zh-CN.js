@@ -725,9 +725,10 @@ export default {
   },
 
   // ========== 文件模块 ==========
-  fileModule: {
-    fileList: '文件列表',
-    refresh: '刷新',
+fileModule: {
+fileList: '文件列表',
+refresh: '刷新',
+refreshFailed: '刷新失败',
     newFile: '新建文件',
     doc: '文档',
     sheet: '表格',
@@ -776,6 +777,83 @@ export default {
     viewer: {
       title: '文件查看',
     },
+  },
+
+  // ========== 添加文件夹弹窗 ==========
+  addFolder: {
+    title: '添加文件夹',
+    subtitle: '选择本地文件夹或网络协议连接',
+    protocolType: '协议类型',
+    protocols: {
+      local: '本地',
+      ftp: 'FTP',
+      ftps: 'FTPS',
+      sftp: 'SFTP',
+      smb: 'SMB',
+      webdav: 'WebDAV',
+      s3: 'S3',
+    },
+    // 本地文件夹
+    localPath: '文件夹路径',
+    localPathPlaceholder: '请点击右侧按钮选择文件夹',
+    // 通用网络协议
+    host: '主机地址',
+    port: '端口',
+    remotePath: '远程路径',
+    username: '用户名',
+    password: '密码',
+    showPassword: '显示密码',
+    hidePassword: '隐藏密码',
+    // SFTP
+    privateKeyPath: '私钥路径',
+    privateKeyHint: '使用密钥认证时填写，留空则使用密码',
+    // SMB
+    shareName: '共享名称',
+    shareNameHint: 'SMB 共享的名称，如 shared、public',
+    domain: '域名/工作组',
+    // WebDAV
+    serverUrl: '服务器地址',
+    serverUrlHint: '完整的 WebDAV 服务 URL',
+    // S3
+    endpoint: 'Endpoint',
+    region: '区域',
+    bucket: 'Bucket',
+    prefix: '前缀',
+    accessKey: 'Access Key',
+    secretKey: 'Secret Key',
+    forcePathStyle: 'Path Style',
+    forcePathStyleHint: 'MinIO 等兼容服务需开启',
+    // 通用
+    folderAlias: '文件夹别名',
+    folderAliasPlaceholder: '可选，默认使用路径末尾名称',
+    folderAliasHint: '在文件列表中显示的名称',
+    // 编辑
+    edit: '编辑配置',
+    editTitle: '编辑文件夹配置',
+    editSuccess: '配置已更新',
+    editFailed: '更新配置失败',
+    // 测试与提交
+    testConnection: '测试连接',
+    testing: '测试中…',
+    testSuccess: '连接成功',
+    testFailed: '连接失败',
+    fillRequiredFields: '请先填写必填项',
+    selectFolderFailed: '选择文件夹失败',
+    addSuccess: '文件夹添加成功',
+    addFailed: '添加文件夹失败',
+    // 远程扫描状态
+    scanning: '文件夹已添加，正在后台扫描远程目录…',
+    scanDone: '远程扫描完成，共 {count} 项',
+    scanFailed: '远程扫描失败',
+    // 远程路径浏览
+    browsePath: '浏览',
+    browseTitle: '选择远程目录',
+    browseLoading: '加载中…',
+    browseEmpty: '目录为空',
+    browseFailed: '加载目录失败',
+    browseUp: '返回上级',
+    browseSelect: '选择此目录',
+    browseHint: '请先填写主机地址、端口、用户名和密码（或私钥路径）',
   },
 
   // ========== OCR 录入识读 ==========

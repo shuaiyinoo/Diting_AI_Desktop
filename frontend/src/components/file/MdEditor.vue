@@ -1,77 +1,41 @@
 <template>
   <div class="flex h-full flex-col overflow-hidden bg-panel">
-    <!-- 顶部工具栏 -->
-    <div class="flex h-10 shrink-0 items-center justify-between border-b border-border px-2 pl-3.5">
-      <div class="flex min-w-0 flex-1 items-center gap-1.5">
-        <Pencil class="size-3.5 shrink-0 text-accent-app" />
-        <span class="truncate text-[13px] font-medium text-app-primary" :title="fileName">{{ fileName || t('mdEditor.fileEdit') }}</span>
+    <!-- 加载态 -->
+    <div v-if="loading" class="flex h-full items-center justify-center">
+      <div class="flex flex-col items-center gap-3 text-app-muted">
+        <Loader2 class="size-6 animate-spin" />
+        <span class="text-sm">{{ t('mdEditor.loading') }}</span>
       </div>
-      <!-- 右侧：折叠第四面板按钮 -->
-      <Tooltip side="bottom">
-        <TooltipTrigger as-child>
-          <button
-            class="inline-flex size-7 items-center justify-center rounded-md text-app-secondary transition-colors hover:bg-hover hover:text-app-primary"
-            @click="$emit('toggle-panel4')"
-          >
-            <PanelRightClose v-if="!panel4Collapsed" class="size-3.5" />
-            <PanelRightOpen v-else class="size-3.5" />
-          </button>
-        </TooltipTrigger>
-        <TooltipContent>{{ panel4Collapsed ? t('mdEditor.expandPanel') : t('mdEditor.collapsePanel') }}</TooltipContent>
-      </Tooltip>
     </div>
 
     <!-- 编辑器主体 -->
-    <div class="flex-1 min-h-0 overflow-hidden">
-      <div v-if="loading" class="flex h-full items-center justify-center">
-        <div class="flex flex-col items-center gap-3 text-app-muted">
-          <Loader2 class="size-6 animate-spin" />
-          <span class="text-sm">{{ t('mdEditor.loading') }}</span>
-        </div>
-      </div>
-      <MdEditorV3
-        v-else
-        v-model="content"
-        :theme="isDark ? 'dark' : 'light'"
-        :preview-theme="isDark ? 'dark' : 'default'"
-        :language="'zh-CN'"
-        :toolbars-exclude="['github', 'save', 'pageFullscreen', 'fullscreen', 'htmlPreview', 'catalog', 'mermaid', 'formula']"
-        :show-toc="false"
-        :preview-only="false"
-        :style="{ height: '100%' }"
-        @on-change="onContentChange"
-        @on-save="onManualSave"
-      />
-    </div>
+    <MdTtEditor
+      v-else
+      v-model="content"
+      :editable="true"
+      @change="onContentChange"
+      ref="editorRef"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, watch, onMounted, onBeforeUnmount } from 'vue';
-import { Loader2, PanelRightClose, PanelRightOpen, Pencil } from '@lucide/vue';
-import { MdEditor } from 'md-editor-v3';
-import 'md-editor-v3/lib/style.css';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Loader2 } from '@lucide/vue';
+import MdTtEditor from '@/components/common/MdTtEditor.vue';
 import { ipcApiRoute } from '@/api';
 import { ipc } from '@/utils/ipcRenderer';
-import { isDark } from '@/theme';
 import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
 
-// 重命名导入以避免命名冲突
-const MdEditorV3 = MdEditor;
-
 const props = defineProps({
   fileItemId: { type: [Number, String], default: null },
-  fileName: { type: String, default: '' },
-  panel4Collapsed: { type: Boolean, default: false },
 });
-
-const emit = defineEmits(['toggle-panel4', 'rename']);
 
 const content = ref('');
 const loading = ref(true);
+const editorRef = ref(null);
 
 // 防抖自动保存
 let saveTimer = null;
@@ -123,6 +87,11 @@ async function doSave() {
   if (!isContentChanged()) return;
 
   try {
+    // 确保编辑器最新内容已同步到 content
+    if (editorRef.value) {
+      await editorRef.value.save();
+    }
+
     // 将文本转为 Uint8Array
     const encoder = new TextEncoder();
     const uint8 = encoder.encode(content.value);
@@ -143,14 +112,6 @@ async function doSave() {
 
 function onContentChange() {
   scheduleSave();
-}
-
-function onManualSave() {
-  if (saveTimer) {
-    clearTimeout(saveTimer);
-    saveTimer = null;
-  }
-  doSave();
 }
 
 // 公开 save 方法

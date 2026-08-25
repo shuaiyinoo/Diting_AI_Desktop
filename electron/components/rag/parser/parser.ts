@@ -23,6 +23,7 @@
 
 import { extractFile } from '@kreuzberg/node';
 import { invoiceOcrService } from '../../invoice/InvoiceOcrService';
+import { ocrWorkerManager } from './ocr-worker-manager';
 
 export interface DocumentParser {
   readonly extensions: string[];
@@ -45,19 +46,6 @@ const SUPPORTED_EXTENSIONS = new Set([
   'html', 'htm', 'xhtml', 'xml', 'json', 'yaml', 'yml', 'toml', 'csv', 'tsv',
   // Text & Markdown
   'txt', 'md', 'markdown', 'djot', 'rst', 'org', 'rtf',
-  // Email & Archives
-  'eml', 'msg', 'zip', 'tar', 'tgz', 'gz', '7z',
-  // Academic & Scientific
-  'bib', 'biblatex', 'ris', 'nbib', 'enw', 'csl',
-  'tex', 'latex', 'typst', 'jats', 'ipynb', 'docbook',
-  // Documentation
-  'opml', 'pod', 'mdoc', 'troff',
-  // Common Code (tree-sitter)
-  'js', 'jsx', 'ts', 'tsx', 'mjs', 'cjs',
-  'py', 'pyw', 'go', 'java', 'c', 'h', 'cpp', 'hpp', 'cc', 'cxx',
-  'rs', 'rb', 'php', 'sh', 'bash', 'zsh', 'sql',
-  'kt', 'swift', 'scala', 'clj', 'cljs', 'ex', 'exs',
-  'lua', 'r', 'dart', 'vue', 'svelte',
 ]);
 
 /** 不需要向量化的系统/临时文件名 */
@@ -106,9 +94,10 @@ export async function parseDocument(filePath: string): Promise<string> {
     return result.text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
   }
 
-  // ── 分流 2：图片 → PaddleOCR 识别 ──
+  // ── 分流 2：图片 → PaddleOCR 子进程识别 ──
+  // 通过子进程隔离，防止 ONNX Runtime 原生层崩溃导致主进程退出
   if (IMAGE_OCR_EXTENSIONS.has(ext)) {
-    const result = await invoiceOcrService.recognize(filePath);
+    const result = await ocrWorkerManager.recognize(filePath);
     if (!result.success || !result.text) {
       throw new Error(`图片 OCR 识别失败: ${result.error || '内容为空'}`);
     }

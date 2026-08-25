@@ -1,16 +1,23 @@
 <template>
   <div class="flex h-full w-full overflow-hidden bg-layout" ref="workspaceRef">
-    <!-- ========== 第二部分：文件列表区 ========== -->
+    <!-- ========== 第二部分：文件树区 ========== -->
     <div class="flex flex-col h-full overflow-hidden bg-panel" :style="{ width: panel2Width + 'px', flexShrink: 0 }">
+      <!-- 顶部：文件夹名 + 操作 -->
       <div class="flex h-10 shrink-0 items-center gap-1.5 border-b border-border px-2">
+        <Folder class="size-3.5 shrink-0 text-app-muted" />
+        <!-- 协议缩写标签 -->
         <span
-          v-if="selectedSubFolder"
-          class="max-w-[200px] truncate text-[13px] font-medium text-app-primary"
-          :title="selectedSubFolder.relative_path"
+          v-if="ws.selectedFolder"
+          class="flex h-[18px] w-[30px] shrink-0 items-center justify-center rounded-[4px] text-[9px] font-bold leading-none tracking-wide"
+          :class="getProtocolBadgeClass(ws.selectedFolder.protocol || 'local')"
+          :title="getProtocolLabel(ws.selectedFolder.protocol || 'local')"
         >
-          {{ selectedSubFolder.name }}
+          {{ getProtocolBadge(ws.selectedFolder.protocol || 'local') }}
         </span>
-        <span v-else class="text-[13px] font-normal text-app-muted">{{ t('fileModule.fileList') }}</span>
+        <span v-if="ws.selectedFolder" class="min-w-0 flex-1 truncate text-[13px] font-medium text-app-primary" :title="ws.selectedFolder.folder_name || ws.selectedFolder.path">
+          {{ ws.selectedFolder.folder_name || ws.selectedFolder.path }}
+        </span>
+        <span v-else class="flex-1 text-[13px] font-normal text-app-muted">{{ t('fileModule.fileList') }}</span>
         <div class="ml-auto flex items-center gap-1">
           <!-- RAG 向量化状态标签 -->
           <Badge v-if="ragProcessing || ragQueueSize > 0" variant="secondary" class="inline-flex items-center gap-1 text-[11px]">
@@ -20,10 +27,11 @@
           <Tooltip side="bottom">
             <TooltipTrigger as-child>
               <button
-                class="inline-flex size-7 items-center justify-center rounded-md text-app-secondary transition-colors hover:bg-hover hover:text-app-primary"
-                @click="onRefreshFiles"
+                class="inline-flex size-7 items-center justify-center rounded-md text-app-secondary transition-colors hover:bg-hover hover:text-app-primary disabled:opacity-50"
+                :disabled="treeLoading"
+                @click="onRefreshTree"
               >
-                <RefreshCw class="size-3.5" />
+                <RefreshCw class="size-3.5" :class="{ 'animate-spin': treeLoading }" />
               </button>
             </TooltipTrigger>
             <TooltipContent>{{ t('fileModule.refresh') }}</TooltipContent>
@@ -71,36 +79,82 @@
         </div>
       </div>
 
-      <div class="flex-1 min-h-0 overflow-y-auto px-1.5 py-1">
-        <div v-if="!selectedSubFolder" class="flex min-h-[200px] items-center justify-center">
+      <!-- 文件树 -->
+      <div class="min-h-0 flex-1 overflow-y-auto py-1" v-loading="treeLoading">
+        <!-- 空状态 -->
+        <div v-if="!ws.selectedFolderId" class="flex min-h-[200px] items-center justify-center">
           <div class="flex flex-col items-center gap-2 text-app-muted">
             <FolderOpen class="size-10 opacity-40" />
-            <span class="text-sm">{{ fileEmptyText }}</span>
+            <span class="text-sm">{{ t('fileModule.selectFolderFirst') }}</span>
           </div>
         </div>
-        <div v-else class="flex flex-col gap-0.5" v-loading="fileLoading">
-          <div
-            v-for="file in fileList"
-            :key="file.id"
-            class="flex cursor-pointer rounded p-2 transition-colors hover:bg-hover"
-            :class="{
-              'bg-active border-l-2 border-accent-app pl-[7px]': ws.selectedFileId === file.id,
-            }"
-            @click="onSelectFile(file)"
-          >
-            <div class="min-w-0 flex-1">
-              <div class="line-clamp-2 break-all text-[13px] font-medium leading-tight text-foreground" :title="file.name">
-                {{ file.name }}
-              </div>
-              <div class="mt-1 truncate text-[11px] text-app-muted">
-                {{ formatFileSize(file.size) }} · {{ formatDateTime(file.mtime) }}
-              </div>
-            </div>
+        <div v-else-if="!treeLoading && flatTree.length === 0" class="flex min-h-[200px] items-center justify-center">
+          <div class="flex flex-col items-center gap-2 text-app-muted">
+            <Inbox class="size-10 opacity-40" />
+            <span class="text-sm">{{ t('fileModule.noFilesInFolder') }}</span>
           </div>
-          <div v-if="!fileLoading && fileList.length === 0" class="flex min-h-[200px] items-center justify-center">
-            <div class="flex flex-col items-center gap-2 text-app-muted">
-              <Inbox class="size-10 opacity-40" />
-              <span class="text-sm">{{ t('fileModule.noFilesInFolder') }}</span>
+        </div>
+        <!-- 树形列表 -->
+        <div v-else>
+          <div
+            v-for="node in flatTree"
+            :key="node.key"
+            class="flex cursor-pointer items-start gap-1 py-1 pr-2 transition-colors"
+            :class="node.isFile && ws.selectedFileId === node.id ? 'bg-accent/40' : 'hover:bg-accent/30'"
+            :style="{ paddingLeft: 8 + node.depth * 16 + 'px' }"
+            @click="onTreeNodeClick(node)"
+          >
+            <!-- 展开箭头 -->
+            <component
+              v-if="node.isDir"
+              :is="node.expanded ? ChevronDown : ChevronRight"
+              class="size-2.5 shrink-0 text-muted-foreground mt-[2px]"
+            />
+            <span v-else class="inline-block w-[10px] shrink-0" />
+
+            <!-- 文件夹/文件图标 -->
+            <component
+              :is="node.isDir ? Folder : FileText"
+              :size="14"
+              class="shrink-0 mt-[1px]"
+              :class="[
+                node.isFile && !node.supported ? 'text-muted-foreground/40' :
+                node.isFile && ws.selectedFileId === node.id ? 'text-primary' : 'text-muted-foreground'
+              ]"
+            />
+
+            <!-- 右侧内容区：文件两行，文件夹单行 -->
+            <div class="min-w-0 flex-1">
+              <!-- 第一行：名称 + 状态标签 -->
+              <div class="flex items-center gap-1">
+                <span
+                  class="min-w-0 flex-1 truncate text-[12px]"
+                  :class="[
+                    node.isFile && !node.supported ? 'text-muted-foreground/40' :
+                    node.isFile && ws.selectedFileId === node.id ? 'text-primary font-medium' : 'text-foreground'
+                  ]"
+                >
+                  {{ node.name }}
+                </span>
+                <!-- 文件状态标签：不支持的文件不显示 -->
+                <span
+                  v-if="node.isFile && node.supported && node.statusText"
+                  class="shrink-0 rounded px-1 text-[9px] font-medium leading-tight"
+                  :class="node.statusClass"
+                >
+                  {{ node.statusText }}
+                </span>
+              </div>
+              <!-- 第二行：时间 + 大小（仅文件） -->
+              <div
+                v-if="node.isFile"
+                class="mt-[1px] flex items-center gap-1.5 text-[10px] text-muted-foreground"
+                :class="!node.supported ? 'opacity-40' : ''"
+              >
+                <span>{{ node.formattedTime }}</span>
+                <span class="text-muted-foreground/40">·</span>
+                <span>{{ node.formattedSize }}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -130,10 +184,13 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
-import { FileCode, FileText, FolderOpen, Inbox, Loader2, Plus, RefreshCw, Sheet } from '@lucide/vue'
+import {
+  FileCode, FileText, FolderOpen, Inbox, Loader2, Plus, RefreshCw, Sheet,
+  ChevronDown, ChevronRight, Folder,
+} from '@lucide/vue'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Badge } from '@/components/ui/badge'
@@ -148,12 +205,11 @@ import PanelDivider from '@/components/layout/PanelDivider.vue'
 const { t } = useI18n()
 const toast = useToast()
 const ws = useWorkspaceStore()
-// 使用 storeToRefs 确保 store 的 ref/computed 在 HMR 后仍保持响应式
 const { selectedFolderId: wsSelectedFolderId, selectedFolder: wsSelectedFolder, selectedFile: wsSelectedFile, selectedFileId: wsSelectedFileId } = storeToRefs(ws)
 
 // ========== 面板宽度 & 折叠状态 ==========
 const workspaceRef = ref(null)
-const panel2Width = ref(280)
+const panel2Width = ref(300)
 const panel4Width = ref(300)
 const panel4Collapsed = ref(true)
 
@@ -169,36 +225,45 @@ function onPanel4Resize(delta) {
   panel4Width.value = Math.min(400, Math.max(240, panel4Width.value - delta))
 }
 
-// ========== 子文件夹树 ==========
-const subFolderTree = ref([])
-const subFolderLoading = ref(false)
-const selectedSubFolder = ref(null)
+// ========== 文件树 ==========
+const treeLoading = ref(false)
+/** 展开的目录 Set（key = dirId） */
+const expandedDirs = ref(new Set())
+/** 目录下的文件缓存：dirId → FileItem[] */
+const dirFileCache = reactive({})
+/** 根节点目录树（来自 getSubFolders） */
+const rootTree = ref([])
 
-// ========== 文件列表 ==========
-const fileList = ref([])
-const fileLoading = ref(false)
+// ========== 新建文件 ==========
+const createPopoverVisible = ref(false)
+const creatingFile = ref(false)
+
+const FILE_TYPE_LABELS = {
+  docx: '文档',
+  xlsx: '表格',
+  pptx: '演示文稿',
+  pdf: 'PDF',
+  md: 'MD',
+}
 
 const selectedFileStatusTag = computed(() => {
   if (!ws.selectedFile) return { color: 'default', text: '-' }
   return getStatusTag(ws.selectedFile.status, ws.selectedFile.name)
 })
 
-const fileEmptyText = computed(() => {
-  if (!wsSelectedFolderId.value) return t('fileModule.selectFolderFirst')
-  return t('fileModule.selectSubFolder')
-})
-
 // 支持向量化的文件扩展名
 const SUPPORTED_EXTENSIONS = [
-  '.pdf','.docx','.docm','.dotx','.dotm','.dot','.odt','.xlsx','.xlsm','.xlsb','.xls','.xla',
-  '.xlam','.xltm','.xltx','.xlt','.ods','.pptx','.pptm','.ppsx','.potx','.potm','.pot','.ppt',
-  '.epub','.fb2','.dbf','.hwp','.hwpx','.png','.jpg','.jpeg','.gif','.webp','.bmp','.tiff','.tif',
-  '.svg','.html','.htm','.xhtml','.xml','.json','.yaml','.yml','.toml','.csv','.tsv','.txt','.md',
-  '.markdown','.djot','.rst','.org','.rtf','.eml','.msg','.zip','.tar','.tgz','.gz','.7z','.bib',
-  '.biblatex','.ris','.nbib','.enw','.csl','.tex','.latex','.typst','.jats','.ipynb','.docbook',
-  '.opml','.pod','.mdoc','.troff','.js','.jsx','.ts','.tsx','.mjs','.cjs','.py','.pyw','.go',
-  '.java','.c','.h','.cpp','.hpp','.cc','.cxx','.rs','.rb','.php','.sh','.bash','.zsh','.sql',
-  '.kt','.swift','.scala','.clj','.cljs','.ex','.exs','.lua','.r','.dart','.vue','.svelte',
+  // Office Documents
+  '.pdf', '.docx', '.docm', '.dotx', '.dotm', '.dot', '.odt',
+  '.xlsx', '.xlsm', '.xlsb', '.xls', '.xla', '.xlam', '.xltm', '.xltx', '.xlt', '.ods',
+  '.pptx', '.pptm', '.ppsx', '.potx', '.potm', '.pot', '.ppt',
+  '.epub', '.fb2', '.dbf', '.hwp', '.hwpx',
+  // Images (OCR)
+  '.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.tiff', '.tif', '.svg',
+  // Web & Data
+  '.html', '.htm', '.xhtml', '.xml', '.json', '.yaml', '.yml', '.toml', '.csv', '.tsv',
+  // Text & Markdown
+  '.txt', '.md', '.markdown', '.djot', '.rst', '.org', '.rtf',
 ]
 const IGNORE_FILENAMES = ['.ds_store', 'thumbs.db']
 
@@ -223,44 +288,286 @@ function getStatusTag(status, fileName) {
   return map[status] || { color: 'default', text: status || t('fileModule.status.unknown') }
 }
 
+function getStatusBadgeClass(status, fileName) {
+  if (!isFileSupported(fileName)) {
+    return 'bg-muted text-muted-foreground'
+  }
+  const map = {
+    PENDING: 'bg-orange-500/15 text-orange-600 dark:text-orange-400',
+    PROCESSING: 'bg-blue-500/15 text-blue-600 dark:text-blue-400',
+    READY: 'bg-green-500/15 text-green-600 dark:text-green-400',
+    FAILED: 'bg-red-500/15 text-red-600 dark:text-red-400',
+  }
+  return map[status] || 'bg-muted text-muted-foreground'
+}
+
+// ========== 扁平化树 ==========
+/**
+ * 将 rootTree（目录树）+ dirFileCache（目录下文件）展平为列表
+ * 仿 AgentFilePanel 的 flattenTree 模式
+ */
+const flatTree = computed(() => {
+  const result = []
+  for (const rootNode of rootTree.value) {
+    flattenNode(rootNode, 0, result)
+  }
+  return result
+})
+
+function flattenNode(node, depth, result) {
+  result.push({
+    key: `dir-${node.id}`,
+    id: node.id,
+    name: node.name,
+    isDir: true,
+    isFile: false,
+    depth,
+    expanded: expandedDirs.value.has(node.id),
+    status: null,
+  })
+
+  if (expandedDirs.value.has(node.id)) {
+    // 先显示子目录
+    if (node.children) {
+      for (const child of node.children) {
+        flattenNode(child, depth + 1, result)
+      }
+    }
+    // 再显示文件
+    const files = dirFileCache[node.id] || []
+    for (const file of files) {
+      const supported = isFileSupported(file.name)
+      const tag = supported ? getStatusTag(file.status, file.name) : null
+      result.push({
+        key: `file-${file.id}`,
+        id: file.id,
+        name: file.name,
+        isDir: false,
+        isFile: true,
+        depth: depth + 1,
+        expanded: false,
+        status: file.status,
+        supported,
+        statusText: tag?.text || '',
+        statusClass: tag ? getStatusBadgeClass(file.status, file.name) : '',
+        size: file.size || 0,
+        mtime: file.mtime || '',
+        formattedSize: formatFileSize(file.size),
+        formattedTime: formatDateTime(file.mtime),
+      })
+    }
+  }
+}
+
+// ========== 树操作 ==========
+function onTreeNodeClick(node) {
+  if (node.isDir) {
+    toggleDir(node.id)
+  } else {
+    onSelectFile(node)
+  }
+}
+
+function toggleDir(dirId) {
+  if (expandedDirs.value.has(dirId)) {
+    expandedDirs.value.delete(dirId)
+  } else {
+    expandedDirs.value.add(dirId)
+    // 懒加载：首次展开时加载该目录下的文件
+    if (!dirFileCache[dirId]) {
+      loadDirFiles(dirId)
+    }
+  }
+  expandedDirs.value = new Set(expandedDirs.value)
+}
+
+async function loadDirFiles(dirId) {
+  if (!wsSelectedFolder.value) return
+  try {
+    const data = await ipc.invoke(ipcApiRoute.file.getFiles, {
+      folderId: wsSelectedFolder.value.id,
+      itemId: dirId,
+    })
+    dirFileCache[dirId] = data || []
+  } catch (err) {
+    console.error('[file] 加载目录文件失败:', err)
+    dirFileCache[dirId] = []
+  }
+}
+
+function onSelectFile(node) {
+  // 从 dirFileCache 中找到完整的 file 对象
+  const files = dirFileCache[node.id] || []
+  const file = files.find(f => f.id === node.id)
+  if (file) {
+    ws.selectFile(file)
+  } else {
+    // 如果缓存中没有，可能是从别处来的，构造一个最小对象
+    ws.selectFile({ id: node.id, name: node.name, status: node.status })
+  }
+}
+
+/** 刷新当前文件夹：远程文件夹重新从服务器获取最新结构，本地文件夹重新扫描 */
+async function onRefreshTree() {
+  if (!wsSelectedFolderId.value || !wsSelectedFolder.value) return
+
+  const folder = wsSelectedFolder.value
+  const isRemote = (folder.protocol || 'local') !== 'local'
+
+  treeLoading.value = true
+  try {
+    // 调用后端重新扫描（远程会从服务器拉取最新文件结构）
+    await ipc.invoke(ipcApiRoute.file.refreshFolder, { folderId: folder.id })
+    // 清空缓存重新加载文件树
+    for (const key of Object.keys(dirFileCache)) {
+      delete dirFileCache[key]
+    }
+    expandedDirs.value = new Set()
+    await loadTree(wsSelectedFolderId.value)
+  } catch (err) {
+    console.error('[file] 刷新文件夹失败:', err)
+    toast.error(t('fileModule.refreshFailed'))
+  } finally {
+    treeLoading.value = false
+  }
+}
+
+// ========== 监听文件夹切换 ==========
+watch(wsSelectedFolderId, (folderId) => {
+  // 清空状态
+  for (const key of Object.keys(dirFileCache)) {
+    delete dirFileCache[key]
+  }
+  expandedDirs.value = new Set()
+  rootTree.value = []
+  ws.selectFile(null)
+  if (folderId) {
+    loadTree(folderId)
+  }
+})
+
+// ========== 页面初始化 ==========
+onMounted(() => {
+  if (ws.selectedFolderId) {
+    loadTree(ws.selectedFolderId)
+  }
+  registerSyncChange()
+  registerRagProgressListener()
+  registerRemoteScanDone()
+})
+
+onUnmounted(() => {
+  ipc.removeAllListeners(ipcApiRoute.file.onSyncChange)
+  ipc.removeAllListeners(ipcApiRoute.file.onRagProgress)
+  ipc.removeAllListeners(ipcApiRoute.file.onRemoteScanDone)
+})
+
+function registerSyncChange() {
+  ipc.invoke(ipcApiRoute.file.registerSyncCallback).catch(() => {})
+  ipc.on(ipcApiRoute.file.onSyncChange, (_event, result) => {
+    const { folderId } = result
+    if (ws.selectedFolderId === folderId) {
+      // 刷新：清空缓存重新加载
+      for (const key of Object.keys(dirFileCache)) {
+        delete dirFileCache[key]
+      }
+      loadTree(folderId)
+    }
+  })
+}
+
+/** 监听远程扫描完成事件，自动刷新文件树 */
+function registerRemoteScanDone() {
+  ipc.on(ipcApiRoute.file.onRemoteScanDone, (_event, result) => {
+    const { folderId, success } = result
+    if (ws.selectedFolderId === folderId && success) {
+      // 清空缓存重新加载
+      for (const key of Object.keys(dirFileCache)) {
+        delete dirFileCache[key]
+      }
+      expandedDirs.value = new Set()
+      loadTree(folderId)
+    }
+  })
+}
+
+async function loadTree(folderId) {
+  treeLoading.value = true
+  try {
+    const data = await ipc.invoke(ipcApiRoute.file.getSubFolders, { folderId })
+    rootTree.value = data || []
+    // 自动展开根节点
+    if (rootTree.value.length > 0) {
+      const rootNode = rootTree.value[0]
+      expandedDirs.value.add(rootNode.id)
+      // 懒加载根节点下的文件
+      await loadDirFiles(rootNode.id)
+      // 也加载根节点下子目录的文件（如果子目录已展开）
+      expandedDirs.value = new Set(expandedDirs.value)
+    }
+  } catch (err) {
+    console.error('[file] 加载文件夹树失败:', err)
+    toast.error(t('fileModule.loadSubFolderFailed'))
+  } finally {
+    treeLoading.value = false
+  }
+}
+
+function registerRagProgressListener() {
+  ipc.on(ipcApiRoute.file.onRagProgress, (_event, data) => {
+    const { type, queueSize, status } = data
+    ragQueueSize.value = queueSize || 0
+    ragProcessing.value = type !== 'idle'
+    // RAG 状态变化时刷新当前展开目录的文件
+    if (type === 'ingest' && (status === 'READY' || status === 'FAILED' || status === 'PROCESSING')) {
+      refreshOpenDirs()
+    } else if (type === 'delete' || type === 'idle') {
+      refreshOpenDirs()
+    }
+  })
+}
+
+/** 刷新所有已展开目录的文件列表 */
+async function refreshOpenDirs() {
+  const dirIds = Object.keys(dirFileCache).map(Number)
+  for (const dirId of dirIds) {
+    await loadDirFiles(dirId)
+  }
+}
+
 // ========== RAG 向量化 ==========
 const ragQueueSize = ref(0)
 const ragProcessing = ref(false)
 
 // ========== 新建文件 ==========
-const createPopoverVisible = ref(false)
-const creatingFile = ref(false)
-
-const FILE_TYPE_LABELS = {
-  docx: '文档',
-  xlsx: '表格',
-  pptx: '演示文稿',
-  pdf: 'PDF',
-  md: 'MD',
-}
-
 async function onCreateFile(ext) {
   createPopoverVisible.value = false
-  if (!ws.selectedFolder || !selectedSubFolder.value) {
+  if (!ws.selectedFolder) {
     toast.warning(t('fileModule.selectFolder'))
     return
   }
   if (creatingFile.value) return
   creatingFile.value = true
 
-  const label = FILE_TYPE_LABELS[ext] || ext
   const baseName = t(ext === 'docx' ? 'fileModule.newDoc' : ext === 'xlsx' ? 'fileModule.newSheet' : 'fileModule.newDoc')
   const fileName = await generateUniqueFileName(baseName, ext)
+
+  // 找到当前展开的第一个目录作为父目录（优先根节点）
+  let parentId = 0
+  if (rootTree.value.length > 0) {
+    parentId = rootTree.value[0].id
+  }
 
   try {
     const result = await ipc.invoke(ipcApiRoute.file.createFile, {
       folderId: ws.selectedFolder.id,
-      parentId: selectedSubFolder.value.id,
+      parentId,
       fileName,
     })
     if (result.success && result.fileItem) {
       toast.success(t('fileModule.created', { name: fileName }))
-      await loadFileList()
+      // 刷新该目录的文件列表
+      await loadDirFiles(parentId)
       onSelectFile(result.fileItem)
     } else {
       toast.error(result.message || t('fileModule.createFailed'))
@@ -276,7 +583,13 @@ async function onCreateFile(ext) {
 async function generateUniqueFileName(baseName, ext) {
   let name = `${baseName}.${ext}`
   let counter = 1
-  const existingNames = new Set(fileList.value.map((f) => f.name))
+  // 从所有缓存的文件中检查重名
+  const existingNames = new Set()
+  for (const files of Object.values(dirFileCache)) {
+    for (const f of files) {
+      existingNames.add(f.name)
+    }
+  }
   while (existingNames.has(name)) {
     name = `${baseName}${counter}.${ext}`
     counter++
@@ -284,122 +597,48 @@ async function generateUniqueFileName(baseName, ext) {
   return name
 }
 
-// 监听 MenuBar 中文件夹选中变化（使用 storeToRefs 的 ref 确保响应式）
-watch(wsSelectedFolderId, (folderId, oldFolderId) => {
-  console.log('[FileView] folderId changed:', folderId, 'old:', oldFolderId)
-  if (folderId) {
-    loadSubFolderTree(folderId)
-  } else {
-    subFolderTree.value = []
-    selectedSubFolder.value = null
-    fileList.value = []
+// ========== 协议标签辅助函数 ==========
+
+/** 协议 → 缩写标签文本 */
+function getProtocolBadge(protocol) {
+  const map = {
+    local: 'LOC',
+    ftp: 'FTP',
+    ftps: 'FTPS',
+    sftp: 'SFTP',
+    smb: 'SMB',
+    webdav: 'DAV',
+    s3: 'S3',
   }
-})
+  return map[protocol] || 'LOC'
+}
 
-// ========== 页面初始化 ==========
-onMounted(() => {
-  // 如果 MenuBar 已加载了文件夹，直接加载子文件夹
-  if (ws.selectedFolderId) {
-    loadSubFolderTree(ws.selectedFolderId)
+/** 协议 → 完整标签（tooltip 用） */
+function getProtocolLabel(protocol) {
+  const map = {
+    local: t('addFolder.protocols.local'),
+    ftp: t('addFolder.protocols.ftp'),
+    ftps: t('addFolder.protocols.ftps'),
+    sftp: t('addFolder.protocols.sftp'),
+    smb: t('addFolder.protocols.smb'),
+    webdav: t('addFolder.protocols.webdav'),
+    s3: t('addFolder.protocols.s3'),
   }
-  registerSyncChange()
-  registerRagProgressListener()
-})
-
-onUnmounted(() => {
-  ipc.removeAllListeners(ipcApiRoute.file.onSyncChange)
-  ipc.removeAllListeners(ipcApiRoute.file.onRagProgress)
-})
-
-function registerSyncChange() {
-  ipc.invoke(ipcApiRoute.file.registerSyncCallback).catch(() => {})
-  ipc.on(ipcApiRoute.file.onSyncChange, (event, result) => {
-    const { folderId } = result
-    if (ws.selectedFolderId === folderId) {
-      loadSubFolderTree(folderId)
-    }
-  })
+  return map[protocol] || t('addFolder.protocols.local')
 }
 
-async function loadSubFolderTree(folderId) {
-  console.log('[FileView] loadSubFolderTree start, folderId:', folderId)
-  subFolderLoading.value = true
-  try {
-    const data = await ipc.invoke(ipcApiRoute.file.getSubFolders, { folderId })
-    subFolderTree.value = data || []
-    console.log('[FileView] subFolderTree loaded:', subFolderTree.value.length, 'items')
-    if (subFolderTree.value.length > 0) {
-      // 文件夹切换后始终重新选择第一个子文件夹，强制刷新文件列表
-      onSelectSubFolder(subFolderTree.value[0])
-    } else {
-      selectedSubFolder.value = null
-      fileList.value = []
-    }
-  } catch (err) {
-    console.error('[file] 加载子文件夹树失败:', err)
-    toast.error(t('fileModule.loadSubFolderFailed'))
-  } finally {
-    subFolderLoading.value = false
+/** 协议 → 标签样式类 */
+function getProtocolBadgeClass(protocol) {
+  const map = {
+    local: 'bg-blue-500/15 text-blue-600 dark:text-blue-400',
+    ftp: 'bg-cyan-500/15 text-cyan-600 dark:text-cyan-400',
+    ftps: 'bg-teal-500/15 text-teal-600 dark:text-teal-400',
+    sftp: 'bg-violet-500/15 text-violet-600 dark:text-violet-400',
+    smb: 'bg-amber-500/15 text-amber-600 dark:text-amber-400',
+    webdav: 'bg-pink-500/15 text-pink-600 dark:text-pink-400',
+    s3: 'bg-green-500/15 text-green-600 dark:text-green-400',
   }
-}
-
-function onSelectSubFolder(record) {
-  console.log('[FileView] onSelectSubFolder:', record?.name, 'id:', record?.id)
-  selectedSubFolder.value = record
-  fileList.value = []
-  ws.selectFile(null)
-  loadFileList()
-}
-
-async function loadFileList() {
-  console.log('[FileView] loadFileList: folder =', wsSelectedFolder.value?.id, 'subFolder =', selectedSubFolder.value?.id)
-  if (!wsSelectedFolder.value || !selectedSubFolder.value) {
-    console.log('[FileView] loadFileList EARLY RETURN: folder or subFolder missing')
-    return
-  }
-  fileLoading.value = true
-  try {
-    const data = await ipc.invoke(ipcApiRoute.file.getFiles, {
-      folderId: wsSelectedFolder.value.id,
-      itemId: selectedSubFolder.value.id,
-    })
-    fileList.value = (data || []).slice().sort((a, b) => b.id - a.id)
-    console.log('[FileView] fileList loaded:', fileList.value.length, 'items')
-    if (fileList.value.length > 0) {
-      const current = fileList.value.find(f => f.id === wsSelectedFileId.value)
-      if (!wsSelectedFileId.value || !current) {
-        onSelectFile(fileList.value[0])
-      } else {
-        ws.selectFile(current)
-      }
-    }
-  } catch (err) {
-    console.error('[file] 加载文件列表失败:', err)
-    toast.error(t('fileModule.loadFileListFailed'))
-  } finally {
-    fileLoading.value = false
-  }
-}
-
-function onSelectFile(file) {
-  ws.selectFile(file)
-}
-
-function onRefreshFiles() {
-  loadFileList()
-}
-
-function registerRagProgressListener() {
-  ipc.on(ipcApiRoute.file.onRagProgress, (_event, data) => {
-    const { type, queueSize, status } = data
-    ragQueueSize.value = queueSize || 0
-    ragProcessing.value = type !== 'idle'
-    if (type === 'ingest' && (status === 'READY' || status === 'FAILED' || status === 'PROCESSING')) {
-      loadFileList()
-    } else if (type === 'delete' || type === 'idle') {
-      loadFileList()
-    }
-  })
+  return map[protocol] || map.local
 }
 
 // ========== 格式化工具 ==========
@@ -408,18 +647,20 @@ function formatDateTime(isoStr) {
   const d = new Date(isoStr)
   if (isNaN(d.getTime())) return isoStr
   const pad = (n) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
 }
 
 function formatFileSize(bytes) {
-  if (!bytes && bytes !== 0) return '-'
-  const units = ['B', 'KB', 'MB', 'GB', 'TB']
+  if (!bytes || bytes === 0) return '0 B'
+  const units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB']
   let size = bytes
   let i = 0
   while (size >= 1024 && i < units.length - 1) {
     size /= 1024
     i++
   }
+  // 小于 1KB 时显示整数，否则保留 1 位小数
+  if (i === 0) return `${size} ${units[i]}`
   return `${size.toFixed(1)} ${units[i]}`
 }
 </script>
