@@ -218,6 +218,7 @@ const PROVIDER_LOGO_MAP = {
   kimi: KimiLogo,
   zhipu: ZhipuLogo,
   doubao: VolcengineLogo,
+  volc: VolcengineLogo,
   qwen: QwenLogo,
   minimax: MiniMaxLogo,
   xiaomi: XiaomiLogo,

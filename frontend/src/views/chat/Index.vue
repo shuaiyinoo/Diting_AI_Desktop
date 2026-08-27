@@ -99,6 +99,7 @@
         >
           <!-- 输入区：复用 Agent 的 RichTextInput 组件，行为完全一致 -->
           <RichTextInput
+            ref="richTextInputRef"
             v-model="inputText"
             :placeholder="t('chat.inputPlaceholder')"
             :auto-focus-trigger="currentSessionId"
@@ -110,7 +111,7 @@
 
           <!-- 底部工具栏 -->
           <div class="flex items-center justify-between gap-2 border-t border-border px-3 py-1.5">
-            <!-- 左侧：知识库选择 -->
+            <!-- 左侧：知识库选择 + 语音输入 -->
             <div class="flex min-w-0 items-center gap-2">
               <Select v-model="selectedKbOption">
                 <SelectTrigger class="h-8 min-w-[120px] max-w-[180px]">
@@ -129,6 +130,11 @@
                   <SelectItem value="INVOICE">{{ t('chat.kbInvoice') }}</SelectItem>
                 </SelectContent>
               </Select>
+              <ChatAgentVoiceInput
+                @transcribed="handleVoiceTranscribed"
+                @voice-start="onVoiceStart"
+                @voice-stop="onVoiceStop"
+              />
             </div>
 
             <!-- 右侧：模型选择 + 发送/停止按钮 -->
@@ -271,6 +277,7 @@ import { isDark } from '@/theme'
 import MarkdownRender from 'markstream-vue'
 import CitationRail from '@/components/CitationRail.vue'
 import RichTextInput from '@/components/agent/RichTextInput.vue'
+import ChatAgentVoiceInput from '@/components/common/ChatAgentVoiceInput.vue'
 import { getModelLogo, LOGO_DEFAULT } from '@/utils/model-logo'
 import { inferProviderType } from '@/utils/provider-presets'
 
@@ -407,6 +414,27 @@ const isStreaming = computed(() => chatStore.isStreaming)
 const inputText = ref('')
 const messagesRef = ref(null)
 const inputFocused = ref(false)
+const richTextInputRef = ref(null)
+
+/** 语音转写：实时填入 */
+let voiceBaseText = ''
+
+/** 录音开始时记录当前输入框内容作为基准 */
+function onVoiceStart() {
+  voiceBaseText = inputText.value || ''
+}
+
+/** 录音结束清除基准 */
+function onVoiceStop() {
+  voiceBaseText = ''
+}
+
+/** 实时转写结果：将基准 + 最新文字填入输入框 */
+function handleVoiceTranscribed(text) {
+  // 直接设置完整内容（基准 + 转写文字），实现实时更新
+  const separator = voiceBaseText && !voiceBaseText.endsWith('\n') ? '\n' : ''
+  inputText.value = voiceBaseText + separator + text + '\n'
+}
 // 滚动追踪：用户是否处于消息列表底部
 const isAtBottom = ref(true)
 // 会话切换标记：切换后等待消息加载完成再滚动到底部

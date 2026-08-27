@@ -425,7 +425,7 @@ const thinkingLevel = ref('high')
 // ========== 面板宽度 & 折叠 ==========
 const workspaceRef = ref(null)
 const panel4Width = ref(300)
-const panel4Collapsed = ref(false)
+const panel4Collapsed = ref(true)
 
 function togglePanel4() {
   panel4Collapsed.value = !panel4Collapsed.value

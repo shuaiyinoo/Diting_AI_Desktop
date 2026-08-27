@@ -19,6 +19,7 @@
     >
       <!-- 富文本输入区 -->
       <RichTextInput
+        ref="richTextInputRef"
         v-model="modelValue"
         :placeholder="placeholder"
         :auto-focus-trigger="sessionId"
@@ -36,6 +37,11 @@
         <div class="flex items-center gap-2">
           <PermissionModeSelector v-model="permissionMode" />
           <ThinkingDepthPopover v-model="thinkingLevel" />
+          <ChatAgentVoiceInput
+            @transcribed="handleVoiceTranscribed"
+            @voice-start="onVoiceStart"
+            @voice-stop="onVoiceStop"
+          />
         </div>
 
         <!-- 右侧 -->
@@ -88,10 +94,11 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Select, SelectTrigger, SelectContent, SelectItem } from '@/components/ui/select'
 import RichTextInput from '@/components/agent/RichTextInput.vue'
+import ChatAgentVoiceInput from '@/components/common/ChatAgentVoiceInput.vue'
 import PermissionModeSelector from '@/components/agent/PermissionModeSelector.vue'
 import ThinkingDepthPopover from '@/components/agent/ThinkingDepthPopover.vue'
 import DelegationCard from '@/components/agent/DelegationCard.vue'
@@ -157,6 +164,27 @@ const thinkingLevel = computed({
 })
 
 const hasTaskBlocksFlag = computed(() => hasTaskBlocks(props.taskBlocks))
+
+/** 语音转写：实时填入 */
+const richTextInputRef = ref(null)
+let voiceBaseText = ''
+
+/** 录音开始时记录当前输入框内容作为基准 */
+function onVoiceStart() {
+  voiceBaseText = modelValue.value || ''
+}
+
+/** 录音结束清除基准 */
+function onVoiceStop() {
+  voiceBaseText = ''
+}
+
+/** 实时转写结果：将基准 + 最新文字填入输入框 */
+function handleVoiceTranscribed(text) {
+  // 直接设置完整内容（基准 + 转写文字），实现实时更新
+  const separator = voiceBaseText && !voiceBaseText.endsWith('\n') ? '\n' : ''
+  modelValue.value = voiceBaseText + separator + text + '\n'
+}
 
 /** 当前选中模型的 logo */
 const currentModelLogo = computed(() => {

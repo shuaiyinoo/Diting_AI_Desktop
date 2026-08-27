@@ -108,15 +108,15 @@ export async function chatStream(
   model: LlmModelRecord,
   messages: ChatMessage[],
   callbacks: StreamCallbacks,
-  options: { timeoutMs?: number; signal?: AbortSignal } = {}
+  options: { timeoutMs?: number; signal?: AbortSignal; temperature?: number; maxTokens?: number } = {}
 ): Promise<void> {
   const startMs = Date.now();
   const url = buildChatUrl(model.base_url);
   const body = {
     model: model.model_name,
     messages,
-    temperature: model.temperature ?? 0.7,
-    max_tokens: model.max_tokens ?? 4096,
+    temperature: options.temperature ?? model.temperature ?? 0.7,
+    max_tokens: options.maxTokens ?? model.max_tokens ?? 4096,
     stream: true,
     // 部分 OpenAI 兼容服务支持 stream_options.include_usage
     stream_options: { include_usage: true },

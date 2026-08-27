@@ -233,7 +233,20 @@ async function save() {
   }
 }
 
-defineExpose({ save, editor })
+/**
+ * 在光标处插入文本（如果编辑器有焦点/选区）
+ * 如果编辑器没有焦点，返回 false 表示应由调用方追加到末尾
+ */
+function insertAtCursor(text) {
+  if (!editor.value || editor.value.isDestroyed) return false
+  // 检查编辑器是否有焦点（有光标位置）
+  if (!editor.value.isFocused) return false
+  // 在光标处插入文本
+  editor.value.chain().focus().insertContent(text).run()
+  return true
+}
+
+defineExpose({ save, editor, insertAtCursor })
 
 onBeforeUnmount(() => {
   // 卸载前确保最新内容已 emit，防止父组件丢失最后一次编辑

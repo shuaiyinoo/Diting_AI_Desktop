@@ -18,6 +18,7 @@ import { getFeishuMultiBotConfig } from '../service/bridge/feishu-config';
 import { getDingTalkMultiBotConfig } from '../service/bridge/dingtalk-config';
 import { autoUpdaterService } from '../service/os/auto_updater';
 import { updaterController } from '../controller/updater';
+import { voiceController } from '../controller/voice';
 import { cleanupUpdater } from '../service/os/auto_updater';
 import { ocrWorkerManager } from '../components/rag/parser/ocr-worker-manager';
 
@@ -91,6 +92,13 @@ class Lifecycle {
       updaterController.registerIpc();
     } catch (err) {
       logger.error('[lifecycle] 更新 IPC 注册失败:', err);
+    }
+
+    // 注册语音流式转写 IPC 处理器
+    try {
+      voiceController.registerIpc();
+    } catch (err) {
+      logger.error('[lifecycle] 语音 IPC 注册失败:', err);
     }
 
     // 注册获取应用版本号的 IPC

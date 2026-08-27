@@ -27,6 +27,11 @@
       "from": "build/extraResources/python-runtime/",
       "to": "python-runtime",
       "filter": ["**/*"]
+    },
+    {
+      "from": "electron/resources/funasr-llamacpp/",
+      "to": "funasr-llamacpp",
+      "filter": ["**/*"]
     }
   ],
   "nsis": {

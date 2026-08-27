@@ -113,7 +113,8 @@ export default {
     title: '설정',
 
     tabs: {
-      model: '모델',
+      model: '모델 - LLM',
+      modelVoice: '모델 - 음성',
       skills: '스킬',
       mcp: 'MCP 도구',
       tools: '도구',
@@ -298,7 +299,7 @@ export default {
     },
   },
 
-  // ========== Skills 管理 ==========
+  // ========== Skills 관리 ==========
   skills: {
     title: 'Skills 관리',
     subtitle: 'Agent 워크스페이스의 Skills를 관리합니다. Skills는 재사용 가능한 흐름 템플릿입니다.',

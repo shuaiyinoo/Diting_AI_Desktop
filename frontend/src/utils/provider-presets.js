@@ -372,6 +372,11 @@ export function inferProviderType(backendProvider, baseUrl) {
     return backendProvider
   }
 
+  // 火山引擎语音识别（provider='volc'，非 LLM 的 doubao 类型）
+  if (backendProvider === 'volc') {
+    return 'volc'
+  }
+
   // 按 base_url 域名识别
   const url = (baseUrl || '').toLowerCase()
   if (url.includes('deepseek')) return 'deepseek'

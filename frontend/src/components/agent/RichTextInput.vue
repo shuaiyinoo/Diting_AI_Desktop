@@ -873,6 +873,19 @@ watch(() => props.autoFocusTrigger, () => {
   }
 })
 
+/**
+ * 在光标处插入文本（如果编辑器有焦点/选区）
+ * 如果编辑器没有焦点，返回 false 表示应由调用方追加到末尾
+ */
+function insertAtCursor(text) {
+  if (!editor.value || editor.value.isDestroyed) return false
+  if (!editor.value.isFocused) return false
+  editor.value.chain().focus().insertContent(text).run()
+  return true
+}
+
+defineExpose({ insertAtCursor })
+
 // ===== 卸载 =====
 onBeforeUnmount(() => {
   editor.value?.destroy()

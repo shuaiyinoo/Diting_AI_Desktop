@@ -113,6 +113,28 @@ const ipcApiRoute = {
     modelOperation: 'controller/llm/modelOperation',
   },
 
+  // 语音模型管理
+  voice: {
+    // 远程语音模型操作（增删改查，同 LLM 模式）
+    remoteOperation: 'controller/voice/remoteOperation',
+    // 本地 Whisper 模型操作
+    localOperation: 'controller/voice/localOperation',
+    // 麦克风权限
+    micPermission: 'controller/voice/micPermission',
+    // 流式转写：启动会话（预加载模型）
+    startSession: 'controller/voice/startSession',
+    // 流式转写：实时音频数据通道（send）
+    audioData: 'controller/voice/audio-data',
+    // 流式转写：停止转写
+    stopTranscription: 'controller/voice/stop-transcription',
+    // 流式转写：转写结果推送通道（on）
+    onTranscriptionResult: 'controller/voice/onTranscriptionResult',
+    // 会话状态
+    getSessionStatus: 'controller/voice/getSessionStatus',
+    // 下载进度回调通道
+    onDownloadProgress: 'controller/voice/onDownloadProgress',
+  },
+
   // QA 知识问答
   qa: {
     // 同步问答（IPC）

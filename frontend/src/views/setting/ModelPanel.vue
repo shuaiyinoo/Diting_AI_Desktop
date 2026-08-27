@@ -127,7 +127,7 @@
             @click="handleTest(record)"
           >
             <Loader2 v-if="testingId === record.id" class="mr-1 size-3 animate-spin" />
-            {{ testingId === record.id ? t('model.testing') : t('model.test') }}
+            {{ testingId === record.id ? t('model.testing') : t('model.testBtn') }}
           </Button>
           <Button
             variant="link"

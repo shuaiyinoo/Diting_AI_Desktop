@@ -1326,6 +1326,20 @@ export default {
     placeholder: '臨時記錄、想法、備忘...',
   },
 
+  // ========== 語音輸入 ==========
+voiceInput: {
+clickToSpeak: '點擊說話',
+    recording: '錄音中…',
+    correcting: '糾正中…',
+loadingModel: '載入模型中…',
+micDenied: '麥克風權限被拒絕，請在系統設定中授權',
+micStartFailed: '麥克風啟動失敗',
+modelLoadFailed: '模型載入失敗',
+noAudioCaptured: '未捕獲到音訊',
+transcribeSuccess: '語音轉寫完成',
+transcribeFailed: '轉寫失敗',
+},
+
   fileViewerTab: {
     loading: '正在加載文件...',
     loadFailed: '加載文件失敗',
