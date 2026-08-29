@@ -365,6 +365,17 @@ class FiledbService extends BasedbService {
   }
 
   /**
+   * 重置所有文件状态为 PENDING（切换向量模型时调用）
+   *
+   * 清除 file_hash 以便重新向量化时重新计算哈希。
+   */
+  resetAllFileStatus(): void {
+    this.db.exec(
+      `UPDATE ${this.itemTableName} SET status = 'PENDING', failure_reason = NULL, processed_at = NULL, file_hash = NULL WHERE is_dir = 0`
+    );
+  }
+
+  /**
    * 清空某授权文件夹的所有文件记录（用于重新扫描前清理）
    */
   clearFileItems(folderId: number): void {

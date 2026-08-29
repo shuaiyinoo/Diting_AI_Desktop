@@ -31,6 +31,8 @@
       <div class="min-h-0 flex-1 overflow-y-auto px-5 py-4">
         <ModelPanel v-if="activeTab === 'model'" ref="modelRef" />
         <ModelVoicePanel v-else-if="activeTab === 'modelVoice'" />
+        <ModelOcrPanel v-else-if="activeTab === 'modelOcr'" />
+        <ModelVectorPanel v-else-if="activeTab === 'modelVector'" />
         <SkillsPanel v-else-if="activeTab === 'skills'" ref="skillsRef" />
         <McpPanel v-else-if="activeTab === 'mcp'" ref="mcpRef" />
         <ToolsPanel v-else-if="activeTab === 'tools'" ref="toolsRef" />
@@ -49,11 +51,13 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
-  Settings, Zap, Plug, Palette, Bot, Monitor, Wrench, Radio, Info, HardDrive, AudioLines,
+  Settings, Zap, Plug, Palette, Bot, Monitor, Wrench, Radio, Info, HardDrive, AudioLines, ScanText, Boxes,
 } from '@lucide/vue'
 import PanelDivider from '@/components/layout/PanelDivider.vue'
 import ModelPanel from './ModelPanel.vue'
 import ModelVoicePanel from './ModelVoicePanel.vue'
+import ModelOcrPanel from './ModelOcrPanel.vue'
+import ModelVectorPanel from './ModelVectorPanel.vue'
 import SkillsPanel from './SkillsPanel.vue'
 import McpPanel from './McpPanel.vue'
 import ToolsPanel from './ToolsPanel.vue'
@@ -97,6 +101,8 @@ watch(() => route.query.tab, (newTab) => {
 const settingTabs = computed(() => [
   { key: 'model', label: t('settings.tabs.model'), icon: Bot },
   { key: 'modelVoice', label: t('settings.tabs.modelVoice'), icon: AudioLines },
+  { key: 'modelOcr', label: t('settings.tabs.modelOcr'), icon: ScanText },
+  { key: 'modelVector', label: t('settings.tabs.modelVector'), icon: Boxes },
   { key: 'skills', label: t('settings.tabs.skills'), icon: Zap },
   { key: 'mcp', label: t('settings.tabs.mcp'), icon: Plug },
   { key: 'tools', label: t('settings.tabs.tools'), icon: Wrench },

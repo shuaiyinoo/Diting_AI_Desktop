@@ -1,13 +1,16 @@
 /**
  * 票据 OCR 识别服务（独立模块）
  *
- * 使用 ppu-paddle-ocr 的 V6_MEDIUM_MODEL 模型识别图片中的文字。
- * 首次调用时自动下载模型并缓存到 ~/.cache/ppu-paddle-ocr/。
+ * 使用 ppu-paddle-ocr 本地模型识别图片中的文字。
+ * 模型路径由 OCR 模型管理服务（ocr-model-service）提供，
+ * 用户需先在设置中下载并选择 OCR 模型。
  */
 import fs from 'fs';
 import path from 'path';
 import { logger } from 'ee-core/log';
 import { pdfToImageService } from './PdfToImageService';
+import { ocrdbService } from '../../service/database/ocrdb';
+import { getSelectedModelPaths } from '../../service/ocr/ocr-model-service';
 
 // 支持识别的图片扩展名
 const SUPPORTED_IMAGE_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.bmp', '.webp', '.tiff', '.tif'];
@@ -59,6 +62,9 @@ class InvoiceOcrService {
 
   /**
    * 初始化 OCR 模型（懒加载，首次调用时执行）
+   *
+   * 从 ocrdb 读取用户选择的模型 ID，然后从本地路径加载模型文件。
+   * 如果用户未选择模型或模型文件不存在，回退到库默认模型（V6_MEDIUM_MODEL）。
    */
   async initialize(): Promise<void> {
     if (this.initialized || this.initializing) return;
@@ -73,18 +79,42 @@ class InvoiceOcrService {
       // 动态导入，避免打包时将 onnxruntime-node 打入前端
       const { PaddleOcrService, V6_MEDIUM_MODEL } = await import('ppu-paddle-ocr');
 
-      this.ocrService = new PaddleOcrService({
-        model: V6_MEDIUM_MODEL,
+      // 从 ocrdb 读取用户选择的模型
+      await ocrdbService.init();
+      const config = ocrdbService.getConfig();
+      const selectedModelId = config.selected_model;
+
+      // 尝试获取本地模型路径
+      let modelPaths: { detection: string; recognition: string; charactersDictionary: string } | null = null;
+      if (selectedModelId) {
+        modelPaths = await getSelectedModelPaths(selectedModelId);
+      }
+
+      // 构造 PaddleOcrService 选项
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const options: any = {
         debugging: {
           debug: false,
           verbose: true,
         },
-      });
+      };
 
-      logger.info('[InvoiceOcrService] 开始初始化 OCR 模型 (V6_MEDIUM_MODEL)，首次运行需下载模型...');
+      if (modelPaths) {
+        // 使用本地下载的模型文件路径
+        options.model = modelPaths;
+        logger.info(`[InvoiceOcrService] 使用本地模型: ${selectedModelId}`);
+      } else {
+        // 回退：使用库默认模型（会自动从 GitHub 下载到 ~/.cache/ppu-paddle-ocr/）
+        options.model = V6_MEDIUM_MODEL;
+        logger.warn('[InvoiceOcrService] 未找到本地 OCR 模型，回退到库默认 V6_MEDIUM_MODEL（将自动下载到 ~/.cache/ppu-paddle-ocr/）');
+      }
+
+      this.ocrService = new PaddleOcrService(options);
+
+      logger.info('[InvoiceOcrService] 开始初始化 OCR 模型...');
       await this.ocrService.initialize();
       this.initialized = true;
-      logger.info('[InvoiceOcrService] OCR 模型初始化成功 (V6_MEDIUM_MODEL)');
+      logger.info('[InvoiceOcrService] OCR 模型初始化成功');
     } catch (err) {
       this.initFailCount++;
       logger.error(`[InvoiceOcrService] OCR 模型初始化失败 (第 ${this.initFailCount} 次):`, err?.message || err);

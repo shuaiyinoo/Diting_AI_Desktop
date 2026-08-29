@@ -126,6 +126,9 @@ class RagService {
 
     this.ragDb = new RagDatabase(this.dbPath);
     this.embedder = new QwenEmbedderProvider();
+
+    // 先加载模型配置（获取维度），无模型时抛出 NoVectorModelError
+    await this.embedder.ensureModel();
     this.collection = initVectorStore(this.vectorStorePath, this.embedder.dimension);
     this.kwService = await KeywordSearchService.loadFromFileAsync(this.keywordIndexPath);
 
@@ -275,7 +278,32 @@ class RagService {
       await this.initialize();
     } catch (err) {
       logger.error('[RagService] 初始化失败:', err);
+      // 通知前端初始化失败（通常是因为未下载/选择向量模型）
+      const errMsg = err instanceof Error ? err.message : String(err);
+      // 清空队列，避免持续重试
+      const pendingItems = [...this.queue];
+      this.queue = [];
+      for (const task of pendingItems) {
+        if (task.type === 'ingest' || task.type === 'ingestInvoice') {
+          try {
+            if (task.type === 'ingest') {
+              filedbService.updateFileStatus(task.fileItemId, 'FAILED', errMsg);
+            }
+          } catch {}
+        }
+        this.progressCallback?.({
+          type: task.type === 'ingest' ? 'ingest' : 'ingestInvoice',
+          fileItemId: task.type === 'ingest' ? task.fileItemId : 0,
+          queueSize: 0,
+          status: 'FAILED',
+          message: errMsg,
+        });
+      }
       this.processing = false;
+      this.taskRunning = false;
+      // 重置初始化状态，以便用户下载模型后可以重新初始化
+      this.initialized = false;
+      this.initPromise = null;
       return;
     }
 
@@ -907,6 +935,157 @@ class RagService {
       queueSize: this.queue.length,
       processing: this.processing,
     };
+  }
+
+  /**
+   * 重置所有向量数据（切换向量模型时调用）
+   *
+   * 清理内容：
+   *   1. zvec 向量库文件（删除磁盘文件，下次初始化时会用新维度重建）
+   *   2. SQLite document_chunks 表（切片数据）
+   *   3. SQLite vector_store 表（向量元数据）
+   *   4. MiniSearch 关键词索引（kw-index.json）
+   *   5. file_item 表中所有文件状态重置为 PENDING（等待重新向量化）
+   *
+   * 注意：keywordSearch（MiniSearch 索引）也需要清理，因为索引中的
+   * chunkId 与 SQLite document_chunks 表的 id 关联，切片重新生成后
+   * chunkId 会变化，旧索引必须删除。
+   *
+   * 清理后会重置 RAG 服务的初始化状态，下次使用时会以新模型维度重新初始化。
+   */
+  async resetAllVectorData(): Promise<void> {
+    logger.info('[RagService] 开始重置所有向量数据...');
+
+    // 1. 清空队列
+    this.queue = [];
+    this.processing = false;
+    this.taskRunning = false;
+
+    // 2. 如果 RAG 已初始化，清理所有向量相关数据
+    if (this.initialized) {
+      try {
+        // 清空 SQLite 表
+        if (this.ragDb) {
+          this.ragDb.getDatabase().exec('DELETE FROM document_chunks');
+          this.ragDb.getDatabase().exec('DELETE FROM vector_store');
+          logger.info('[RagService] SQLite document_chunks 和 vector_store 表已清空');
+        }
+
+        // 清空 MiniSearch 索引
+        if (this.kwService) {
+          this.kwService.removeAll();
+          await this.kwService.saveToFileAsync(this.keywordIndexPath);
+          logger.info('[RagService] MiniSearch 关键词索引已清空');
+        }
+
+        // 删除 zvec 向量库文件（下次初始化时会用新维度重建）
+        // zvec 没有显式的 close 方法，通过重置 initialized 状态让下次重新打开
+        try {
+          if (fs.existsSync(this.vectorStorePath)) {
+            fs.rmSync(this.vectorStorePath, { recursive: true, force: true });
+            logger.info(`[RagService] zvec 向量库文件已删除: ${this.vectorStorePath}`);
+          }
+        } catch (err) {
+          logger.warn('[RagService] 删除 zvec 文件失败（可能被占用，重启后自动重建）:', err);
+        }
+      } catch (err) {
+        logger.warn('[RagService] 清理已初始化的向量数据时出错:', err);
+      }
+
+      // 重置初始化状态
+      this.initialized = false;
+      this.initPromise = null;
+      this.ragDb = null;
+      this.collection = null;
+      this.kwService = null;
+      this.embedder = null;
+    } else {
+      logger.info('[RagService] RAG 未初始化，仅清理磁盘上的向量数据');
+      // 即使 RAG 未初始化，也可能存在上次会话遗留的向量文件
+      try {
+        const dataDir = getDataDir();
+        const vectorStorePath = path.join(dataDir, 'db', 'zvec_store');
+        if (fs.existsSync(vectorStorePath)) {
+          fs.rmSync(vectorStorePath, { recursive: true, force: true });
+          logger.info(`[RagService] zvec 向量库文件已删除: ${vectorStorePath}`);
+        }
+        const keywordIndexPath = path.join(dataDir, 'db', 'kw-index.json');
+        if (fs.existsSync(keywordIndexPath)) {
+          fs.unlinkSync(keywordIndexPath);
+          logger.info(`[RagService] MiniSearch 索引文件已删除: ${keywordIndexPath}`);
+        }
+      } catch (err) {
+        logger.warn('[RagService] 清理遗留向量文件失败:', err);
+      }
+    }
+
+    // 3. 重置 file_item 表中所有文件状态为 PENDING（无论 RAG 是否初始化过）
+    try {
+      this.filedbResetAllStatus();
+      logger.info('[RagService] file_item 表状态已重置为 PENDING');
+    } catch (err) {
+      logger.warn('[RagService] 重置 file_item 状态失败:', err);
+    }
+
+    // 4. 重置统计缓存
+    this.statsCache = { vectorizedFiles: 0, keywordDocs: 0 };
+
+    // 5. 重置初始化状态，以便使用新模型重新初始化
+    this.initialized = false;
+    this.initPromise = null;
+
+    // 6. 将所有 PENDING 文件加入队列（不触发 processQueue）
+    // processQueue 会在前端选择新模型后由 requeueAndStart() 触发
+    this.requeuePendingFiles();
+
+    logger.info('[RagService] 所有向量数据已重置，等待选择新模型后重新向量化');
+  }
+
+  /**
+   * 重置所有 file_item 的状态为 PENDING（通过 filedbService）
+   */
+  private filedbResetAllStatus(): void {
+    filedbService.resetAllFileStatus();
+  }
+
+  /**
+   * 将所有 PENDING 状态的支持向量化的文件加入队列（不触发 processQueue）
+   *
+   * 用于 resetAllVectorData 后、新模型选择前的过渡阶段：
+   * 文件已入队但不会立即处理，等待 requeueAndStart 触发。
+   */
+  private requeuePendingFiles(): void {
+    try {
+      const folders = filedbService.getFolderList();
+      let queued = 0;
+      for (const folder of folders) {
+        const pendingFiles = filedbService.getFilesByStatus(folder.id, 'PENDING');
+        for (const f of pendingFiles) {
+          if (isSupportedFormat(f.name)) {
+            const exists = this.queue.some(
+              t => t.type === 'ingest' && t.fileItemId === f.id
+            );
+            if (!exists) {
+              this.queue.push({ type: 'ingest', fileItemId: f.id, folderId: f.folder_id, folderPath: folder.path });
+              queued++;
+            }
+          }
+        }
+      }
+      logger.info(`[RagService] 重新入队 ${queued} 个待处理文件（未触发处理）`);
+    } catch (err) {
+      logger.warn('[RagService] 重新入队文件失败:', err);
+    }
+  }
+
+  /**
+   * 重新入队所有 PENDING 文件并启动处理（用于切换模型选择完成后调用）
+   */
+  async requeueAndStart(): Promise<void> {
+    this.requeuePendingFiles();
+    if (this.queue.length > 0) {
+      this.processQueue();
+    }
   }
 }
 

@@ -11,8 +11,8 @@ export default (): Partial<Config> => {
     singleLock: true,
     windowsOption: {
       title: 'Diting',
-      width: 1000,
-      height: 700,
+      width: 1100,
+      height: 800,
       minWidth: 400,
       minHeight: 300,
       webPreferences: {

@@ -1,8 +1,15 @@
 <template>
   <div
-    class="pattern-surface flex h-full shrink-0 select-none flex-col overflow-hidden border-r border-border bg-sidebar transition-all duration-250"
+    class="pattern-surface flex h-full shrink-0 select-none flex-col overflow-hidden bg-sidebar transition-all duration-250"
     style="-webkit-app-region: no-drag"
-    :style="{ width: ws.menuCollapsed ? '56px' : ws.menuWidth + 'px' }"
+    :style="{
+      width: ws.menuCollapsed ? '56px' : ws.menuWidth + 'px',
+      ...modernStyle,
+    }"
+    :class="[
+      ws.menuCollapsed || uiStyle === 'classic' ? 'border-r border-border' : '',
+      uiStyle === 'modern' && !ws.menuCollapsed ? 'menu-bar-modern' : '',
+    ]"
   >
     <!-- ===================== 展开模式 ===================== -->
     <template v-if="!ws.menuCollapsed">
@@ -429,6 +436,7 @@ import { useI18n } from 'vue-i18n'
 import { useRouter, useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { toast } from 'vue-sonner'
+import { uiStyle } from '@/theme'
 import {
   PanelLeftClose, PanelLeftOpen, MessageSquare, Bot, Folder, FileSearch,
   CalendarRange, Zap, FileText, Inbox, Plus, Eraser, ChevronDown, ChevronRight,
@@ -456,6 +464,25 @@ const ws = useWorkspaceStore()
 const agent = useAgentStore()
 const planning = usePlanningStore()
 const tabStore = useTabStore()
+
+/**
+ * 现代风格样式：菜单展开时作为浮层卡片
+ * 外层容器通过 padding 提供上/下/左间距，右侧通过 marginRight 与内容区隔开
+ */
+const modernStyle = computed(() => {
+  if (uiStyle.value === 'modern' && !ws.menuCollapsed) {
+    return {
+      marginRight: '8px',
+      borderRadius: '12px',
+      boxShadow: [
+        '0 1px 3px hsl(0 0% 0% / 0.08)',
+        '0 2px 8px hsl(0 0% 0% / 0.06)',
+      ].join(', '),
+      border: '1px solid hsl(var(--border))',
+    }
+  }
+  return {}
+})
 
 const { activeModule, selectedFolderId, selectedFile, selectedFileId } = storeToRefs(ws)
 

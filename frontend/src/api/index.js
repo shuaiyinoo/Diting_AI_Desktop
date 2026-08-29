@@ -135,6 +135,22 @@ const ipcApiRoute = {
     onDownloadProgress: 'controller/voice/onDownloadProgress',
   },
 
+  // OCR 模型管理
+  ocr: {
+    // 本地 OCR 模型操作
+    localOperation: 'controller/ocr/localOperation',
+    // 下载进度回调通道
+    onDownloadProgress: 'controller/ocr/onDownloadProgress',
+  },
+
+  // 向量模型管理
+  vector: {
+    // 本地向量模型操作
+    localOperation: 'controller/vector/localOperation',
+    // 下载进度回调通道
+    onDownloadProgress: 'controller/vector/onDownloadProgress',
+  },
+
   // QA 知识问答
   qa: {
     // 同步问答（IPC）

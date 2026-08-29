@@ -9,13 +9,13 @@
     </div>
 
     <!-- 中间：菜单栏 + 分隔条 + 内容区 -->
-    <div class="flex min-h-0 flex-1 overflow-hidden">
-      <!-- 第一部分：菜单栏 -->
+    <div class="flex min-h-0 flex-1 overflow-hidden bg-background" :class="uiStyle === 'modern' && !ws.menuCollapsed ? 'pt-2 pb-2 pl-2' : ''">
+      <!-- 第一部分：菜单栏（现代风格下自带浮层卡片效果） -->
       <MenuBar />
 
-      <!-- 菜单栏拖拽分隔条（仅展开时显示） -->
+      <!-- 菜单栏拖拽分隔条（仅展开且经典风格时显示） -->
       <PanelDivider
-        v-if="!ws.menuCollapsed"
+        v-if="!ws.menuCollapsed && uiStyle !== 'modern'"
         @resize="onMenuResize"
       />
 
@@ -46,6 +46,7 @@ import TabBar from '@/components/tabs/TabBar.vue'
 import TabContent from '@/components/tabs/TabContent.vue'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useTabStore } from '@/stores/tab'
+import { uiStyle } from '@/theme'
 
 const ws = useWorkspaceStore()
 const tabStore = useTabStore()

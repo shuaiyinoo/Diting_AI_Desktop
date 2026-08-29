@@ -144,6 +144,13 @@ export default {
       system: 'システム',
     },
 
+    uiStyle: {
+      label: 'インターフェーススタイル',
+      description: 'メニューパネルの視覚スタイル',
+      classic: 'クラシック',
+      modern: 'モダン',
+    },
+
     markdownFontSize: {
       label: 'Markdown フォントサイズ',
       description: 'AI 返信本文のフォントサイズを調整',

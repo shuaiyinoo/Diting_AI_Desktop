@@ -145,6 +145,13 @@ export default {
       system: '시스템',
     },
 
+    uiStyle: {
+      label: '인터페이스 스타일',
+      description: '메뉴 패널의 시각적 스타일',
+      classic: '클래식',
+      modern: '모던',
+    },
+
     markdownFontSize: {
       label: 'Markdown 글꼴 크기',
       description: 'AI 응답 본문 글꼴 크기 조정',
@@ -297,6 +304,35 @@ export default {
       latency: '지연: {latency}ms',
       close: '닫기',
     },
+  },
+
+  // ========== 모델 관리 - OCR ==========
+  modelOcr: {
+    subtitle: '로컬 OCR 모델을 다운로드하고 관리합니다. 영수증 및 이미지 텍스트 인식에 사용됩니다. 모델은 PaddlePaddle PP-OCRv6에서 제공됩니다.',
+    modelPath: '모델 저장 경로',
+    openFolder: '폴더 열기',
+    loadingModels: '모델 목록 로딩 중...',
+    loadModelsFailed: '모델 목록 로딩 실패',
+    downloadSource: '다운로드 소스',
+    sourceAuto: '자동',
+    sourceMirror: '미러',
+    sourceOfficial: '공식',
+    downloadModel: '모델 다운로드',
+    selectToDownload: '다운로드할 모델 선택',
+    download: '다운로드',
+    cancelDownload: '취소',
+    downloaded: '다운로드 완료',
+    downloadSuccess: '모델 다운로드 완료: {name}',
+    downloadFailed: '다운로드 실패: {msg}',
+    deleteConfirm: '삭제 확인',
+    deleteConfirmText: '모델 "{name}"을(를) 삭제하시겠습니까? 이 작업은 취소할 수 없습니다.',
+    deleteModelSuccess: '모델 파일이 삭제되었습니다',
+    deleteModelFailed: '모델 파일 삭제 실패',
+    selectModel: '모델 선택',
+    selectModelHint: 'OCR 인식을 위해 다운로드한 모델을 선택하세요',
+    noModelSelected: '선택된 모델 없음',
+    selectModelSuccess: 'OCR 모델 선택됨: {name}',
+    selectModelFailed: '모델 선택 실패',
   },
 
   // ========== Skills 관리 ==========

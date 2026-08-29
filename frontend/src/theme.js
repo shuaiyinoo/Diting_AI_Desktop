@@ -35,6 +35,10 @@ const radiusSize = ref('default')
 /** 当前字体 */
 const fontFamily = ref('system')
 
+// ========== 界面风格 ==========
+/** 界面风格：'classic' | 'modern'（默认经典） */
+const uiStyle = ref('classic')
+
 /**
  * 字体映射表
  * 参考 shadcn-vue/create 的字体选项，完整覆盖官网所有可选字体
@@ -765,6 +769,14 @@ function setFontFamily(font) {
   applyThemeCustomization()
 }
 
+/** 设置界面风格 */
+function setUiStyle(style) {
+  uiStyle.value = style
+  localStorage.setItem('theme-ui-style', style)
+  // 通过 data-ui-style 属性驱动 CSS 选择器，实现现代风格的浮层效果
+  document.documentElement.setAttribute('data-ui-style', style)
+}
+
 
 
 // ========== 应用传统纹样到背景 ==========
@@ -831,6 +843,11 @@ function initTheme() {
   // 如果保存的字体 key 已被移除（旧版迁移），回退到 system
   fontFamily.value = fontFamilyMap[savedFont] ? savedFont : 'system'
 
+  // 恢复界面风格
+  var savedUiStyle = localStorage.getItem('theme-ui-style') || 'classic'
+  uiStyle.value = savedUiStyle
+  document.documentElement.setAttribute('data-ui-style', savedUiStyle)
+
   // 先应用主题（设置 isDark），再应用纹样（依赖 isDark 设置墨色透明度）
   applyTheme()
   applyPattern(localStorage.getItem('theme-pattern') || 'none')
@@ -863,6 +880,9 @@ export {
   setRadiusSize,
   setFontFamily,
   setPattern,
+  // 界面风格
+  uiStyle,
+  setUiStyle,
   // 配置映射（供 UI 展示用）
   baseColorMap,
   primaryColorMap,

@@ -144,6 +144,13 @@ export default {
       system: '跟隨系統',
     },
 
+    uiStyle: {
+      label: '界面風格',
+      description: '選單面板的視覺風格',
+      classic: '經典',
+      modern: '現代',
+    },
+
     markdownFontSize: {
       label: 'Markdown 字號',
       description: '調整 AI 回覆正文字號',

@@ -43,6 +43,22 @@
         </div>
       </div>
 
+      <!-- 界面风格 -->
+      <div class="flex items-center justify-between border-b border-border/50 px-4 py-3.5">
+        <div class="flex-1 min-w-0">
+          <div class="text-[13px] font-medium text-foreground">{{ t('appearance.uiStyle.label') }}</div>
+          <div class="mt-0.5 text-[11px] leading-relaxed text-muted-foreground truncate">{{ t('appearance.uiStyle.description') }}</div>
+        </div>
+        <div class="inline-flex shrink-0 items-center rounded-lg bg-muted p-0.5">
+          <button
+            v-for="opt in uiStyleOptions" :key="opt.value"
+            class="inline-flex h-[26px] items-center justify-center rounded-md px-3.5 text-xs font-medium transition-all"
+            :class="uiStyle === opt.value ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'"
+            @click="setUiStyle(opt.value)"
+          >{{ t('appearance.uiStyle.' + opt.value) }}</button>
+        </div>
+      </div>
+
       <!-- Markdown 字号 -->
       <div class="flex items-center justify-between border-b border-border/50 px-4 py-3.5">
         <div class="flex-1 min-w-0">
@@ -224,6 +240,7 @@ import {
   fontFamily, fontFamilyMap, setBaseColor, setPrimaryColor, setRadiusSize, setFontFamily,
   baseColorMap, primaryColorMap, systemDark,
   patternMap, setPattern,
+  uiStyle, setUiStyle,
 } from '@/theme'
 
 const { t, locale } = useI18n()
@@ -244,6 +261,11 @@ const themeOptions = [
   { value: 'light' },
   { value: 'dark' },
   { value: 'system' },
+]
+
+const uiStyleOptions = [
+  { value: 'classic' },
+  { value: 'modern' },
 ]
 
 // ========== 基础色调选项 — 从 baseColorMap 动态生成 ==========

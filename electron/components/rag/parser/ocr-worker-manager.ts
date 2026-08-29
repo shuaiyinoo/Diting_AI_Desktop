@@ -9,7 +9,7 @@
  *   2. 崩溃自动恢复：子进程异常退出时，返回错误给调用方，下次调用自动重启子进程
  *   3. JSON Line 协议：通过 stdin/stdout 传递 JSON 消息，简单可靠
  *   4. 超时保护：单张图片 OCR 超时后杀死子进程并返回错误
- *   5. 脚本动态写入：子进程脚本在运行时写入临时目录，避免打包路径问题
+ *   5. 模型路径注入：主进程读取已选模型路径，通过环境变量传给子进程
  */
 
 import { fork, type ChildProcess } from 'node:child_process';
@@ -17,6 +17,8 @@ import { writeFileSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { logger } from 'ee-core/log';
+import { ocrdbService } from '../../../service/database/ocrdb';
+import { getSelectedModelPaths } from '../../../service/ocr/ocr-model-service';
 
 const OCR_TIMEOUT_MS = 120_000; // 单张图片 OCR 超时：2 分钟
 
@@ -25,6 +27,9 @@ const OCR_TIMEOUT_MS = 120_000; // 单张图片 OCR 超时：2 分钟
  *
  * 运行时写入临时文件，避免打包路径依赖。
  * 使用 ESM 格式以匹配 ppu-paddle-ocr 的模块类型。
+ *
+ * 模型路径通过环境变量 OCR_MODEL_PATHS 注入（JSON 格式），
+ * 如果未设置则回退到库默认 V6_MEDIUM_MODEL。
  */
 const WORKER_SCRIPT = `
 import { PaddleOcrService, V6_MEDIUM_MODEL } from 'ppu-paddle-ocr';
@@ -39,10 +44,26 @@ async function ensureInit() {
   if (initialized || initializing) return;
   initializing = true;
   try {
-    ocrService = new PaddleOcrService({
-      model: V6_MEDIUM_MODEL,
+    // 从环境变量读取模型路径
+    let modelPaths = null;
+    const envPaths = process.env.OCR_MODEL_PATHS;
+    if (envPaths) {
+      try { modelPaths = JSON.parse(envPaths); } catch {}
+    }
+
+    const options = {
       debugging: { debug: false, verbose: false },
-    });
+    };
+
+    if (modelPaths && modelPaths.detection && modelPaths.recognition && modelPaths.charactersDictionary) {
+      options.model = modelPaths;
+      process.stderr.write('[ocr-worker] 使用本地模型路径\\n');
+    } else {
+      options.model = V6_MEDIUM_MODEL;
+      process.stderr.write('[ocr-worker] 回退到库默认 V6_MEDIUM_MODEL\\n');
+    }
+
+    ocrService = new PaddleOcrService(options);
     await ocrService.initialize();
     initialized = true;
     process.stderr.write('[ocr-worker] PaddleOCR 初始化成功\\n');
@@ -122,8 +143,11 @@ class OcrWorkerManager {
 
   /**
    * 确保子进程已启动
+   *
+   * 模型路径通过环境变量 OCR_MODEL_PATHS（JSON 格式）注入子进程。
+   * 如果未选择模型或模型文件不存在，子进程会回退到库默认 V6_MEDIUM_MODEL。
    */
-  private ensureWorker(): void {
+  private async ensureWorker(): Promise<void> {
     if (this.worker && !this.worker.killed) return;
 
     const scriptPath = this.getScriptPath();
@@ -133,11 +157,28 @@ class OcrWorkerManager {
     const projectRoot = process.cwd();
     const nodeModulesPath = path.join(projectRoot, 'node_modules');
 
+    // 从 ocrdb 读取已选模型路径
+    let modelPathsJson: string | undefined;
+    try {
+      await ocrdbService.init();
+      const config = ocrdbService.getConfig();
+      if (config.selected_model) {
+        const paths = await getSelectedModelPaths(config.selected_model);
+        if (paths) {
+          modelPathsJson = JSON.stringify(paths);
+          logger.info(`[OcrWorkerManager] 使用本地模型: ${config.selected_model}`);
+        }
+      }
+    } catch (err) {
+      logger.warn('[OcrWorkerManager] 读取 OCR 模型配置失败，子进程将回退到默认模型:', err);
+    }
+
     this.worker = fork(scriptPath, [], {
       stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
       env: {
         ...process.env,
         NODE_PATH: nodeModulesPath,
+        ...(modelPathsJson ? { OCR_MODEL_PATHS: modelPathsJson } : {}),
       },
       cwd: projectRoot,
     });
@@ -207,14 +248,23 @@ class OcrWorkerManager {
    * 通过子进程发送 OCR 请求，如果子进程崩溃则返回错误（不影响主进程）
    */
   async recognize(filePath: string): Promise<{ success: boolean; text: string; error?: string }> {
+    // 先确保子进程已启动（含模型路径注入）
+    try {
+      await this.ensureWorker();
+    } catch (err) {
+      return {
+        success: false,
+        text: '',
+        error: err instanceof Error ? err.message : String(err),
+      };
+    }
+
+    if (!this.worker || !this.worker.stdin) {
+      return { success: false, text: '', error: 'OCR 子进程不可用' };
+    }
+
     return new Promise((resolve, reject) => {
       try {
-        this.ensureWorker();
-        if (!this.worker || !this.worker.stdin) {
-          resolve({ success: false, text: '', error: 'OCR 子进程不可用' });
-          return;
-        }
-
         const id = ++this.requestId;
         const timer = setTimeout(() => {
           this.pendingRequests.delete(id);

@@ -12,6 +12,7 @@ import { filedbService } from '../service/database/filedb';
 import { llmdbService } from '../service/database/llmdb';
 import { qadbService } from '../service/database/qadb';
 import { assistantdbService } from '../service/database/assistantdb';
+import { ocrdbService } from '../service/database/ocrdb';
 import { metricsDbService } from '../components/rag/metrics/metricsDb';
 import { windowService } from '../service/os/window';
 import SyncService from '../components/file/SyncService';
@@ -53,6 +54,7 @@ async function initDatabasesAndServices(): Promise<void> {
     qadbService.init(),
     metricsDbService.init(),
     assistantdbService.init(),
+    ocrdbService.init(),
   ]);
   logger.info('[preload] 所有数据库初始化完成');
 
