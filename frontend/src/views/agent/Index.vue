@@ -138,12 +138,15 @@
           <AgentCodeEditor
             :open-files="codeEditorFiles"
             :active-file-id="codeEditorActiveFileId"
+            :terminal-panel-visible="ws.terminalPanelVisible"
+            :terminal-cwd="terminalCwd"
             @activate-file="activateCodeFile"
             @close-file="closeCodeFile"
             @content-changed="onCodeContentChanged"
             @save-file="onSaveCodeFile"
             @close-all="closeAllCodeFilesAndHide"
             @open-file-by-path="onOpenFileByPath"
+            @toggle-terminal="ws.toggleTerminalPanel"
           />
         </div>
       </template>
@@ -216,12 +219,15 @@
           <AgentCodeEditor
             :open-files="codeEditorFiles"
             :active-file-id="codeEditorActiveFileId"
+            :terminal-panel-visible="ws.terminalPanelVisible"
+            :terminal-cwd="terminalCwd"
             @activate-file="activateCodeFile"
             @close-file="closeCodeFile"
             @content-changed="onCodeContentChanged"
             @save-file="onSaveCodeFile"
             @close-all="closeAllCodeFilesAndHide"
             @open-file-by-path="onOpenFileByPath"
+            @toggle-terminal="ws.toggleTerminalPanel"
           />
         </div>
         <PanelDivider @resize="onCodeEditorResize" />
@@ -496,6 +502,11 @@ const projectPathDisplay = computed(() => {
   const project = ws.currentAgentProject
   if (!project) return ''
   return project.resolvedPath || project.projectPath || ''
+})
+
+/** 终端默认工作目录：优先使用会话路径，其次项目路径 */
+const terminalCwd = computed(() => {
+  return sessionPathDisplay.value || projectPathDisplay.value || ''
 })
 
 const permissionRequest = ref(null)

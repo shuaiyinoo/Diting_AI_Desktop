@@ -36,7 +36,7 @@
       <div class="flex flex-col">
         <!-- 用户消息 -->
         <template v-if="msg.role === 'USER'">
-          <div class="px-3.5 py-2.5 rounded-lg text-sm leading-7 break-words whitespace-pre-wrap bg-primary text-primary-foreground rounded-tr-sm">{{ msg.content }}</div>
+          <div class="px-3.5 py-2.5 rounded-lg text-sm leading-7 break-words whitespace-pre-wrap border border-primary bg-transparent text-foreground rounded-tr-sm">{{ msg.content }}</div>
         </template>
 
         <!-- 助手消息 -->

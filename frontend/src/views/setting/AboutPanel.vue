@@ -224,7 +224,7 @@ import {
 } from '@lucide/vue';
 import { useUpdaterStore } from '@/stores/updater';
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 
 const updaterStore = useUpdaterStore();
 

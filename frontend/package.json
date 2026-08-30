@@ -1,6 +1,6 @@
 {
   "name": "ee",
-  "version": "5.0.31",
+  "version": "5.1.0",
   "scripts": {
     "dev": "vite --host --port 8080",
     "serve": "vite --host --port 8080",
@@ -24,6 +24,9 @@
     "@vavt/cm-extension": "^1.11.2",
     "@vavt/v3-extension": "^5.0.0",
     "@vueuse/core": "^14.4.0",
+    "@xterm/addon-fit": "^0.10.0",
+    "@xterm/addon-web-links": "^0.10.0",
+    "@xterm/xterm": "^5.5.0",
     "axios": "^1.9.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

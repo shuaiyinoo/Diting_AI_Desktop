@@ -118,7 +118,7 @@ export default {
       mcp: 'MCP 工具',
       tools: 'Tools',
       runtime: '環境檢測',
-      general: '常規',
+      general: '通用設定',
       appearance: '外觀主題',
       bridge: '遠程連接',
       about: '關於/更新',
@@ -193,9 +193,46 @@ export default {
 
   // ========== 常規設置 ==========
   general: {
-    title: '常規',
+    title: '通用設定',
+    appInfo: '應用資訊',
     appName: '應用名稱',
     version: '版本',
+
+    cloud: {
+      title: 'Diting Cloud 帳戶',
+      subtitle: '登入後享受雲端模型與跨端管理',
+      loggedIn: '已登入',
+      login: '登入',
+      register: '註冊',
+      logout: '登出',
+
+      features: {
+        llm: {
+          title: '官方 LLM 模型',
+          desc: '免配置直接使用主流大語言模型',
+        },
+        voice: {
+          title: '官方語音模型',
+          desc: '線上語音辨識，無需本地下載',
+        },
+        ocr: {
+          title: '官方 OCR 模型',
+          desc: '雲端 OCR 辨識，無需本地模型',
+        },
+        vector: {
+          title: '官方向量模型',
+          desc: '雲端向量化，提升 RAG 效果',
+        },
+        mobile: {
+          title: '手機端管理',
+          desc: '隨時在手機上管理你的 Agent',
+        },
+        sync: {
+          title: '多端同步',
+          desc: '會話與設定在所有裝置間同步',
+        },
+      },
+    },
   },
 
   // ========== 關於/更新 ==========

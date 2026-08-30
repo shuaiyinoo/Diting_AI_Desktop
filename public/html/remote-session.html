@@ -1,0 +1,578 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Remote Session</title>
+    <style>
+      body { margin: 0; background: #000; overflow: hidden; }
+      /* 预览画面仅用于调试（窗口隐藏时不可见） */
+      video { width: 100vw; height: 100vh; object-fit: contain; }
+    </style>
+  </head>
+  <body>
+    <video id="preview" autoplay muted playsinline></video>
+
+    <!-- 早期错误捕获：必须在主脚本之前独立加载。
+         本文件是纯 JS（不经 TS 编译），一旦主脚本出现语法错误，
+         整段脚本不执行、所有 ipcRenderer.on 都不会注册，
+         且错误只打印在隐藏窗口的 devtools 里、主进程日志完全看不到。
+         这段独立脚本把 window 级 error / unhandledrejection 上报到主进程，
+         这样主脚本即使解析失败也能立刻暴露。 -->
+    <script>
+      try {
+        const { ipcRenderer } = require('electron')
+        window.addEventListener('error', (e) => {
+          const detail = e.error && e.error.stack ? e.error.stack : (e.message || e)
+          ipcRenderer.send('remote:log', '[FATAL] 脚本错误: ' + detail)
+        })
+        window.addEventListener('unhandledrejection', (e) => {
+          const r = e.reason
+          ipcRenderer.send('remote:log', '[FATAL] 未处理的 Promise 拒绝: ' + (r && (r.message || r.stack) || r))
+        })
+      } catch (err) {
+        /* 连 electron 都拿不到则无法上报 */
+      }
+    </script>
+
+    <script>
+      /**
+       * 远程会话捕获页（运行在隐藏的 Electron 渲染进程中）
+       *
+       * 职责：
+       *   1. 采集屏幕：源列表由主进程提供（desktopCapturer 属主进程 API），
+       *      本页拿到 source.id 后用 getUserMedia 取流
+       *   2. 作为 offer 方建立 WebRTC 连接（收到控制端 join 后发起）
+       *   3. 通过 DataChannel 接收控制指令，转交主进程执行
+       *
+       * 约定：由受控端（本页）发起 offer —— 这样可以做到
+       *      「只有在确实有人来连时才开始采集屏幕」，避免无谓的资源占用。
+       *
+       * ⚠️ Electron 39 起 desktopCapturer 只能在主进程使用，
+       *    渲染进程里 require('electron').desktopCapturer 为 undefined。
+       */
+      const { ipcRenderer } = require('electron')
+
+      const CH_SIGNAL_IN = 'remote:signal-in'     // 主进程 → 本页
+      const CH_SIGNAL_OUT = 'remote:signal-out'   // 本页 → 主进程
+      const CH_START = 'remote:start'
+      const CH_STOP = 'remote:stop'
+      const CH_ERROR = 'remote:error'
+      const CH_COMMAND = 'remote:command'
+      const CH_ACTIVE_DISPLAY = 'remote:active-display' // 本页 → 主进程：当前投放屏 id（坐标映射用）
+      const CH_GET_SOURCES = 'remote:get-sources' // 本页 → 主进程（invoke/handle）
+      const CH_LOG = 'remote:log'                 // 本页 → 主进程（日志）
+
+      let pc = null
+      let localStream = null
+      let controlChannel = null
+      let sessionCode = null
+      let displays = []
+      let targetDisplayId = null
+
+      /** 推流画质：low / medium / high，默认 low（省带宽，移动网络友好） */
+      let currentQuality = 'low'
+      /** 推流分辨率：480p / 720p / 1080p / native，默认 480p（最省带宽） */
+      let currentResolution = '480p'
+      /** 采集到的屏幕真实分辨率（物理像素），用于把分辨率档换算成精确的降采样倍数 */
+      let nativeW = 0
+      let nativeH = 0
+      /**
+       * 画质预设。
+       * 只用 maxBitrate + maxFramerate + degradationPreference 三个【运行时可调】参数，
+       * 全部走 RTCRtpSender.setParameters —— 不触发重新协商，切换是即时的。
+       * 分辨率维度（scaleResolutionDownBy）单列为 RES_TARGET_H，与画质正交、互不干扰。
+       */
+      const QUALITY = {
+        low: { maxBitrate: 700_000, maxFramerate: 12, degradation: 'maintain-framerate' },
+        medium: { maxBitrate: 2_000_000, maxFramerate: 24, degradation: 'balanced' },
+        high: { maxBitrate: 4_000_000, maxFramerate: 30, degradation: 'maintain-resolution' },
+      }
+
+      /**
+       * 分辨率预设：值为【目标输出高度】。
+       * 实际降采样倍数 = 采集真实高度(nativeH) / 目标高度，运行时由 applyResolution 计算，
+       * 因此无论屏幕是 1080p 还是 4K，选 1080p 都输出约 1920×1080（精确、与物理分辨率无关）。
+       * native 特殊：不降采样（scale=1），输出屏幕真实像素 —— 画面最清晰，但带宽/CPU 开销最大。
+       * 用编码端降采样而非重新 getUserMedia：不重新协商、不闪屏、瞬时生效。
+       * ⚠️ 选 native 时控制端会同步把画质提到 high，否则高分辨率配低码率反而更糊。
+       */
+      const RES_TARGET_H = {
+        '480p': 480,
+        '720p': 720,
+        '1080p': 1080,
+      }
+
+      /** RTCRtpSender，用于 replaceTrack 无缝切换屏幕（无需重新协商） */
+      let sender = null
+      /** 当前正在推送的显示器 id */
+      let currentDisplayId = null
+      /** 屏幕源元数据 [{id, name, displayId}]，id 是 getUserMedia 用的 sourceId */
+      let sourcesMeta = []
+      /**
+       * ⚠️ 同一时刻只允许【一路】屏幕采集存活。
+       * 早期版本把每个显示器的流都缓存进 Map，导致切过几块屏就有几路 getUserMedia
+       * 在后台同时跑（占满 GPU/编码器，且断开时难以彻底清理）。
+       * 现在改为：切换时停掉旧屏、只留新屏 —— 代价是回头再切有几十毫秒重新采集延迟，
+       * 换来资源可控、断开必净。
+       */
+
+
+      const videoEl = document.getElementById('preview')
+
+      /* ══════════════════ 工具 ══════════════════ */
+
+      function out(msg) {
+        ipcRenderer.send(CH_SIGNAL_OUT, msg)
+      }
+
+      function reportError(msg) {
+        ipcRenderer.send(CH_ERROR, String(msg))
+      }
+
+      /** 停止一条屏幕采集流（释放摄像头/GPU 占用） */
+      function stopStream(s) {
+        if (s && s.getTracks) s.getTracks().forEach((t) => t.stop())
+      }
+
+      /** 渲染进程的 console 不会写入主进程日志文件，统一经 IPC 上报便于排障 */
+      function log(msg) {
+        ipcRenderer.send(CH_LOG, String(msg))
+      }
+
+      /* ══════════════════ 屏幕采集 ══════════════════ */
+
+      /** 加载屏幕源列表（带缓存） */
+      async function ensureSources() {
+        if (sourcesMeta.length === 0) {
+          // 屏幕源由主进程提供（desktopCapturer 在渲染进程不可用），
+          // 拿到 source.id 后再在本进程用 getUserMedia 取流
+          sourcesMeta = await ipcRenderer.invoke(CH_GET_SOURCES)
+          log('可用屏幕源: ' + JSON.stringify(sourcesMeta))
+        }
+        return sourcesMeta
+      }
+
+      /**
+       * 采集指定显示器的画面（每次都是新的 getUserMedia）
+       *
+       * 为什么不复用/缓存多路流：缓存多块屏的流会让它们同时在后台采集，
+       * 占满 GPU/编码器，且断开时难以彻底释放。这里坚持「同一时刻只有一路活跃采集」，
+       * 切换时由调用方负责停掉旧屏（见 switchToDisplay）。
+       */
+      async function captureScreen(displayId) {
+        const sources = await ensureSources()
+        if (!sources || sources.length === 0) {
+          throw new Error('未获取到任何屏幕源（Linux Wayland 下常见）')
+        }
+
+        // displayId → sourceId：优先按 display_id 精确匹配，找不到就退回第一个（通常为主屏）
+        const source =
+          (displayId != null && sources.find((s) => String(s.displayId) === String(displayId))) ||
+          sources[0]
+
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: false,
+          video: {
+            mandatory: {
+              chromeMediaSource: 'desktop',
+              chromeMediaSourceId: source.id,
+              // ⚠️ 必须保留 maxWidth/maxHeight：Chromium 的桌面采集约束校验要求
+              // 同时给出宽度上下界，否则 getUserMedia 会抛 OverconstrainedError，
+              // 导致 captureScreen 抛错、offer 永远发不出（控制端卡在"正在建立连接"）。
+              // 上界设到 8K 远大于常见屏幕原生分辨率 —— 桌面采集按屏幕原生取流，
+              // max 只作校验上界，不会把画面砍小，所以 4K/5K 屏仍能拿到真实物理像素。
+              minWidth: 640,
+              maxWidth: 7680,
+              minHeight: 360,
+              maxHeight: 4320,
+              maxFrameRate: 30, // 屏幕共享 30fps 足够，60fps 只会徒增带宽与 CPU
+            },
+          },
+        })
+
+        const [track] = stream.getVideoTracks()
+        if (track) {
+          // 记录真实采集分辨率（物理像素），供分辨率档换算降采样倍数
+          const settings = track.getSettings ? track.getSettings() : null
+          nativeW = settings?.width || 0
+          nativeH = settings?.height || 0
+          log('采集原始分辨率: ' + (nativeW || '?') + '×' + (nativeH || '?'))
+          // 屏幕内容优先保证清晰度而非流畅度
+          track.contentHint = 'detail'
+          // 休眠 / 锁屏 / 驱动重置会导致采集中断，需要重建
+          track.onended = () => reportError('屏幕采集已中断，可能需要重新开启')
+        }
+        return stream
+      }
+
+      /* ══════════════════ WebRTC ══════════════════ */
+
+      function createPeer(iceServers) {
+        log('创建 PeerConnection，ICE 服务器: ' + JSON.stringify(iceServers))
+        pc = new RTCPeerConnection({ iceServers, bundlePolicy: 'max-bundle' })
+
+        // 候选类型统计：host=同网段直连，srflx=经 STUN 打洞，relay=走 TURN 中继。
+        // 排查连通性时这是最关键的信息 —— 一个候选都没有基本就是采集或网络问题。
+        const candidateStat = {}
+        pc.onicecandidate = (e) => {
+          if (!e.candidate) {
+            log('ICE 候选收集结束: ' + JSON.stringify(candidateStat))
+            return
+          }
+          const type = e.candidate.type || 'unknown'
+          candidateStat[type] = (candidateStat[type] || 0) + 1
+          out({ type: 'candidate', candidate: e.candidate.toJSON() })
+        }
+
+        pc.oniceconnectionstatechange = () => {
+          log('ICE 连接状态: ' + (pc ? pc.iceConnectionState : 'n/a'))
+        }
+
+        pc.onconnectionstatechange = () => {
+          log('P2P 连接状态: ' + (pc ? pc.connectionState : 'n/a'))
+          if (pc && pc.connectionState === 'failed') reportError('P2P 连接失败')
+          if (pc && pc.connectionState === 'connected') {
+            log('✅ P2P 已连通')
+            reapplyTuning()
+          }
+          // 连接真正关闭（对端离开/杀进程且 leave 未送达）时，自行停掉采集，
+          // 避免受控端一直空推、屏幕采集泄漏。ICE Restart 期间 pc 不会进入 closed，
+          // 所以不会与移动端自动重连冲突。
+          if (pc && pc.connectionState === 'closed') {
+            log('P2P 已关闭，停止采集')
+            teardown()
+          }
+        }
+
+        // ⚠️ 不要在这里挂 onnegotiationneeded 自动重发 offer！
+        //    pc.addTrack() 本身就会触发 negotiationneeded，而初始 offer 由下面
+        //    join 处理器手动 createOffer() 发出。若此处再自动发一遍，会出现「双重 offer」，
+        //    控制端（answer 方）收到第二个 offer 时自己已 have-local-offer，
+        //    setRemoteDescription 抛 InvalidStateError → 连接永远卡在 establishing。
+        //    画质/分辨率都用 RTCRtpSender.setParameters 的运行时参数（scaleResolutionDownBy /
+        //    maxBitrate / maxFramerate），在目标浏览器里不触发重协商，因此这里无需处理。
+
+        // ⚠️ DataChannel 必须由【offer 方】创建！
+        //    本端是 offer 方（收到 join 后发起协商），所以由本端创建；
+        //    若改由 answer 方（Mobile）创建，SDP 里就不会有 DataChannel 的 m-line，
+        //    通道根本建不起来 —— 表现是「画面正常但控制指令毫无反应」。
+        controlChannel = pc.createDataChannel('control', { ordered: true })
+        controlChannel.onopen = () => log('控制通道已打开')
+        controlChannel.onclose = () => log('控制通道已关闭')
+        controlChannel.onerror = (e) => reportError('控制通道错误: ' + (e && e.error ? e.error : e))
+        controlChannel.onmessage = (ev) => {
+          let cmd
+          try {
+            cmd = JSON.parse(ev.data)
+          } catch {
+            reportError('收到无法解析的控制指令')
+            return
+          }
+          // 切换显示器是纯 WebRTC 操作，就地处理即可，
+          // 不必绕一圈主进程（绕过去反而要再 IPC 回来）
+          if (cmd && cmd.t === 'sw') {
+            switchToDisplay(cmd.d).catch((err) =>
+              reportError('切换屏幕失败: ' + (err && err.message ? err.message : err))
+            )
+            return
+          }
+          // 画质切换同样是纯 WebRTC 调参（setParameters），就地处理
+          if (cmd && cmd.t === 'q') {
+            applyQuality(cmd.q).catch((err) =>
+              reportError('画质切换失败: ' + (err && err.message ? err.message : err))
+            )
+            return
+          }
+          // 分辨率切换：编码端降采样，同样就地处理
+          if (cmd && cmd.t === 'rs') {
+            applyResolution(cmd.r).catch((err) =>
+              reportError('分辨率切换失败: ' + (err && err.message ? err.message : err))
+            )
+            return
+          }
+          // 其余（鼠标 / 键盘 / 文本）交给主进程执行
+          ipcRenderer.send(CH_COMMAND, cmd)
+        }
+
+        return pc
+      }
+
+      /**
+       * 切换正在推送的显示器
+       *
+       * 用 RTCRtpSender.replaceTrack 直接换轨 ——
+       * 不需要重新 offer/answer，连接不断、画面秒切，这是最优雅的做法。
+       */
+      async function switchToDisplay(displayId) {
+        if (!sender) {
+          reportError('尚未建立推流，无法切换屏幕')
+          return
+        }
+        if (displayId === currentDisplayId) return
+
+        log('切换屏幕 → displayId=' + displayId)
+        const oldStream = localStream
+        const stream = await captureScreen(displayId)
+        const track = stream.getVideoTracks()[0]
+        if (!track) {
+          reportError('目标屏幕没有可用视频轨')
+          return
+        }
+        track.contentHint = 'detail'
+        await sender.replaceTrack(track)
+
+        // 不同屏幕物理分辨率不同（如主屏 Retina vs 副屏 1080p），
+        // replaceTrack 后应重新套用当前分辨率档（scale 基于新的 nativeH 计算）
+        await applyResolution(currentResolution)
+
+        // 换轨成功后立刻停掉旧屏采集 —— 否则多屏切换时会有多路 getUserMedia
+        // 同时在后台跑，占满 GPU/编码器，且断开时难以彻底释放
+        if (oldStream && oldStream !== stream) stopStream(oldStream)
+
+        localStream = stream
+        currentDisplayId = displayId
+        if (videoEl) videoEl.srcObject = stream
+        // 回传当前投放屏，主进程据此把归一化坐标映射到正确的显示器
+        ipcRenderer.send(CH_ACTIVE_DISPLAY, displayId)
+        log('已切换到屏幕 ' + displayId)
+      }
+
+      /** 作为 offer 方发起协商（受控端主动推流） */
+      async function createOffer() {
+        if (!pc) return
+        const offer = await pc.createOffer()
+        await pc.setLocalDescription(offer)
+        // ⚠️ 必须调 toJSON() 转成普通对象！
+        //    Electron 的 IPC 走结构化克隆，只复制【自有属性】，
+        //    而 RTCSessionDescription 的 type / sdp 是原型上的 getter，
+        //    直接传对象会导致对端收到空壳（setRemoteDescription 报 type 为 null）。
+        //    同理适用于 RTCIceCandidate（下面 candidate 已用 toJSON）。
+        out({ type: 'offer', sdp: pc.localDescription.toJSON() })
+      }
+
+      /**
+       * 应用画质预设（运行时调参，无需重新协商）
+       *
+       * 用 RTCRtpSender.setParameters 改 maxBitrate / maxFramerate /
+       * degradationPreference —— 这些是 sender 级别的运行时参数，
+       * 改完浏览器立即生效，不需要重新 offer/answer。
+       *
+       * 若推流尚未建立（sender 为空），只记录当前档位，等建立后再应用。
+       */
+      /**
+       * 运行时调参安全封装：在 sender 真正就绪（getParameters 返回带 transactionId 且 encodings 非空）
+       * 时，对 encodings[0] 应用 mutator 后 setParameters。
+       *
+       * 关键坑（本次修复核心）：transceiver 尚未 associate 时，getParameters() 返回的 params.transactionId
+       * 为空；Chromium 的 setParameters 用 transactionId 校验，空 transactionId 直接抛
+       * “getParameters() has never been called on this sender”。因此不能自造 encodings 数组、也不能在
+       * transactionId 为空时硬 set。这里改为：未连通直接返回（交给 reapplyTuning），连通后若未就绪就
+       * 短重试若干次，就绪即调参；任何失败只 log 不弹错误条（属良性竞态、不影响传输）。
+       */
+      async function tuneSender(mutator, label) {
+        if (!sender || !pc) return false
+        // 未连通时不空转重试，交给 reapplyTuning() 在 connected 时统一应用
+        if (pc.connectionState !== 'connected') return false
+        for (let attempt = 0; attempt < 16; attempt++) {
+          let params
+          try {
+            params = sender.getParameters()
+          } catch (e) {
+            return false
+          }
+          if (params && params.encodings && params.encodings.length > 0 && params.transactionId) {
+            try {
+              mutator(params.encodings[0], params)
+              await sender.setParameters(params)
+              return true
+            } catch (e) {
+              log(label + ' 调参暂跳过（将重试）: ' + (e && e.message ? e.message : e))
+            }
+          }
+          await new Promise((r) => setTimeout(r, 120))
+        }
+        return false
+      }
+
+      async function applyQuality(name) {
+        const q = QUALITY[name] ? name : 'low'
+        currentQuality = q
+        const ok = await tuneSender((enc, params) => {
+          enc.maxBitrate = QUALITY[q].maxBitrate
+          enc.maxFramerate = QUALITY[q].maxFramerate
+          params.degradationPreference = QUALITY[q].degradation
+        }, '画质')
+        if (ok) {
+          log('画质切换 → ' + q + '（' + Math.round(QUALITY[q].maxBitrate / 1000) + 'kbps, ' + QUALITY[q].maxFramerate + 'fps）')
+        } else {
+          log('画质已记录（连接就绪后应用）: ' + q)
+        }
+      }
+
+      /**
+       * 应用分辨率预设（编码端降采样，运行时调参，无需重新协商）
+       *
+       * 用 RTCRtpSender.setParameters 改 encodings[0].scaleResolutionDownBy ——
+       * 直接改变编码输出分辨率，接收端看到的画面分辨率随之变化。
+       * 与 applyQuality 走同一条 setParameters 通道，都是 sender 级运行时参数。
+       */
+      async function applyResolution(name) {
+        const isNative = name === 'native'
+        const targetH = isNative ? null : RES_TARGET_H[name]
+        if (!isNative && targetH == null) {
+          reportError('未知分辨率: ' + name)
+          return
+        }
+        currentResolution = name
+        // 由真实采集高度换算降采样倍数：native 不降采样（scale=1）；
+        // 目标高度 ≥ 真实高度时也不放大（取 1，原生最清晰）
+        // ⚠️ 本文件是纯 JS（不经 TS 编译），不可用 targetH! 这类非空断言语法，
+        //    否则 Chromium 解析脚本直接抛 SyntaxError，整个脚本不执行、隐藏窗口失效。
+        let scale = 1
+        if (!isNative && nativeH > 0) {
+          scale = nativeH > targetH ? nativeH / targetH : 1
+        }
+        scale = Math.min(scale, 16) // 安全上限，避免异常倍数拖垮编码器
+        const ok = await tuneSender((enc) => { enc.scaleResolutionDownBy = scale }, '分辨率')
+        if (ok) {
+          const outW = nativeW ? Math.round(nativeW / scale) : 0
+          const outH = nativeH ? Math.round(nativeH / scale) : 0
+          log('分辨率切换 → ' + name + '（输出 ' + outW + '×' + outH + ', scale=' + scale.toFixed(2) + '）')
+        } else {
+          log('分辨率已记录（连接就绪后应用）: ' + name)
+        }
+      }
+
+      /** 添加视频轨并应用当前画质 + 分辨率预设，返回 sender 以便后续 replaceTrack 换屏 */
+      async function reapplyTuning() {
+        if (!sender) return
+        try {
+          await applyQuality(currentQuality)
+          await applyResolution(currentResolution)
+          log('P2P 连通后已应用画质/分辨率')
+        } catch (e) {
+          log('P2P 连通后调参跳过（不影响传输）: ' + (e && e.message ? e.message : e))
+        }
+      }
+
+      async function addStreamAndTune(stream) {
+        sender = pc.addTrack(stream.getVideoTracks()[0], stream)
+        await applyQuality(currentQuality)
+        await applyResolution(currentResolution)
+        return sender
+      }
+
+      /* ══════════════════ 生命周期 ══════════════════ */
+
+      function teardown() {
+        try {
+          if (controlChannel) controlChannel.close()
+          if (pc) pc.close()
+          if (localStream) stopStream(localStream)
+        } catch {
+          /* 忽略已释放的资源 */
+        }
+        pc = null
+        controlChannel = null
+        sender = null
+        localStream = null
+        currentDisplayId = null
+        sourcesMeta = []
+        if (videoEl) videoEl.srcObject = null
+      }
+
+      // 主进程 → 本页：控制端的信令
+      ipcRenderer.on(CH_SIGNAL_IN, async (_e, msg) => {
+        try {
+          if (!pc) return
+          sessionCode = msg.sessionCode || sessionCode
+
+          switch (msg.type) {
+            case 'join':
+              // 控制端加入 → 开始采集并发起 offer
+              log('收到 join，开始采集屏幕')
+              if (!localStream) {
+                await ensureSources()
+                // 未指定时优先用主屏；displayId 体系不可用时退回第一个源
+                const targetId =
+                  targetDisplayId != null
+                    ? targetDisplayId
+                    : (displays.find((d) => d.primary)?.id ?? sourcesMeta[0]?.displayId ?? null)
+
+                localStream = await captureScreen(targetId)
+                currentDisplayId = targetId
+                // 回传初始投放屏，确保主进程坐标映射在第一次鼠标移动前就锁定正确显示器
+                ipcRenderer.send(CH_ACTIVE_DISPLAY, targetId)
+                const track = localStream.getVideoTracks()[0]
+                log('采集成功 displayId=' + targetId + ' 轨道: ' + (track ? track.label || 'screen' : '无'))
+                videoEl.srcObject = localStream
+                await addStreamAndTune(localStream)
+              }
+              // 上报显示器拓扑，控制端据此换算坐标、并在多屏时提供切换入口
+              out({ type: 'displays', displays })
+              await createOffer()
+              log('已发出 offer')
+              break
+
+            case 'answer':
+              // 防御性校验：若 sdp 结构不完整，setRemoteDescription 会抛含糊的
+              // "not a valid enum value of type RTCSdpType"，不如提前说清楚
+              if (!msg.sdp || !msg.sdp.type || msg.sdp.sdp == null) {
+                reportError('收到无效的 answer（sdp 字段缺失）: ' + JSON.stringify(msg.sdp))
+                break
+              }
+              log('收到 answer, type=' + msg.sdp.type)
+              await pc.setRemoteDescription(new RTCSessionDescription(msg.sdp))
+              break
+
+            case 'candidate':
+              if (msg.candidate) {
+                try {
+                  await pc.addIceCandidate(new RTCIceCandidate(msg.candidate))
+                } catch (e) {
+                  // 单个候选失败不影响整体（可能只是某一路不可用），记录即可
+                  log('忽略无效 ICE 候选: ' + (e && e.message ? e.message : e))
+                }
+              }
+              break
+
+            case 'leave':
+            case 'terminated':
+              log('对端离开，停止采集')
+              teardown()
+              break
+
+            default:
+              break
+          }
+        } catch (err) {
+          reportError('处理信令失败: ' + (err && err.message ? err.message : err))
+        }
+      })
+
+      // 主进程 → 本页：开始 / 停止
+      ipcRenderer.on(CH_START, async (_e, payload) => {
+        try {
+          teardown()
+          sessionCode = payload.sessionCode || null
+          displays = payload.displays || []
+          // 未指定目标屏时，后面会以主屏（primary）为准；
+          // 这里先记下 displays 的 primary，省得每次 join 都重新找
+          const primary = displays.find((d) => d.primary)
+          targetDisplayId = payload.displayId ?? primary?.id ?? null
+          log('会话启动，显示器数=' + displays.length + '，默认推屏=' + targetDisplayId)
+
+          // iceServers 由主进程通过 HTTP 从后端获取后下发；
+          // 这里先建立空的 PeerConnection，等 join 到达再采集
+          createPeer(payload.iceServers || [])
+        } catch (err) {
+          reportError('启动会话失败: ' + (err && err.message ? err.message : err))
+        }
+      })
+
+      ipcRenderer.on(CH_STOP, () => {
+        teardown()
+      })
+    </script>
+  </body>
+</html>

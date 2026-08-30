@@ -85,6 +85,9 @@ export default (): Partial<Config> => {
       protocol: 'file://',
       indexPath: '/public/dist/index.html',
       channelSeparator: '/',
+    },
+    cloud: {
+      baseUrl: 'http://127.0.0.1:9527'
     }
   }
 }

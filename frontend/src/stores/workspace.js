@@ -41,6 +41,17 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     localStorage.setItem(CODE_EDITOR_VISIBLE_KEY, String(codeEditorVisible.value))
   }
 
+  // ===== Agent 终端面板状态 =====
+  // terminalPanelVisible: 控制代码编辑器下方终端面板的显示/隐藏（默认隐藏）
+  const TERMINAL_PANEL_VISIBLE_KEY = 'agent:terminalPanelVisible'
+  const terminalPanelVisible = ref(localStorage.getItem(TERMINAL_PANEL_VISIBLE_KEY) === 'true')
+
+  /** 切换终端面板的显示/隐藏 */
+  function toggleTerminalPanel() {
+    terminalPanelVisible.value = !terminalPanelVisible.value
+    localStorage.setItem(TERMINAL_PANEL_VISIBLE_KEY, String(terminalPanelVisible.value))
+  }
+
   // ===== 当前活跃模块 =====
   const activeModule = ref('chat')
 
@@ -303,6 +314,8 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     togglePanelSwap,
     codeEditorVisible,
     toggleCodeEditor,
+    terminalPanelVisible,
+    toggleTerminalPanel,
     // 文件模块
     folderList,
     folderLoading,

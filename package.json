@@ -1,6 +1,6 @@
 {
   "name": "ee",
-  "version": "5.0.31",
+  "version": "5.1.0",
   "description": "A fast, desktop software development framework",
   "main": "./public/electron/main.js",
   "scripts": {
@@ -34,7 +34,8 @@
     "debug-electron": "cross-env DEBUG=ee-* ee-bin dev --serve=electron",
     "debug-move": "ee-bin move --flag=frontend_dist",
     "packages-build": "pnpm --filter ee-bin run build && pnpm --filter ee-core run build",
-    "re-sqlite": "electron-rebuild -f -w better-sqlite3"
+    "re-sqlite": "electron-rebuild -f -w better-sqlite3",
+    "rebuild": "electron-rebuild -f -w better-sqlite3,canvas,node-pty"
   },
   "repository": "https://github.com/shuaiyinoo/Diting_AI_Desktop.git",
   "keywords": [
@@ -79,6 +80,8 @@
     "hf-embedder": "^0.2.1",
     "mammoth": "^1.12.0",
     "minisearch": "^7.2.0",
+    "node-enigo": "1.3.0",
+    "node-pty": "^1.1.0",
     "node-smb2": "^1.3.5",
     "onnxruntime-node": "^1.27.0",
     "pdf-efficient-loader": "^1.0.0",

@@ -26,25 +26,37 @@
         </TooltipContent>
       </Tooltip>
 
-      <!-- 远程地址（已隐藏）
       <span class="mx-0.5 h-3 w-px shrink-0 bg-border" />
 
-      <Tooltip>
-        <TooltipTrigger as-child>
+      <!-- 登录状态 + WS 连接 -->
+      <div v-if="!authStore.isLoggedIn" class="flex items-center gap-1 px-1.5 py-0.5">
+        <span class="size-1.5 rounded-full bg-muted-foreground/40" />
+        <span class="whitespace-nowrap leading-none text-muted-foreground">未登录</span>
+      </div>
+      <div v-else class="flex items-center gap-1 px-1.5 py-0.5">
+        <span class="size-1.5 rounded-full bg-green-500" />
+        <span class="whitespace-nowrap leading-none">已登录</span>
+        <span class="mx-1 h-3 w-px shrink-0 bg-border" />
+        <span
+          class="size-1.5 rounded-full"
+          :class="remoteStore.connState === 'connected' ? 'bg-green-500' : remoteStore.connState === 'connecting' ? 'bg-amber-500' : 'bg-muted-foreground/40'"
+        />
+        <span class="whitespace-nowrap leading-none text-muted-foreground">{{ remoteStore.connStateText }}</span>
+      </div>
+
+      <!-- 远程操控状态（仅登录后显示） -->
+      <template v-if="authStore.isLoggedIn">
+        <span class="mx-0.5 h-3 w-px shrink-0 bg-border" />
+        <div class="flex items-center gap-1 px-1.5 py-0.5">
           <span
-            class="inline-flex cursor-pointer items-center gap-1 rounded px-1.5 py-0.5 transition-colors hover:bg-accent hover:text-foreground"
-            style="-webkit-app-region: no-drag"
-            @click="onEditRemote"
-          >
-            <Cloud class="size-3.5" />
-            <span class="whitespace-nowrap leading-none">{{ remoteAddress || '无远程' }}</span>
+            class="size-1.5 rounded-full"
+            :class="remoteStore.peerJoined ? 'bg-green-500' : 'bg-muted-foreground/40'"
+          />
+          <span class="whitespace-nowrap leading-none text-muted-foreground">
+            {{ remoteStore.peerJoined ? '远程控制中' : '未受控' }}
           </span>
-        </TooltipTrigger>
-        <TooltipContent side="top" align="start">
-          {{ remoteAddress ? remoteAddress : '添加远程地址' }}
-        </TooltipContent>
-      </Tooltip>
-      -->
+        </div>
+      </template>
     </div>
 
     <!-- 右侧 -->
@@ -160,7 +172,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { toast } from 'vue-sonner';
@@ -168,11 +180,13 @@ import {
   RefreshCw, Cloud, Star, Book, Moon, Sun, Globe, Settings,
 } from '@lucide/vue';
 import { isDark, toggleTheme } from '@/theme';
-import { ipcApiRoute } from '@/api';
+import { ipcApiRoute, remoteStatusChannel } from '@/api';
 import { ipc } from '@/utils/ipcRenderer';
 import { useTabStore } from '@/stores/tab';
 import { useBrowserStore } from '@/stores/browser';
 import { useUpdaterStore } from '@/stores/updater';
+import { useAuthStore } from '@/stores/auth';
+import { useRemoteStore } from '@/stores/remote';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -183,6 +197,8 @@ const { t } = useI18n();
 const tabStore = useTabStore();
 const browserStore = useBrowserStore();
 const updaterStore = useUpdaterStore();
+const authStore = useAuthStore();
+const remoteStore = useRemoteStore();
 
 const appVersion = ref('1.0.0');
 const remoteAddress = ref('');
@@ -202,6 +218,17 @@ onMounted(() => {
   updaterStore.getAppVersion().then((v) => {
     if (v) appVersion.value = v;
   });
+
+  // 同步登录状态
+  authStore.syncStatus();
+
+  // 同步远程控制状态并监听主进程推送
+  remoteStore.fetchStatus();
+  remoteStore.bindStatusListener();
+});
+
+onUnmounted(() => {
+  remoteStore.unbindStatusListener();
 });
 
 /**

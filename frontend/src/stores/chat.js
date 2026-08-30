@@ -114,8 +114,10 @@ export const useChatStore = defineStore('chat', () => {
   async function sendMessage(params) {
     const { text, httpServerUrl, onScroll, toolMode, folderId, kbScope } = params
 
-    // 获取或创建会话
+    // ===== 流式同步 hook：通知 Mobile 开始发送 =====
     let sessionId = currentSessionId.value
+
+    // 获取或创建会话
     if (!sessionId) {
       // 通过 workspace store 创建会话
       const { useWorkspaceStore } = await import('./workspace')
@@ -165,6 +167,14 @@ export const useChatStore = defineStore('chat', () => {
     sessionMessages.push(assistantMsg)
     onScroll?.()
 
+    // ===== 流式同步 hook：推送发送开始 =====
+    ipc.invoke(ipcApiRoute.streamSync.onSendStarted, {
+      sessionType: 'chat',
+      sessionId: String(sessionId),
+      userMessage: text,
+      assistantMessageId: assistantMsg.id,
+    }).catch(() => {})
+
     // SSE 请求
     const url = `${httpServerUrl}/${ipcApiRoute.assistant.streamChat}`
     const controller = new AbortController()
@@ -182,7 +192,6 @@ export const useChatStore = defineStore('chat', () => {
     if (kbScope) {
       requestBody.kbScope = kbScope
     }
-    console.log('[ChatStore] SSE 请求体:', JSON.stringify(requestBody))
 
     try {
       const response = await fetch(url, {
@@ -211,7 +220,7 @@ export const useChatStore = defineStore('chat', () => {
         while (separatorIndex >= 0) {
           const rawEvent = buffer.slice(0, separatorIndex)
           buffer = buffer.slice(separatorIndex + 2)
-          dispatchSseEvent(rawEvent, assistantMsg)
+          dispatchSseEvent(rawEvent, assistantMsg, sessionId)
           separatorIndex = buffer.indexOf('\n\n')
         }
         if (onScroll) {
@@ -221,6 +230,13 @@ export const useChatStore = defineStore('chat', () => {
 
       // 流结束
       assistantMsg.pending = false
+      // ===== 流式同步 hook：推送流式结束 =====
+      ipc.invoke(ipcApiRoute.streamSync.onStreamEnd, {
+        sessionType: 'chat',
+        sessionId: String(sessionId),
+        assistantMessageId: assistantMsg.id,
+        finalContent: assistantMsg.content,
+      }).catch(() => {})
     } catch (err) {
       if (err?.name === 'AbortError') {
         assistantMsg.pending = false
@@ -228,9 +244,23 @@ export const useChatStore = defineStore('chat', () => {
         if (!assistantMsg.content) {
           assistantMsg.content = i18n.global.t('storeMsg.stopped')
         }
+        // ===== 流式同步 hook：推送取消 =====
+        ipc.invoke(ipcApiRoute.streamSync.onStreamEnd, {
+          sessionType: 'chat',
+          sessionId: String(sessionId),
+          assistantMessageId: assistantMsg.id,
+          finalContent: assistantMsg.content,
+        }).catch(() => {})
       } else {
         console.error('[ChatStore] sendMessage 异常:', err)
         assistantMsg.content = i18n.global.t('storeMsg.sendFailed', { msg: err?.message || String(err) })
+        // ===== 流式同步 hook：推送错误 =====
+        ipc.invoke(ipcApiRoute.streamSync.onStreamError, {
+          sessionType: 'chat',
+          sessionId: String(sessionId),
+          assistantMessageId: assistantMsg.id,
+          error: err?.message || String(err),
+        }).catch(() => {})
       }
     } finally {
       streamingSessions.value.delete(sessionId)
@@ -304,7 +334,7 @@ export const useChatStore = defineStore('chat', () => {
    * @param {string} rawEvent - 原始 SSE 事件字符串
    * @param {Object} assistantMsg - 助手消息对象（reactive）
    */
-  function dispatchSseEvent(rawEvent, assistantMsg) {
+  function dispatchSseEvent(rawEvent, assistantMsg, sessionId) {
     const lines = rawEvent.split(/\r?\n/)
     let eventName = ''
     const dataLines = []
@@ -322,55 +352,132 @@ export const useChatStore = defineStore('chat', () => {
     if (dataLines.length === 0) return
     const rawData = dataLines.join('\n')
 
+    // 解析 data，供流式同步使用
+    let parsedData = null
+    try {
+      parsedData = JSON.parse(rawData)
+    } catch {
+      parsedData = rawData
+    }
+
     switch (eventName) {
       case 'start':
         break
       case 'token':
-        try {
-          const data = JSON.parse(rawData)
-          if (data.delta) {
-            assistantMsg.content += data.delta
-          }
-        } catch {
+        if (parsedData && parsedData.delta) {
+          assistantMsg.content += parsedData.delta
+          // ===== 流式同步 hook：推送 token =====
+          ipc.invoke(ipcApiRoute.streamSync.onToken, {
+            sessionType: 'chat',
+            sessionId: String(sessionId),
+            delta: parsedData.delta,
+            assistantMessageId: assistantMsg.id,
+          }).catch(() => {})
+        } else {
           assistantMsg.content += rawData
         }
         break
       case 'citations':
         // KB_SEARCH 模式：流开始前发送引用证据
-        try {
-          const data = JSON.parse(rawData)
-          if (data.citations && Array.isArray(data.citations) && data.citations.length > 0) {
-            assistantMsg.citations = data.citations
-          }
-        } catch {
-          // 忽略解析失败
+        if (parsedData && parsedData.citations && Array.isArray(parsedData.citations) && parsedData.citations.length > 0) {
+          assistantMsg.citations = parsedData.citations
         }
+        // ===== 流式同步 hook：推送 citations 事件 =====
+        ipc.invoke(ipcApiRoute.streamSync.onSseEvent, {
+          sessionType: 'chat',
+          sessionId: String(sessionId),
+          event: eventName,
+          eventData: parsedData,
+          assistantMessageId: assistantMsg.id,
+        }).catch(() => {})
         break
       case 'complete':
-        try {
-          const data = JSON.parse(rawData)
-          if (data.reply && !assistantMsg.content) {
-            assistantMsg.content = data.reply
+        if (parsedData) {
+          if (parsedData.reply && !assistantMsg.content) {
+            assistantMsg.content = parsedData.reply
           }
-          // 解析引用证据（complete 事件也携带 citations）
-          if (data.citations && Array.isArray(data.citations) && data.citations.length > 0) {
-            assistantMsg.citations = data.citations
+          if (parsedData.citations && Array.isArray(parsedData.citations) && parsedData.citations.length > 0) {
+            assistantMsg.citations = parsedData.citations
           }
-        } catch {
-          // 忽略解析失败
         }
+        // ===== 流式同步 hook：推送 complete 事件 =====
+        ipc.invoke(ipcApiRoute.streamSync.onSseEvent, {
+          sessionType: 'chat',
+          sessionId: String(sessionId),
+          event: eventName,
+          eventData: parsedData,
+          assistantMessageId: assistantMsg.id,
+        }).catch(() => {})
         break
       case 'error':
-        try {
-          const data = JSON.parse(rawData)
-          assistantMsg.content = `错误: ${data.error || rawData}`
-        } catch {
+        if (parsedData && parsedData.error) {
+          assistantMsg.content = `错误: ${parsedData.error}`
+        } else {
           assistantMsg.content = `错误: ${rawData}`
         }
+        // ===== 流式同步 hook：推送 error 事件 =====
+        ipc.invoke(ipcApiRoute.streamSync.onSseEvent, {
+          sessionType: 'chat',
+          sessionId: String(sessionId),
+          event: eventName,
+          eventData: parsedData,
+          assistantMessageId: assistantMsg.id,
+        }).catch(() => {})
         break
       default:
+        // 其他未知事件也推送，接收端可选择处理或忽略
+        ipc.invoke(ipcApiRoute.streamSync.onSseEvent, {
+          sessionType: 'chat',
+          sessionId: String(sessionId),
+          event: eventName,
+          eventData: parsedData,
+          assistantMessageId: assistantMsg.id,
+        }).catch(() => {})
         break
     }
+  }
+
+  // ===== Mobile 代发消息监听 =====
+  // Mobile 通过 STOMP 请求 Desktop 代为发送消息，主进程通过 IPC 转发到前端
+  if (ipc) {
+    ipc.on('streamSync:mobileRequest', async (_event, req) => {
+      if (!req || !req.message) return
+      // 切换到对应会话（如果存在）然后发送
+      const sid = Number(req.sessionId)
+      if (!sid) return
+
+      // 动态获取 HTTP 服务器地址（与 view 层 loadHttpServerUrl 逻辑一致）
+      let httpServerUrl = 'http://127.0.0.1:7071'
+      try {
+        const data = await ipc.invoke(ipcApiRoute.framework.checkHttpServer)
+        if (data && data.enable && data.server) {
+          httpServerUrl = data.server
+        }
+      } catch {
+        // 使用默认地址
+      }
+
+      // 切换到目标会话（通过 tabStore，currentSessionId 是 computed 不可直接赋值）
+      const { useWorkspaceStore } = await import('./workspace')
+      const ws = useWorkspaceStore()
+      const session = ws.chatSessions.find((s) => s.id === sid)
+      const tabStore = useTabStore()
+      tabStore.openSessionTab('chat', sid, session?.title || 'Chat')
+
+      // 确保 messagesBySession 存在
+      if (!messagesBySession.value[sid]) {
+        messagesBySession.value[sid] = []
+      }
+      // messages ref 由 watch(currentSessionId) 自动同步，无需手动赋值
+
+      sendMessage({
+        text: req.message,
+        httpServerUrl,
+        toolMode: req.toolMode || 'CHAT',
+        folderId: req.folderId,
+        kbScope: req.kbScope,
+      })
+    })
   }
 
     return {

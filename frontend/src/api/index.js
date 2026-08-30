@@ -318,8 +318,51 @@ dingtalkStartBot: 'controller/bridge/dingtalkStartBot',
 dingtalkStopBot: 'controller/bridge/dingtalkStopBot',
 dingtalkGetStatuses: 'controller/bridge/dingtalkGetStatuses',
 dingtalkTestConnection: 'controller/bridge/dingtalkTestConnection',
-},
+  },
+
+  // 认证
+  auth: {
+    login: 'controller/auth/login',
+    register: 'controller/auth/register',
+    logout: 'controller/auth/logout',
+    getStatus: 'controller/auth/getStatus',
+  },
+
+  // 远程控制（受控端）
+  remote: {
+    getStatus: 'controller/remote/getStatus',
+    connect: 'controller/remote/connect',
+    disconnect: 'controller/remote/disconnect',
+    startMirroring: 'controller/remote/startMirroring',
+    stopMirroring: 'controller/remote/stopMirroring',
+    checkPermission: 'controller/remote/checkPermission',
+    openPermissionSettings: 'controller/remote/openPermissionSettings',
+  },
+
+  // 流式同步（多端消息实时同步）
+  streamSync: {
+    onSendStarted: 'controller/streamSync/onSendStarted',
+    onToken: 'controller/streamSync/onToken',
+    onSseEvent: 'controller/streamSync/onSseEvent',
+    onStreamEnd: 'controller/streamSync/onStreamEnd',
+    onStreamError: 'controller/streamSync/onStreamError',
+    onSessionListChanged: 'controller/streamSync/onSessionListChanged',
+  },
+
+  // 终端
+  terminal: {
+    createTerminal: 'controller/terminal/createTerminal',
+    write: 'controller/terminal/write',
+    resize: 'controller/terminal/resize',
+    destroyTerminal: 'controller/terminal/destroyTerminal',
+    destroyAll: 'controller/terminal/destroyAll',
+    onData: 'controller/terminal/onData',
+    onExit: 'controller/terminal/onExit',
+  },
 }
+
+/** 远程状态推送通道（主进程 → 渲染进程） */
+export const remoteStatusChannel = 'remote:status'
 
 /**
  * Customize Channel

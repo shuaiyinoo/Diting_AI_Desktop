@@ -48,7 +48,10 @@
             <div class="flex min-w-0 max-w-full flex-col box-border" :class="msg.role === 'user' ? 'items-end pr-10' : 'w-full pl-10 overflow-x-hidden'">
               <!-- 用户消息 -->
               <template v-if="msg.role === 'user'">
-                <div class="inline-block max-w-[85%] break-words whitespace-pre-wrap rounded-xl bg-foreground/5 px-3.5 py-2.5 text-sm leading-relaxed text-foreground shadow-[0_1px_3px_rgba(0,0,0,0.06)]">{{ msg.content }}</div>
+                <div
+                  class="inline-block max-w-[85%] rounded-2xl rounded-tr-sm border border-primary bg-transparent px-3.5 py-2 text-[13px] leading-relaxed text-foreground"
+                  v-html="renderMentionChips(msg.content)"
+                />
               </template>
 
               <!-- 助手消息 -->
@@ -567,6 +570,47 @@ async function sendMessage() {
 /** 停止生成 */
 function stopGeneration() {
   chatStore.stopGeneration()
+}
+
+/** HTML 转义 */
+function escapeHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+}
+function escapeAttr(s) {
+  return s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+}
+
+/** 将引用标记渲染为 chip 样式 HTML */
+function renderMentionChips(text) {
+  if (!text) return ''
+  const re = /(@file:([^\s]+))|(\/skill:([^\s]+))|(#mcp:([^\s]+))|(&session:([^\s:]+)(?:::(.+))?)|(<!--DITING_SCHEDULED_RUN-->)/g
+  let result = ''
+  let lastIndex = 0
+  let m
+  while ((m = re.exec(text)) !== null) {
+    if (m.index > lastIndex) {
+      result += escapeHtml(text.slice(lastIndex, m.index))
+    }
+    if (m[1]) {
+      const path = m[2]
+      const name = path.split('/').pop() || path
+      result += `<span class="mention-chip" data-prefix="@" title="${escapeAttr(path)}">${escapeHtml(name)}</span>`
+    } else if (m[3]) {
+      result += `<span class="skill-mention-chip" data-prefix="/">${escapeHtml(m[4])}</span>`
+    } else if (m[5]) {
+      result += `<span class="mcp-mention-chip" data-prefix="#">${escapeHtml(m[6])}</span>`
+    } else if (m[7]) {
+      const title = m[9] ? decodeURIComponent(m[9]) : m[8]
+      result += `<span class="session-mention-chip" data-prefix="&">${escapeHtml(title)}</span>`
+    } else if (m[10]) {
+      result += `<span class="scheduled-run-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>定时任务</span>`
+    }
+    lastIndex = m.index + m[0].length
+  }
+  if (lastIndex < text.length) {
+    result += escapeHtml(text.slice(lastIndex))
+  }
+  return result
 }
 
 /**

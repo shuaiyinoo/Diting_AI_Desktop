@@ -134,7 +134,7 @@ jobs:
 
       # 重编译 native 模块以适配 Electron 版本
       - name: 重编译 native 模块
-        run: npx electron-rebuild -f -w better-sqlite3,canvas
+        run: npx electron-rebuild -f -w better-sqlite3,canvas,node-pty
 
       # 构建前端 + Electron 主进程
       - name: 构建前端
@@ -221,7 +221,7 @@ jobs:
           rm $RUNNER_TEMP/cert.p12
 
       - name: 重编译 native 模块 (x64 交叉编译)
-        run: npx electron-rebuild -f -a x64 -w better-sqlite3,canvas
+        run: npx electron-rebuild -f -a x64 -w better-sqlite3,canvas,node-pty
 
       - name: 构建前端
         run: npm run build-frontend
@@ -458,7 +458,7 @@ jobs:
         run: npm install
 
       - name: 重编译 native 模块
-        run: npx electron-rebuild -f -w better-sqlite3,canvas
+        run: npx electron-rebuild -f -w better-sqlite3,canvas,node-pty
 
       - name: 构建前端
         run: npm run build-frontend
@@ -509,7 +509,7 @@ jobs:
         run: npm install
 
       - name: 重编译 native 模块
-        run: npx electron-rebuild -f -w better-sqlite3,canvas
+        run: npx electron-rebuild -f -w better-sqlite3,canvas,node-pty
 
       - name: 构建前端
         run: npm run build-frontend

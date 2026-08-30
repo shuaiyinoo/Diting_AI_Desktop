@@ -41,7 +41,7 @@
           <!-- 用户消息 -->
           <template v-if="msg.role === 'user'">
             <div
-              class="inline-block rounded-2xl rounded-tr-sm bg-primary px-3.5 py-2 text-[13px] leading-relaxed text-primary-foreground"
+              class="inline-block rounded-2xl rounded-tr-sm border border-primary bg-transparent px-3.5 py-2 text-[13px] leading-relaxed text-foreground"
               v-html="renderMentionChips(msg.content)"
             />
           </template>

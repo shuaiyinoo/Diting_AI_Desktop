@@ -121,7 +121,7 @@ export default {
       mcp: 'MCP 工具',
       tools: 'Tools',
       runtime: '环境检测',
-      general: '常规',
+      general: '通用设置',
       appearance: '外观主题',
       bridge: '远程连接',
       about: '关于/更新',
@@ -196,9 +196,46 @@ export default {
 
   // ========== 常规设置 ==========
   general: {
-    title: '常规',
+    title: '通用设置',
+    appInfo: '应用信息',
     appName: '应用名称',
     version: '版本',
+
+    cloud: {
+      title: 'Diting Cloud 账户',
+      subtitle: '登录后享受云端模型与跨端管理',
+      loggedIn: '已登录',
+      login: '登录',
+      register: '注册',
+      logout: '登出',
+
+      features: {
+        llm: {
+          title: '官方 LLM 模型',
+          desc: '免配置直接使用主流大语言模型',
+        },
+        voice: {
+          title: '官方语音模型',
+          desc: '在线语音识别，无需本地下载',
+        },
+        ocr: {
+          title: '官方 OCR 模型',
+          desc: '云端 OCR 识别，无需本地模型',
+        },
+        vector: {
+          title: '官方向量模型',
+          desc: '云端向量化，提升 RAG 效果',
+        },
+        mobile: {
+          title: '手机端管理',
+          desc: '随时在手机上管理你的 Agent',
+        },
+        sync: {
+          title: '多端同步',
+          desc: '会话与配置在所有设备间同步',
+        },
+      },
+    },
   },
 
   // ========== 关于/更新 ==========
@@ -848,6 +885,17 @@ verifying: '验证中…',
     binaryNotSupported: '二进制文件不支持在编辑器中预览',
     openFailed: '打开文件失败',
     closeAllAndHide: '关闭所有文件并隐藏编辑器',
+  },
+
+  // ========== Agent 终端面板 ==========
+  agentTerminal: {
+    newTerminal: '新建终端',
+    noTerminal: '无终端',
+    emptyHint: '点击新建按钮创建一个终端',
+    showPanel: '显示终端面板',
+    hidePanel: '隐藏终端面板',
+    createFailed: '创建终端失败',
+    processExited: '终端进程已退出（退出码 {code}）',
   },
 
   // ========== RAG 知识库 ==========

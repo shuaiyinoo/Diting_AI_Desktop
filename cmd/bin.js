@@ -46,7 +46,7 @@ module.exports = {
       * 如果你的项目引入了无法打包的库（如 native 模块），在此添加包名
       * 示例: external: ['sharp', 'node-gyp']
       */
-      external: [],
+      external: ['node-pty'],
       /**
       * Source map 配置（用于断点调试）
       * true | 'inline'  - 源码嵌入 main.js，DevTools/VS Code 开箱即用（开发推荐）

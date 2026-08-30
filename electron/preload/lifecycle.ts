@@ -21,6 +21,9 @@ import { updaterController } from '../controller/updater';
 import { voiceController } from '../controller/voice';
 import { cleanupUpdater } from '../service/os/auto_updater';
 import { ocrWorkerManager } from '../components/rag/parser/ocr-worker-manager';
+import { isLoggedIn } from '../service/cloud-api';
+import { remoteSignaling } from '../service/remote/signaling-service';
+import { terminalController } from '../controller/terminal';
 
 /**
  * 创建启动过场动画窗口
@@ -99,6 +102,13 @@ class Lifecycle {
       voiceController.registerIpc();
     } catch (err) {
       logger.error('[lifecycle] 语音 IPC 注册失败:', err);
+    }
+
+    // 注册终端推送通道
+    try {
+      terminalController.registerPushChannels();
+    } catch (err) {
+      logger.error('[lifecycle] 终端推送通道注册失败:', err);
     }
 
     // 注册获取应用版本号的 IPC
@@ -196,6 +206,17 @@ class Lifecycle {
 
     // 绑定主窗口给内置浏览器控制器
     browserController.setOwnerWindow(win);
+
+    // 若上次已登录（令牌仍在有效期内），启动时立即建立远程信令连接，
+    // 无需用户重新登录一次。未登录时跳过，由 auth.login 成功后触发。
+    if (isLoggedIn()) {
+      try {
+        remoteSignaling.connect();
+        logger.info('[lifecycle] 检测到已登录，已建立远程信令连接');
+      } catch (err) {
+        logger.warn('[lifecycle] 远程信令连接失败:', err);
+      }
+    }
 
     // 主窗口尺寸由 config.default.ts 的 windowsOption.width/height 控制
     // Electron 默认会将窗口居中显示，无需手动计算

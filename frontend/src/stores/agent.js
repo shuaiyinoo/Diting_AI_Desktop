@@ -329,6 +329,14 @@ set: (val) => {
     sessionMessages.push(assistantMsg)
     onScroll?.()
 
+    // ===== 流式同步 hook：推送发送开始 =====
+    ipc.invoke(ipcApiRoute.streamSync.onSendStarted, {
+      sessionType: 'agent',
+      sessionId: String(sessionId),
+      userMessage: text,
+      assistantMessageId: assistantMsg.id,
+    }).catch(() => {})
+
     // 为当前助手消息初始化统计
     const statsKey = assistantMsg.id
     messageStats.value[statsKey] = {
@@ -411,6 +419,13 @@ set: (val) => {
       }
       const s = messageStats.value[assistantMsg.id]
       if (s) s.elapsed = Math.floor((Date.now() - s.startTime) / 1000)
+      // ===== 流式同步 hook：推送流式结束 =====
+      ipc.invoke(ipcApiRoute.streamSync.onStreamEnd, {
+        sessionType: 'agent',
+        sessionId: String(sessionId),
+        assistantMessageId: assistantMsg.id,
+        finalContent: assistantMsg.content,
+      }).catch(() => {})
     } catch (err) {
       if (err?.name === 'AbortError') {
         assistantMsg.pending = false
@@ -423,9 +438,23 @@ set: (val) => {
         if (!assistantMsg.content && assistantMsg.blocks.length === 0) {
           assistantMsg.content = i18n.global.t('storeMsg.stopped')
         }
+        // ===== 流式同步 hook：推送取消 =====
+        ipc.invoke(ipcApiRoute.streamSync.onStreamEnd, {
+          sessionType: 'agent',
+          sessionId: String(sessionId),
+          assistantMessageId: assistantMsg.id,
+          finalContent: assistantMsg.content,
+        }).catch(() => {})
       } else {
         console.error('[AgentStore] sendMessage 异常:', err)
         assistantMsg.content = i18n.global.t('storeMsg.sendFailed', { msg: err?.message || String(err) })
+        // ===== 流式同步 hook：推送错误 =====
+        ipc.invoke(ipcApiRoute.streamSync.onStreamError, {
+          sessionType: 'agent',
+          sessionId: String(sessionId),
+          assistantMessageId: assistantMsg.id,
+          error: err?.message || String(err),
+        }).catch(() => {})
       }
       // 清理统计定时器
       if (statsTimers.has(sessionId)) {
@@ -486,7 +515,16 @@ set: (val) => {
 
     switch (eventName) {
       case 'text':
-        if (data.delta) assistantMsg.content += data.delta
+        if (data.delta) {
+          assistantMsg.content += data.delta
+          // ===== 流式同步 hook：推送 token =====
+          ipc.invoke(ipcApiRoute.streamSync.onToken, {
+            sessionType: 'agent',
+            sessionId: String(sessionId),
+            delta: data.delta,
+            assistantMessageId: assistantMsg.id,
+          }).catch(() => {})
+        }
         break
 
       case 'thinking':
@@ -499,6 +537,14 @@ set: (val) => {
             blocks.push({ type: 'thinking', thinking: data.delta })
           }
         }
+        // ===== 流式同步 hook：推送 thinking 事件 =====
+        ipc.invoke(ipcApiRoute.streamSync.onSseEvent, {
+          sessionType: 'agent',
+          sessionId: String(sessionId),
+          event: eventName,
+          eventData: data,
+          assistantMessageId: assistantMsg.id,
+        }).catch(() => {})
         break
 
       case 'thinking_start': {
@@ -507,6 +553,14 @@ set: (val) => {
         if (!last || last.type !== 'thinking') {
           blocks.push({ type: 'thinking', thinking: '' })
         }
+        // ===== 流式同步 hook：推送 thinking_start 事件 =====
+        ipc.invoke(ipcApiRoute.streamSync.onSseEvent, {
+          sessionType: 'agent',
+          sessionId: String(sessionId),
+          event: eventName,
+          eventData: data,
+          assistantMessageId: assistantMsg.id,
+        }).catch(() => {})
         break
       }
 
@@ -518,6 +572,14 @@ set: (val) => {
         } else {
           blocks.push({ type: 'text', text: '' })
         }
+        // ===== 流式同步 hook：推送 text_start 事件 =====
+        ipc.invoke(ipcApiRoute.streamSync.onSseEvent, {
+          sessionType: 'agent',
+          sessionId: String(sessionId),
+          event: eventName,
+          eventData: data,
+          assistantMessageId: assistantMsg.id,
+        }).catch(() => {})
         break
       }
 
@@ -531,6 +593,14 @@ set: (val) => {
           status: 'running',
           result: '',
         })
+        // ===== 流式同步 hook：推送 tool_start 事件 =====
+        ipc.invoke(ipcApiRoute.streamSync.onSseEvent, {
+          sessionType: 'agent',
+          sessionId: String(sessionId),
+          event: eventName,
+          eventData: data,
+          assistantMessageId: assistantMsg.id,
+        }).catch(() => {})
         break
 
       case 'tool_result': {
@@ -560,6 +630,14 @@ set: (val) => {
         }
         // 转发给前端（用于检测文件修改类工具，触发 git 状态刷新）
         onEvent?.(eventName, data)
+        // ===== 流式同步 hook：推送 tool_result 事件 =====
+        ipc.invoke(ipcApiRoute.streamSync.onSseEvent, {
+          sessionType: 'agent',
+          sessionId: String(sessionId),
+          event: eventName,
+          eventData: data,
+          assistantMessageId: assistantMsg.id,
+        }).catch(() => {})
         break
       }
 
@@ -583,6 +661,14 @@ set: (val) => {
         assistantMsg.pending = false
         // 转发给前端（用于触发 git 状态和文件列表刷新）
         onEvent?.(eventName, data)
+        // ===== 流式同步 hook：推送 complete 事件 =====
+        ipc.invoke(ipcApiRoute.streamSync.onSseEvent, {
+          sessionType: 'agent',
+          sessionId: String(sessionId),
+          event: eventName,
+          eventData: data,
+          assistantMessageId: assistantMsg.id,
+        }).catch(() => {})
         break
 
       case 'rag_citations': {
@@ -593,17 +679,41 @@ set: (val) => {
           const existing = assistantMsg.citations || []
           assistantMsg.citations = [...existing, ...data.citations]
         }
+        // ===== 流式同步 hook：推送 rag_citations 事件 =====
+        ipc.invoke(ipcApiRoute.streamSync.onSseEvent, {
+          sessionType: 'agent',
+          sessionId: String(sessionId),
+          event: eventName,
+          eventData: data,
+          assistantMessageId: assistantMsg.id,
+        }).catch(() => {})
         break
       }
 
       case 'error':
         assistantMsg.pending = false
         assistantMsg.content += `\n\n[错误] ${data.message || i18n.global.t('storeMsg.unknownError')}`
+        // ===== 流式同步 hook：推送 error 事件 =====
+        ipc.invoke(ipcApiRoute.streamSync.onSseEvent, {
+          sessionType: 'agent',
+          sessionId: String(sessionId),
+          event: eventName,
+          eventData: data,
+          assistantMessageId: assistantMsg.id,
+        }).catch(() => {})
         break
 
       case 'permission_request':
       case 'ask_user':
         onEvent?.(eventName, data)
+        // ===== 流式同步 hook：推送交互请求事件 =====
+        ipc.invoke(ipcApiRoute.streamSync.onSseEvent, {
+          sessionType: 'agent',
+          sessionId: String(sessionId),
+          event: eventName,
+          eventData: data,
+          assistantMessageId: assistantMsg.id,
+        }).catch(() => {})
         break
 
       case 'delegation_update': {
@@ -620,11 +730,27 @@ set: (val) => {
           }
         }
         onEvent?.(eventName, data)
+        // ===== 流式同步 hook：推送 delegation_update 事件 =====
+        ipc.invoke(ipcApiRoute.streamSync.onSseEvent, {
+          sessionType: 'agent',
+          sessionId: String(sessionId),
+          event: eventName,
+          eventData: data,
+          assistantMessageId: assistantMsg.id,
+        }).catch(() => {})
         break
       }
 
       case 'delegation_event':
         onEvent?.(eventName, data)
+        // ===== 流式同步 hook：推送 delegation_event 事件 =====
+        ipc.invoke(ipcApiRoute.streamSync.onSseEvent, {
+          sessionType: 'agent',
+          sessionId: String(sessionId),
+          event: eventName,
+          eventData: data,
+          assistantMessageId: assistantMsg.id,
+        }).catch(() => {})
         break
     }
   }
@@ -783,6 +909,50 @@ set: (val) => {
     }
     // 移除流式状态
     streamingSessions.value.delete(sessionId)
+  }
+
+  // ===== Mobile 代发消息监听 =====
+  if (ipc) {
+    ipc.on('streamSync:mobileRequest', async (_event, req) => {
+      if (!req || !req.message) return
+      if (!req.sessionId) return
+
+      // 切换到对应会话
+      selectSession(req.sessionId)
+
+      // 动态获取 HTTP 服务器地址（与 view 层 loadHttpServerUrl 逻辑一致）
+      let httpServerUrl = 'http://127.0.0.1:7071'
+      try {
+        const data = await ipc.invoke(ipcApiRoute.framework.checkHttpServer)
+        if (data && data.enable && data.server) {
+          httpServerUrl = data.server
+        }
+      } catch {
+        // 使用默认地址
+      }
+
+      // 动态获取已启用模型（Mobile 未传 model 时使用服务端默认）
+      let model = req.model
+      if (!model) {
+        try {
+          const res = await ipc.invoke(ipcApiRoute.llm.modelOperation, { action: 'getEnabled' })
+          if (res.code === 0 && res.data) {
+            model = res.data.model_name
+          }
+        } catch {
+          // model 留空，由后端处理
+        }
+      }
+
+      sendMessage({
+        text: req.message,
+        model,
+        workspaceSlug: req.workspaceSlug,
+        httpServerUrl,
+        permissionMode: req.permissionMode,
+        thinkingLevel: req.thinkingLevel,
+      })
+    })
   }
 
   return {

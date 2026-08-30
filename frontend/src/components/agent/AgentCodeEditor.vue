@@ -42,15 +42,48 @@
           <X :size="12" />
         </button>
       </div>
+
+      <!-- 右侧终端按钮 -->
+      <div class="ml-auto flex h-full shrink-0 items-center">
+        <Tooltip side="bottom">
+          <TooltipTrigger as-child>
+            <button
+              class="flex h-full items-center justify-center border-l border-border px-3 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+              :class="terminalPanelVisible ? 'text-accent-foreground' : ''"
+              @click="$emit('toggle-terminal')"
+            >
+              <TerminalSquare :size="16" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>{{ terminalPanelVisible ? t('agentTerminal.hidePanel') : t('agentTerminal.showPanel') }}</TooltipContent>
+        </Tooltip>
+      </div>
     </div>
 
     <!-- 编辑器主体 -->
-    <div class="min-h-0 flex-1">
+    <div class="min-h-0" :class="terminalPanelVisible ? 'flex-1' : 'flex-1'">
       <div v-if="!activeFile" class="flex h-full flex-col items-center justify-center gap-2 text-muted-foreground">
         <Code :size="40" class="opacity-30" />
         <span class="text-xs">{{ t('agentCodeEditor.emptyHint') }}</span>
       </div>
       <div v-show="activeFile" ref="editorContainerRef" class="h-full w-full" />
+    </div>
+
+    <!-- 终端面板（位于编辑器下方） -->
+    <div v-if="terminalPanelVisible" class="flex min-h-0 flex-col border-t border-border" :style="{ height: terminalHeight + 'px', flexShrink: 0 }">
+      <!-- 终端面板拖拽分隔条 -->
+      <div
+        class="h-[4px] cursor-row-resize flex items-center justify-center flex-shrink-0 bg-card transition-colors hover:bg-primary/10"
+        @mousedown="onTerminalResizeStart"
+      >
+        <div class="h-px w-full bg-border" />
+      </div>
+      <AgentTerminal
+        ref="terminalRef"
+        :visible="terminalPanelVisible"
+        :cwd="terminalCwd"
+        class="min-h-0 flex-1"
+      />
     </div>
   </div>
 </template>
@@ -58,8 +91,9 @@
 <script setup>
 import { ref, watch, onMounted, onBeforeUnmount, onActivated, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { FileText, Code, X } from '@lucide/vue'
+import { FileText, Code, X, TerminalSquare } from '@lucide/vue'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import AgentTerminal from '@/components/agent/AgentTerminal.vue'
 import * as monaco from 'monaco-editor'
 import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker'
 import jsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker'
@@ -164,9 +198,42 @@ const props = defineProps({
   openFiles: { type: Array, default: () => [] },
   /** 当前活跃文件 ID */
   activeFileId: { type: String, default: null },
+  /** 终端面板是否可见 */
+  terminalPanelVisible: { type: Boolean, default: false },
+  /** 终端默认工作目录 */
+  terminalCwd: { type: String, default: '' },
 })
 
-const emit = defineEmits(['activate-file', 'close-file', 'content-changed', 'save-file', 'close-all', 'open-file-by-path'])
+const emit = defineEmits(['activate-file', 'close-file', 'content-changed', 'save-file', 'close-all', 'open-file-by-path', 'toggle-terminal'])
+
+// ========== 终端面板高度拖拽 ==========
+const terminalRef = ref(null)
+const terminalHeight = ref(200)
+
+/** 终端面板拖拽 resize 开始 */
+function onTerminalResizeStart(event) {
+  event.preventDefault()
+  const startY = event.clientY
+  const startHeight = terminalHeight.value
+  document.body.style.cursor = 'row-resize'
+  document.body.style.userSelect = 'none'
+
+  function onMouseMove(e) {
+    const delta = startY - e.clientY
+    const newHeight = Math.max(60, Math.min(800, startHeight + delta))
+    terminalHeight.value = newHeight
+  }
+
+  function onMouseUp() {
+    document.removeEventListener('mousemove', onMouseMove)
+    document.removeEventListener('mouseup', onMouseUp)
+    document.body.style.cursor = ''
+    document.body.style.userSelect = ''
+  }
+
+  document.addEventListener('mousemove', onMouseMove)
+  document.addEventListener('mouseup', onMouseUp)
+}
 
 /** 是否为 JS/TS 文件（支持跨文件跳转的语言） */
 function isJsOrTs(ext) {

@@ -121,7 +121,7 @@ export default {
       mcp: 'MCP Tools',
       tools: 'Tools',
       runtime: 'Runtime',
-      general: 'General',
+      general: 'General Settings',
       appearance: 'Appearance',
       bridge: 'Bridge',
       about: 'About / Updates',
@@ -194,12 +194,49 @@ export default {
     },
   },
 
-  // ========== General ==========
-  general: {
-    title: 'General',
-    appName: 'App Name',
-    version: 'Version',
+// ========== General ==========
+general: {
+  title: 'General Settings',
+  appInfo: 'App Info',
+  appName: 'App Name',
+  version: 'Version',
+
+  cloud: {
+    title: 'Diting Cloud Account',
+    subtitle: 'Sign in to access cloud models and cross-device management',
+    loggedIn: 'Signed in',
+    login: 'Sign In',
+    register: 'Register',
+    logout: 'Sign Out',
+
+    features: {
+      llm: {
+        title: 'Official LLM Models',
+        desc: 'Use mainstream LLMs without configuration',
+      },
+      voice: {
+        title: 'Official Voice Models',
+        desc: 'Online speech recognition, no local download',
+      },
+      ocr: {
+        title: 'Official OCR Models',
+        desc: 'Cloud OCR recognition, no local models',
+      },
+      vector: {
+        title: 'Official Vector Models',
+        desc: 'Cloud vectorization for better RAG',
+      },
+      mobile: {
+        title: 'Mobile Management',
+        desc: 'Manage your Agents from your phone',
+      },
+      sync: {
+        title: 'Multi-device Sync',
+        desc: 'Sync sessions and settings across devices',
+      },
+    },
   },
+},
 
   // ========== About / Updates ==========
   about: {
@@ -848,6 +885,17 @@ verifying: 'Verifying…',
     binaryNotSupported: 'Binary files are not supported in the editor',
     openFailed: 'Failed to open file',
     closeAllAndHide: 'Close all files and hide editor',
+  },
+
+  // ========== Agent 终端面板 ==========
+  agentTerminal: {
+    newTerminal: 'New Terminal',
+    noTerminal: 'No terminal',
+    emptyHint: 'Click the new button to create a terminal',
+    showPanel: 'Show terminal panel',
+    hidePanel: 'Hide terminal panel',
+    createFailed: 'Failed to create terminal',
+    processExited: 'Terminal process exited (exit code {code})',
   },
 
   // ========== RAG ==========

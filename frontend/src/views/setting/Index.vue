@@ -75,7 +75,7 @@ const { t } = useI18n()
 // ========== 面板布局 ==========
 const workspaceRef = ref(null)
 const panel2Width = ref(200)
-const activeTab = ref('model')
+const activeTab = ref('general')
 
 // 子组件 ref
 const modelRef = ref(null)
@@ -99,6 +99,7 @@ watch(() => route.query.tab, (newTab) => {
 })
 
 const settingTabs = computed(() => [
+  { key: 'general', label: t('settings.tabs.general'), icon: Settings },
   { key: 'model', label: t('settings.tabs.model'), icon: Bot },
   { key: 'modelVoice', label: t('settings.tabs.modelVoice'), icon: AudioLines },
   { key: 'modelOcr', label: t('settings.tabs.modelOcr'), icon: ScanText },
@@ -107,7 +108,6 @@ const settingTabs = computed(() => [
   { key: 'mcp', label: t('settings.tabs.mcp'), icon: Plug },
   { key: 'tools', label: t('settings.tabs.tools'), icon: Wrench },
   { key: 'runtime', label: t('settings.tabs.runtime'), icon: Monitor },
-  { key: 'general', label: t('settings.tabs.general'), icon: Settings },
   { key: 'appearance', label: t('settings.tabs.appearance'), icon: Palette },
   { key: 'bridge', label: t('settings.tabs.bridge'), icon: Radio },
   { key: 'about', label: t('settings.tabs.about'), icon: Info },
