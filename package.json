@@ -1,6 +1,6 @@
 {
   "name": "ee",
-  "version": "5.1.0",
+  "version": "5.1.1",
   "description": "A fast, desktop software development framework",
   "main": "./public/electron/main.js",
   "scripts": {
@@ -69,6 +69,7 @@
     "@kutalia/whisper-node-addon": "^1.1.0",
     "@larksuiteoapi/node-sdk": "^1.73.0",
     "@modelcontextprotocol/sdk": "^1.30.0",
+    "@touchifyapp/enigo": "^0.1.2",
     "@zvec/zvec": "^0.5.0",
     "axios": "^1.7.9",
     "basic-ftp": "^5.3.1",
@@ -83,7 +84,6 @@
     "hf-embedder": "^0.2.1",
     "mammoth": "^1.12.0",
     "minisearch": "^7.2.0",
-    "node-enigo": "1.3.0",
     "node-pty": "^1.1.0",
     "node-smb2": "^1.3.5",
     "onnxruntime-node": "^1.27.0",
@@ -93,6 +93,7 @@
     "ppu-pdf": "^6.2.0",
     "qrcode": "^1.5.4",
     "qwen-embedder": "^0.1.5",
+    "simple-git": "^3.36.0",
     "ssh2-sftp-client": "^12.1.1",
     "typebox": "1.1.38",
     "webdav": "^5.10.0",

@@ -3,8 +3,8 @@ import type { Context } from 'koa'
 import { dialog } from 'electron'
 import { readFileSync, writeFileSync, readdirSync, statSync, existsSync, mkdirSync, copyFileSync } from 'fs'
 import { join, basename, dirname, resolve } from 'path'
-import { execSync } from 'child_process'
 import { logger } from 'ee-core/log'
+import { getGitStatus, isGitRepo } from '../service/git-service'
 import { llmdbService } from '../service/database/llmdb'
 import {
   seedDefaultSkills,
@@ -609,6 +609,9 @@ class PiAgentController {
    * - list：列出项目文件或会话文件
    * - add：弹窗选择文件并复制到项目文件目录
    * - read：读取文件内容（文本/二进制），用于文件查看器
+   * - gitStatus：获取附加文件夹的 git 状态（实时调用 simple-git）
+   * - refreshGitStatus：手动刷新附加文件夹的 git 状态（与 gitStatus 相同，保留语义兼容）
+   * - listAttachedDir：列出附加目录内容 + git 状态
    */
   async fileOperation(args: {
     action: 'list' | 'add' | 'read' | 'write' | 'attachFolder' | 'detachFolder' | 'listAttachedDir' | 'listAllFiles' | 'gitStatus' | 'refreshGitStatus'
@@ -618,7 +621,7 @@ class PiAgentController {
     filePath?: string
     /** 附加文件夹路径（attachFolder 时前端传入）或附加目录绝对路径（detachFolder/listAttachedDir 时传入） */
     folderPath?: string
-    /** 附加根目录路径（缓存只在根目录生成） */
+    /** 附加根目录路径（用于在子目录列出时回溯到仓库根目录查询 git 状态） */
     attachedRoot?: string
     /** 文件内容（write 时传入） */
     content?: string
@@ -817,7 +820,7 @@ class PiAgentController {
         case 'listAttachedDir': {
           // 列出附加文件夹的内容（仅当前层级，懒加载模式）
           // 同时附带 git 状态信息（如果该目录在 git 仓库内）
-          // attachedRoot 为可选参数，指定附加根目录（缓存只在根目录生成）
+          // attachedRoot 用于在子目录列出时回溯到仓库根目录查询 git 状态
           if (!args.folderPath) return { code: -1, message: '缺少 folderPath' }
           if (!existsSync(args.folderPath)) return { code: 0, data: [] }
 
@@ -825,10 +828,13 @@ class PiAgentController {
           const attachedRoot = args.attachedRoot || args.folderPath
 
           const items = this.listDirFlat(args.folderPath, '')
-          // 从缓存中获取 git 状态（缓存只在附加根目录生成）
-          const gitStatusMap = this.getGitStatusFromCache(attachedRoot)
-          // 将 git 状态附加到每个文件项上
-          if (gitStatusMap) {
+
+          // 实时获取 git 状态（基于 simple-git，无缓存无副作用文件）
+          const isRepo = await isGitRepo(attachedRoot)
+          if (isRepo) {
+            const gitResult = await getGitStatus(attachedRoot)
+            const statusMap = gitResult.statusMap
+            // 将 git 状态附加到每个文件项上
             // 计算当前目录相对于附加根目录的路径前缀
             const relativeDir = args.folderPath === attachedRoot
               ? ''
@@ -837,15 +843,15 @@ class PiAgentController {
               // 构造相对于附加根目录的完整路径
               const fullPath = relativeDir ? `${relativeDir}/${item.path}` : item.path
               if (item.isDir) {
-                // 对子目录：检查 gitStatusMap 中是否有以该路径开头的变化文件
+                // 对子目录：检查 statusMap 中是否有以该路径开头的变化文件
                 const prefix = fullPath + '/'
                 let dirHasAdded = false
                 let dirHasModified = false
-                for (const [path, status] of gitStatusMap) {
+                for (const [path, status] of Object.entries(statusMap)) {
                   if (path.startsWith(prefix)) {
                     if (status === 'untracked' || status === 'added') {
                       dirHasAdded = true
-                    } else if (status === 'modified') {
+                    } else if (status === 'modified' || status === 'deleted') {
                       dirHasModified = true
                     }
                   }
@@ -856,12 +862,11 @@ class PiAgentController {
                   item.gitStatus = 'modified'
                 } else {
                   // 也检查目录本身是否被 git 跟踪（如删除的目录）
-                  const selfStatus = gitStatusMap.get(fullPath)
-                  item.gitStatus = selfStatus || null
+                  item.gitStatus = statusMap[fullPath] || null
                 }
               } else {
                 // 对文件：直接匹配
-                item.gitStatus = gitStatusMap.get(fullPath) || null
+                item.gitStatus = statusMap[fullPath] || null
               }
             }
           }
@@ -869,39 +874,21 @@ class PiAgentController {
         }
 
         case 'gitStatus': {
-          // 获取附加文件夹的 git 状态（从缓存读取）
-          if (!args.folderPath) return { code: -1, message: '缺少 folderPath' }
-          if (!existsSync(args.folderPath)) return { code: 0, data: {} }
-
-          const statusMap = this.getGitStatusFromCache(args.folderPath)
-          if (!statusMap) return { code: 0, data: { isGitRepo: false } }
-          // 转为普通对象返回
-          const result: Record<string, string> = {}
-          for (const [path, status] of statusMap) {
-            result[path] = status
-          }
-          return { code: 0, data: { isGitRepo: true, statusMap: result } }
-        }
-
-        case 'refreshGitStatus': {
-          // 手动刷新附加文件夹的 git 状态缓存
+          // 获取附加文件夹的 git 状态（实时调用 simple-git）
           if (!args.folderPath) return { code: -1, message: '缺少 folderPath' }
           if (!existsSync(args.folderPath)) return { code: 0, data: { isGitRepo: false } }
 
-          // 检查是否是 git 仓库
-          try {
-            execSync('git rev-parse --git-dir', { cwd: args.folderPath, stdio: 'pipe', timeout: 3000 })
-          } catch {
-            return { code: 0, data: { isGitRepo: false } }
-          }
+          const result = await getGitStatus(args.folderPath)
+          return { code: 0, data: result }
+        }
 
-          const statusMap = this.refreshGitStatusCache(args.folderPath)
-          if (!statusMap) return { code: 0, data: { isGitRepo: true, statusMap: {} } }
-          const refreshResult: Record<string, string> = {}
-          for (const [path, status] of statusMap) {
-            refreshResult[path] = status
-          }
-          return { code: 0, data: { isGitRepo: true, statusMap: refreshResult } }
+        case 'refreshGitStatus': {
+          // 手动刷新附加文件夹的 git 状态（实时调用 simple-git，与 gitStatus 相同）
+          if (!args.folderPath) return { code: -1, message: '缺少 folderPath' }
+          if (!existsSync(args.folderPath)) return { code: 0, data: { isGitRepo: false } }
+
+          const result = await getGitStatus(args.folderPath)
+          return { code: 0, data: result }
         }
 
         case 'listAllFiles': {
@@ -997,115 +984,6 @@ class PiAgentController {
     }
 
     return result
-  }
-
-  /**
-   * 从缓存中获取附加目录的 git 状态映射表
-   *
-   * 缓存机制：
-   * 1. 在附加根目录下创建 .diting/ 隐藏目录
-   * 2. 首次访问时执行 git status，将结果序列化为 .diting/git-status.json
-   * 3. 缓存有效期 10 秒，过期后自动刷新
-   * 4. 用户可通过手动刷新按钮强制刷新
-   *
-   * @param dirPath 附加根目录的绝对路径
-   * @returns Map<相对于根目录的路径, 状态码>，非 git 仓库返回 null
-   */
-  private getGitStatusFromCache(dirPath: string): Map<string, string> | null {
-    // 检查是否是 git 仓库
-    try {
-      execSync('git rev-parse --git-dir', { cwd: dirPath, stdio: 'pipe', timeout: 3000 })
-    } catch {
-      return null
-    }
-
-    // 缓存目录和文件路径
-    const cacheDir = join(dirPath, '.diting')
-    const cacheFile = join(cacheDir, 'git-status.json')
-
-    // 尝试读取缓存，检查有效期
-    if (existsSync(cacheFile)) {
-      try {
-        const cached = JSON.parse(readFileSync(cacheFile, 'utf-8'))
-        // 缓存有效期 10 秒
-        const CACHE_TTL = 10 * 1000
-        if (cached.statusMap && (Date.now() - cached.updatedAt) < CACHE_TTL) {
-          const statusMap = new Map<string, string>()
-          for (const [path, status] of Object.entries(cached.statusMap)) {
-            statusMap.set(path, status as string)
-          }
-          return statusMap
-        }
-      } catch {
-        // 缓存损坏，继续刷新
-      }
-    }
-
-    // 缓存不存在或已过期，执行 git status 刷新缓存
-    return this.refreshGitStatusCache(dirPath)
-  }
-
-  /**
-   * 执行 git status 并将结果缓存到 .diting/git-status.json
-   */
-  private refreshGitStatusCache(dirPath: string): Map<string, string> | null {
-    try {
-      // 使用 -z 参数：用 \0 分隔条目，不做转义、不加引号，输出原始 UTF-8 文件名
-      const output = execSync('git status --porcelain -uall --no-renames -z', {
-        cwd: dirPath,
-        encoding: 'utf-8',
-        stdio: ['pipe', 'pipe', 'pipe'],
-        timeout: 5000,
-      })
-
-      const statusMap = new Map<string, string>()
-      const statusObj: Record<string, string> = {}
-
-      // -z 模式下每条记录以 \0 分隔，格式为：XY<空格>filepath\0
-      // 重命名在 --no-renames 下不会出现 R 状态
-      const entries = output.split('\0').filter((e) => e.length >= 3)
-
-      for (const entry of entries) {
-        const x = entry[0]
-        const y = entry[1]
-        // 文件名从第3个字符开始（跳过 XY 和一个空格）
-        const filePath = entry.slice(3)
-
-        if (!filePath) continue
-
-        let status: string
-        if (x === '?' && y === '?') {
-          status = 'untracked'
-        } else if (x === 'A' || y === 'A') {
-          status = 'added'
-        } else if (x === 'M' || y === 'M') {
-          status = 'modified'
-        } else if (x === 'D' || y === 'D') {
-          status = 'deleted'
-        } else if (x === 'C' || y === 'C') {
-          status = 'copied'
-        } else {
-          status = 'modified'
-        }
-
-        statusMap.set(filePath, status)
-        statusObj[filePath] = status
-      }
-
-      // 写入缓存文件
-      const cacheDir = join(dirPath, '.diting')
-      const cacheFile = join(cacheDir, 'git-status.json')
-      if (!existsSync(cacheDir)) {
-        mkdirSync(cacheDir, { recursive: true })
-      }
-      const cacheData = { statusMap: statusObj, updatedAt: Date.now() }
-      writeFileSync(cacheFile, JSON.stringify(cacheData, null, 2), 'utf-8')
-
-      return statusMap
-    } catch (err) {
-      logger.warn('[PiAgentController] 刷新 git 状态缓存失败:', err)
-      return null
-    }
   }
 
   /** 递归列出目录下的文件（最多两层深度） */

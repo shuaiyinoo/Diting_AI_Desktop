@@ -310,6 +310,81 @@ class FiledbService extends BasedbService {
   }
 
   /**
+   * 获取完整树形结构（包含目录和文件）
+   *
+   * 与 getSubFolderTree 不同，此方法返回的树节点中：
+   *   - 目录节点的 children 同时包含子目录和子文件
+   *   - 文件节点作为叶子节点（无 children）
+   *
+   * 用于 Mobile 端一次性获取完整文件树，无需懒加载。
+   */
+  getCompleteTree(folderId: number): FileItemTreeNode[] {
+    const folder = this.getFolderById(folderId);
+    if (!folder) return [];
+
+    // 查询该文件夹下所有记录（目录+文件）
+    const rows = this.db.prepare(
+      `SELECT * FROM ${this.itemTableName} WHERE folder_id = ? ORDER BY is_dir DESC, name ASC`
+    ).all(folderId) as FileItem[];
+
+    // 统计每个目录的文件数
+    const countStmt = this.db.prepare(
+      `SELECT COUNT(*) as cnt FROM ${this.itemTableName} WHERE folder_id = ? AND parent_id = ? AND is_dir = 0`
+    );
+
+    // 构建 id -> node 映射
+    const nodeMap = new Map<number, FileItemTreeNode>();
+
+    for (const row of rows) {
+      const fileCount = row.is_dir === 1
+        ? (countStmt.get(folderId, row.id) as { cnt: number }).cnt
+        : 0;
+      nodeMap.set(row.id, { ...row, fileCount, children: row.is_dir === 1 ? [] : undefined });
+    }
+
+    // 构建树
+    const childNodes: FileItemTreeNode[] = [];
+    for (const row of rows) {
+      const node = nodeMap.get(row.id)!;
+      if (row.parent_id === 0) {
+        childNodes.push(node);
+      } else {
+        const parent = nodeMap.get(row.parent_id);
+        if (parent && parent.is_dir === 1) {
+          parent.children!.push(node);
+        } else {
+          // 父节点不存在或不是目录（数据异常），放到顶层
+          childNodes.push(node);
+        }
+      }
+    }
+
+    // 虚拟根节点：授权文件夹本身
+    const rootFileCount = (countStmt.get(folderId, 0) as { cnt: number }).cnt;
+    const rootNode: FileItemTreeNode = {
+      id: 0,
+      folder_id: folderId,
+      parent_id: -1,
+      name: folder.folder_name || folder.path,
+      type: 'folder',
+      size: 0,
+      mtime: folder.add_time,
+      relative_path: '',
+      is_dir: 1,
+      status: 'PENDING',
+      failure_reason: null,
+      processed_at: null,
+      file_hash: null,
+      fileCount: rootFileCount,
+      isRoot: true,
+      fullPath: folder.path,
+      children: childNodes,
+    };
+
+    return [rootNode];
+  }
+
+  /**
    * 获取某文件夹下的文件列表（右侧表格）
    * parentId=0 表示授权文件夹根目录
    */

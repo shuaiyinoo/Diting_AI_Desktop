@@ -53,7 +53,6 @@ import {
   resolveGitRuntime,
   buildPythonEnv,
   buildNodeEnv,
-  buildGitEnv,
   getRuntimeSummary,
 } from '../runtime/runtime-manager'
 import { getRuntimeSettings } from '../runtime/runtime-settings'
@@ -1116,7 +1115,7 @@ ${output}` }],
   })
 
   // ========== Git 命令执行工具 ==========
-  // RunGitCommand 使用检测到的 Git 可执行文件路径执行 Git 命令。
+  // RunGitCommand 使用 simple-git 库执行 Git 命令，支持自定义 git 二进制路径。
   // Git 没有内嵌版本，始终从宿主机检测。
   const runGitCommandTool = sdkModule.defineTool({
     name: 'RunGitCommand',
@@ -1139,20 +1138,22 @@ ${output}` }],
         throw new Error('Git 不可用：宿主机未安装 Git，请提示用户安装 Git')
       }
 
-      const { execSync } = await import('node:child_process')
-      const env = buildGitEnv()
+      const { simpleGit } = await import('simple-git')
       const workDir = p.cwd || cwd
 
       try {
-        const args = [p.command]
-        if (p.args) args.push(...p.args)
-        const output = execSync(`"${runtime.path}" ${args.map(a => JSON.stringify(a)).join(' ')}`, {
-          encoding: 'utf-8',
-          cwd: workDir,
-          env,
-          timeout: 60_000,
-          maxBuffer: 10 * 1024 * 1024,
+        // 构建 simple-git 实例，使用检测到的 git 二进制路径
+        const git = simpleGit({
+          baseDir: workDir,
+          binary: runtime.path,
+          maxConcurrentProcesses: 6,
         })
+
+        // 使用 raw 方法执行任意 git 子命令
+        const rawArgs = [p.command]
+        if (p.args) rawArgs.push(...p.args)
+
+        const output = await git.raw(rawArgs)
         return {
           content: [{ type: 'text' as const, text: output || '(无输出)' }],
           details: { source: runtime.source, runtime: runtime.path, error: false },

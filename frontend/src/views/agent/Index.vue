@@ -763,11 +763,11 @@ async function loadAttachedDirContents(fullDirPath, attachedRoot) {
 }
 
 /**
- * 手动刷新所有附加文件夹的 git 状态缓存
+ * 手动刷新所有附加文件夹的 git 状态
  * 手动刷新走完整重新加载逻辑（能发现新增/删除文件）
  */
 async function refreshGitStatus() {
-  // 强制刷新后端缓存
+  // 获取实时 git 状态（基于 simple-git，无缓存）
   for (const dirPath of attachedDirs.value) {
     try {
       await ipc.invoke(ipcApiRoute.piAgent.fileOperation, {
@@ -1032,7 +1032,7 @@ function scheduleGitStatusRefresh(mode = 'soft') {
 }
 
 async function doGitStatusRefresh() {
-  // 遍历所有附加文件夹，逐个强制刷新后端缓存
+  // 遍历所有附加文件夹，逐个获取实时 git 状态（基于 simple-git，无缓存）
   // 收集每个附加根目录的 statusMap
   const statusMaps = {}
   for (const dirPath of attachedDirs.value) {
@@ -1111,7 +1111,7 @@ async function doGitStatusRefresh() {
  * 用于 Agent 完成后，因为 Agent 可能创建或删除文件
  */
 async function doGitStatusFullRefresh() {
-  // 强制刷新后端缓存
+  // 获取实时 git 状态（基于 simple-git，无缓存）
   for (const dirPath of attachedDirs.value) {
     try {
       const res = await ipc.invoke(ipcApiRoute.piAgent.fileOperation, {

@@ -25,6 +25,11 @@ import {
 } from '../../components/pi/adapters/pi-agent-service'
 import type { AgentSessionMeta } from '../../components/pi/types'
 import type { WorkspaceMeta } from '../../components/pi/adapters/workspace-manager'
+import fs from 'fs'
+import path from 'path'
+import { filedbService } from '../../service/database/filedb'
+import type { AuthorizedFolder, FileItemTreeNode } from '../../service/database/filedb'
+import { createAdapter, type ProtocolConfig } from '../../components/file/adapter/AdapterFactory'
 
 /* ══════════════════ 类型定义 ══════════════════ */
 
@@ -34,6 +39,8 @@ interface SyncMessage {
   action: string
   userId?: number
   sessionId?: string
+  /** syncFileContent 使用：fileItemId */
+  fileItemId?: number
 }
 
 /** sync 结果消息（与后端 SyncResultMessage 对齐）
@@ -148,6 +155,12 @@ class RemoteSyncService {
         case 'syncAgentMessages':
           rawData = JSON.stringify(this.getAgentMessages(msg.sessionId))
           break
+        case 'syncFileData':
+          rawData = JSON.stringify(this.getFileData())
+          break
+        case 'syncFileContent':
+          rawData = JSON.stringify(await this.getFileContent(msg.sessionId))
+          break
         default:
           result.error = `未知的 sync action: ${msg.action}`
           logger.warn(`[sync] 未知 action: ${msg.action}`)
@@ -200,6 +213,103 @@ class RemoteSyncService {
     return {
       workspaces: workspaceItems,
       sessions: sessionItems,
+    }
+  }
+
+  /* ══════════════════ 文件数据查询 ══════════════════ */
+
+  /** 查询文件数据（文件夹列表 + 每个文件夹的完整树，含目录和文件） */
+  private getFileData(): {
+    folders: AuthorizedFolder[]
+    trees: Record<number, FileItemTreeNode[]>
+  } {
+    const folders = filedbService.getFolderList()
+    const trees: Record<number, FileItemTreeNode[]> = {}
+    for (const folder of folders) {
+      try {
+        trees[folder.id] = filedbService.getCompleteTree(folder.id)
+      } catch (err) {
+        logger.warn(`[sync] 获取文件夹树失败 folderId=${folder.id}:`, err)
+        trees[folder.id] = []
+      }
+    }
+    return { folders, trees }
+  }
+
+  /** 查询文件内容（Markdown 文件预览） */
+  private async getFileContent(sessionId?: string): Promise<{
+    content: string
+    name: string
+    size: number
+    type: string
+    isText: boolean
+  }> {
+    if (!sessionId) {
+      throw new Error('缺少 sessionId 参数')
+    }
+    const fileItemId = parseInt(sessionId, 10)
+    if (isNaN(fileItemId) || fileItemId <= 0) {
+      throw new Error('fileItemId 非法')
+    }
+
+    const fileItem = filedbService.getFileItemById(fileItemId)
+    if (!fileItem) {
+      throw new Error('文件记录不存在')
+    }
+
+    const folder = filedbService.getFolderById(fileItem.folder_id)
+    if (!folder) {
+      throw new Error('授权文件夹不存在')
+    }
+
+    // 当前仅支持 Markdown 文件（.md / .markdown）
+    // 注意：数据库 type 字段存储的是带点的扩展名（如 '.md'）
+    const ext = (fileItem.type || '').toLowerCase().replace(/^\./, '')
+    const isMarkdown = ext === 'md' || ext === 'markdown'
+
+    if (!isMarkdown) {
+      return {
+        content: '',
+        name: fileItem.name,
+        size: fileItem.size,
+        type: fileItem.type,
+        isText: false,
+      }
+    }
+
+    // 读取文件内容（直接通过 fs 或适配器，不走 FileController 实例方法）
+    const protocol = folder.protocol || 'local'
+    let buffer: Buffer
+
+    if (protocol === 'local') {
+      // 本地文件：直接读取磁盘
+      const filePath = path.join(folder.path, fileItem.relative_path)
+      if (!fs.existsSync(filePath)) {
+        throw new Error('文件在磁盘上不存在，可能已被删除或移动')
+      }
+      buffer = fs.readFileSync(filePath)
+    } else {
+      // 远程文件：通过适配器从服务器下载
+      const config: ProtocolConfig = {
+        protocol: protocol as ProtocolConfig['protocol'],
+        ...(folder.protocol_config ? JSON.parse(folder.protocol_config) : {}),
+      }
+      const adapter = createAdapter(config)
+      try {
+        buffer = await adapter.readFile(fileItem.relative_path)
+      } finally {
+        await adapter.close?.()
+      }
+    }
+
+    // 直接返回 UTF-8 明文，外层 handleSyncRequest 的 compressData 会统一压缩
+    const content = buffer.toString('utf-8')
+    return {
+      content,
+      name: fileItem.name,
+      size: buffer.length,
+      type: fileItem.type,
+      isText: true,
     }
   }
 

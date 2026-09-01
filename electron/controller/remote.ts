@@ -63,7 +63,7 @@ function wire(): void {
     remoteSignaling.setError(msg)
   }
 
-  // 控制指令：已在 session-window 主进程就地执行（坐标映射 + node-enigo 模拟）。
+  // 控制指令：已在 session-window 主进程就地执行（坐标映射 + enigo 模拟）。
   // 这里仅做观测日志，便于排查。
   remoteSessionWindow.onCommand = (cmd: unknown) => {
     logger.info('[remote] 收到控制指令:', JSON.stringify(cmd))

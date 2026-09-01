@@ -3,7 +3,7 @@
  *
  * 职责：把控制端（Mobile）通过 DataChannel 发来的指令，翻译成对当前受控机的真实输入。
  *   - 鼠标移动：归一化坐标 (u,v) ∈ [0,1] → 当前激活屏的 OS 全局逻辑坐标
- *   - 鼠标按键 / 滚轮 / 键盘：转发给 InputDriver（底层 node-enigo）
+ *   - 鼠标按键 / 滚轮 / 键盘：转发给 InputDriver（底层 @touchifyapp/enigo）
  *
  * 坐标映射是远程控制最容易出错的环节：副屏位于主屏左侧时其 bounds.x 为负，
  * 必须加上该偏移，否则点击整体错位。这里统一用 DisplayInfo 的 x/y 兜底。
@@ -95,7 +95,7 @@ export async function flushMove(): Promise<void> {
 }
 
 /**
- * DOM KeyboardEvent.key → node-enigo 键名 的归一化。
+ * DOM KeyboardEvent.key → enigo 键名 的归一化。
  * enigo 接受：小写字母、'space'/'return'/'shift'/'control'/'alt'/'meta'/'up'/'f1'… 等。
  */
 const KEY_MAP: Record<string, string> = {
