@@ -87,7 +87,7 @@ export default (): Partial<Config> => {
       channelSeparator: '/',
     },
     cloud: {
-      baseUrl: 'http://127.0.0.1:9527'
+      baseUrl: 'https://cloud.ditingrag.com/apic'
     }
   }
 }

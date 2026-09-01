@@ -179,12 +179,13 @@
               // ⚠️ 必须保留 maxWidth/maxHeight：Chromium 的桌面采集约束校验要求
               // 同时给出宽度上下界，否则 getUserMedia 会抛 OverconstrainedError，
               // 导致 captureScreen 抛错、offer 永远发不出（控制端卡在"正在建立连接"）。
-              // 上界设到 8K 远大于常见屏幕原生分辨率 —— 桌面采集按屏幕原生取流，
-              // max 只作校验上界，不会把画面砍小，所以 4K/5K 屏仍能拿到真实物理像素。
+              // 上界设到 4K —— 桌面采集按屏幕原生取流，
+              // max 只作校验上界，不会把画面砍小，4K 屏仍能拿到真实物理像素。
+              // 不再支持 8K：分辨率过高时编码/CPU 开销过大且带宽吃紧。
               minWidth: 640,
-              maxWidth: 7680,
+              maxWidth: 3840,
               minHeight: 360,
-              maxHeight: 4320,
+              maxHeight: 2160,
               maxFrameRate: 30, // 屏幕共享 30fps 足够，60fps 只会徒增带宽与 CPU
             },
           },
@@ -234,6 +235,7 @@
           if (pc && pc.connectionState === 'connected') {
             log('✅ P2P 已连通')
             reapplyTuning()
+            logActiveCodec()
           }
           // 连接真正关闭（对端离开/杀进程且 leave 未送达）时，自行停掉采集，
           // 避免受控端一直空推、屏幕采集泄漏。ICE Restart 期间 pc 不会进入 closed，
@@ -455,11 +457,92 @@
         }
       }
 
+      /**
+       * 构建视频编解码器偏好列表
+       *
+       * 降级策略：AV1 → VP9 → H.264
+       * - AV1：压缩率最高，同等画质下带宽约为 H.264 的 30-50%
+       * - VP9：次优，带宽约为 H.264 的 60-70%
+       * - H.264：兜底，全平台硬件编解码，兼容性最好
+       *
+       * setCodecPreferences 只是设置偏好顺序，最终编码仍由 SDP 协商决定。
+       * 若对端不支持 AV1，协商结果会自动降级到 VP9 或 H.264，无需手动回退。
+       */
+      function buildPreferredCodecs() {
+        const caps = RTCRtpSender.getCapabilities('video')
+        if (!caps || !caps.codecs) return []
+        // 偏好顺序：AV1 优先，VP9 次之，H.264 兜底
+        const priority = { 'video/AV1': 0, 'video/VP9': 1, 'video/H264': 2 }
+        // 先筛出我们想要的编码器，再按优先级排序
+        const preferred = caps.codecs
+          .filter((c) => c.mimeType in priority)
+          .sort((a, b) => (priority[a.mimeType] ?? 99) - (priority[b.mimeType] ?? 99))
+        // 把剩余编码器（如 VP8、rtx、red 等）追加到末尾，
+        // setCodecPreferences 要求传入的列表必须包含所有后续可能用到的编码器
+        const rest = caps.codecs.filter((c) => !(c.mimeType in priority))
+        return [...preferred, ...rest]
+      }
+
       async function addStreamAndTune(stream) {
-        sender = pc.addTrack(stream.getVideoTracks()[0], stream)
+        // 用 addTransceiver 替代 addTrack，以便设置编解码器偏好
+        const transceiver = pc.addTransceiver(stream.getVideoTracks()[0], {
+          direction: 'sendonly',
+          streams: [stream],
+        })
+        sender = transceiver.sender
+
+        // 设置编解码器偏好：AV1 > VP9 > H.264（降级由 SDP 协商自动完成）
+        const preferredCodecs = buildPreferredCodecs()
+        if (preferredCodecs.length > 0) {
+          try {
+            transceiver.setCodecPreferences(preferredCodecs)
+            const codecNames = preferredCodecs
+              .filter((c) => !c.mimeType.startsWith('video/rtx') && !c.mimeType.startsWith('video/red'))
+              .map((c) => c.mimeType.replace('video/', ''))
+            log('编解码器偏好已设置: ' + codecNames.join(' > '))
+          } catch (e) {
+            log('设置编解码器偏好失败（不影响连接，使用默认）: ' + (e && e.message ? e.message : e))
+          }
+        }
+
         await applyQuality(currentQuality)
         await applyResolution(currentResolution)
         return sender
+      }
+
+      /**
+       * 读取并打印实际协商后的视频编解码器
+       *
+       * 通过 getStats() 读取 outbound-rtp 报告中的 codecId，
+       * 再从对应 codec 报告里取 mimeType。
+       * 这是 P2P 连通后实际使用的编码器（经过 SDP 协商 + 降级后的最终结果），
+       * 与 setCodecPreferences 设置的偏好可能不同（对端不支持时会降级）。
+       */
+      async function logActiveCodec() {
+        if (!pc || !sender) return
+        try {
+          const stats = await pc.getStats()
+          let codecId = null
+          // 先从 outbound-rtp 找到关联的 codecId
+          stats.forEach((report) => {
+            if (report.type === 'outbound-rtp' && report.kind === 'video') {
+              codecId = report.codecId
+            }
+          })
+          // 再通过 codecId 查 codec 报告拿到 mimeType
+          if (codecId) {
+            const codecReport = stats.get(codecId)
+            if (codecReport && codecReport.mimeType) {
+              const codecName = codecReport.mimeType.replace('video/', '')
+              const profile = codecReport.sdpFmtpLine ? codecReport.sdpFmtpLine : ''
+              log('📡 当前编码器: ' + codecName + (profile ? ' (' + profile + ')' : ''))
+              return
+            }
+          }
+          log('📡 当前编码器: 未能从 stats 读取')
+        } catch (e) {
+          log('读取编码器信息失败: ' + (e && e.message ? e.message : e))
+        }
       }
 
       /* ══════════════════ 生命周期 ══════════════════ */

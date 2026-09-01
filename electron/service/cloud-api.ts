@@ -169,7 +169,7 @@ export function getCloudBaseUrl(): string {
     // 配置读取失败，回退默认值
   }
   // 3. 默认地址
-  return 'http://127.0.0.1:9527'
+  return 'https://cloud.ditingrag.com/apic'
 }
 
 // ===== HTTP 请求封装 =====

@@ -108,7 +108,9 @@ class RemoteSignalingService {
     }
 
     const baseUrl = getCloudBaseUrl()
-    // http -> ws，https -> wss
+    // http → ws，https → wss（^http 匹配后，https 末尾的 s 自然保留为 wss）
+    // getCloudBaseUrl() 包含 /apic 前缀，WebSocket 端点同样挂在 servlet context-path 下，
+    // 最终 URL 形如 wss://cloud.ditingrag.com/apic/ws/desktop
     const wsBase = baseUrl.replace(/^http/, 'ws')
     const url = `${wsBase}/ws/desktop`
 
