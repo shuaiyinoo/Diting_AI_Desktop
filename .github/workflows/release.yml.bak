@@ -1,0 +1,592 @@
+# GitHub Actions: Diting 自动打包分发
+#
+# 触发条件：推送 v* tag（如 v5.0.17）
+# 构建 macOS (ARM64 + x64)、Linux (x64)、Windows (x64) 产物并发布到 GitHub Releases
+#
+# 所需 GitHub Secrets（macOS 签名/公证，可选）:
+# - MAC_CERTS: Base64 编码的 macOS Developer ID Application 证书 (.p12)
+# - MAC_CERTS_PASSWORD: 证书密码
+# - APPLE_ID: Apple ID（公证用）
+# - APPLE_APP_SPECIFIC_PASSWORD: App-Specific 密码（公证用）
+# - APPLE_TEAM_ID: Apple Developer Team ID
+# GITHUB_TOKEN 由 GitHub Actions 自动提供，无需手动配置
+#
+# 使用方式：
+#   1. 在 release-notes/ 目录创建 vX.X.X.md 更新日志
+#   2. git tag vX.X.X
+#   3. git push origin vX.X.X
+#   4. CI 自动构建 4 个平台产物并发布到 GitHub Release
+
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  # ============================================================
+  # Job 0: 创建 Draft Release（确保只有一个 Release，避免并行 build 竞态）
+  # ============================================================
+  create-release:
+    name: Create Draft Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 创建 Draft Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME}"
+          REPO="${GITHUB_REPOSITORY}"
+          NOTES_FILE="release-notes/${TAG}.md"
+
+          # 检查 Release 是否已存在
+          EXISTING=$(curl -s -H "Authorization: token ${GH_TOKEN}" \
+            "https://api.github.com/repos/${REPO}/releases" \
+            | python3 -c "
+          import json, sys
+          for r in json.load(sys.stdin):
+              if r.get('tag_name') == '${TAG}':
+                  print(r['id']); break
+          " || true)
+
+          if [ -n "$EXISTING" ]; then
+            echo "Release already exists (ID: ${EXISTING}), skipping creation"
+            exit 0
+          fi
+
+          # 用 Python 构造 JSON payload（安全处理多行文本和特殊字符）
+          PAYLOAD=$(python3 -c "
+          import json
+          tag = '${TAG}'
+          notes_file = '${NOTES_FILE}'
+          try:
+              with open(notes_file, 'r') as f:
+                  body = f.read()
+          except FileNotFoundError:
+              body = f'Release {tag}'
+          print(json.dumps({'tag_name': tag, 'name': tag, 'body': body, 'draft': True, 'prerelease': False}))
+          ")
+
+          # 创建 draft release
+          curl -s -X POST \
+            -H "Authorization: token ${GH_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "$PAYLOAD" \
+            "https://api.github.com/repos/${REPO}/releases" \
+            | python3 -c "import json,sys; r=json.load(sys.stdin); print(f'Created draft release: {r.get(\"id\",\"?\")} (tag: {r.get(\"tag_name\",\"?\")})')"
+
+  # ============================================================
+  # Job 1: macOS ARM64 (Apple Silicon)
+  # ============================================================
+  build-mac-arm64:
+    name: build (macos-latest, mac, arm64)
+    runs-on: macos-latest
+    needs: create-release
+    env:
+      NODE_OPTIONS: --max-old-space-size=8192
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.23.2
+
+      - name: 安装依赖
+        run: npm install
+
+      # frontend 有独立的 package.json，需要单独安装依赖
+      - name: 安装前端依赖
+        working-directory: frontend
+        run: npm install
+
+      # macOS 代码签名准备（如果配置了 Secrets 则执行，否则跳过）
+      - name: 导入 macOS 签名证书
+        env:
+          MAC_CERTS: ${{ secrets.MAC_CERTS }}
+          MAC_CERTS_PASSWORD: ${{ secrets.MAC_CERTS_PASSWORD }}
+        if: ${{ env.MAC_CERTS != '' }}
+        run: |
+          KEYCHAIN_PATH=$RUNNER_TEMP/build.keychain
+          KEYCHAIN_PASSWORD=$(openssl rand -base64 32)
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          echo "$MAC_CERTS" | base64 --decode > $RUNNER_TEMP/cert.p12
+          security import $RUNNER_TEMP/cert.p12 -P "$MAC_CERTS_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security list-keychain -d user -s "$KEYCHAIN_PATH"
+
+          rm $RUNNER_TEMP/cert.p12
+
+      # 重编译 native 模块以适配 Electron 版本
+      - name: 重编译 native 模块
+        run: npx electron-rebuild -f -w better-sqlite3,canvas,node-pty
+
+      # 构建前端 + Electron 主进程
+      - name: 构建前端
+        run: npm run build-frontend
+
+      - name: 构建 Electron 主进程
+        run: npm run build-electron
+
+      # 验证前端产物存在（防止构建失败但 CI 不报错）
+      - name: 验证前端构建产物
+        run: |
+          if [ ! -f public/dist/index.html ]; then
+            echo "❌ 前端构建失败：public/dist/index.html 不存在"
+            exit 1
+          fi
+          echo "✅ 前端构建产物验证通过"
+          ls -la public/dist/index.html
+
+      # 打包并发布到 GitHub Releases（带 3 次重试）
+      - name: 打包并发布 (macOS ARM64)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          for i in 1 2 3; do
+            if npx electron-builder --config ./cmd/builder-mac-arm64.json --mac --arm64 --publish always; then
+              exit 0
+            fi
+            if [ "$i" -lt 3 ]; then
+              echo "Attempt $i failed, retrying in 10s..."
+              sleep 10
+            fi
+          done
+          echo "macOS ARM64 packaging failed after 3 attempts"
+          exit 1
+
+  # ============================================================
+  # Job 2: macOS x64 (Intel)
+  # ============================================================
+  build-mac-x64:
+    name: build (macos-latest, mac, x64)
+    runs-on: macos-latest
+    needs: create-release
+    env:
+      NODE_OPTIONS: --max-old-space-size=8192
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.23.2
+
+      - name: 安装依赖
+        run: npm install
+
+      # frontend 有独立的 package.json，需要单独安装依赖
+      - name: 安装前端依赖
+        working-directory: frontend
+        run: npm install
+
+      - name: 导入 macOS 签名证书
+        env:
+          MAC_CERTS: ${{ secrets.MAC_CERTS }}
+          MAC_CERTS_PASSWORD: ${{ secrets.MAC_CERTS_PASSWORD }}
+        if: ${{ env.MAC_CERTS != '' }}
+        run: |
+          KEYCHAIN_PATH=$RUNNER_TEMP/build.keychain
+          KEYCHAIN_PASSWORD=$(openssl rand -base64 32)
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          echo "$MAC_CERTS" | base64 --decode > $RUNNER_TEMP/cert.p12
+          security import $RUNNER_TEMP/cert.p12 -P "$MAC_CERTS_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security list-keychain -d user -s "$KEYCHAIN_PATH"
+
+          rm $RUNNER_TEMP/cert.p12
+
+      - name: 重编译 native 模块 (x64 交叉编译)
+        run: npx electron-rebuild -f -a x64 -w better-sqlite3,canvas,node-pty
+
+      - name: 构建前端
+        run: npm run build-frontend
+
+      - name: 构建 Electron 主进程
+        run: npm run build-electron
+
+      # 验证前端产物存在（防止构建失败但 CI 不报错）
+      - name: 验证前端构建产物
+        run: |
+          if [ ! -f public/dist/index.html ]; then
+            echo "❌ 前端构建失败：public/dist/index.html 不存在"
+            exit 1
+          fi
+          echo "✅ 前端构建产物验证通过"
+          ls -la public/dist/index.html
+
+      - name: 打包并发布 (macOS x64)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          for i in 1 2 3; do
+            if npx electron-builder --config ./cmd/builder-mac.json --mac --x64 --publish always; then
+              exit 0
+            fi
+            if [ "$i" -lt 3 ]; then
+              echo "Attempt $i failed, retrying in 15s..."
+              sleep 15
+            fi
+          done
+          echo "macOS x64 packaging failed after 3 attempts"
+          exit 1
+
+  # ============================================================
+  # Job 3: 合并 macOS latest-mac.yml（ARM64 + x64 双架构更新清单）
+  #
+  # 为什么需要合并？
+  # electron-updater 通过 latest-mac.yml 判断是否有新版本。
+  # 两个 build Job 分别上传各自的 latest-mac.yml（只含单架构信息），
+  # 后上传的会覆盖先上传的，导致另一架构用户无法正确更新。
+  # 合并后的 latest-mac.yml 包含 files 数组列出两个架构的 zip，
+  # electron-updater 会根据当前机器架构自动选择正确的包下载。
+  # ============================================================
+  merge-mac-yml:
+    name: Merge latest-mac.yml (arm64 + x64)
+    runs-on: ubuntu-latest
+    needs: [build-mac-arm64, build-mac-x64]
+
+    steps:
+      - name: 合并两个架构的 latest-mac.yml
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME}"
+          REPO="${GITHUB_REPOSITORY}"
+          VERSION="${TAG#v}"
+
+          echo "=== Fetching release info for ${TAG} ==="
+
+          # 获取 release 信息
+          # 注意：electron-builder --publish always 创建的是 draft release，
+          # draft release 无法通过 /releases/tags/{tag} 查找，必须遍历 /releases 列表
+          RELEASE_JSON=$(curl -s -H "Authorization: token ${GH_TOKEN}" \
+            "https://api.github.com/repos/${REPO}/releases" \
+            | python3 -c "
+          import json, sys
+          releases = json.load(sys.stdin)
+          for r in releases:
+              if r.get('tag_name') == '${TAG}' or r.get('name') == '${TAG}':
+                  print(json.dumps(r)); break
+          else:
+              sys.exit('ERROR: release not found for tag ${TAG}')
+          ")
+          RELEASE_ID=$(echo "$RELEASE_JSON" | python3 -c "import json,sys; print(json.load(sys.stdin)['id'])")
+          echo "Release ID: ${RELEASE_ID}"
+
+          # 列出所有 asset 名称（调试用）
+          echo "=== All assets in this release ==="
+          echo "$RELEASE_JSON" | python3 -c "
+          import json, sys
+          r = json.load(sys.stdin)
+          assets = r.get('assets', [])
+          if not assets:
+              print('(no assets found)')
+          for a in assets:
+              print(f\"  - {a['name']} ({a.get('size','?')} bytes)\")
+          "
+
+          # 找到 arm64 和 x64 zip 文件名
+          # artifactName 模板: ${productName}-${os}-${version}-${arch}.${ext}
+          # 产物名: Diting-mac-5.0.x-arm64.zip / Diting-mac-5.0.x-x64.zip
+          ARM64_ZIP=$(echo "$RELEASE_JSON" | python3 -c "
+          import json, sys
+          for a in json.load(sys.stdin)['assets']:
+              n = a['name']
+              if 'arm64' in n and n.endswith('.zip') and 'mac' in n and not n.endswith('.blockmap'):
+                  print(n); break
+          ")
+          X64_ZIP=$(echo "$RELEASE_JSON" | python3 -c "
+          import json, sys
+          for a in json.load(sys.stdin)['assets']:
+              n = a['name']
+              if 'x64' in n and n.endswith('.zip') and 'mac' in n and 'arm64' not in n and not n.endswith('.blockmap'):
+                  print(n); break
+          ")
+
+          echo "ARM64 ZIP: ${ARM64_ZIP}"
+          echo "X64 ZIP: ${X64_ZIP}"
+
+          if [ -z "$ARM64_ZIP" ] || [ -z "$X64_ZIP" ]; then
+            echo "ERROR: missing mac zip assets"
+            echo "This usually means the build jobs did not upload zip files successfully."
+            echo "Check the build job logs for electron-builder upload errors."
+            exit 1
+          fi
+
+          # 通过 API 获取下载 URL（支持 draft release）
+          ARM64_URL=$(echo "$RELEASE_JSON" | python3 -c "
+          import json, sys
+          for a in json.load(sys.stdin)['assets']:
+              n = a['name']
+              if 'arm64' in n and n.endswith('.zip') and 'mac' in n and not n.endswith('.blockmap'):
+                  print(a['url']); break
+          ")
+          X64_URL=$(echo "$RELEASE_JSON" | python3 -c "
+          import json, sys
+          for a in json.load(sys.stdin)['assets']:
+              n = a['name']
+              if 'x64' in n and n.endswith('.zip') and 'mac' in n and 'arm64' not in n and not n.endswith('.blockmap'):
+                  print(a['url']); break
+          ")
+
+          # 下载两个 zip（通过 API URL + Accept header，支持 draft release）
+          echo "Downloading arm64 zip..."
+          curl -sL -H "Authorization: token ${GH_TOKEN}" -H "Accept: application/octet-stream" \
+            "${ARM64_URL}" -o arm64.zip
+          echo "Downloading x64 zip..."
+          curl -sL -H "Authorization: token ${GH_TOKEN}" -H "Accept: application/octet-stream" \
+            "${X64_URL}" -o x64.zip
+
+          ARM64_SHA=$(openssl dgst -sha512 -binary arm64.zip | base64 -w0)
+          ARM64_SIZE=$(stat --format=%s arm64.zip)
+          X64_SHA=$(openssl dgst -sha512 -binary x64.zip | base64 -w0)
+          X64_SIZE=$(stat --format=%s x64.zip)
+
+          echo "ARM64: size=${ARM64_SIZE}, sha512=${ARM64_SHA:0:20}..."
+          echo "X64: size=${X64_SIZE}, sha512=${X64_SHA:0:20}..."
+
+          rm -f arm64.zip x64.zip
+
+          RELEASE_DATE=$(date -u +"%Y-%m-%dT%H:%M:%S.000Z")
+
+          # 生成合并后的 latest-mac.yml（无缩进 heredoc）
+          cat > latest-mac.yml <<EOF
+          version: ${VERSION}
+          files:
+            - url: ${ARM64_ZIP}
+              sha512: ${ARM64_SHA}
+              size: ${ARM64_SIZE}
+            - url: ${X64_ZIP}
+              sha512: ${X64_SHA}
+              size: ${X64_SIZE}
+          path: ${ARM64_ZIP}
+          sha512: ${ARM64_SHA}
+          releaseDate: '${RELEASE_DATE}'
+          EOF
+          sed -i 's/^          //' latest-mac.yml
+
+          echo "=== Merged latest-mac.yml ==="
+          cat latest-mac.yml
+
+          # 删除旧的 latest-mac.yml asset（两个 build Job 各上传了一个）
+          ASSET_IDS=$(curl -s -H "Authorization: token ${GH_TOKEN}" \
+            "https://api.github.com/repos/${REPO}/releases/${RELEASE_ID}/assets" \
+            | python3 -c "
+          import json, sys
+          for a in json.load(sys.stdin):
+              if a['name'] == 'latest-mac.yml':
+                  print(a['id'])
+          " || true)
+
+          for ASSET_ID in $ASSET_IDS; do
+            echo "Deleting old latest-mac.yml (asset ${ASSET_ID})..."
+            curl -s -X DELETE -H "Authorization: token ${GH_TOKEN}" \
+              "https://api.github.com/repos/${REPO}/releases/assets/${ASSET_ID}"
+          done
+
+          # 上传合并后的 latest-mac.yml
+          echo "Uploading merged latest-mac.yml..."
+          UPLOAD_RESULT=$(curl -s -X POST \
+            -H "Authorization: token ${GH_TOKEN}" \
+            -H "Content-Type: text/yaml" \
+            --data-binary @latest-mac.yml \
+            "https://uploads.github.com/repos/${REPO}/releases/${RELEASE_ID}/assets?name=latest-mac.yml")
+
+          echo "$UPLOAD_RESULT" | python3 -c "import json,sys; d=json.load(sys.stdin); print(f'Uploaded: {d.get(\"name\")} ({d.get(\"size\")} bytes)')"
+          echo "✅ latest-mac.yml merged and uploaded"
+
+  # ============================================================
+  # Job 4: Linux x64
+  # ============================================================
+  build-linux-x64:
+    name: build (ubuntu-latest, linux, x64)
+    runs-on: ubuntu-latest
+    needs: create-release
+    env:
+      NODE_OPTIONS: --max-old-space-size=8192
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.23.2
+
+      # Linux 环境需要 canvas 的系统依赖
+      - name: 安装 canvas 系统依赖
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev
+
+      - name: 安装依赖
+        run: npm install
+
+      # frontend 有独立的 package.json，需要单独安装依赖
+      - name: 安装前端依赖
+        working-directory: frontend
+        run: npm install
+
+      - name: 重编译 native 模块
+        run: npx electron-rebuild -f -w better-sqlite3,canvas,node-pty
+
+      - name: 构建前端
+        run: npm run build-frontend
+
+      - name: 构建 Electron 主进程
+        run: npm run build-electron
+
+      # 验证前端产物存在（防止构建失败但 CI 不报错）
+      - name: 验证前端构建产物
+        run: |
+          if [ ! -f public/dist/index.html ]; then
+            echo "❌ 前端构建失败：public/dist/index.html 不存在"
+            exit 1
+          fi
+          echo "✅ 前端构建产物验证通过"
+          ls -la public/dist/index.html
+
+      - name: 打包并发布 (Linux x64)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx electron-builder --config ./cmd/builder-linux.json --linux --x64 --publish always
+
+  # ============================================================
+  # Job 5: Windows x64
+  # ============================================================
+  build-windows-x64:
+    name: build (windows-latest, win, x64)
+    runs-on: windows-latest
+    needs: create-release
+    env:
+      NODE_OPTIONS: --max-old-space-size=8192
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.23.2
+
+      - name: 安装依赖
+        run: npm install
+
+      # frontend 有独立的 package.json，需要单独安装依赖
+      - name: 安装前端依赖
+        working-directory: frontend
+        run: npm install
+
+      - name: 重编译 native 模块
+        run: npx electron-rebuild -f -w better-sqlite3,canvas,node-pty
+
+      - name: 构建前端
+        run: npm run build-frontend
+
+      - name: 构建 Electron 主进程
+        run: npm run build-electron
+
+      # 验证前端产物存在（防止构建失败但 CI 不报错）
+      - name: 验证前端构建产物
+        shell: bash
+        run: |
+          if [ ! -f public/dist/index.html ]; then
+            echo "❌ 前端构建失败：public/dist/index.html 不存在"
+            exit 1
+          fi
+          echo "✅ 前端构建产物验证通过"
+          ls -la public/dist/index.html
+
+      - name: 打包并发布 (Windows x64)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx electron-builder --config ./cmd/builder.json --win --x64 --publish always
+
+  # ============================================================
+  # Job 6: 更新 Release Notes 并发布 Draft Release
+  # ============================================================
+  update-release-notes:
+    name: Update Release Notes & Publish
+    runs-on: ubuntu-latest
+    needs: [build-mac-arm64, build-mac-x64, merge-mac-yml, build-linux-x64, build-windows-x64]
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 更新 Release Notes 并发布
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME}"
+          REPO="${GITHUB_REPOSITORY}"
+          NOTES_FILE="release-notes/${TAG}.md"
+
+          # 查找 Release（draft 状态，需遍历列表）
+          RELEASE_ID=$(curl -s -H "Authorization: token ${GH_TOKEN}" \
+            "https://api.github.com/repos/${REPO}/releases" \
+            | python3 -c "
+          import json, sys
+          for r in json.load(sys.stdin):
+              if r.get('tag_name') == '${TAG}':
+                  print(r['id']); break
+          ")
+
+          if [ -z "$RELEASE_ID" ]; then
+            echo "ERROR: Release not found for tag ${TAG}"
+            exit 1
+          fi
+          echo "Release ID: ${RELEASE_ID}"
+
+          # 读取 release notes
+          if [ -f "$NOTES_FILE" ]; then
+            echo "Found release notes file: ${NOTES_FILE}"
+            BODY=$(python3 -c "
+          import json
+          with open('${NOTES_FILE}', 'r') as f:
+              print(json.dumps(f.read()))
+          ")
+          else
+            echo "⚠️ No release notes file found at ${NOTES_FILE}, using default"
+            BODY=$(python3 -c "import json; print(json.dumps('Release ${TAG}'))")
+          fi
+
+          # 更新 Release body 并发布（draft: false）
+          curl -s -X PATCH \
+            -H "Authorization: token ${GH_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "{\"body\": ${BODY}, \"draft\": false}" \
+            "https://api.github.com/repos/${REPO}/releases/${RELEASE_ID}" \
+            | python3 -c "import json,sys; r=json.load(sys.stdin); print(f'✅ Release published: {r.get(\"tag_name\",\"?\")} (draft={r.get(\"draft\",\"?\")})')"

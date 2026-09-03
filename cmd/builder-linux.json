@@ -19,7 +19,18 @@
     "package.json",
     "node_modules/**/*",
     "!node_modules/onnxruntime-node/bin/napi-v6/win32",
-    "!node_modules/onnxruntime-node/bin/napi-v6/darwin"
+    "!node_modules/onnxruntime-node/bin/napi-v6/darwin",
+    "!node_modules/electron/README.md",
+    "!**/*.md",
+    "!**/LICENSE",
+    "!**/LICENSE.txt",
+    "!**/CHANGELOG*",
+    "!**/test/**",
+    "!**/tests/**",
+    "!**/docs/**",
+    "!**/.github/**",
+    "!**/.bin/**",
+    "!**/.cache/**"
   ],
   "extraResources": [
     {

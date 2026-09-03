@@ -19,7 +19,18 @@
     "package.json",
     "node_modules/**/*",
     "!node_modules/onnxruntime-node/bin/napi-v6/linux",
-    "!node_modules/onnxruntime-node/bin/napi-v6/win32"
+    "!node_modules/onnxruntime-node/bin/napi-v6/win32",
+    "!node_modules/electron/README.md",
+    "!**/*.md",
+    "!**/LICENSE",
+    "!**/LICENSE.txt",
+    "!**/CHANGELOG*",
+    "!**/test/**",
+    "!**/tests/**",
+    "!**/docs/**",
+    "!**/.github/**",
+    "!**/.bin/**",
+    "!**/.cache/**"
   ],
   "extraResources": [
     {
@@ -39,6 +50,7 @@
       "repo": "Diting_AI_Desktop"
     }
   ],
+  "afterSign": "build/notarize.js",
   "mac": {
     "icon": "build/icons/icon.icns",
     "artifactName": "${productName}-${os}-${version}-${arch}.${ext}",
@@ -46,7 +58,6 @@
     "hardenedRuntime": true,
     "gatekeeperAssess": false,
     "entitlements": "build/entitlements.mac.plist",
-    "entitlementsInherit": "build/entitlements.mac.plist",
-    "afterSign": "build/notarize.js"
+    "entitlementsInherit": "build/entitlements.mac.plist"
   }
 }
