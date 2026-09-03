@@ -86,6 +86,7 @@ const runtimeRef = ref(null)
 const storageRef = ref(null)
 
 // 从路由参数读取 tab（支持从 StatusBar 跳转）
+// Tab 模式下路由 query 仍然可用（router.push 带 query 不会切换 Tab）
 onMounted(() => {
   if (route.query.tab) {
     activeTab.value = route.query.tab

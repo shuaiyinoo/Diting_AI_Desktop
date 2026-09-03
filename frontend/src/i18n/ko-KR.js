@@ -65,7 +65,17 @@ export default {
     noRemote: '원격 없음',
     addRemote: '원격 주소 추가',
     configRemote: '원격 주소 구성',
-    remotePlaceholder: '원격 서비스 주소를 입력하세요(예: http://192.168.1.100:9527)',
+    remotePlaceholder: '请输入远程服务地址，如 http:  //192.168.1.100:9527',
+    // 登录/连接状态
+    notLoggedIn: '로그인되지 않음',
+    loggedIn: '로그인됨',
+    remoteControlling: '원격 제어 중',
+    notControlled: '제어되지 않음',
+    connDisconnected: '연결되지 않음',
+    connConnecting: '연결 중…',
+    connConnected: '연결됨',
+    connError: '연결 오류',
+    connUnknown: '알 수 없음',
   },
 
   // ========== 路由标题（routerMap props.title） ==========
@@ -115,6 +125,8 @@ export default {
     tabs: {
       model: '모델 - LLM',
       modelVoice: '모델 - 음성',
+      modelOcr: 'OCR 모델 설정',
+      modelVector: '벡터 모델 설정',
       skills: '스킬',
       mcp: 'MCP 도구',
       tools: '도구',
@@ -182,7 +194,7 @@ export default {
       description: '위험',
       none: '없음',
       small: '소',
-      default: '중',
+      default: '보통',
       large: '대',
     },
 
@@ -195,8 +207,100 @@ export default {
   // ========== 常规设置 ==========
   general: {
     title: '일반',
+    appInfo: '앱 정보',
     appName: '앱 이름',
     version: '버전',
+
+    cloud: {
+      title: 'Diting Cloud 계정',
+      subtitle: '로그인하면 클라우드 모델과 기기 간 관리를 이용할 수 있습니다',
+      loggedIn: '로그인됨',
+      login: '로그인',
+      register: '회원가입',
+      logout: '로그아웃',
+
+      // 远程控制
+      remote: {
+        title: '원격 제어',
+        subtitle: '모바일 기기에서 이 컴퓨터를 원격으로 보고 제어할 수 있도록 허용',
+        serverConn: '서버 연결',
+        mirror: '원격 미러링',
+        mirrorPeerJoined: '제어 기기가 연결됨',
+        mirrorIdle: '활성화하면 6자리 연결 코드가 생성됩니다',
+        sessionCodeHint: '모바일 기기에 이 코드를 입력하세요',
+        copy: '복사',
+        openPermSettings: '시스템 권한 설정 열기',
+      },
+
+      // 登录/注册表单
+      auth: {
+        loginTitle: '로그인',
+        registerTitle: '회원가입',
+        email: '이메일',
+        password: '비밀번호',
+        username: '사용자 이름',
+        confirmPassword: '비밀번호 확인',
+        usernamePlaceholder: '2~30자',
+        passwordPlaceholder: '최소 8자이며 대문자, 소문자, 숫자를 포함해야 합니다',
+        confirmPasswordPlaceholder: '비밀번호 다시 입력',
+        agreePrefix: '읽었으며 이에 동의합니다',
+        terms: '서비스 약관',
+        and: '및',
+        privacy: '개인정보 처리방침',
+        loginBtn: '로그인',
+        loginLoading: '로그인 중...',
+        registerBtn: '회원가입',
+        registerLoading: '가입 중...',
+        cancel: '취소',
+        noAccount: '계정이 없으신가요?',
+        registerNow: '지금 가입하기',
+        hasAccount: '이미 계정이 있으신가요?',
+        backToLogin: '로그인으로 돌아가기',
+        // 验证错误
+        errAgree: '먼저 서비스 약관과 개인정보 처리방침에 동의해 주세요',
+        errEmailPwd: '이메일과 비밀번호를 입력하세요',
+        errFillAll: '모든 필수 항목을 입력하세요',
+        errPwdMismatch: '두 비밀번호가 일치하지 않습니다',
+        errPwdTooShort: '비밀번호는 8자 이상이어야 합니다',
+        errPwdNoLower: '비밀번호에 소문자를 포함해야 합니다',
+        errPwdNoUpper: '비밀번호에 대문자를 포함해야 합니다',
+        errPwdNoDigit: '비밀번호에 숫자를 포함해야 합니다',
+        errLoginFailed: '로그인 실패',
+        errRegisterFailed: '가입 실패',
+        // 密码强度
+        strengthWeak: '약함',
+        strengthMedium: '보통',
+        strengthStrong: '강함',
+        strengthVeryStrong: '매우 강함',
+      },
+
+      features: {
+        llm: {
+          title: '공식 LLM 모델',
+          desc: '설정 없이 주류 대규모 언어 모델 사용',
+        },
+        voice: {
+          title: '공식 음성 모델',
+          desc: '온라인 음성 인식, 로컬 다운로드 불필요',
+        },
+        ocr: {
+          title: '공식 OCR 모델',
+          desc: '클라우드 OCR 인식, 로컬 모델 불필요',
+        },
+        vector: {
+          title: '공식 벡터 모델',
+          desc: '클라우드 벡터화로 RAG 성능 향상',
+        },
+        mobile: {
+          title: '모바일 관리',
+          desc: '휴대폰에서 언제든지 Agent를 관리하세요',
+        },
+        sync: {
+          title: '멀티 기기 동기화',
+          desc: '세션과 설정을 모든 기기에서 동기화',
+        },
+      },
+    },
   },
 
   // ========== 关于/更新 ==========
@@ -258,7 +362,7 @@ export default {
     disable: '비활성화',
     delete: '삭제',
     testing: '테스트 중',
-    test: 'undefined',
+    testBtn: '테스트',
     empty: '구성된 모델이 없습니다',
     addFirst: '첫 모델 추가',
     deleteConfirm: '삭제 확인',
@@ -306,7 +410,126 @@ export default {
     },
   },
 
-  // ========== 모델 관리 - OCR ==========
+  // ========== 模型管理 - 语音 ==========
+  modelVoice: {
+    subtitle: '음성 인식을 위한 음성 모델을 설정합니다. 원격 LLM 및 로컬 Whisper 모델을 지원합니다.',
+    cloudComingSoon: 'Diting Cloud 음성 모델이 곧 출시됩니다',
+
+    // 远程模型区域
+    remote: {
+      title: '원격 음성 모델',
+      subtitle: '대규모 언어 모델로 음성 인식을 처리하며 API 설정이 필요합니다',
+      addCloud: 'Diting Cloud 모델',
+      addOfficial: '공식 모델 추가',
+      loading: '불러오는 중…',
+      enabled: '활성',
+      notEnabledBadge: '비활성',
+      enable: '활성',
+      disable: '사용 중지',
+      delete: '삭제',
+      empty: '아직 원격 음성 모델이 구성되지 않았습니다',
+      addFirst: '첫 번째 모델 추가',
+      deleteConfirm: '삭제 확인',
+      deleteConfirmText: '모델 "{name}"을(를) 삭제하시겠습니까? 이 작업은 취소할 수 없습니다.',
+      deleteSuccess: '삭제되었습니다',
+      deleteFailed: '삭제 실패',
+      enableSuccess: '활성화됨: {name}',
+      enableFailed: '활성화 실패',
+      disableSuccess: '사용 중지됨: {name}',
+      disableFailed: '사용 중지 실패',
+      listFailed: '모델 목록을 가져오지 못했습니다',
+      currentEnabled: '현재 활성',
+      notEnabled: '비활성',
+      notEnabledHint: '현재 활성화된 원격 음성 모델이 없습니다',
+
+      // 编辑/添加弹窗
+      addTitle: '원격 음성 모델 추가',
+      editTitle: '원격 음성 모델 편집',
+      volcSubtitle: 'Volcengine 음성 인식 서비스 구성',
+      provider: '공급자',
+      selectProvider: '공급자 선택',
+      modelAlias: '모델 별칭',
+      modelAliasPlaceholder: '예: Volc-Production',
+      modelName: '모델 이름',
+      modelNamePlaceholder: '예: volc-asr',
+      modelNameHint: '이 모델을 식별하는 데 사용되며 사용자 정의 가능',
+      baseUrl: 'API 주소 (Base URL)',
+      baseUrlHint: '/chat/completions 접미사 제외',
+      apiKey: 'API 키',
+      remark: '비고',
+      remarkPlaceholder: '선택 사항 (예: 실시간 전사용)',
+      add: '추가',
+      addSuccess: '추가되었습니다',
+      submitting: '제출 중…',
+      inputAlias: '모델 별칭을 입력하세요',
+      inputModelName: '모델 이름을 입력하세요',
+      operationFailed: '작업 실패',
+
+      // 火山引擎专属
+      volcConfigTitle: 'Volcengine 구성',
+      volcBaseUrl: '연결 주소',
+      volcBaseUrlHint: 'Volcengine 음성 인식 고정 WebSocket 주소, 수정 불필요',
+volcApiKeyPlaceholder: 'Volcengine API 키',
+volcApiKeyHint: '저장 시 자동으로 암호화되며 X-Api-Key에 해당합니다',
+volcApiKeyEditHint: '이미 저장됨, 비워두면 변경하지 않음',
+volcApiKeyRequired: 'Volcengine API 키를 입력하세요',
+      volcResourceIdPlaceholder: 'Resource ID 선택',
+      volcResourceIdHint: 'duration=길이 모델(긴 오디오용), concurrent=동시 모델(짧은 실시간 오디오용)',
+      volcResourceIdRequired: 'Resource ID를 선택하세요',
+      default: '기본값',
+    },
+
+    // 本地 Whisper 模型区域
+    local: {
+      title: '로컬 음성 모델',
+      subtitle: 'Whisper 또는 FunASR을 사용한 로컬 음성 인식, 네트워크 연결 불필요',
+      modeLocal: '로컬 모드',
+      modeLocalHint: '활성화 시 로컬 음성 모델을 사용하며 원격 음성 모델과 함께 사용할 수 없습니다',
+      modelPath: '모델 저장 경로',
+      modelPathHint: '모델 파일은 ~/.diting/model/voice 디렉터리에 저장됩니다',
+      openFolder: '폴더 열기',
+      selectModel: '모델 선택',
+      selectModelHint: '음성 인식에 사용할 다운로드한 모델 선택',
+      noModelSelected: '선택된 모델 없음',
+      downloadModel: '모델 다운로드',
+      selectToDownload: '다운로드할 모델 선택',
+      download: '다운로드',
+      cancelDownload: '취소',
+      downloading: '다운로드 중…',
+      downloaded: '다운로드됨',
+      notDownloaded: '다운로드되지 않음',
+      downloadSuccess: '모델 다운로드 완료: {name}',
+      downloadFailed: '다운로드 실패: {msg}',
+      deleteModel: '모델 파일 삭제',
+      deleteModelConfirm: '모델 파일 "{name}"을(를) 삭제하시겠습니까? 이 작업은 취소할 수 없습니다.',
+      deleteModelSuccess: '모델 파일이 삭제되었습니다',
+      deleteModelFailed: '모델 파일 삭제 실패',
+      selectModelSuccess: '로컬 모델 선택됨: {name}',
+      selectModelFailed: '모델 선택 실패',
+      micPermission: '마이크 권한',
+      micGranted: '권한이 부여되어 음성 입력을 사용할 수 있습니다',
+      micDenied: '시스템에서 차단됨. 시스템 설정에서 앱의 마이크 접근을 허용하세요',
+      notDetermined: '권한 없음. 음성 입력 사용 전에 권한을 부여하세요',
+      unsupported: '현재 시스템은 사전 확인을 지원하지 않으며 녹음 시 권한 요청이 자동으로 표시됩니다',
+      requestPermission: '마이크 접근 허용',
+      requestAgain: '다시 요청',
+      checking: '확인 중…',
+      modelSize: '크기',
+      modelLang: '다국어',
+      modelLangEn: '영어 전용',
+      modelLangDesc: '다국어 인식 지원(중국어 포함)',
+      modelLangEnDesc: '영어만 지원하며 정확도가 더 높습니다',
+      loadingModels: '모델 목록 불러오는 중…',
+      loadModelsFailed: '모델 목록을 불러오지 못했습니다',
+      noModelsAvailable: '사용 가능한 모델이 없습니다',
+      downloadSource: '다운로드 소스',
+      sourceAuto: '자동',
+      sourceMirror: '국내 미러',
+      sourceOfficial: '공식',
+    },
+  },
+
+  // ========== 模型管理 - OCR ==========
   modelOcr: {
     subtitle: '로컬 OCR 모델을 다운로드하고 관리합니다. 영수증 및 이미지 텍스트 인식에 사용됩니다. 모델은 PaddlePaddle PP-OCRv6에서 제공됩니다.',
     modelPath: '모델 저장 경로',
@@ -335,7 +558,51 @@ export default {
     selectModelFailed: '모델 선택 실패',
   },
 
-  // ========== Skills 관리 ==========
+  // ========== 模型管理 - 向量 ==========
+  modelVector: {
+    subtitle: '문서 시맨틱 검색 및 RAG 지식 베이스용 로컬 벡터 임베딩 모델을 다운로드하고 관리합니다. 모델은 kreuzberg/node 프리셋에서 제공됩니다.',
+    modelPath: '모델 저장 경로',
+    openFolder: '폴더 열기',
+    loadingModels: '모델 목록 불러오는 중…',
+    loadModelsFailed: '모델 목록을 불러오지 못했습니다',
+    downloadSource: '다운로드 소스',
+    sourceAuto: '자동',
+    sourceMirror: '국내 미러',
+    sourceOfficial: '공식',
+    downloadModel: '모델 다운로드',
+    selectToDownload: '다운로드할 모델 선택',
+    download: '다운로드',
+    cancelDownload: '취소',
+    downloaded: '다운로드됨',
+    downloadSuccess: '모델 다운로드 완료: {name}',
+    downloadFailed: '다운로드 실패: {msg}',
+    deleteConfirm: '삭제 확인',
+    deleteConfirmText: '모델 "{name}"을(를) 삭제하시겠습니까? 이 작업은 취소할 수 없습니다.',
+    deleteModelSuccess: '모델 파일이 삭제되었습니다',
+    deleteModelFailed: '모델 파일 삭제 실패',
+    selectModel: '모델 선택',
+    selectModelHint: '왼쪽에서 모델을 선택하고 가운데에서 벡터 차원을 설정한 뒤 확인을 클릭하세요',
+    noModelSelected: '선택된 모델 없음',
+    selectModelSuccess: '벡터 모델 선택됨: {name}',
+    selectModelFailed: '모델 선택 실패',
+    dimensions: '차원',
+    dimensionsUnit: 'dims',
+    confirmSelect: '확인',
+verifying: '검증 중…',
+    marketTitle: '모델 마켓',
+    marketHint: 'HuggingFace 모델 주소를 입력하세요 (Qwen3 Embedding ONNX 예시):',
+    marketHintDomestic: '国内下载：https:  //hf-mirror.com/onnx-community/Qwen3-Embedding-0.6B-ONNX',
+    marketHintInternational: '国际下载：https:  //huggingface.co/onnx-community/Qwen3-Embedding-0.6B-ONNX',
+    marketConfirm: '다운로드 확인',
+    urlPlaceholder: 'HuggingFace 모델 주소',
+    switchWarningTitle: '벡터 모델은 호환되지 않습니다',
+    switchWarningText: '벡터 모델마다 생성되는 벡터의 차원과 공간이 달라 함께 사용할 수 없습니다. 모델을 변경하면 기존의 모든 벡터 인덱스와 키워드 인덱스가 삭제되고 파일 상태가 \'대기 중\'으로 초기화되며 다시 벡터화해야 합니다. 정말 변경하시겠습니까?',
+    switchWarningConfirm: '변경 확인 및 재구성',
+    resetSuccess: '벡터 데이터가 초기화되었습니다. 다음 처리 시 새 모델로 파일이 다시 벡터화됩니다.',
+    resetFailed: '벡터 데이터 초기화 실패',
+  },
+
+  // ========== Skills 管理 ==========
   skills: {
     title: 'Skills 관리',
     subtitle: 'Agent 워크스페이스의 Skills를 관리합니다. Skills는 재사용 가능한 흐름 템플릿입니다.',
@@ -441,13 +708,13 @@ export default {
       loading: '로딩 중…',
       start: '시작',
       stop: '중지',
-      edit: 'undefined',
+      edit: '编辑',
       delete: '삭제',
       scanCreate: '스캔하여 만들기',
       manualAdd: '수동 추가',
 
       status: {
-        disconnected: '연결 끊김',
+        disconnected: '연결되지 않음',
         connecting: '연결 중…',
         connected: '연결됨',
         error: '오류',
@@ -492,7 +759,7 @@ export default {
         openInBrowser: '또는 브라우저에서 링크 열기',
         success: '스캔 생성 성공!',
         autoSaving: '자동 저장하고 Bot 시작 중…',
-        failed: '등록 실패',
+        failed: '가입 실패',
         retry: '재시도',
         cancelScan: '스캔 취소',
         close: '닫기',
@@ -549,7 +816,7 @@ export default {
       helpText: '"스캔 로그인"을 클릭하고 WeChat으로 QR 코드를 스캔하면 연결됩니다. 연결 후 WeChat에서 메시지를 보내면 Diting Agent와 대화할 수 있습니다. 자격 증명은 로컬에 안전하게 저장되며 다음 시작 시 바로 연결할 수 있습니다.',
 
       status: {
-        disconnected: '연결 끊김',
+        disconnected: '연결되지 않음',
         waitingScan: '스캔 대기 중...',
         scanned: '스캔됨, 확인 중...',
         connecting: '연결 중...',
@@ -574,12 +841,12 @@ export default {
       loading: '로딩 중…',
       start: '시작',
       stop: '중지',
-      edit: 'undefined',
+      edit: '编辑',
       delete: '삭제',
       addBot: 'DingTalk Bot 추가',
 
       status: {
-        disconnected: '연결 끊김',
+        disconnected: '연결되지 않음',
         connecting: '연결 중…',
         connected: '연결됨',
         error: '오류',
@@ -658,6 +925,9 @@ export default {
     running: '실행 중',
     expandFilePanel: '파일 패널 펼치기',
     collapseFilePanel: '파일 패널 접기',
+    swapPanels: '패널 좌우 전환',
+    showCodeEditor: '코드 에디터 표시',
+    hideCodeEditor: '코드 에디터 숨기기',
     inputPlaceholder: '명령 입력... ({\'@\'} 파일 참조, / Skill 호출, # MCP 사용, & 세션 참조, Enter로 전송)',
     selectProject: '먼저 Agent 프로젝트를 선택하세요',
     noActiveSession: '현재 활성 세션 없음',
@@ -667,9 +937,31 @@ export default {
     detachFolderFailed: '추가 폴더 제거 실패',
     folderAttached: '폴더 추가됨: {name}',
     folderDetached: '추가 폴더 제거됨',
+    gitStatusRefreshed: 'Git 상태가 새로 고쳐졌습니다',
     respondPermissionFailed: '권한 요청 응답 실패',
     submitAnswerFailed: '답변 제출 실패',
+    openChangedFileFailed: '변경된 파일을 열지 못했습니다',
     file: '파일',
+  },
+
+  // ========== Agent 代码编辑器 ==========
+  agentCodeEditor: {
+    noFileOpened: '열린 파일 없음',
+    emptyHint: '파일 패널에서 파일을 클릭하여 여기에서 미리 보고 편집하세요',
+    binaryNotSupported: '바이너리 파일은 에디터에서 미리 볼 수 없습니다',
+    openFailed: '파일을 열지 못했습니다',
+    closeAllAndHide: '모든 파일을 닫고 에디터 숨기기',
+  },
+
+  // ========== Agent 终端面板 ==========
+  agentTerminal: {
+    newTerminal: '새 터미널',
+    noTerminal: '터미널 없음',
+    emptyHint: '\'새로 만들기\' 버튼을 클릭하여 터미널을 만드세요',
+    showPanel: '터미널 패널 표시',
+    hidePanel: '터미널 패널 숨기기',
+    createFailed: '터미널 생성 실패',
+    processExited: '터미널 프로세스가 종료되었습니다(종료 코드 {code})',
   },
 
   // ========== RAG 知识库 ==========
@@ -749,9 +1041,10 @@ export default {
   },
 
   // ========== 文件模块 ==========
-  fileModule: {
-    fileList: '파일 목록',
-    refresh: '새로고침',
+fileModule: {
+fileList: '파일 목록',
+refresh: '새로고침',
+refreshFailed: '새로 고침 실패',
     newFile: '새 파일',
     doc: '문서',
     sheet: '표',
@@ -768,6 +1061,17 @@ export default {
     newSheet: '새 표',
     ragProcessing: '벡터화 중... 남은 {count}',
     ragQueue: '큐 {count}',
+    createMarkdown: 'Markdown 파일 만들기',
+    analyzeLink: '링크 분석',
+    analyzeLinkTitle: '링크 분석',
+    analyzeLinkDesc: 'URL을 입력하면 Agent가 링크 내용을 분석해 Markdown 문서로 정리하여 현재 폴더에 저장합니다',
+    linkUrlPlaceholder: '请输入网址，例如 https:  //example.com',
+    analyzeAndOrganize: '분석 및 정리',
+    cancel: '취소',
+    createProjectFailed: '프로젝트 생성 실패',
+    createSessionFailed: '세션 생성 실패',
+    analyzeLinkStarted: 'Agent 링크 분석을 시작했습니다',
+    analyzeLinkFailed: '링크 분석 실패',
 
     status: {
       unsupported: '미지원',
@@ -800,6 +1104,83 @@ export default {
     viewer: {
       title: '파일 보기',
     },
+  },
+
+  // ========== 添加文件夹弹窗 ==========
+  addFolder: {
+    title: '폴더 추가',
+    subtitle: '로컬 폴더 또는 네트워크 프로토콜 연결 선택',
+    protocolType: '프로토콜 유형',
+    protocols: {
+      local: '로컬',
+      ftp: 'FTP',
+      ftps: 'FTPS',
+      sftp: 'SFTP',
+      smb: 'SMB',
+      webdav: 'WebDAV',
+      s3: 'S3',
+    },
+    // 本地文件夹
+    localPath: '폴더 경로',
+    localPathPlaceholder: '버튼을 클릭하여 폴더를 선택하세요',
+    // 通用网络协议
+    host: '호스트 주소',
+    port: '포트',
+    remotePath: '원격 경로',
+    username: '사용자 이름',
+    password: '비밀번호',
+    showPassword: '비밀번호 표시',
+    hidePassword: '비밀번호 숨기기',
+    // SFTP
+    privateKeyPath: '개인 키 경로',
+    privateKeyHint: '키 기반 인증 시 입력, 비워두면 비밀번호 사용',
+    // SMB
+    shareName: '공유 이름',
+    shareNameHint: 'SMB 공유 이름 (예: shared, public)',
+    domain: '도메인/작업 그룹',
+    // WebDAV
+    serverUrl: '서버 주소',
+    serverUrlHint: '전체 WebDAV 서비스 URL',
+    // S3
+    endpoint: 'Endpoint',
+    region: '리전',
+    bucket: 'Bucket',
+    prefix: '접두사',
+    accessKey: 'Access Key',
+    secretKey: 'Secret Key',
+    forcePathStyle: 'Path Style',
+    forcePathStyleHint: 'MinIO 등 호환 서비스에 필요',
+    // 通用
+    folderAlias: '폴더 별칭',
+    folderAliasPlaceholder: '선택 사항, 기본값은 경로의 마지막 부분',
+    folderAliasHint: '파일 목록에 표시되는 이름',
+    // 编辑
+    edit: '구성 편집',
+    editTitle: '폴더 구성 편집',
+    editSuccess: '구성이 업데이트되었습니다',
+    editFailed: '구성 업데이트 실패',
+    // 测试与提交
+    testConnection: '연결 테스트',
+    testing: '테스트 중…',
+    testSuccess: '연결 성공',
+    testFailed: '연결 실패',
+    fillRequiredFields: '필수 항목을 먼저 입력하세요',
+    selectFolderFailed: '폴더 선택 실패',
+    addSuccess: '폴더가 추가되었습니다',
+    addFailed: '폴더 추가 실패',
+    // 远程扫描状态
+    scanning: '폴더가 추가되었으며 백그라운드에서 원격 디렉터리를 스캔하는 중입니다…',
+    scanDone: '원격 스캔 완료, {count}개 항목',
+    scanFailed: '원격 스캔 실패',
+    // 远程路径浏览
+    browsePath: '찾아보기',
+    browseTitle: '원격 디렉터리 선택',
+    browseLoading: '불러오는 중…',
+    browseEmpty: '디렉터리가 비어 있습니다',
+    browseFailed: '디렉터리를 불러오지 못했습니다',
+    browseUp: '상위로 이동',
+    browseSelect: '이 디렉터리 선택',
+    browseHint: '호스트 주소, 포트, 사용자 이름, 비밀번호(또는 개인 키 경로)를 먼저 입력하세요',
   },
 
   // ========== OCR 录入识读 ==========
@@ -1113,7 +1494,11 @@ export default {
     addFileToSession: '세션에 파일 추가',
     addFile: '파일 추가',
     attachFolder: '추가 폴더',
-  },
+    attached: '첨부',
+refreshGitStatus: 'Git 상태 새로 고침',
+changedFiles: '변경됨',
+noChangedFiles: '변경된 파일 없음',
+},
 
   // ========== 浏览器组件 ==========
   browser: {
@@ -1145,6 +1530,8 @@ export default {
   agentPopup: {
     askUserTitle: 'Agent가 회신을 기다리고 있습니다',
     submitAnswer: '답변 제출',
+    cancel: '취소',
+    inputPlaceholder: '또는 여기에 입력...',
     permissionRequest: '작업 실행 요청',
     reject: '거부',
     allowAlways: '항상 허용',
@@ -1166,7 +1553,7 @@ export default {
     label: '생각 깊이',
     off: '끔',
     low: '낮음',
-    medium: '중간',
+    medium: '보통',
     high: '높음',
     xhigh: '극상',
     max: '최대',
@@ -1363,6 +1750,20 @@ export default {
     placeholder: '임시 기록, 아이디어, 메모...',
   },
 
+  // ========== 语音输入 ==========
+voiceInput: {
+clickToSpeak: '눌러서 말하기',
+    recording: '녹음 중…',
+    correcting: '수정 중…',
+loadingModel: '모델 불러오는 중…',
+micDenied: '마이크 권한이 거부되었습니다. 시스템 설정에서 권한을 부여하세요.',
+micStartFailed: '마이크를 시작하지 못했습니다',
+modelLoadFailed: '모델을 불러오지 못했습니다',
+noAudioCaptured: '캡처된 오디오가 없습니다',
+transcribeSuccess: '음성 변환 완료',
+transcribeFailed: '변환 실패',
+},
+
   fileViewerTab: {
     loading: '파일 로드 중...',
     loadFailed: '폴더 목록 로드 실패',
@@ -1388,7 +1789,7 @@ export default {
 
   // ========== DateTimePicker ==========
   dateTimePicker: {
-    placeholder: 'undefined',
+    placeholder: '选择日期时间',
   },
 
   // ========== TodoWorkspace ==========
@@ -1605,7 +2006,7 @@ export default {
     action: '작업',
     selectProvider: '공급자 유형 선택',
     namePlaceholder: '예: 나의GPT-4o, DeepSeek프로덕션 환경',
-    baseUrlPlaceholder: '예: https://api.openai.com/v1',
+    baseUrlPlaceholder: '如：https:  //api.openai.com/v1',
     apiKeyPlaceholder: 'sk-...',
     modelNamePlaceholder: '예: gpt-4o, deepseek-chat, claude-3-5-sonnet-20241022',
     remarkPlaceholder: '선택 사항(예: 코드 생성용 / 문서 요약용)',

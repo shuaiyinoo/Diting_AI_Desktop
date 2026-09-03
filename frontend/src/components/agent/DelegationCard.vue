@@ -63,7 +63,7 @@
             <div class="min-w-0 flex-1">
               <div class="flex items-center gap-1.5">
                 <span class="truncate text-xs font-medium text-foreground">{{ item.title }}</span>
-                <span v-if="item.role && item.role !== 'custom'" class="shrink-0 rounded bg-green-500/[0.06] px-1.5 text-[10px] text-green-500">{{ roleLabels.value[item.role] || item.role }}</span>
+                <span v-if="item.role && item.role !== 'custom'" class="shrink-0 rounded bg-green-500/[0.06] px-1.5 text-[10px] text-green-500">{{ roleLabels[item.role] || item.role }}</span>
               </div>
               <div v-if="item.status === 'completed' && item.resultSummary" class="mt-0.5 text-[11px] leading-relaxed text-muted-foreground break-all">
                 {{ item.resultSummary.length > 200 ? item.resultSummary.slice(0, 200) + '...' : item.resultSummary }}

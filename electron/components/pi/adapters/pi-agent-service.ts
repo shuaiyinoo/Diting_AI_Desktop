@@ -816,6 +816,7 @@ export async function sendAgentMessage(
         question: Type.String({ description: '要询问用户的问题。' }),
         header: Type.Optional(Type.String({ description: '简短标题。' })),
         multiSelect: Type.Optional(Type.Boolean({ description: '是否允许多选。' })),
+        allowInput: Type.Optional(Type.Boolean({ description: '是否允许用户自由输入文本（除选择外补充信息）。' })),
         options: Type.Optional(Type.Array(Type.Object({
           label: Type.String({ description: '选项标签。' }),
           description: Type.Optional(Type.String({ description: '选项说明。' })),

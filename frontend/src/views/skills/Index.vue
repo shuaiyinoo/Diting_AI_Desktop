@@ -546,12 +546,12 @@ import MarkdownRender from 'markstream-vue'
 import { isDark } from '@/theme'
 import { useAgentStore } from '@/stores/agent'
 import { useWorkspaceStore } from '@/stores/workspace'
-import { useRouter } from 'vue-router'
+import { useTabStore } from '@/stores/tab'
 import MarketView from '@/views/skills/Market.vue'
 
 const agentStore = useAgentStore()
 const wsStore = useWorkspaceStore()
-const router = useRouter()
+const tabStore = useTabStore()
 
 const { t } = useI18n()
 
@@ -1141,7 +1141,10 @@ async function generateMemory() {
 
     await agentStore.selectSession(session.id)
 
-    router.push('/agent').catch((err) => console.error('[Skills] 跳转 Agent 失败:', err))
+    // 跳转到 Agent Tab
+    tabStore.openSessionTab('agent', session.id, session.title || 'Agent')
+    wsStore.setAppMode('agent')
+    wsStore.setActiveModule('agent')
 
     toast.success(t('skillsPage.memory.generatingStarted'))
   } catch (err) {

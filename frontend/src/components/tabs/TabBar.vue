@@ -28,6 +28,16 @@ const agent = useAgentStore()
 
 const scrollRef = ref(null)
 
+/** 工具 Tab type → activeModule 映射 */
+const TOOL_TAB_MODULE_MAP = {
+  'file-manager': 'file',
+  'ocr-recognize': 'invoice',
+  'ocr-archive': 'invoice',
+  'planning': 'planning',
+  'skills': 'skills',
+  'setting': 'setting',
+}
+
 /** 判断标签是否处于流式状态 */
 function isTabStreaming(tab) {
   if (tab.type === 'agent') {
@@ -55,6 +65,22 @@ function onActivate(tabId) {
     }
   } else if (tab.type === 'file') {
     // 文件 Tab：保持当前 appMode 不变，仅激活 Tab
+  } else if (tab.type === 'file-manager') {
+    ws.setActiveModule('file')
+    // 同步全局 selectedFolderId 以保持菜单高亮一致
+    if (tab.folderId) {
+      ws.selectFolder(tab.folderId)
+    }
+  } else if (tab.type === 'ocr-recognize') {
+    ws.setActiveModule('invoice')
+  } else if (tab.type === 'ocr-archive') {
+    ws.setActiveModule('invoice')
+  } else if (tab.type === 'planning') {
+    ws.setActiveModule('planning')
+  } else if (tab.type === 'skills') {
+    ws.setActiveModule('skills')
+  } else if (tab.type === 'setting') {
+    ws.setActiveModule('setting')
   }
 }
 
@@ -70,6 +96,8 @@ function onClose(tabId) {
       ws.currentChatSessionId = activeTab.sessionId
     } else if (activeTab.type === 'agent') {
       ws.setAppMode('agent')
+    } else if (TOOL_TAB_MODULE_MAP[activeTab.type]) {
+      ws.setActiveModule(TOOL_TAB_MODULE_MAP[activeTab.type])
     }
   }
 }
@@ -77,17 +105,48 @@ function onClose(tabId) {
 // 新增 Tab 时自动滚动到最右
 watch(
   () => tabStore.tabs.length,
-  (newLen, oldLen) => {
+   (newLen, oldLen) => {
     if (newLen > oldLen) {
       nextTick(() => {
-        if (scrollRef.value) {
-          scrollRef.value.scrollTo({
-            left: scrollRef.value.scrollWidth,
-            behavior: 'smooth',
-          })
-        }
+        scrollToTab(tabStore.activeTabId)
       })
     }
   },
 )
+
+// 激活 Tab 变化时自动滚动到可见区域
+watch(
+  () => tabStore.activeTabId,
+  (tabId) => {
+    if (tabId) {
+      nextTick(() => {
+        scrollToTab(tabId)
+      })
+    }
+  },
+)
+
+/**
+ * 将指定 Tab 滚动到可见区域
+ * @param {string} tabId - 目标 Tab ID
+ */
+function scrollToTab(tabId) {
+  if (!scrollRef.value) return
+  const container = scrollRef.value
+  const item = container.querySelector(`[data-tab-id="${tabId}"]`)
+  if (!item) return
+
+  const containerLeft = container.scrollLeft
+  const containerRight = containerLeft + container.clientWidth
+  const itemLeft = item.offsetLeft
+  const itemRight = itemLeft + item.offsetWidth
+
+  if (itemLeft < containerLeft) {
+    // Tab 在左侧不可见区域，向左滚动
+    container.scrollTo({ left: itemLeft - 8, behavior: 'smooth' })
+  } else if (itemRight > containerRight) {
+    // Tab 在右侧不可见区域，向右滚动
+    container.scrollTo({ left: itemRight - container.clientWidth + 8, behavior: 'smooth' })
+  }
+}
 </script>

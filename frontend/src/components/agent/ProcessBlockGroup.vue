@@ -240,6 +240,8 @@ const thinkingExpanded = reactive({})
 
 function shouldCollapseThinking(text) {
   if (!text) return false
+  // 流式输出期间不折叠，避免高度跳变导致闪烁
+  if (props.isStreaming) return false
   return text.split('\n').length > 4
 }
 

@@ -4,7 +4,7 @@ import { dialog } from 'electron'
 import { readFileSync, writeFileSync, readdirSync, statSync, existsSync, mkdirSync, copyFileSync } from 'fs'
 import { join, basename, dirname, resolve } from 'path'
 import { logger } from 'ee-core/log'
-import { getGitStatus, isGitRepo } from '../service/git-service'
+import { getGitStatus, isGitRepo, getFileDiff, getFileContentFromHead } from '../service/git-service'
 import { llmdbService } from '../service/database/llmdb'
 import {
   seedDefaultSkills,
@@ -614,7 +614,7 @@ class PiAgentController {
    * - listAttachedDir：列出附加目录内容 + git 状态
    */
   async fileOperation(args: {
-    action: 'list' | 'add' | 'read' | 'write' | 'attachFolder' | 'detachFolder' | 'listAttachedDir' | 'listAllFiles' | 'gitStatus' | 'refreshGitStatus'
+    action: 'list' | 'add' | 'read' | 'write' | 'attachFolder' | 'detachFolder' | 'listAttachedDir' | 'listAllFiles' | 'gitStatus' | 'refreshGitStatus' | 'getDiff'
     workspaceId?: string
     sessionId?: string
     mode?: 'project' | 'session'
@@ -898,6 +898,22 @@ class PiAgentController {
 
           const items = this.listAllFilesRecursive(args.folderPath, '')
           return { code: 0, data: items }
+        }
+
+        case 'getDiff': {
+          // 获取文件的 git diff 输出 + HEAD 版本完整内容（用于前后对比查看）
+          if (!args.folderPath) return { code: -1, message: '缺少 folderPath' }
+          if (!args.filePath) return { code: -1, message: '缺少 filePath' }
+          if (!existsSync(args.folderPath)) return { code: 0, data: { isGitRepo: false, diff: '', originalContent: '' } }
+
+          const isRepo = await isGitRepo(args.folderPath)
+          if (!isRepo) {
+            return { code: 0, data: { isGitRepo: false, diff: '', originalContent: '' } }
+          }
+          const diff = await getFileDiff(args.folderPath, args.filePath)
+          // 获取 HEAD 版本的完整文件内容，用于 diffEditor 的 original side
+          const originalContent = await getFileContentFromHead(args.folderPath, args.filePath)
+          return { code: 0, data: { isGitRepo: true, diff, originalContent } }
         }
 
         default:

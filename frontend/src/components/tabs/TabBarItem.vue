@@ -5,6 +5,7 @@
       'bg-card text-primary font-semibold': isActive,
       'px-3 min-w-[72px] justify-center': isScratch,
     }"
+    :data-tab-id="tab.id"
     @click="$emit('activate', tab.id)"
     @mousedown.middle.prevent="$emit('close', tab.id)"
   >
@@ -23,15 +24,20 @@
       <MessageSquare v-if="tab.type === 'chat'" class="size-3.5 flex-shrink-0 text-muted-foreground" :class="isActive ? 'text-primary' : ''" />
       <Bot v-else-if="tab.type === 'agent'" class="size-3.5 flex-shrink-0 text-muted-foreground" :class="isActive ? 'text-primary' : ''" />
       <File v-else-if="tab.type === 'file'" class="size-3.5 flex-shrink-0 text-muted-foreground" :class="isActive ? 'text-primary' : ''" />
+      <Folder v-else-if="tab.type === 'file-manager'" class="size-3.5 flex-shrink-0 text-muted-foreground" :class="isActive ? 'text-primary' : ''" />
+      <FileSearch v-else-if="tab.type === 'ocr-recognize'" class="size-3.5 flex-shrink-0 text-muted-foreground" :class="isActive ? 'text-primary' : ''" />
+      <Inbox v-else-if="tab.type === 'ocr-archive'" class="size-3.5 flex-shrink-0 text-muted-foreground" :class="isActive ? 'text-primary' : ''" />
+      <CalendarRange v-else-if="tab.type === 'planning'" class="size-3.5 flex-shrink-0 text-muted-foreground" :class="isActive ? 'text-primary' : ''" />
+      <Zap v-else-if="tab.type === 'skills'" class="size-3.5 flex-shrink-0 text-muted-foreground" :class="isActive ? 'text-primary' : ''" />
+      <Settings v-else-if="tab.type === 'setting'" class="size-3.5 flex-shrink-0 text-muted-foreground" :class="isActive ? 'text-primary' : ''" />
 
       <!-- 标题 -->
       <span class="overflow-hidden text-ellipsis max-w-[160px] transition-colors duration-150" :title="tab.title" :class="isStreaming ? 'text-primary' : ''">{{ tab.title }}</span>
 
-      <!-- 关闭按钮 -->
+      <!-- 关闭按钮（始终显示） -->
       <button
-        class="flex items-center justify-center size-[18px] border-none rounded bg-transparent text-muted-foreground cursor-pointer flex-shrink-0 opacity-0 transition-all duration-150 text-[10px] hover:bg-muted hover:text-foreground"
-        :class="isActive ? 'opacity-60' : ''"
-        :class-group-hover="'group-hover:opacity-100'"
+        class="flex items-center justify-center size-[18px] border-none rounded bg-transparent text-muted-foreground cursor-pointer flex-shrink-0 transition-all duration-150 text-[10px] hover:bg-muted hover:text-foreground"
+        :class="isActive ? 'text-muted-foreground' : 'text-muted-foreground/50'"
         :title="t('tabContent.closeTab')"
         @click.stop="$emit('close', tab.id)"
       >
@@ -47,7 +53,10 @@
 <script setup>
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Pencil, MessageSquare, Bot, File, X } from '@lucide/vue'
+import {
+  Pencil, MessageSquare, Bot, File, X,
+  Folder, FileSearch, Inbox, CalendarRange, Zap, Settings,
+} from '@lucide/vue'
 
 const { t } = useI18n()
 

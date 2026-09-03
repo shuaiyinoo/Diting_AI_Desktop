@@ -31,7 +31,27 @@ export interface DownloadProgress {
   bytesPerSecond: number;
 }
 
-/** IPC 通道常量 */
+/** 国内 GitHub 加速代理地址 */
+const CN_PROXY_URL = 'https://v4.gh-proxy.org/';
+
+/**
+ * 判断当前是否为中国大陆时区（东八区 UTC+8）
+ * 通过 getTimezoneOffset() 判断：东八区返回 -480（分钟）
+ */
+function isChinaMainland(): boolean {
+  const offset = new Date().getTimezoneOffset();
+  // getTimezoneOffset 返回的是 UTC 减去本地的分钟数
+  // 东八区 (UTC+8) 返回 -480
+  return offset === -480;
+}
+
+/**
+ * 判断是否需要使用代理下载更新
+ * 中国大陆时区使用 gh-proxy 加速 GitHub 下载
+ */
+function shouldUseProxy(): boolean {
+  return isChinaMainland();
+}
 export const UPDATER_IPC_CHANNELS = {
   CHECK_FOR_UPDATES: 'updater:check',
   GET_STATUS: 'updater:get-status',
@@ -308,6 +328,12 @@ export function initAutoUpdater(mainWindow: BrowserWindow): void {
   autoUpdater.autoDownload = true;
   autoUpdater.autoInstallOnAppQuit = false;
 
+  // 国内大陆时区：使用 gh-proxy 代理加速下载
+  const useProxy = shouldUseProxy();
+  if (useProxy) {
+    logger.info('[更新] 检测到中国大陆时区，下载将使用代理加速');
+  }
+
   // 监听更新事件
   autoUpdater.on('checking-for-update', () => {
     logger.info('[更新] 正在检查更新...');
@@ -322,6 +348,27 @@ export function initAutoUpdater(mainWindow: BrowserWindow): void {
       releaseNotes:
         typeof info.releaseNotes === 'string' ? info.releaseNotes : undefined,
     });
+
+    // 国内代理：覆盖 provider 的 resolveFiles 方法，在最终下载 URL 前拼接代理地址
+    // doDownloadUpdate 会重新调用 provider.resolveFiles(info) 来获取文件 URL，
+    // 因此必须在 provider 层面修改，而不是修改 updateInfoAndProvider.info.files
+    if (useProxy && autoUpdater.updateInfoAndProvider) {
+      const provider = autoUpdater.updateInfoAndProvider.provider;
+      const originalResolveFiles = provider.resolveFiles.bind(provider);
+      provider.resolveFiles = (updateInfo: unknown) => {
+        const files = originalResolveFiles(updateInfo);
+        for (const file of files) {
+          const originalUrl = (file as { url: URL | string }).url;
+          const urlStr = originalUrl.toString();
+          if (urlStr.startsWith('https://github.com/')) {
+            const proxiedUrl = `${CN_PROXY_URL}${urlStr}`;
+            (file as { url: URL }).url = new URL(proxiedUrl);
+            logger.info(`[更新] 代理下载 URL: ${proxiedUrl}`);
+          }
+        }
+        return files;
+      };
+    }
   });
 
   autoUpdater.on('download-progress', (progress: ProgressInfo) => {

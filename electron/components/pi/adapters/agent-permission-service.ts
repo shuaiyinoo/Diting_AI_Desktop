@@ -62,6 +62,8 @@ export interface AskUserQuestion {
   header?: string
   options: AskUserQuestionOption[]
   multiSelect?: boolean
+  /** 是否允许用户自由输入文本（除选择外补充信息） */
+  allowInput?: boolean
 }
 
 /** AskUser 请求（发送到前端） */
@@ -373,6 +375,7 @@ export class AgentPermissionService {
         header: typeof raw.header === 'string' ? raw.header : undefined,
         options,
         multiSelect: raw.multiSelect === true,
+        allowInput: raw.allowInput === true,
       }
     })
   }

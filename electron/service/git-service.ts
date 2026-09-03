@@ -23,11 +23,21 @@ import { logger } from 'ee-core/log'
  */
 export type GitFileStatus = 'untracked' | 'added' | 'modified' | 'deleted' | 'staged' | 'renamed' | 'copied'
 
+/** 文件 diff 统计（增删行数） */
+export interface GitDiffStat {
+  /** 新增行数 */
+  insertions: number
+  /** 删除行数 */
+  deletions: number
+}
+
 /** 返回给前端的文件 → 状态映射 */
 export interface GitStatusMapResult {
   isGitRepo: boolean
   /** 路径 → 状态码（相对于仓库根目录） */
   statusMap: Record<string, GitFileStatus>
+  /** 路径 → 行数增减统计 */
+  diffStat: Record<string, GitDiffStat>
   /** 当前分支名 */
   currentBranch: string | null
   /** 跟踪的远程分支 */
@@ -66,6 +76,7 @@ export async function getGitStatus(dirPath: string): Promise<GitStatusMapResult>
       return {
         isGitRepo: false,
         statusMap: {},
+        diffStat: {},
         currentBranch: null,
         trackingBranch: null,
         ahead: 0,
@@ -77,18 +88,56 @@ export async function getGitStatus(dirPath: string): Promise<GitStatusMapResult>
     const status: StatusResult = await git.status()
 
     const statusMap: Record<string, GitFileStatus> = {}
+    const diffStat: Record<string, GitDiffStat> = {}
 
     // 遍历所有文件条目，将 XY 状态码映射为简化状态
     for (const file of status.files) {
-      const status = parseFileStatus(file)
-      if (status) {
-        statusMap[file.path] = status
+      const fileStatus = parseFileStatus(file)
+      if (fileStatus) {
+        statusMap[file.path] = fileStatus
       }
+    }
+
+    // 获取每个有变更文件的行数增减统计（--numstat 格式：added\tdeleted\tpath）
+    try {
+      const numstatRaw = await git.raw(['diff', '--numstat'])
+      if (numstatRaw) {
+        for (const line of numstatRaw.trim().split('\n')) {
+          const parts = line.split('\t')
+          if (parts.length >= 3) {
+            const ins = parseInt(parts[0], 10)
+            const del = parseInt(parts[1], 10)
+            const filePath = parts[2]
+            if (!isNaN(ins) && !isNaN(del) && filePath) {
+              diffStat[filePath] = { insertions: ins, deletions: del }
+            }
+          }
+        }
+      }
+      // 未跟踪的文件不会出现在 --numstat 中，单独处理
+      for (const file of status.files) {
+        if (file.index === '?' && file.working_dir === '?' && !diffStat[file.path]) {
+          try {
+            const diffResult = await git.diff(['--numstat', '--no-index', '/dev/null', file.path])
+            const match = diffResult.match(/^(\d+)\t(\d+)\t/)
+            if (match) {
+              diffStat[file.path] = { insertions: parseInt(match[1], 10), deletions: parseInt(match[2], 10) }
+            } else {
+              diffStat[file.path] = { insertions: 0, deletions: 0 }
+            }
+          } catch {
+            diffStat[file.path] = { insertions: 0, deletions: 0 }
+          }
+        }
+      }
+    } catch {
+      // numstat 获取失败不影响主流程
     }
 
     return {
       isGitRepo: true,
       statusMap,
+      diffStat,
       currentBranch: status.current,
       trackingBranch: status.tracking,
       ahead: status.ahead,
@@ -100,6 +149,7 @@ export async function getGitStatus(dirPath: string): Promise<GitStatusMapResult>
     return {
       isGitRepo: false,
       statusMap: {},
+      diffStat: {},
       currentBranch: null,
       trackingBranch: null,
       ahead: 0,
@@ -179,6 +229,28 @@ export async function getFileDiff(dirPath: string, filePath?: string): Promise<s
     return await git.diff()
   } catch (err) {
     logger.warn('[GitService] 获取 diff 失败:', err)
+    return ''
+  }
+}
+
+/**
+ * 获取文件在 HEAD 版本的完整内容（用于 diff 对比视图的 original side）
+ *
+ * 对于未跟踪（untracked）的新文件，HEAD 中不存在，返回空字符串。
+ *
+ * @param dirPath 仓库根目录
+ * @param filePath 文件相对路径
+ */
+export async function getFileContentFromHead(dirPath: string, filePath: string): Promise<string> {
+  try {
+    const git = simpleGit(dirPath)
+    // show HEAD:path 获取 HEAD 版本文件内容
+    // 注意：simple-git 的 show 内部执行 git show HEAD:filePath
+    const content = await git.show([`HEAD:${filePath}`])
+    return content || ''
+  } catch (err) {
+    // 文件在 HEAD 中不存在（新增文件），返回空字符串
+    logger.info(`[GitService] 文件 ${filePath} 在 HEAD 中不存在（可能是新文件）`)
     return ''
   }
 }

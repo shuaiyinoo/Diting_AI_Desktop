@@ -570,7 +570,7 @@ const recentItems = computed(() => {
   return []
 })
 
-// ===== 路由同步 =====
+// ===== 路由同步（Tab 模式下通过 activeTab 同步，路由模式通过 route.path 同步） =====
 watch(() => route.path, (path) => {
   if (tabStore.tabMode) return
   if (path.startsWith('/file')) ws.setActiveModule('file')
@@ -581,6 +581,23 @@ watch(() => route.path, (path) => {
   else if (path.startsWith('/chat')) ws.setActiveModule('chat')
   else if (path.startsWith('/agent')) ws.setActiveModule('agent')
   else if (path.startsWith('/setting')) ws.setActiveModule('setting')
+}, { immediate: true })
+
+/** Tab 模式下通过 activeTab 同步 activeModule */
+watch(() => tabStore.activeTab, (tab) => {
+  if (!tabStore.tabMode || !tab) return
+  const tabToModule = {
+    'chat': 'chat',
+    'agent': 'agent',
+    'file-manager': 'file',
+    'ocr-recognize': 'invoice',
+    'ocr-archive': 'invoice',
+    'planning': 'planning',
+    'skills': 'skills',
+    'setting': 'setting',
+  }
+  const module = tabToModule[tab.type]
+  if (module) ws.setActiveModule(module)
 }, { immediate: true })
 
 /** 选中第一个项目的第一个会话（用于 Agent 模式无活跃会话时的回退） */
@@ -611,14 +628,52 @@ async function selectFirstAgentSession() {
   }
 }
 
+/** 工具 type → activeModule 映射 */
+const TOOL_TYPE_MODULE_MAP = {
+  'file-manager': 'file',
+  'ocr-recognize': 'invoice',
+  'ocr-archive': 'invoice',
+  'planning': 'planning',
+  'skills': 'skills',
+  'setting': 'setting',
+}
+
+/** 工具 type → i18n 标题 key 映射 */
+const TOOL_TYPE_TITLE_MAP = {
+  'file-manager': 'menuBar.file',
+  'ocr-recognize': 'menuBar.ocrRecognize',
+  'ocr-archive': 'menuBar.ocrArchive',
+  'planning': 'menuBar.planning',
+  'skills': 'menuBar.skills',
+  'setting': 'menuBar.settings',
+}
+
 async function navigate(key) {
-  if (['file', 'invoice', 'planning', 'skills', 'setting'].includes(key)) {
-    tabStore.exitTabMode()
+  // 工具页面：打开为 Tab
+  if (TOOL_TYPE_MODULE_MAP[key]) {
     ws.setActiveModule(key)
-    const map = { file: '/file', invoice: '/invoice', planning: '/planning', skills: '/skills', setting: '/setting' }
-    if (map[key]) router.push(map[key]).catch(err => console.error('[MenuBar] router.push 失败:', err))
+    tabStore.openToolTab(key, t(TOOL_TYPE_TITLE_MAP[key]))
     return
   }
+  // 文件模块：激活已有的文件夹 Tab 或打开第一个文件夹
+  if (key === 'file') {
+    ws.setActiveModule('file')
+    // 查找已有的 file-manager Tab
+    const folderTabs = tabStore.tabs.filter(t => t.type === 'file-manager')
+    if (folderTabs.length > 0) {
+      // 激活最后一个（最近打开的）
+      const lastTab = folderTabs[folderTabs.length - 1]
+      tabStore.activateTab(lastTab.id)
+      if (lastTab.folderId) ws.selectFolder(lastTab.folderId)
+    } else if (ws.folderList.length > 0) {
+      // 没有文件夹 Tab，打开第一个文件夹
+      onSelectFolder(ws.folderList[0].id)
+    } else {
+      tabStore.enterTabMode()
+    }
+    return
+  }
+  // Chat / Agent 会话
   ws.setActiveModule(key)
   if (key === 'chat') {
     // 优先激活已有的 chat tab，避免重复创建导致顺序变化
@@ -661,22 +716,33 @@ async function navigate(key) {
 }
 
 function navigateOcrSub(subKey) {
-  tabStore.exitTabMode()
   ws.setActiveModule('invoice')
-  if (subKey === 'recognize') router.push('/invoice').catch(() => {})
-  else if (subKey === 'archive') router.push('/ocr/archive').catch(() => {})
+  if (subKey === 'recognize') {
+    tabStore.openToolTab('ocr-recognize', t('menuBar.ocrRecognize'))
+  } else if (subKey === 'archive') {
+    tabStore.openToolTab('ocr-archive', t('menuBar.ocrArchive'))
+  }
 }
 
 function isOcrSubActive(subKey) {
-  if (subKey === 'recognize') return route.path.startsWith('/invoice')
-  if (subKey === 'archive') return route.path.startsWith('/ocr/archive')
+  if (!tabStore.tabMode) return false
+  if (subKey === 'recognize') return tabStore.activeTab?.type === 'ocr-recognize'
+  if (subKey === 'archive') return tabStore.activeTab?.type === 'ocr-archive'
   return false
 }
 
 function onSelectFolder(folderId) {
-  selectedFolderId.value = folderId
-  selectedFile.value = null
-  selectedFileId.value = null
+  // 找到 folder 对象获取信息
+  const folder = ws.folderList.find(f => f.id === folderId)
+  if (!folder) return
+  // 同步全局选中状态（保持菜单高亮一致）
+  ws.selectFolder(folderId)
+  // 打开独立的文件夹管理 Tab
+  tabStore.openFolderTab({
+    id: folder.id,
+    folderName: folder.folder_name || folder.alias || getFolderDisplayName(folder),
+    protocol: folder.protocol || 'local',
+  })
 }
 
 function onSelectChatSession(sessionId) {

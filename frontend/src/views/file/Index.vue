@@ -7,15 +7,15 @@
         <Folder class="size-3.5 shrink-0 text-app-muted" />
         <!-- 协议缩写标签 -->
         <span
-          v-if="ws.selectedFolder"
+          v-if="currentFolder"
           class="flex h-[18px] w-[30px] shrink-0 items-center justify-center rounded-[4px] text-[9px] font-bold leading-none tracking-wide"
-          :class="getProtocolBadgeClass(ws.selectedFolder.protocol || 'local')"
-          :title="getProtocolLabel(ws.selectedFolder.protocol || 'local')"
+          :class="getProtocolBadgeClass(currentFolder.protocol || 'local')"
+          :title="getProtocolLabel(currentFolder.protocol || 'local')"
         >
-          {{ getProtocolBadge(ws.selectedFolder.protocol || 'local') }}
+          {{ getProtocolBadge(currentFolder.protocol || 'local') }}
         </span>
-        <span v-if="ws.selectedFolder" class="min-w-0 flex-1 truncate text-[13px] font-medium text-app-primary" :title="ws.selectedFolder.folder_name || ws.selectedFolder.path">
-          {{ ws.selectedFolder.folder_name || ws.selectedFolder.path }}
+        <span v-if="currentFolder" class="min-w-0 flex-1 truncate text-[13px] font-medium text-app-primary" :title="currentFolder.folder_name || currentFolder.path">
+          {{ currentFolder.folder_name || currentFolder.path }}
         </span>
         <span v-else class="flex-1 text-[13px] font-normal text-app-muted">{{ t('fileModule.fileList') }}</span>
         <div class="ml-auto flex items-center gap-1">
@@ -71,9 +71,13 @@
       </div>
 
       <!-- 文件树 -->
-      <div class="min-h-0 flex-1 overflow-y-auto py-1" v-loading="treeLoading">
+      <div class="min-h-0 flex-1 overflow-y-auto py-1 relative">
+        <!-- 加载中 -->
+        <div v-if="treeLoading" class="absolute inset-0 z-10 flex items-center justify-center bg-panel/60">
+          <Loader2 class="size-5 animate-spin text-muted-foreground" />
+        </div>
         <!-- 空状态 -->
-        <div v-if="!ws.selectedFolderId" class="flex min-h-[200px] items-center justify-center">
+        <div v-if="!currentFolderId" class="flex min-h-[200px] items-center justify-center">
           <div class="flex flex-col items-center gap-2 text-app-muted">
             <FolderOpen class="size-10 opacity-40" />
             <span class="text-sm">{{ t('fileModule.selectFolderFirst') }}</span>
@@ -91,7 +95,7 @@
             v-for="node in flatTree"
             :key="node.key"
             class="flex cursor-pointer items-start gap-1 py-1 pr-2 transition-colors"
-            :class="node.isFile && ws.selectedFileId === node.id ? 'bg-accent/40' : 'hover:bg-accent/30'"
+            :class="node.isFile && localSelectedFileId === node.id ? 'bg-accent/40' : 'hover:bg-accent/30'"
             :style="{ paddingLeft: 8 + node.depth * 16 + 'px' }"
             @click="onTreeNodeClick(node)"
           >
@@ -110,7 +114,7 @@
               class="shrink-0 mt-[1px]"
               :class="[
                 node.isFile && !node.supported ? 'text-muted-foreground/40' :
-                node.isFile && ws.selectedFileId === node.id ? 'text-primary' : 'text-muted-foreground'
+                node.isFile && localSelectedFileId === node.id ? 'text-primary' : 'text-muted-foreground'
               ]"
             />
 
@@ -122,7 +126,7 @@
                   class="min-w-0 flex-1 truncate text-[12px]"
                   :class="[
                     node.isFile && !node.supported ? 'text-muted-foreground/40' :
-                    node.isFile && ws.selectedFileId === node.id ? 'text-primary font-medium' : 'text-foreground'
+                    node.isFile && localSelectedFileId === node.id ? 'text-primary font-medium' : 'text-foreground'
                   ]"
                 >
                   {{ node.name }}
@@ -158,7 +162,7 @@
     <!-- ========== 第三部分：文件预览区 ========== -->
     <div class="flex flex-1 min-w-[200px] flex-col h-full overflow-hidden">
       <FilePreviewPanel
-        :file="ws.selectedFile"
+        :file="localSelectedFile"
         :panel4-collapsed="panel4Collapsed"
         @toggle-panel4="togglePanel4"
       />
@@ -168,7 +172,7 @@
     <template v-if="!panel4Collapsed">
       <PanelDivider @resize="onPanel4Resize" />
       <div class="flex flex-col h-full overflow-hidden bg-panel min-w-[240px]" :style="{ width: panel4Width + 'px', flexShrink: 0 }">
-        <FileInfoPanel :file="ws.selectedFile" :status-tag="selectedFileStatusTag" />
+        <FileInfoPanel :file="localSelectedFile" :status-tag="selectedFileStatusTag" />
       </div>
     </template>
 
@@ -222,16 +226,36 @@ import FilePreviewPanel from '@/components/file/FilePreviewPanel.vue'
 import FileInfoPanel from '@/components/file/FileInfoPanel.vue'
 import PanelDivider from '@/components/layout/PanelDivider.vue'
 
+const props = defineProps({
+  /** Tab 模式下绑定的文件夹 ID，优先使用此值 */
+  folderId: { type: [Number, String], default: null },
+})
+
 const { t } = useI18n()
 const toast = useToast()
 const ws = useWorkspaceStore()
 const agentStore = useAgentStore()
-const { selectedFolderId: wsSelectedFolderId, selectedFolder: wsSelectedFolder, selectedFile: wsSelectedFile, selectedFileId: wsSelectedFileId } = storeToRefs(ws)
+const { selectedFolderId: wsSelectedFolderId, selectedFolder: wsSelectedFolder } = storeToRefs(ws)
+
+// ========== 当前文件夹 ID（优先使用 prop，回退到 store） ==========
+const currentFolderId = computed(() => props.folderId ?? wsSelectedFolderId.value)
+
+// ========== 当前文件夹对象（优先从 store 的 folderList 中查找 prop 对应的文件夹） ==========
+const currentFolder = computed(() => {
+  if (props.folderId) {
+    return ws.folderList.find(f => f.id === props.folderId) ?? null
+  }
+  return wsSelectedFolder.value ?? null
+})
+
+// ========== 本地文件选中状态（每个 Tab 实例独立，不受全局 store 干扰） ==========
+const localSelectedFile = ref(null)
+const localSelectedFileId = computed(() => localSelectedFile.value?.id ?? null)
 
 // ========== 本地文件夹判断 ==========
 const isLocalFolder = computed(() => {
-  if (!wsSelectedFolder.value) return false
-  return (wsSelectedFolder.value.protocol || 'local') === 'local'
+  if (!currentFolder.value) return false
+  return (currentFolder.value.protocol || 'local') === 'local'
 })
 
 // ========== 面板宽度 & 折叠状态 ==========
@@ -271,8 +295,8 @@ const linkUrl = ref('')
 const analyzingLink = ref(false)
 
 const selectedFileStatusTag = computed(() => {
-  if (!ws.selectedFile) return { color: 'default', text: '-' }
-  return getStatusTag(ws.selectedFile.status, ws.selectedFile.name)
+  if (!localSelectedFile.value) return { color: 'default', text: '-' }
+  return getStatusTag(localSelectedFile.value.status, localSelectedFile.value.name)
 })
 
 // 支持向量化的文件扩展名
@@ -423,10 +447,10 @@ function toggleDir(dirId) {
 }
 
 async function loadDirFiles(dirId) {
-  if (!wsSelectedFolder.value) return
+  if (!currentFolder.value) return
   try {
     const data = await ipc.invoke(ipcApiRoute.file.getFiles, {
-      folderId: wsSelectedFolder.value.id,
+      folderId: currentFolder.value.id,
       itemId: dirId,
     })
     dirFileCache[dirId] = data || []
@@ -441,18 +465,18 @@ function onSelectFile(node) {
   const files = dirFileCache[node.id] || []
   const file = files.find(f => f.id === node.id)
   if (file) {
-    ws.selectFile(file)
+    localSelectedFile.value = file
   } else {
     // 如果缓存中没有，可能是从别处来的，构造一个最小对象
-    ws.selectFile({ id: node.id, name: node.name, status: node.status })
+    localSelectedFile.value = { id: node.id, name: node.name, status: node.status }
   }
 }
 
 /** 刷新当前文件夹：远程文件夹重新从服务器获取最新结构，本地文件夹重新扫描 */
 async function onRefreshTree() {
-  if (!wsSelectedFolderId.value || !wsSelectedFolder.value) return
+  if (!currentFolderId.value || !currentFolder.value) return
 
-  const folder = wsSelectedFolder.value
+  const folder = currentFolder.value
   const isRemote = (folder.protocol || 'local') !== 'local'
 
   treeLoading.value = true
@@ -464,7 +488,7 @@ async function onRefreshTree() {
       delete dirFileCache[key]
     }
     expandedDirs.value = new Set()
-    await loadTree(wsSelectedFolderId.value)
+    await loadTree(currentFolderId.value)
   } catch (err) {
     console.error('[file] 刷新文件夹失败:', err)
     toast.error(t('fileModule.refreshFailed'))
@@ -474,14 +498,14 @@ async function onRefreshTree() {
 }
 
 // ========== 监听文件夹切换 ==========
-watch(wsSelectedFolderId, (folderId) => {
+watch(currentFolderId, (folderId) => {
   // 清空状态
   for (const key of Object.keys(dirFileCache)) {
     delete dirFileCache[key]
   }
   expandedDirs.value = new Set()
   rootTree.value = []
-  ws.selectFile(null)
+  localSelectedFile.value = null
   if (folderId) {
     loadTree(folderId)
   }
@@ -489,8 +513,8 @@ watch(wsSelectedFolderId, (folderId) => {
 
 // ========== 页面初始化 ==========
 onMounted(() => {
-  if (ws.selectedFolderId) {
-    loadTree(ws.selectedFolderId)
+  if (currentFolderId.value) {
+    loadTree(currentFolderId.value)
   }
   registerSyncChange()
   registerRagProgressListener()
@@ -507,7 +531,7 @@ function registerSyncChange() {
   ipc.invoke(ipcApiRoute.file.registerSyncCallback).catch(() => {})
   ipc.on(ipcApiRoute.file.onSyncChange, (_event, result) => {
     const { folderId } = result
-    if (ws.selectedFolderId === folderId) {
+    if (currentFolderId.value === folderId) {
       // 刷新：清空缓存重新加载
       for (const key of Object.keys(dirFileCache)) {
         delete dirFileCache[key]
@@ -521,7 +545,7 @@ function registerSyncChange() {
 function registerRemoteScanDone() {
   ipc.on(ipcApiRoute.file.onRemoteScanDone, (_event, result) => {
     const { folderId, success } = result
-    if (ws.selectedFolderId === folderId && success) {
+    if (currentFolderId.value === folderId && success) {
       // 清空缓存重新加载
       for (const key of Object.keys(dirFileCache)) {
         delete dirFileCache[key]
@@ -583,7 +607,7 @@ const ragProcessing = ref(false)
 // ========== 新建 Markdown 文件 ==========
 async function onCreateMarkdownFile() {
   createPopoverVisible.value = false
-  if (!ws.selectedFolder) {
+  if (!currentFolder.value) {
     toast.warning(t('fileModule.selectFolder'))
     return
   }
@@ -601,7 +625,7 @@ async function onCreateMarkdownFile() {
 
   try {
     const result = await ipc.invoke(ipcApiRoute.file.createFile, {
-      folderId: ws.selectedFolder.id,
+      folderId: currentFolder.value.id,
       parentId,
       fileName,
     })
@@ -632,14 +656,14 @@ function onOpenLinkDialog() {
 async function onAnalyzeLink() {
   const url = linkUrl.value.trim()
   if (!url || analyzingLink.value) return
-  if (!ws.selectedFolder) {
+  if (!currentFolder.value) {
     toast.warning(t('fileModule.selectFolder'))
     return
   }
 
   analyzingLink.value = true
   try {
-    const folderPath = ws.selectedFolder.path
+    const folderPath = currentFolder.value.path
 
     // 查找或创建名为"链接整理"的项目
     if (ws.agentProjects.length === 0) {

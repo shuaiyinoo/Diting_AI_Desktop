@@ -30,8 +30,8 @@
       <!-- ===== 远程控制（仅登录后可用）===== -->
       <div v-if="isLoggedIn" class="border-t border-border/50">
         <div class="border-b border-border/50 bg-muted/30 px-4 py-2.5">
-          <div class="text-[13px] font-semibold text-foreground">远程控制</div>
-          <div class="mt-0.5 text-[11px] text-muted-foreground">允许手机端远程查看并控制本机</div>
+          <div class="text-[13px] font-semibold text-foreground">{{ t('general.cloud.remote.title') }}</div>
+          <div class="mt-0.5 text-[11px] text-muted-foreground">{{ t('general.cloud.remote.subtitle') }}</div>
         </div>
 
         <!-- 服务端连接状态 -->
@@ -39,7 +39,7 @@
           <div class="min-w-0">
             <div class="flex items-center gap-2">
               <span class="size-2 shrink-0 rounded-full" :class="remote.stateColor" />
-              <span class="text-[13px] font-medium text-foreground">服务端连接</span>
+              <span class="text-[13px] font-medium text-foreground">{{ t('general.cloud.remote.serverConn') }}</span>
             </div>
             <div class="mt-0.5 truncate text-[11px] text-muted-foreground">
               {{ remote.connStateText }}<span v-if="remote.baseUrl"> · {{ remote.baseUrl }}</span>
@@ -55,9 +55,9 @@
         <!-- 远程镜像开关 -->
         <div class="flex items-center justify-between border-t border-border/50 px-4 py-3.5">
           <div class="min-w-0">
-            <div class="text-[13px] font-medium text-foreground">远程镜像</div>
+            <div class="text-[13px] font-medium text-foreground">{{ t('general.cloud.remote.mirror') }}</div>
             <div class="mt-0.5 text-[11px] text-muted-foreground">
-              {{ remote.peerJoined ? '控制端已接入' : '开启后生成 6 位连接码' }}
+              {{ remote.peerJoined ? t('general.cloud.remote.mirrorPeerJoined') : t('general.cloud.remote.mirrorIdle') }}
             </div>
           </div>
           <Switch
@@ -69,13 +69,13 @@
 
         <!-- 会话码展示 -->
         <div v-if="remote.sessionCode" class="border-t border-border/50 px-4 py-5 text-center">
-          <div class="text-[11px] text-muted-foreground">在手机端输入此连接码</div>
+          <div class="text-[11px] text-muted-foreground">{{ t('general.cloud.remote.sessionCodeHint') }}</div>
           <div class="mt-2 select-all font-mono text-4xl font-semibold tracking-[0.3em] text-foreground">
             {{ remote.sessionCode }}
           </div>
           <Button variant="outline" size="sm" class="mt-3 h-8 gap-1.5 text-xs" @click="onCopyCode">
             <Copy class="size-3.5" />
-            复制
+            {{ t('general.cloud.remote.copy') }}
           </Button>
         </div>
 
@@ -86,13 +86,13 @@
             <div class="min-w-0 flex-1">
               <p class="text-[11px] leading-relaxed text-destructive">{{ remote.lastError }}</p>
               <Button
-                v-if="remote.lastError.includes('权限')"
+                v-if="remote.lastError && (remote.lastError.includes('权限') || remote.lastError.toLowerCase().includes('permission'))"
                 variant="link"
                 size="sm"
                 class="mt-1 h-auto p-0 text-[11px]"
                 @click="remote.openPermissionSettings"
               >
-                打开系统权限设置
+                {{ t('general.cloud.remote.openPermSettings') }}
               </Button>
             </div>
           </div>
@@ -134,11 +134,11 @@
         <div v-if="authMode === 'login'" class="mt-4 space-y-3 rounded-lg border border-border bg-background/50 p-4">
           <div class="flex items-center gap-2">
             <LogIn class="size-4 text-primary" />
-            <span class="text-[13px] font-semibold text-foreground">登录</span>
+            <span class="text-[13px] font-semibold text-foreground">{{ t('general.cloud.auth.loginTitle') }}</span>
           </div>
 
           <div class="space-y-1.5">
-            <Label class="text-[12px] font-medium">邮箱</Label>
+            <Label class="text-[12px] font-medium">{{ t('general.cloud.auth.email') }}</Label>
             <Input
               v-model="loginForm.email"
               type="email"
@@ -149,7 +149,7 @@
           </div>
 
           <div class="space-y-1.5">
-            <Label class="text-[12px] font-medium">密码</Label>
+            <Label class="text-[12px] font-medium">{{ t('general.cloud.auth.password') }}</Label>
             <Input
               v-model="loginForm.password"
               type="password"
@@ -167,10 +167,10 @@
               :disabled="authLoading"
             />
             <span class="text-[11px] leading-relaxed text-muted-foreground">
-              我已阅读并同意
-              <a href="https://ditingrag.com/cn/terms-of-service" target="_blank" class="text-primary hover:underline">服务条款</a>
-              和
-              <a href="https://ditingrag.com/cn/privacy-policy" target="_blank" class="text-primary hover:underline">隐私政策</a>
+              {{ t('general.cloud.auth.agreePrefix') }}
+              <a href="https://ditingrag.com/cn/terms-of-service" target="_blank" class="text-primary hover:underline">{{ t('general.cloud.auth.terms') }}</a>
+              {{ t('general.cloud.auth.and') }}
+              <a href="https://ditingrag.com/cn/privacy-policy" target="_blank" class="text-primary hover:underline">{{ t('general.cloud.auth.privacy') }}</a>
             </span>
           </div>
 
@@ -185,16 +185,16 @@
               @click="handleLogin"
             >
               <Spinner v-if="authLoading" size="sm" class="mr-1" />
-              {{ authLoading ? '登录中...' : '登录' }}
+              {{ authLoading ? t('general.cloud.auth.loginLoading') : t('general.cloud.auth.loginBtn') }}
             </Button>
             <Button variant="outline" class="h-9 text-[13px]" :disabled="authLoading" @click="resetAuth">
-              取消
+              {{ t('general.cloud.auth.cancel') }}
             </Button>
           </div>
 
           <p class="text-center text-[12px] text-muted-foreground">
-            还没有账号？
-            <a class="cursor-pointer text-primary font-medium hover:underline" @click="switchToRegister">立即注册</a>
+            {{ t('general.cloud.auth.noAccount') }}
+            <a class="cursor-pointer text-primary font-medium hover:underline" @click="switchToRegister">{{ t('general.cloud.auth.registerNow') }}</a>
           </p>
         </div>
 
@@ -202,22 +202,22 @@
         <div v-if="authMode === 'register'" class="mt-4 space-y-3 rounded-lg border border-border bg-background/50 p-4">
           <div class="flex items-center gap-2">
             <UserPlus class="size-4 text-primary" />
-            <span class="text-[13px] font-semibold text-foreground">注册</span>
+            <span class="text-[13px] font-semibold text-foreground">{{ t('general.cloud.auth.registerTitle') }}</span>
           </div>
 
           <div class="grid grid-cols-2 gap-3">
             <div class="space-y-1.5">
-              <Label class="text-[12px] font-medium">用户名</Label>
+              <Label class="text-[12px] font-medium">{{ t('general.cloud.auth.username') }}</Label>
               <Input
                 v-model="registerForm.username"
                 type="text"
-                placeholder="2-30 个字符"
+                :placeholder="t('general.cloud.auth.usernamePlaceholder')"
                 :disabled="authLoading"
               />
             </div>
 
             <div class="space-y-1.5">
-              <Label class="text-[12px] font-medium">邮箱</Label>
+              <Label class="text-[12px] font-medium">{{ t('general.cloud.auth.email') }}</Label>
               <Input
                 v-model="registerForm.email"
                 type="email"
@@ -229,21 +229,21 @@
 
           <div class="grid grid-cols-2 gap-3">
             <div class="space-y-1.5">
-              <Label class="text-[12px] font-medium">密码</Label>
+              <Label class="text-[12px] font-medium">{{ t('general.cloud.auth.password') }}</Label>
               <Input
                 v-model="registerForm.password"
                 type="password"
-                placeholder="至少 8 位，含大小写和数字"
+                :placeholder="t('general.cloud.auth.passwordPlaceholder')"
                 :disabled="authLoading"
               />
             </div>
 
             <div class="space-y-1.5">
-              <Label class="text-[12px] font-medium">确认密码</Label>
+              <Label class="text-[12px] font-medium">{{ t('general.cloud.auth.confirmPassword') }}</Label>
               <Input
                 v-model="registerForm.confirmPassword"
                 type="password"
-                placeholder="再次输入密码"
+                :placeholder="t('general.cloud.auth.confirmPasswordPlaceholder')"
                 :disabled="authLoading"
                 @keyup.enter="handleRegister"
               />
@@ -268,10 +268,10 @@
               :disabled="authLoading"
             />
             <span class="text-[11px] leading-relaxed text-muted-foreground">
-              我已阅读并同意
-              <a href="https://ditingrag.com/cn/terms-of-service" target="_blank" class="text-primary hover:underline">服务条款</a>
-              和
-              <a href="https://ditingrag.com/cn/privacy-policy" target="_blank" class="text-primary hover:underline">隐私政策</a>
+              {{ t('general.cloud.auth.agreePrefix') }}
+              <a href="https://ditingrag.com/cn/terms-of-service" target="_blank" class="text-primary hover:underline">{{ t('general.cloud.auth.terms') }}</a>
+              {{ t('general.cloud.auth.and') }}
+              <a href="https://ditingrag.com/cn/privacy-policy" target="_blank" class="text-primary hover:underline">{{ t('general.cloud.auth.privacy') }}</a>
             </span>
           </div>
 
@@ -286,16 +286,16 @@
               @click="handleRegister"
             >
               <Spinner v-if="authLoading" size="sm" class="mr-1" />
-              {{ authLoading ? '注册中...' : '注册' }}
+              {{ authLoading ? t('general.cloud.auth.registerLoading') : t('general.cloud.auth.registerBtn') }}
             </Button>
             <Button variant="outline" class="h-9 text-[13px]" :disabled="authLoading" @click="resetAuth">
-              取消
+              {{ t('general.cloud.auth.cancel') }}
             </Button>
           </div>
 
           <p class="text-center text-[12px] text-muted-foreground">
-            已有账号？
-            <a class="cursor-pointer text-primary font-medium hover:underline" @click="switchToLogin">返回登录</a>
+            {{ t('general.cloud.auth.hasAccount') }}
+            <a class="cursor-pointer text-primary font-medium hover:underline" @click="switchToLogin">{{ t('general.cloud.auth.backToLogin') }}</a>
           </p>
         </div>
       </div>
@@ -345,10 +345,10 @@ const registerAgreed = ref(false)
  * @returns 错误信息，通过返回空字符串
  */
 function validateStrongPassword(pwd) {
-  if (pwd.length < 8) return '密码长度不能少于 8 位'
-  if (!/[a-z]/.test(pwd)) return '密码必须包含小写字母'
-  if (!/[A-Z]/.test(pwd)) return '密码必须包含大写字母'
-  if (!/\d/.test(pwd)) return '密码必须包含数字'
+  if (pwd.length < 8) return t('general.cloud.auth.errPwdTooShort')
+  if (!/[a-z]/.test(pwd)) return t('general.cloud.auth.errPwdNoLower')
+  if (!/[A-Z]/.test(pwd)) return t('general.cloud.auth.errPwdNoUpper')
+  if (!/\d/.test(pwd)) return t('general.cloud.auth.errPwdNoDigit')
   return ''
 }
 
@@ -376,10 +376,10 @@ const strengthColor = computed(() => {
 /** 密码强度文字 */
 const strengthLabel = computed(() => {
   const s = passwordStrength.value
-  if (s <= 1) return '弱'
-  if (s === 2) return '中'
-  if (s === 3) return '强'
-  return '非常强'
+  if (s <= 1) return t('general.cloud.auth.strengthWeak')
+  if (s === 2) return t('general.cloud.auth.strengthMedium')
+  if (s === 3) return t('general.cloud.auth.strengthStrong')
+  return t('general.cloud.auth.strengthVeryStrong')
 })
 
 const cloudFeatures = [
@@ -429,11 +429,11 @@ function switchToLogin() {
 /** 处理登录 */
 async function handleLogin() {
   if (!loginAgreed.value) {
-    authError.value = '请先同意服务条款和隐私政策'
+    authError.value = t('general.cloud.auth.errAgree')
     return
   }
   if (!loginForm.value.email || !loginForm.value.password) {
-    authError.value = '请输入邮箱和密码'
+    authError.value = t('general.cloud.auth.errEmailPwd')
     return
   }
 
@@ -451,7 +451,7 @@ async function handleLogin() {
       // 登录成功后主进程会自动建立信令连接，这里拉一次状态以刷新指示灯
       remote.fetchStatus()
     } else {
-      authError.value = res.message || '登录失败'
+      authError.value = res.message || t('general.cloud.auth.errLoginFailed')
     }
   } catch (err) {
     authError.value = err instanceof Error ? err.message : String(err)
@@ -463,15 +463,15 @@ async function handleLogin() {
 /** 处理注册 */
 async function handleRegister() {
   if (!registerAgreed.value) {
-    authError.value = '请先同意服务条款和隐私政策'
+    authError.value = t('general.cloud.auth.errAgree')
     return
   }
   if (!registerForm.value.username || !registerForm.value.email || !registerForm.value.password) {
-    authError.value = '请填写所有必填项'
+    authError.value = t('general.cloud.auth.errFillAll')
     return
   }
   if (registerForm.value.password !== registerForm.value.confirmPassword) {
-    authError.value = '两次输入的密码不一致'
+    authError.value = t('general.cloud.auth.errPwdMismatch')
     return
   }
   const pwdErr = validateStrongPassword(registerForm.value.password)
@@ -497,7 +497,7 @@ async function handleRegister() {
       registerForm.value = { username: '', email: '', password: '', confirmPassword: '' }
       registerAgreed.value = false
     } else {
-      authError.value = res.message || '注册失败'
+      authError.value = res.message || t('general.cloud.auth.errRegisterFailed')
     }
   } catch (err) {
     authError.value = err instanceof Error ? err.message : String(err)

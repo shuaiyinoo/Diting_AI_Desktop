@@ -10,12 +10,12 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { ipcApiRoute, remoteStatusChannel } from '@/api'
 import { ipc } from '@/utils/ipcRenderer'
 
-/** 连接状态文案映射 */
-const CONN_STATE_TEXT = {
-  disconnected: '未连接',
-  connecting: '连接中…',
-  connected: '已连接',
-  error: '连接异常',
+/** 连接状态 i18n key 映射 */
+const CONN_STATE_KEY = {
+  disconnected: 'statusBar.connDisconnected',
+  connecting: 'statusBar.connConnecting',
+  connected: 'statusBar.connConnected',
+  error: 'statusBar.connError',
 }
 
 export const useRemoteStore = defineStore('remote', () => {
@@ -36,7 +36,8 @@ export const useRemoteStore = defineStore('remote', () => {
   // ===== 计算属性 =====
   const isConnected = computed(() => connState.value === 'connected')
   const isMirroring = computed(() => !!sessionCode.value)
-  const connStateText = computed(() => CONN_STATE_TEXT[connState.value] || '未知')
+  /** 返回连接状态的 i18n key，组件用 t() 翻译 */
+  const connStateText = computed(() => CONN_STATE_KEY[connState.value] || 'statusBar.connUnknown')
 
   /** 状态指示灯颜色 */
   const stateColor = computed(() => {

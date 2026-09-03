@@ -66,7 +66,10 @@
         <Code :size="40" class="opacity-30" />
         <span class="text-xs">{{ t('agentCodeEditor.emptyHint') }}</span>
       </div>
-      <div v-show="activeFile" ref="editorContainerRef" class="h-full w-full" />
+      <!-- diff 对比视图 -->
+      <div v-show="activeFile && activeFile.originalContent !== undefined" ref="diffEditorContainerRef" class="h-full w-full" />
+      <!-- 普通编辑器视图 -->
+      <div v-show="activeFile && activeFile.originalContent === undefined" ref="editorContainerRef" class="h-full w-full" />
     </div>
 
     <!-- 终端面板（位于编辑器下方） -->
@@ -407,7 +410,9 @@ function textSpanToRange(model, textSpan) {
 const activeFile = ref(null)
 
 const editorContainerRef = ref(null)
+const diffEditorContainerRef = ref(null)
 let editor = null
+let diffEditor = null
 /** model 缓存：fileId → monaco.editor.ITextModel */
 const modelCache = new Map()
 
@@ -541,12 +546,77 @@ function getOrCreateModel(file) {
 
 /** 更新编辑器内容 */
 function updateEditorContent(file) {
-  if (!editor || !file) return
+  if (!file) return
 
+  // 如果文件有 originalContent，显示 diff 对比视图
+  const showDiff = file.originalContent !== undefined
+
+  if (showDiff) {
+    if (!diffEditor) {
+      initDiffEditor()
+    }
+    if (editor) {
+      editor.setModel(null)
+    }
+    updateDiffEditorContent(file)
+    return
+  }
+
+  // 普通模式
+  if (!editor) {
+    initEditor()
+  }
+  if (diffEditor) {
+    diffEditor.setModel(null)
+  }
   const model = getOrCreateModel(file)
-  if (model) {
+  if (model && editor) {
     editor.setModel(model)
   }
+}
+
+/** 初始化 Monaco diff 编辑器 */
+function initDiffEditor() {
+  if (!diffEditorContainerRef.value || diffEditor) return
+
+  diffEditor = monaco.editor.createDiffEditor(diffEditorContainerRef.value, {
+    theme: isDark.value ? MONACO_THEME_DARK : MONACO_THEME_LIGHT,
+    automaticLayout: true,
+    readOnly: true,
+    renderSideBySide: true,
+    fontSize: 13,
+    fontFamily: 'var(--font-mono, "SF Mono", Menlo, Monaco, ui-monospace, monospace)',
+    lineHeight: 20,
+    scrollBeyondLastLine: false,
+    padding: { top: 8, bottom: 8 },
+    scrollbar: {
+      verticalScrollbarSize: 8,
+      horizontalScrollbarSize: 8,
+    },
+  })
+
+  // 应用自定义主题
+  defineAndApplyMonacoTheme()
+}
+
+/** 更新 diff 编辑器内容 */
+function updateDiffEditorContent(file) {
+  if (!diffEditor || !file) return
+
+  const language = getLanguage(file.ext)
+
+  // original = HEAD 版本的完整文件内容（由后端从 git show HEAD:path 获取）
+  // modified = 当前文件内容（工作区版本）
+  const originalContent = file.originalContent || ''
+  const modifiedContent = file.content || ''
+
+  const originalModel = monaco.editor.createModel(originalContent, language)
+  const modifiedModel = monaco.editor.createModel(modifiedContent, language)
+
+  diffEditor.setModel({
+    original: originalModel,
+    modified: modifiedModel,
+  })
 }
 
 /** 监听主题变化（亮/暗切换 + 基础色调变化） */
@@ -631,6 +701,9 @@ onActivated(async () => {
   if (editor) {
     editor.layout()
   }
+  if (diffEditor) {
+    diffEditor.layout()
+  }
 })
 
 onBeforeUnmount(() => {
@@ -653,6 +726,11 @@ onBeforeUnmount(() => {
   if (editor) {
     editor.dispose()
     editor = null
+  }
+  // 清理 diff 编辑器
+  if (diffEditor) {
+    diffEditor.dispose()
+    diffEditor = null
   }
 })
 </script>

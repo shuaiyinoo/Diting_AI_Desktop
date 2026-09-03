@@ -244,7 +244,6 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
 import {
@@ -259,11 +258,14 @@ import {
 } from '@/components/ui/table'
 import { useInvoiceStore } from '@/stores/invoice'
 import { useTabStore } from '@/stores/tab'
+import { useAgentStore } from '@/stores/agent'
+import { useWorkspaceStore } from '@/stores/workspace'
 
-const router = useRouter()
 const { t } = useI18n()
 const store = useInvoiceStore()
 const tabStore = useTabStore()
+const agentStore = useAgentStore()
+const wsStore = useWorkspaceStore()
 
 // ========== 搜索与筛选 ==========
 const searchKeyword = ref('')
@@ -480,8 +482,17 @@ function onCopyAi() {
   toast.success(t('archive.copiedAi'))
 }
 
-function goToAgent() {
-  router.push('/agent')
+async function goToAgent() {
+  // 跳转到 Agent Tab
+  const sessionId = agentStore.currentSessionId
+  if (sessionId) {
+    const session = agentStore.sessions.find(s => s.id === sessionId)
+    tabStore.openSessionTab('agent', sessionId, session?.title || 'Agent')
+  } else {
+    tabStore.enterTabMode()
+  }
+  wsStore.setAppMode('agent')
+  wsStore.setActiveModule('agent')
 }
 
 function onOpenFile() {
@@ -492,6 +503,8 @@ function onOpenFile() {
   tabStore.openFileTab({
     name: selectedRecord.value.file_name || t('archive.file'),
     path: selectedRecord.value.file_path,
+    folderName: store.selectedFolder?.folder_name,
+    protocol: store.selectedFolder?.protocol,
   })
   closeDetail()
 }

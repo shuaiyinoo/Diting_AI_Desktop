@@ -66,6 +66,16 @@ export default {
     addRemote: 'Add remote address',
     configRemote: 'Configure Remote Address',
     remotePlaceholder: 'Enter remote service address, e.g. http://192.168.1.100:9527',
+    // Login / connection status
+    notLoggedIn: 'Not signed in',
+    loggedIn: 'Signed in',
+    remoteControlling: 'Remote controlling',
+    notControlled: 'Not controlled',
+    connDisconnected: 'Disconnected',
+    connConnecting: 'Connecting…',
+    connConnected: 'Connected',
+    connError: 'Connection error',
+    connUnknown: 'Unknown',
   },
 
   // ========== Route Titles ==========
@@ -208,6 +218,61 @@ general: {
     login: 'Sign In',
     register: 'Register',
     logout: 'Sign Out',
+
+    // Remote control
+    remote: {
+      title: 'Remote Control',
+      subtitle: 'Allow mobile devices to remotely view and control this machine',
+      serverConn: 'Server Connection',
+      mirror: 'Remote Mirror',
+      mirrorPeerJoined: 'Controller connected',
+      mirrorIdle: 'Enable to generate a 6-digit connection code',
+      sessionCodeHint: 'Enter this code on your mobile device',
+      copy: 'Copy',
+      openPermSettings: 'Open system permission settings',
+    },
+
+    // Login / Register form
+    auth: {
+      loginTitle: 'Sign In',
+      registerTitle: 'Register',
+      email: 'Email',
+      password: 'Password',
+      username: 'Username',
+      confirmPassword: 'Confirm Password',
+      usernamePlaceholder: '2-30 characters',
+      passwordPlaceholder: 'At least 8 chars, with upper/lower and digit',
+      confirmPasswordPlaceholder: 'Re-enter password',
+      agreePrefix: 'I have read and agree to the ',
+      terms: 'Terms of Service',
+      and: ' and ',
+      privacy: 'Privacy Policy',
+      loginBtn: 'Sign In',
+      loginLoading: 'Signing in...',
+      registerBtn: 'Register',
+      registerLoading: 'Registering...',
+      cancel: 'Cancel',
+      noAccount: "Don't have an account? ",
+      registerNow: 'Sign up',
+      hasAccount: 'Already have an account? ',
+      backToLogin: 'Sign in',
+      // Validation errors
+      errAgree: 'Please agree to the Terms of Service and Privacy Policy first',
+      errEmailPwd: 'Please enter email and password',
+      errFillAll: 'Please fill in all required fields',
+      errPwdMismatch: 'The passwords do not match',
+      errPwdTooShort: 'Password must be at least 8 characters',
+      errPwdNoLower: 'Password must contain a lowercase letter',
+      errPwdNoUpper: 'Password must contain an uppercase letter',
+      errPwdNoDigit: 'Password must contain a digit',
+      errLoginFailed: 'Sign in failed',
+      errRegisterFailed: 'Registration failed',
+      // Password strength
+      strengthWeak: 'Weak',
+      strengthMedium: 'Medium',
+      strengthStrong: 'Strong',
+      strengthVeryStrong: 'Very strong',
+    },
 
     features: {
       llm: {
@@ -875,6 +940,7 @@ verifying: 'Verifying…',
     gitStatusRefreshed: 'Git status refreshed',
     respondPermissionFailed: 'Failed to respond to permission request',
     submitAnswerFailed: 'Failed to submit answer',
+    openChangedFileFailed: 'Failed to open changed file',
     file: 'File',
   },
 
@@ -1420,8 +1486,10 @@ refreshFailed: 'Refresh failed',
     addFile: 'Add File',
     attachFolder: 'Attach Folder',
     attached: 'Attached',
-    refreshGitStatus: 'Refresh Git Status',
-  },
+refreshGitStatus: 'Refresh Git Status',
+changedFiles: 'Changed',
+noChangedFiles: 'No changed files',
+},
 
   // ========== Browser ==========
   browser: {
@@ -1453,6 +1521,8 @@ refreshFailed: 'Refresh failed',
   agentPopup: {
     askUserTitle: 'Agent needs your answer',
     submitAnswer: 'Submit',
+    cancel: 'Cancel',
+    inputPlaceholder: 'Or type here...',
     permissionRequest: 'Request to perform action',
     reject: 'Deny',
     allowAlways: 'Always Allow',

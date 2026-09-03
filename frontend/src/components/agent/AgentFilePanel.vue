@@ -1,27 +1,21 @@
 <template>
   <div class="flex h-full flex-col overflow-hidden bg-background" :class="borderSideClass" :style="{ width: width + 'px', flexShrink: 0 }">
-    <!-- 顶部：文件模式切换 -->
-    <div class="flex h-10 shrink-0 items-center gap-1 border-b border-border px-2">
-      <Button
-        variant="ghost"
-        size="sm"
-        class="h-7 gap-1.5 rounded-md px-2.5 text-xs font-medium"
-        :class="mode === 'session' ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-accent/50'"
-        @click="$emit('switch-mode', 'session')"
+    <!-- 顶部：文件模式 Tab 切换（不可关闭，支持左右滚动） -->
+    <div class="scrollbar-hide flex items-stretch h-9 flex-shrink-0 overflow-x-auto bg-muted border-b border-border">
+      <div
+        v-for="tab in modeTabs"
+        :key="tab.key"
+        class="flex items-center gap-1.5 h-full px-2.5 cursor-pointer text-[13px] transition-colors duration-150 whitespace-nowrap flex-shrink-0 relative select-none hover:bg-muted/80"
+        :class="mode === tab.key ? 'bg-card text-primary font-semibold' : 'text-muted-foreground'"
+        @click="$emit('switch-mode', tab.key)"
       >
-        <File :size="14" />
-        <span>{{ t('agentFilePanel.sessionFiles') }}</span>
-      </Button>
-      <Button
-        variant="ghost"
-        size="sm"
-        class="h-7 gap-1.5 rounded-md px-2.5 text-xs font-medium"
-        :class="mode === 'project' ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-accent/50'"
-        @click="$emit('switch-mode', 'project')"
-      >
-        <Folder :size="14" />
-        <span>{{ t('agentFilePanel.projectFiles') }}</span>
-      </Button>
+        <component :is="tab.icon" :size="14" class="flex-shrink-0" :class="mode === tab.key ? 'text-primary' : 'text-muted-foreground'" />
+        <span>{{ tab.label }}</span>
+        <!-- 改动文件数量徽标 -->
+        <span v-if="tab.key === 'changed' && changedCount > 0" class="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">{{ changedCount }}</span>
+        <!-- 激活状态底部高亮线 -->
+        <span v-if="mode === tab.key" class="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-t-sm" />
+      </div>
     </div>
 
     <!-- 文件列表 -->
@@ -44,7 +38,7 @@
         </Button>
       </div>
 
-      <!-- 附加文件夹列表 -->
+      <!-- 附加文件夹列表（项目文件模式） -->
       <div v-if="mode === 'project' && attachedDirs.length > 0" class="py-0.5">
         <div v-for="dirPath in attachedDirs" :key="'attached-' + dirPath">
           <!-- 附加目录根行 -->
@@ -98,14 +92,61 @@
         </div>
       </div>
 
-      <!-- 空状态 -->
-      <div v-if="flatFileTree.length === 0 && attachedDirs.length === 0" class="flex h-full flex-col items-center justify-center gap-2 text-muted-foreground">
+      <!-- 改动文件模式 -->
+      <template v-if="mode === 'changed'">
+        <!-- 空状态（居中） -->
+        <div v-if="changedFileTree.length === 0" class="flex h-full flex-col items-center justify-center gap-2 text-muted-foreground">
+          <FileEdit :size="32" class="opacity-40" />
+          <p class="text-xs">{{ t('agentFilePanel.noChangedFiles') }}</p>
+        </div>
+        <!-- 改动文件树 -->
+        <div v-else class="py-0.5">
+          <div v-for="dir in changedFileTree" :key="'changed-' + dir.dirPath">
+            <!-- 文件夹根行 -->
+            <div
+              class="flex cursor-pointer items-center gap-1 py-1 pr-2 transition-colors hover:bg-accent/30"
+              :style="{ paddingLeft: '8px' }"
+              @click="$emit('toggle-changed-dir', dir.dirPath)"
+            >
+              <component :is="expandedChangedDirs.has(dir.dirPath) ? ChevronDown : ChevronRight" class="size-2.5 text-muted-foreground" />
+              <Folder :size="14" class="shrink-0 text-muted-foreground" />
+              <span class="min-w-0 flex-1 truncate text-[12px] font-medium text-foreground" :title="dir.dirPath">{{ dir.dirName }}</span>
+              <span class="shrink-0 rounded bg-muted px-1 py-0.5 text-[10px] font-medium text-muted-foreground">{{ dir.files.length }}</span>
+            </div>
+            <!-- 文件列表 -->
+            <template v-if="expandedChangedDirs.has(dir.dirPath)">
+              <div
+                v-for="file in dir.files"
+                :key="dir.dirPath + '/' + file.path"
+                class="flex cursor-pointer items-center gap-1.5 py-1 pr-2 transition-colors"
+                :class="file.id === activeFileId ? 'bg-accent/40' : 'hover:bg-accent/30'"
+                :style="{ paddingLeft: '28px' }"
+                @click="$emit('open-changed-file', file)"
+              >
+                <FileText :size="14" class="shrink-0" :class="file.id === activeFileId ? 'text-accent-foreground' : 'text-muted-foreground'" />
+                <span class="min-w-0 flex-1 truncate text-[12px]" :class="file.id === activeFileId ? 'text-accent-foreground font-medium' : 'text-foreground'">{{ file.name }}</span>
+                <!-- 行数增减 -->
+                <span v-if="file.insertions > 0" class="shrink-0 text-[10px] font-medium text-green-600 dark:text-green-400">+{{ file.insertions }}</span>
+                <span v-if="file.deletions > 0" class="shrink-0 text-[10px] font-medium text-red-600 dark:text-red-400">-{{ file.deletions }}</span>
+                <!-- 状态标签 -->
+                <span v-if="file.gitStatus === 'untracked' || file.gitStatus === 'added'" class="shrink-0 rounded bg-red-500/15 px-1 text-[9px] font-bold text-red-600 dark:text-red-400">A</span>
+                <span v-else-if="file.gitStatus === 'modified'" class="shrink-0 rounded bg-green-500/15 px-1 text-[9px] font-bold text-green-600 dark:text-green-400">M</span>
+                <span v-else-if="file.gitStatus === 'staged'" class="shrink-0 rounded bg-blue-500/15 px-1 text-[9px] font-bold text-blue-600 dark:text-blue-400">S</span>
+                <span v-else-if="file.gitStatus === 'renamed'" class="shrink-0 rounded bg-violet-500/15 px-1 text-[9px] font-bold text-violet-600 dark:text-violet-400">R</span>
+              </div>
+            </template>
+          </div>
+        </div>
+      </template>
+
+      <!-- 会话/项目文件模式的空状态（居中，撑满高度） -->
+      <div v-if="mode !== 'changed' && flatFileTree.length === 0 && attachedDirs.length === 0" class="flex h-full flex-col items-center justify-center gap-2 text-muted-foreground">
         <Folder :size="32" class="opacity-40" />
         <p class="text-xs">{{ mode === 'project' ? t('agentFilePanel.noProjectFiles') : t('agentFilePanel.noSessionFiles') }}</p>
       </div>
 
-      <!-- 文件树 -->
-      <div v-else class="py-0.5">
+      <!-- 会话/项目文件树 -->
+      <div v-if="mode !== 'changed' && (flatFileTree.length > 0 || attachedDirs.length > 0)" class="py-0.5">
         <div
           v-for="node in flatFileTree"
           :key="node.path"
@@ -125,6 +166,7 @@
     <div class="flex shrink-0 items-center gap-1.5 border-t border-border p-2">
       <!-- 添加文件 -->
       <Button
+        v-if="mode !== 'changed'"
         variant="outline"
         class="flex-1 gap-1.5 rounded-md border-dashed border-border py-2 text-xs text-muted-foreground hover:border-primary/50 hover:text-primary"
         @click="$emit('add-file')"
@@ -142,9 +184,9 @@
         <FolderPlus class="size-3.5" />
         <span>{{ t('agentFilePanel.attachFolder') }}</span>
       </Button>
-      <!-- 刷新 Git 状态（仅项目模式且有附加文件夹时显示） -->
+      <!-- 刷新 Git 状态（项目模式 + 改动文件模式） -->
       <Button
-        v-if="mode === 'project' && attachedDirs.length > 0"
+        v-if="(mode === 'project' && attachedDirs.length > 0) || mode === 'changed'"
         variant="ghost"
         size="icon"
         class="shrink-0 size-8 text-muted-foreground hover:text-primary"
@@ -160,7 +202,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Folder, File, ChevronDown, ChevronRight, FolderOpen, FileText, X, Paperclip, FolderPlus, RefreshCw } from '@lucide/vue'
+import { Folder, File, ChevronDown, ChevronRight, FolderOpen, FileText, X, Paperclip, FolderPlus, RefreshCw, FileEdit } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 
 const { t } = useI18n()
@@ -168,7 +210,7 @@ const { t } = useI18n()
 const props = defineProps({
   /** 面板宽度 */
   width: { type: Number, default: 300 },
-  /** 面板模式 */
+  /** 面板模式：'session' | 'project' | 'changed' */
   mode: { type: String, default: 'session' },
   /** 边框方向：'left'（文件面板在右侧，左边框）或 'right'（文件面板在左侧，右边框） */
   borderSide: { type: String, default: 'left' },
@@ -188,12 +230,25 @@ const props = defineProps({
   projectPath: { type: String, default: '' },
   /** 代码编辑器中当前活跃文件 ID（用于高亮联动） */
   activeFileId: { type: String, default: null },
+  /** 改动文件树（按附加文件夹分组） */
+  changedFileTree: { type: Array, default: () => [] },
+  /** 改动文件展开的文件夹 Set */
+  expandedChangedDirs: { type: Set, default: () => new Set() },
+  /** 改动文件总数（徽标用） */
+  changedCount: { type: Number, default: 0 },
 })
 
 defineEmits([
   'switch-mode', 'add-file', 'attach-folder', 'detach-folder',
   'toggle-dir', 'open-file', 'toggle-attached-dir', 'open-attached-file',
-  'open-folder', 'refresh-git-status',
+  'open-folder', 'refresh-git-status', 'open-changed-file', 'toggle-changed-dir',
+])
+
+/** 顶部 Tab 配置 */
+const modeTabs = computed(() => [
+  { key: 'session', label: t('agentFilePanel.sessionFiles'), icon: File },
+  { key: 'project', label: t('agentFilePanel.projectFiles'), icon: Folder },
+  { key: 'changed', label: t('agentFilePanel.changedFiles'), icon: FileEdit },
 ])
 
 /** 根据面板位置计算边框 class */
@@ -273,46 +328,6 @@ function flattenAttachedDir(dirPath, depth = 1, attachedRoot = dirPath) {
   return result
 }
 
-/**
- * 获取文件夹的 git 状态（通过递归检查子文件是否有变更）
- * 返回 'added'（新增/未跟踪）、'modified'（修改）、或 null（无变更）
- */
-function getDirGitStatus(dirFullPath, attachedRoot) {
-  // 检查该目录的直接子项中是否有 git 状态
-  const children = props.attachedDirChildren[dirFullPath] || []
-  let hasAdded = false
-  let hasModified = false
-
-  for (const child of children) {
-    if (child.gitStatus === 'untracked' || child.gitStatus === 'added') {
-      hasAdded = true
-    } else if (child.gitStatus === 'modified') {
-      hasModified = true
-    }
-  }
-
-  // 如果直接子项有状态，优先返回
-  if (hasAdded) return 'added'
-  if (hasModified) return 'modified'
-
-  // 如果直接子项无状态，递归检查子目录
-  // 通过 expandedAttachedDirs 检查已展开的子目录
-  for (const child of children) {
-    if (child.isDir) {
-      const subDirPath = `${dirFullPath}/${child.path}`
-      // 递归检查子目录（如果已加载）
-      const subChildren = props.attachedDirChildren[subDirPath]
-      if (subChildren) {
-        const subStatus = getDirGitStatus(subDirPath, attachedRoot)
-        if (subStatus === 'added') return 'added'
-        if (subStatus === 'modified') return 'modified'
-      }
-    }
-  }
-
-  return null
-}
-
 /** 从完整路径提取目录名 */
 function getDirName(dirPath) {
   return dirPath.replace(/\\/g, '/').split('/').filter(Boolean).pop() || dirPath
@@ -324,5 +339,14 @@ function getDirName(dirPath) {
   direction: rtl;
   text-align: left;
   unicode-bidi: embed;
+}
+
+/* 隐藏顶部 Tab 栏的滚动条 */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }
 </style>

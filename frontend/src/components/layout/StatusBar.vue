@@ -31,17 +31,17 @@
       <!-- 登录状态 + WS 连接 -->
       <div v-if="!authStore.isLoggedIn" class="flex items-center gap-1 px-1.5 py-0.5">
         <span class="size-1.5 rounded-full bg-muted-foreground/40" />
-        <span class="whitespace-nowrap leading-none text-muted-foreground">未登录</span>
+        <span class="whitespace-nowrap leading-none text-muted-foreground">{{ t('statusBar.notLoggedIn') }}</span>
       </div>
       <div v-else class="flex items-center gap-1 px-1.5 py-0.5">
         <span class="size-1.5 rounded-full bg-green-500" />
-        <span class="whitespace-nowrap leading-none">已登录</span>
+        <span class="whitespace-nowrap leading-none">{{ t('statusBar.loggedIn') }}</span>
         <span class="mx-1 h-3 w-px shrink-0 bg-border" />
         <span
           class="size-1.5 rounded-full"
           :class="remoteStore.connState === 'connected' ? 'bg-green-500' : remoteStore.connState === 'connecting' ? 'bg-amber-500' : 'bg-muted-foreground/40'"
         />
-        <span class="whitespace-nowrap leading-none text-muted-foreground">{{ remoteStore.connStateText }}</span>
+        <span class="whitespace-nowrap leading-none text-muted-foreground">{{ t(remoteStore.connStateText) }}</span>
       </div>
 
       <!-- 远程操控状态（仅登录后显示） -->
@@ -53,7 +53,7 @@
             :class="remoteStore.peerJoined ? 'bg-green-500' : 'bg-muted-foreground/40'"
           />
           <span class="whitespace-nowrap leading-none text-muted-foreground">
-            {{ remoteStore.peerJoined ? '远程控制中' : '未受控' }}
+            {{ remoteStore.peerJoined ? t('statusBar.remoteControlling') : t('statusBar.notControlled') }}
           </span>
         </div>
       </template>
@@ -232,9 +232,11 @@ onUnmounted(() => {
 });
 
 /**
- * 跳转到设置-关于/更新页面
- */
+* 跳转到设置-关于/更新页面
+*/
 function goToAbout() {
+  tabStore.openToolTab('setting', t('statusBar.settings'));
+  // 通过路由 query 参数传递子页签
   router.push({ path: '/setting', query: { tab: 'about' } });
 }
 
@@ -267,7 +269,7 @@ function openExternal(url) {
 }
 
 function goSettings() {
-  router.push('/setting');
+  tabStore.openToolTab('setting', t('statusBar.settings'));
 }
 
 function toggleBrowser() {

@@ -66,6 +66,16 @@ export default {
     addRemote: '添加远程地址',
     configRemote: '配置远程地址',
     remotePlaceholder: '请输入远程服务地址，如 http://192.168.1.100:9527',
+    // 登录/连接状态
+    notLoggedIn: '未登录',
+    loggedIn: '已登录',
+    remoteControlling: '远程控制中',
+    notControlled: '未受控',
+    connDisconnected: '未连接',
+    connConnecting: '连接中…',
+    connConnected: '已连接',
+    connError: '连接异常',
+    connUnknown: '未知',
   },
 
   // ========== 路由标题（routerMap props.title） ==========
@@ -208,6 +218,61 @@ export default {
       login: '登录',
       register: '注册',
       logout: '登出',
+
+      // 远程控制
+      remote: {
+        title: '远程控制',
+        subtitle: '允许手机端远程查看并控制本机',
+        serverConn: '服务端连接',
+        mirror: '远程镜像',
+        mirrorPeerJoined: '控制端已接入',
+        mirrorIdle: '开启后生成 6 位连接码',
+        sessionCodeHint: '在手机端输入此连接码',
+        copy: '复制',
+        openPermSettings: '打开系统权限设置',
+      },
+
+      // 登录/注册表单
+      auth: {
+        loginTitle: '登录',
+        registerTitle: '注册',
+        email: '邮箱',
+        password: '密码',
+        username: '用户名',
+        confirmPassword: '确认密码',
+        usernamePlaceholder: '2-30 个字符',
+        passwordPlaceholder: '至少 8 位，含大小写和数字',
+        confirmPasswordPlaceholder: '再次输入密码',
+        agreePrefix: '我已阅读并同意',
+        terms: '服务条款',
+        and: '和',
+        privacy: '隐私政策',
+        loginBtn: '登录',
+        loginLoading: '登录中...',
+        registerBtn: '注册',
+        registerLoading: '注册中...',
+        cancel: '取消',
+        noAccount: '还没有账号？',
+        registerNow: '立即注册',
+        hasAccount: '已有账号？',
+        backToLogin: '返回登录',
+        // 验证错误
+        errAgree: '请先同意服务条款和隐私政策',
+        errEmailPwd: '请输入邮箱和密码',
+        errFillAll: '请填写所有必填项',
+        errPwdMismatch: '两次输入的密码不一致',
+        errPwdTooShort: '密码长度不能少于 8 位',
+        errPwdNoLower: '密码必须包含小写字母',
+        errPwdNoUpper: '密码必须包含大写字母',
+        errPwdNoDigit: '密码必须包含数字',
+        errLoginFailed: '登录失败',
+        errRegisterFailed: '注册失败',
+        // 密码强度
+        strengthWeak: '弱',
+        strengthMedium: '中',
+        strengthStrong: '强',
+        strengthVeryStrong: '非常强',
+      },
 
       features: {
         llm: {
@@ -875,6 +940,7 @@ verifying: '验证中…',
     gitStatusRefreshed: 'Git 状态已刷新',
     respondPermissionFailed: '响应权限请求失败',
     submitAnswerFailed: '提交回答失败',
+    openChangedFileFailed: '打开改动文件失败',
     file: '文件',
   },
 
@@ -1429,8 +1495,10 @@ refreshFailed: '刷新失败',
     addFile: '添加文件',
     attachFolder: '附加文件夹',
     attached: '附加',
-    refreshGitStatus: '刷新 Git 状态',
-  },
+refreshGitStatus: '刷新 Git 状态',
+changedFiles: '改动文件',
+noChangedFiles: '暂无改动文件',
+},
 
   // ========== 浏览器组件 ==========
   browser: {
@@ -1462,6 +1530,8 @@ refreshFailed: '刷新失败',
   agentPopup: {
     askUserTitle: 'Agent 需要你的回答',
     submitAnswer: '提交回答',
+    cancel: '取消',
+    inputPlaceholder: '或在此输入...',
     permissionRequest: '请求执行操作',
     reject: '拒绝',
     allowAlways: '总是允许',

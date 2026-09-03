@@ -443,6 +443,40 @@ const isAtBottom = ref(true)
 // 会话切换标记：切换后等待消息加载完成再滚动到底部
 let pendingScrollToBottom = false
 
+// ========== 会话级状态保存（输入框草稿 + 滚动位置） ==========
+/** 按 sessionId 索引：保存每个会话的输入框草稿和滚动位置 */
+const sessionStateMap = new Map()
+
+/** 保存当前会话的状态（草稿 + 滚动位置） */
+function saveCurrentSessionState() {
+  const sid = currentSessionId.value
+  if (!sid) return
+  sessionStateMap.set(sid, {
+    inputDraft: inputText.value || '',
+    scrollTop: messagesRef.value?.scrollTop ?? 0,
+    isAtBottom: isAtBottom.value,
+  })
+}
+
+/** 恢复指定会话的状态（草稿 + 滚动位置） */
+function restoreSessionState(sid) {
+  const saved = sessionStateMap.get(sid)
+  if (saved) {
+    inputText.value = saved.inputDraft || ''
+    isAtBottom.value = saved.isAtBottom ?? true
+    // 恢复滚动位置需要等 DOM 更新后
+    nextTick(() => {
+      if (messagesRef.value && saved.scrollTop != null) {
+        messagesRef.value.scrollTop = saved.scrollTop
+      }
+    })
+  } else {
+    // 新会话：清空输入框，滚动到底部
+    inputText.value = ''
+    isAtBottom.value = true
+  }
+}
+
 // ========== 浮动指示器：用户消息导航 ==========
 const railHoverIdx = ref(-1)
 const railHovering = ref(false)
@@ -481,18 +515,32 @@ const currentSessionTitle = computed(() => {
   return 'Chat'
 })
 
-// 监听会话切换：加载消息 + 设置滚动标记 + 恢复知识库选择
-watch(() => currentSessionId.value, async (sessionId) => {
-  if (sessionId) {
-    // 如果 store 中没有该会话的消息，则从后端加载
-    if (!chatStore.messagesBySession[sessionId]) {
-      await chatStore.loadMessages(sessionId)
+// 监听会话切换：保存旧会话状态 → 加载新会话消息 → 恢复新会话状态
+watch(() => currentSessionId.value, async (newSid, oldSid) => {
+  // 1. 保存旧会话的状态
+  if (oldSid) {
+    saveCurrentSessionState()
+  }
+
+  if (newSid) {
+    // 2. 如果 store 中没有该会话的消息，则从后端加载
+    if (!chatStore.messagesBySession[newSid]) {
+      await chatStore.loadMessages(newSid)
     }
-    // 恢复该会话的知识库选择
+    // 3. 恢复该会话的知识库选择
     selectedKbOption.value = kbOptionForSession.value
-    pendingScrollToBottom = true
-    await nextTick()
-    scrollToBottom(true)
+    // 4. 恢复该会话的草稿和滚动位置（而非强制滚到底部）
+    const hasSavedState = sessionStateMap.has(newSid)
+    if (hasSavedState) {
+      // 有保存的状态：恢复草稿和滚动位置
+      restoreSessionState(newSid)
+    } else {
+      // 新会话：清空输入框，滚动到底部
+      inputText.value = ''
+      pendingScrollToBottom = true
+      await nextTick()
+      scrollToBottom(true)
+    }
   }
 }, { immediate: false })
 
@@ -639,8 +687,12 @@ function onCitationClick(cite) {
 
 /** 智能滚动：仅在用户已处于底部时自动滚动 */
 let scrollRafId = null
+/** 用户手动滚动的时间戳，防止流式输出时强制拉回底部 */
+let userScrollTime = 0
 async function scrollToBottom(force = false) {
   if (!force && !isAtBottom.value) return
+  // 用户手动滚动后 3 秒内不强制拉回底部
+  if (!force && userScrollTime && Date.now() - userScrollTime < 3000) return
   if (scrollRafId) return
   scrollRafId = requestAnimationFrame(() => {
     scrollRafId = null
@@ -654,7 +706,13 @@ async function scrollToBottom(force = false) {
 function onMessagesScroll() {
   if (!messagesRef.value) return
   const el = messagesRef.value
-  isAtBottom.value = el.scrollHeight - el.scrollTop - el.clientHeight < 30
+  // 增大阈值到 80px：流式输出时内容高度会增长，需要更大余量
+  const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80
+  if (!atBottom) {
+    // 用户手动向上滚动：记录时间戳
+    userScrollTime = Date.now()
+  }
+  isAtBottom.value = atBottom
 }
 </script>
 

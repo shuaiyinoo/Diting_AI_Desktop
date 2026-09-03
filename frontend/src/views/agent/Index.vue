@@ -165,6 +165,9 @@
           :session-path="sessionPathDisplay"
           :project-path="projectPathDisplay"
           :active-file-id="codeEditorActiveFileId"
+          :changed-file-tree="changedFileTree"
+          :expanded-changed-dirs="expandedChangedDirs"
+          :changed-count="changedFileCount"
           border-side="left"
           @switch-mode="switchFileMode"
           @add-file="onAddFile"
@@ -176,6 +179,8 @@
           @open-attached-file="openAttachedFile"
           @open-folder="openFolderHandler"
           @refresh-git-status="refreshGitStatus"
+          @open-changed-file="openChangedFile"
+          @toggle-changed-dir="toggleChangedDir"
         />
       </template>
     </template>
@@ -195,6 +200,9 @@
           :session-path="sessionPathDisplay"
           :project-path="projectPathDisplay"
           :active-file-id="codeEditorActiveFileId"
+          :changed-file-tree="changedFileTree"
+          :expanded-changed-dirs="expandedChangedDirs"
+          :changed-count="changedFileCount"
           border-side="right"
           @switch-mode="switchFileMode"
           @add-file="onAddFile"
@@ -206,6 +214,8 @@
           @open-attached-file="openAttachedFile"
           @open-folder="openFolderHandler"
           @refresh-git-status="refreshGitStatus"
+          @open-changed-file="openChangedFile"
+          @toggle-changed-dir="toggleChangedDir"
         />
         <PanelDivider @resize="onPanel4Resize" />
       </template>
@@ -433,8 +443,66 @@ const workspaceRef = ref(null)
 const panel4Width = ref(300)
 const panel4Collapsed = ref(true)
 
+/** Chat 面板最小宽度 */
+const MIN_CHAT_WIDTH = 300
+/** 编辑器最小宽度 */
+const MIN_EDITOR_WIDTH = 200
+/** 文件面板最小宽度 */
+const MIN_PANEL4_WIDTH = 240
+
+/**
+ * 限制固定面板宽度，确保 Chat 面板有足够空间
+ * 当三栏同时显示时，两个固定面板总宽度不超过容器宽度 - MIN_CHAT_WIDTH
+ */
+function clampPanelWidths() {
+  if (!workspaceRef.value) return
+  const containerWidth = workspaceRef.value.clientWidth
+  if (containerWidth <= 0) return
+
+  // 只有三栏同时显示时才需要约束
+  const editorVisible = ws.codeEditorVisible
+  const panel4Visible = !panel4Collapsed.value
+
+  if (editorVisible && panel4Visible) {
+    const maxFixed = containerWidth - MIN_CHAT_WIDTH
+    let editorW = codeEditorWidth.value
+    let panel4W = panel4Width.value
+    const total = editorW + panel4W
+
+    if (total > maxFixed) {
+      // 按比例缩减两个面板
+      const ratio = maxFixed / total
+      editorW = Math.max(MIN_EDITOR_WIDTH, Math.floor(editorW * ratio))
+      panel4W = Math.max(MIN_PANEL4_WIDTH, Math.floor(panel4W * ratio))
+      // 如果缩减后仍然超限，优先保文件面板最小宽度
+      if (editorW + panel4W > maxFixed) {
+        panel4W = Math.max(MIN_PANEL4_WIDTH, maxFixed - editorW)
+        if (editorW + panel4W > maxFixed) {
+          editorW = Math.max(MIN_EDITOR_WIDTH, maxFixed - panel4W)
+        }
+      }
+      codeEditorWidth.value = editorW
+      panel4Width.value = panel4W
+    }
+  } else if (editorVisible && !panel4Visible) {
+    // 编辑器 + Chat：编辑器不超过容器宽度 - MIN_CHAT_WIDTH
+    const maxEditor = containerWidth - MIN_CHAT_WIDTH
+    if (codeEditorWidth.value > maxEditor) {
+      codeEditorWidth.value = Math.max(MIN_EDITOR_WIDTH, maxEditor)
+    }
+  } else if (!editorVisible && panel4Visible) {
+    // 文件面板 + Chat：文件面板不超过容器宽度 - MIN_CHAT_WIDTH
+    const maxPanel4 = containerWidth - MIN_CHAT_WIDTH
+    if (panel4Width.value > maxPanel4) {
+      panel4Width.value = Math.max(MIN_PANEL4_WIDTH, Math.min(400, maxPanel4))
+    }
+  }
+}
+
 function togglePanel4() {
   panel4Collapsed.value = !panel4Collapsed.value
+  // 打开文件面板时检查宽度约束
+  nextTick(() => clampPanelWidths())
 }
 
 watch(() => browserStore.forceFilePanelCollapsed, (forced) => {
@@ -458,7 +526,9 @@ watch(() => browserStore.forceFilePanelCollapsed, (forced) => {
  */
 function onPanel4Resize(delta) {
   const adjusted = ws.panelSwapped ? delta : -delta
-  panel4Width.value = Math.min(400, Math.max(240, panel4Width.value + adjusted))
+  panel4Width.value = Math.min(400, Math.max(MIN_PANEL4_WIDTH, panel4Width.value + adjusted))
+  // 拖拽时也约束总宽度
+  clampPanelWidths()
 }
 
 // ========== 数据 ==========
@@ -497,6 +567,20 @@ const attachedDirs = ref([])
 const filePanelMode = ref('session')
 const fileLoading = ref(false)
 const sessionPathDisplay = ref('')
+
+/** 改动文件树：每个有 git 变更的附加文件夹一个节点，内含变更文件列表 */
+const changedFileTree = ref([])
+/** 改动文件 Tab 的展开状态 */
+const expandedChangedDirs = ref(new Set())
+
+/** 改动文件数量（徽标用） */
+const changedFileCount = computed(() => {
+  let count = 0
+  for (const dir of changedFileTree.value) {
+    count += dir.files.length
+  }
+  return count
+})
 
 const projectPathDisplay = computed(() => {
   const project = ws.currentAgentProject
@@ -581,13 +665,31 @@ onMounted(async () => {
     scrollToBottom(true)
   }
   loadFileTree()
+
+  // 监听窗口大小变化，约束面板宽度
+  windowResizeHandler = () => clampPanelWidths()
+  window.addEventListener('resize', windowResizeHandler)
+  // 初始检查一次
+  nextTick(() => clampPanelWidths())
 })
 
 // ========== Watchers ==========
 watch(() => ws.currentAgentProjectId, () => loadFileTree())
-watch(() => currentSessionId.value, () => loadFileTree())
-watch(() => isStreaming.value, (streaming, wasStreaming) => {
-  if (wasStreaming && !streaming) loadFileTree()
+watch(() => currentSessionId.value, async () => {
+  // 会话切换时需要刷新 attachedDirs（项目级数据），无论当前 filePanelMode 是什么
+  // 因为 mode='changed' 时 loadFileTree 会走 session 分支，返回空 attachedDirs
+  // 所以这里直接调用 ensureAttachedDirs 来获取正确的项目附加目录
+  await ensureAttachedDirs()
+  // 会话切换时刷新改动文件列表（此时 attachedDirs 已更新）
+  await loadChangedFiles()
+})
+watch(() => isStreaming.value, async (streaming, wasStreaming) => {
+  if (wasStreaming && !streaming) {
+    // 先确保 attachedDirs 是最新的（不依赖 filePanelMode）
+    await ensureAttachedDirs()
+    // Agent 完成后刷新改动文件（此时 attachedDirs 已更新）
+    await loadChangedFiles()
+  }
 })
 watch(() => agentStore.currentSessionId, () => {
   pendingScrollToBottom = true
@@ -631,12 +733,181 @@ async function loadEnabledModel() {
 function switchFileMode(mode) {
   if (filePanelMode.value === mode) return
   filePanelMode.value = mode
-  loadFileTree()
+  if (mode === 'changed') {
+    loadChangedFiles()
+  } else {
+    loadFileTree()
+  }
+}
+
+/**
+ * 加载改动文件数据：遍历所有附加文件夹，获取有 git 变更的文件
+ * 按附加文件夹分组，每个文件夹下显示有变更的文件列表
+ */
+async function loadChangedFiles() {
+  changedFileTree.value = []
+
+  // attachedDirs 应由调用前的 ensureAttachedDirs 保证已更新
+  // 这里保留 fallback 作为安全保障
+  let dirs = attachedDirs.value
+  if (dirs.length === 0 && ws.currentAgentProject?.attachedDirectories) {
+    dirs = ws.currentAgentProject.attachedDirectories
+    attachedDirs.value = dirs
+  }
+  if (dirs.length === 0) return
+
+  const result = []
+  for (const dirPath of dirs) {
+    try {
+      const res = await ipc.invoke(ipcApiRoute.piAgent.fileOperation, {
+        action: 'refreshGitStatus',
+        folderPath: dirPath,
+      })
+      if (res.code === 0 && res.data?.isGitRepo) {
+        const statusMap = res.data.statusMap || {}
+        const diffStat = res.data.diffStat || {}
+        // 从 statusMap 中提取有变更的文件
+        const files = []
+        for (const [filePath, status] of Object.entries(statusMap)) {
+          // 跳过 deleted 状态的文件（已删除不展示）
+          if (status === 'deleted') continue
+          const stat = diffStat[filePath] || { insertions: 0, deletions: 0 }
+          const fileName = filePath.split('/').pop() || filePath
+          files.push({
+            path: filePath,
+            name: fileName,
+            gitStatus: status,
+            insertions: stat.insertions || 0,
+            deletions: stat.deletions || 0,
+            dirPath,
+          })
+        }
+        if (files.length > 0) {
+          const dirName = dirPath.replace(/\\/g, '/').split('/').filter(Boolean).pop() || dirPath
+          result.push({
+            dirPath,
+            dirName,
+            files,
+          })
+          // 自动展开
+          expandedChangedDirs.value.add(dirPath)
+        }
+      }
+    } catch (err) {
+      console.error('[agent] 加载改动文件失败:', err)
+    }
+  }
+  expandedChangedDirs.value = new Set(expandedChangedDirs.value)
+  changedFileTree.value = result
+}
+
+/** 展开/折叠改动文件中的文件夹 */
+function toggleChangedDir(dirPath) {
+  if (expandedChangedDirs.value.has(dirPath)) {
+    expandedChangedDirs.value.delete(dirPath)
+  } else {
+    expandedChangedDirs.value.add(dirPath)
+  }
+  expandedChangedDirs.value = new Set(expandedChangedDirs.value)
+}
+
+/**
+ * 点击改动文件：获取 git diff 并在代码查看器中打开前后对比
+ */
+async function openChangedFile(file) {
+  // 构造文件 ID
+  const fileId = `${file.dirPath}/${file.path}`
+  // 如果文件已在编辑器中打开，直接激活
+  const existing = codeEditorFiles.value.find((f) => f.id === fileId)
+  if (existing) {
+    codeEditorActiveFileId.value = fileId
+    saveCodeEditorState()
+    return
+  }
+
+  try {
+    // 获取 git diff 内容
+    const diffRes = await ipc.invoke(ipcApiRoute.piAgent.fileOperation, {
+      action: 'getDiff',
+      folderPath: file.dirPath,
+      filePath: file.path,
+    })
+    const diffContent = (diffRes.code === 0 && diffRes.data?.diff) ? diffRes.data.diff : ''
+    // 后端返回 HEAD 版本的完整文件内容，用于 diffEditor 的 original side
+    const originalContent = (diffRes.code === 0 && diffRes.data?.originalContent !== undefined) ? diffRes.data.originalContent : ''
+
+    // 同时读取文件当前内容
+    const readRes = await ipc.invoke(ipcApiRoute.piAgent.fileOperation, {
+      action: 'read',
+      workspaceId: ws.currentAgentProject?.id,
+      sessionId: currentSessionId.value,
+      mode: 'project',
+      filePath: file.path,
+      folderPath: file.dirPath,
+    })
+
+    if (readRes.code === 0 && readRes.data && !readRes.data.isBinary) {
+      const data = readRes.data
+      codeEditorFiles.value.push({
+        id: fileId,
+        name: data.name || file.name,
+        path: file.path,
+        content: data.content || '',
+        ext: data.ext || (file.name.split('.').pop() || ''),
+        attachedDirPath: file.dirPath,
+        mode: 'project',
+        gitStatus: file.gitStatus,
+        originalContent,
+      })
+      codeEditorActiveFileId.value = fileId
+      if (!ws.codeEditorVisible) {
+        ws.codeEditorVisible = true
+        localStorage.setItem('agent:codeEditorVisible', 'true')
+      }
+      saveCodeEditorState()
+    } else if (readRes.data?.isBinary) {
+      toast.info(t('agentCodeEditor.binaryNotSupported'))
+    }
+  } catch (err) {
+    console.error('[agent] 打开改动文件失败:', err)
+    toast.error(t('agent.openChangedFileFailed'))
+  }
+}
+
+/**
+ * 确保 attachedDirs 是最新的（不受 filePanelMode 影响）
+ * 专门用 mode='project' 获取项目附加目录列表
+ * 用于会话切换/Agent完成时，在 loadChangedFiles 之前调用
+ */
+async function ensureAttachedDirs() {
+  const workspaceId = ws.currentAgentProject?.id
+  if (!workspaceId) {
+    attachedDirs.value = []
+    return
+  }
+  try {
+    const res = await ipc.invoke(ipcApiRoute.piAgent.fileOperation, {
+      action: 'list',
+      workspaceId,
+      sessionId: currentSessionId.value,
+      mode: 'project',
+    })
+    if (res.code === 0) {
+      const data = res.data || {}
+      attachedDirs.value = data.attachedDirs || []
+    }
+  } catch (err) {
+    console.error('[agent] 获取附加目录失败:', err)
+  }
 }
 
 async function loadFileTree() {
   fileTree.value = []
-  attachedDirs.value = []
+  // attachedDirs 是项目级数据，仅在 project 模式下更新
+  // session 模式后端返回空 attachedDirs，不应覆盖已有的项目附加目录
+  if (filePanelMode.value === 'project') {
+    attachedDirs.value = []
+  }
   fileLoading.value = true
   try {
     const workspaceId = ws.currentAgentProject?.id
@@ -653,7 +924,10 @@ async function loadFileTree() {
     if (res.code === 0) {
       const data = res.data || {}
       fileTree.value = data.files || []
-      attachedDirs.value = data.attachedDirs || []
+      // 只在 project 模式下更新 attachedDirs
+      if (filePanelMode.value === 'project') {
+        attachedDirs.value = data.attachedDirs || []
+      }
       sessionPathDisplay.value = data.resolvedPath || ''
     }
   } catch (err) {
@@ -799,6 +1073,7 @@ function openFile(file) {
     workspaceId: ws.currentAgentProject?.id,
     sessionId: currentSessionId.value,
     mode: filePanelMode.value,
+    folderName: ws.currentAgentProject?.name,
   })
 }
 
@@ -872,6 +1147,16 @@ watch(() => codeEditorFiles.value.length, (len) => {
     localStorage.setItem('agent:codeEditorVisible', 'false')
   }
 })
+
+/** 监听编辑器可见性变化：打开时约束宽度 */
+watch(() => ws.codeEditorVisible, (visible) => {
+  if (visible) {
+    nextTick(() => clampPanelWidths())
+  }
+})
+
+/** 窗口 resize 监听器 */
+let windowResizeHandler = null
 
 /** 关闭所有文件并隐藏编辑器 */
 function closeAllCodeFilesAndHide() {
@@ -1158,7 +1443,9 @@ async function doGitStatusFullRefresh() {
  */
 function onCodeEditorResize(delta) {
   const adjusted = ws.panelSwapped ? delta : -delta
-  codeEditorWidth.value = Math.max(200, Math.min(1200, codeEditorWidth.value + adjusted))
+  codeEditorWidth.value = Math.max(MIN_EDITOR_WIDTH, Math.min(1200, codeEditorWidth.value + adjusted))
+  // 拖拽时也约束总宽度
+  clampPanelWidths()
 }
 
 // 文件树展开状态
@@ -1215,11 +1502,13 @@ function toggleAskUserOption(qIdx, oIdx, multiSelect) {
   }
 }
 
-async function submitAskUser() {
+async function submitAskUser(textInputs = {}) {
   if (!askUserRequest.value || askUserResponding.value) return
-  const hasAnswer = askUserRequest.value.questions.some((_, qIdx) =>
-    (askUserAnswers.get(qIdx)?.size ?? 0) > 0,
-  )
+  const hasAnswer = askUserRequest.value.questions.some((q, qIdx) => {
+    const hasSelection = (askUserAnswers.get(qIdx)?.size ?? 0) > 0
+    const hasText = q.allowInput && textInputs[qIdx]?.trim()
+    return hasSelection || hasText
+  })
   if (!hasAnswer) return
   askUserResponding.value = true
   try {
@@ -1228,8 +1517,15 @@ async function submitAskUser() {
     for (let i = 0; i < questions.length; i++) {
       const q = questions[i]
       const selected = askUserAnswers.get(i)
-      if (!selected || selected.size === 0) continue
-      const selectedLabels = Array.from(selected).map((oIdx) => q.options[oIdx]?.label).filter(Boolean)
+      const selectedLabels = selected && selected.size > 0
+        ? Array.from(selected).map((oIdx) => q.options[oIdx]?.label).filter(Boolean)
+        : []
+      // 合并自由输入文本
+      const freeText = textInputs[i]?.trim()
+      if (freeText) {
+        selectedLabels.push(freeText)
+      }
+      if (selectedLabels.length === 0) continue
       const key = q.question || String(i)
       answers[key] = selectedLabels.join(', ')
     }
@@ -1307,8 +1603,13 @@ function stopGeneration() {
 
 // ========== 滚动 ==========
 let scrollRafId = null
+/** 用户手动滚动的时间戳，防止流式输出时强制拉回底部 */
+let userScrollTime = 0
+
 async function scrollToBottom(force = false) {
   if (!force && !isAtBottom.value) return
+  // 用户手动滚动后 3 秒内不强制拉回底部
+  if (!force && userScrollTime && Date.now() - userScrollTime < 3000) return
   if (scrollRafId) return
   scrollRafId = requestAnimationFrame(() => {
     scrollRafId = null
@@ -1321,6 +1622,20 @@ async function scrollToBottom(force = false) {
 function onMessagesScroll() {
   if (!messagesRef.value) return
   const el = messagesRef.value
-  isAtBottom.value = el.scrollHeight - el.scrollTop - el.clientHeight < 30
+  // 增大阈值到 80px：流式输出时内容高度会增长，需要更大余量
+  const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80
+  if (!atBottom) {
+    // 用户手动向上滚动：记录时间戳
+    userScrollTime = Date.now()
+  }
+  isAtBottom.value = atBottom
 }
+
+onUnmounted(() => {
+  // 移除窗口 resize 监听
+  if (windowResizeHandler) {
+    window.removeEventListener('resize', windowResizeHandler)
+    windowResizeHandler = null
+  }
+})
 </script>

@@ -65,7 +65,17 @@ export default {
     noRemote: 'Không có máy chủ từ xa',
     addRemote: 'Thêm địa chỉ từ xa',
     configRemote: 'Cấu hình địa chỉ từ xa',
-    remotePlaceholder: 'Vui lòng nhập địa chỉ dịch vụ từ xa, ví dụ http://192.168.1.100:9527',
+    remotePlaceholder: '请输入远程服务地址，如 http:  //192.168.1.100:9527',
+    // 登录/连接状态
+    notLoggedIn: 'Chưa đăng nhập',
+    loggedIn: 'Đã đăng nhập',
+    remoteControlling: 'Đang điều khiển từ xa',
+    notControlled: 'Chưa được điều khiển',
+    connDisconnected: 'Chưa kết nối',
+    connConnecting: 'Đang kết nối…',
+    connConnected: 'Đã kết nối',
+    connError: 'Lỗi kết nối',
+    connUnknown: 'Không xác định',
   },
 
   // ========== 路由标题（routerMap props.title） ==========
@@ -114,6 +124,9 @@ export default {
 
     tabs: {
       model: 'Mô hình',
+      modelVoice: 'Cấu hình mô hình giọng nói',
+      modelOcr: 'Cấu hình mô hình OCR',
+      modelVector: 'Cấu hình mô hình vector',
       skills: 'Kỹ năng',
       mcp: 'Công cụ MCP',
       tools: 'Công cụ',
@@ -142,6 +155,13 @@ export default {
       light: 'Sáng',
       dark: 'Tối',
       system: 'Hệ thống',
+    },
+
+    uiStyle: {
+      label: 'Kiểu giao diện',
+      description: 'Kiểu hiển thị của bảng menu',
+      classic: 'Cổ điển',
+      modern: 'Hiện đại',
     },
 
     markdownFontSize: {
@@ -187,8 +207,100 @@ export default {
   // ========== 常规设置 ==========
   general: {
     title: 'Chung',
+    appInfo: 'Thông tin ứng dụng',
     appName: 'Tên ứng dụng',
     version: 'Phiên bản',
+
+    cloud: {
+      title: 'Tài khoản Diting Cloud',
+      subtitle: 'Đăng nhập để sử dụng mô hình đám mây và quản lý đa thiết bị',
+      loggedIn: 'Đã đăng nhập',
+      login: 'Đăng nhập',
+      register: 'Đăng ký',
+      logout: 'Đăng xuất',
+
+      // 远程控制
+      remote: {
+        title: 'Điều khiển từ xa',
+        subtitle: 'Cho phép thiết bị di động xem và điều khiển máy này từ xa',
+        serverConn: 'Kết nối máy chủ',
+        mirror: 'Phản chiếu từ xa',
+        mirrorPeerJoined: 'Thiết bị điều khiển đã kết nối',
+        mirrorIdle: 'Khi bật sẽ tạo mã kết nối gồm 6 chữ số',
+        sessionCodeHint: 'Nhập mã này trên thiết bị di động của bạn',
+        copy: 'Sao chép',
+        openPermSettings: 'Mở cài đặt quyền hệ thống',
+      },
+
+      // 登录/注册表单
+      auth: {
+        loginTitle: 'Đăng nhập',
+        registerTitle: 'Đăng ký',
+        email: 'Email',
+        password: 'Mật khẩu',
+        username: 'Tên người dùng',
+        confirmPassword: 'Xác nhận mật khẩu',
+        usernamePlaceholder: '2-30 ký tự',
+        passwordPlaceholder: 'Tối thiểu 8 ký tự, gồm chữ hoa, chữ thường và chữ số',
+        confirmPasswordPlaceholder: 'Nhập lại mật khẩu',
+        agreePrefix: 'Tôi đã đọc và đồng ý',
+        terms: 'Điều khoản dịch vụ',
+        and: 'và',
+        privacy: 'Chính sách quyền riêng tư',
+        loginBtn: 'Đăng nhập',
+        loginLoading: 'Đang đăng nhập...',
+        registerBtn: 'Đăng ký',
+        registerLoading: 'Đang đăng ký...',
+        cancel: 'Hủy',
+        noAccount: 'Chưa có tài khoản?',
+        registerNow: 'Đăng ký ngay',
+        hasAccount: 'Đã có tài khoản?',
+        backToLogin: 'Quay lại đăng nhập',
+        // 验证错误
+        errAgree: 'Vui lòng đồng ý với Điều khoản dịch vụ và Chính sách quyền riêng tư trước',
+        errEmailPwd: 'Vui lòng nhập email và mật khẩu',
+        errFillAll: 'Vui lòng điền tất cả các trường bắt buộc',
+        errPwdMismatch: 'Hai mật khẩu không khớp',
+        errPwdTooShort: 'Mật khẩu phải có ít nhất 8 ký tự',
+        errPwdNoLower: 'Mật khẩu phải chứa chữ cái viết thường',
+        errPwdNoUpper: 'Mật khẩu phải chứa chữ cái viết hoa',
+        errPwdNoDigit: 'Mật khẩu phải chứa chữ số',
+        errLoginFailed: 'Đăng nhập không thành công',
+        errRegisterFailed: 'Đăng ký không thành công',
+        // 密码强度
+        strengthWeak: 'Yếu',
+        strengthMedium: 'Trung bình',
+        strengthStrong: 'Mạnh',
+        strengthVeryStrong: 'Rất mạnh',
+      },
+
+      features: {
+        llm: {
+          title: 'Mô hình LLM chính thức',
+          desc: 'Dùng các mô hình ngôn ngữ lớn phổ biến mà không cần cấu hình',
+        },
+        voice: {
+          title: 'Mô hình giọng nói chính thức',
+          desc: 'Nhận dạng giọng nói trực tuyến, không cần tải về máy',
+        },
+        ocr: {
+          title: 'Mô hình OCR chính thức',
+          desc: 'Nhận dạng OCR trên đám mây, không cần mô hình cục bộ',
+        },
+        vector: {
+          title: 'Mô hình vector chính thức',
+          desc: 'Vector hóa trên đám mây để cải thiện RAG',
+        },
+        mobile: {
+          title: 'Quản lý trên điện thoại',
+          desc: 'Quản lý Agent của bạn từ điện thoại mọi lúc',
+        },
+        sync: {
+          title: 'Đồng bộ đa thiết bị',
+          desc: 'Đồng bộ phiên và cài đặt trên mọi thiết bị',
+        },
+      },
+    },
   },
 
   // ========== 关于/更新 ==========
@@ -250,7 +362,7 @@ export default {
     disable: 'Tắt',
     delete: 'Xóa',
     testing: 'Đang kiểm tra',
-    test: 'undefined',
+    testBtn: 'Kiểm tra',
     empty: 'Chưa cấu hình mô hình nào',
     addFirst: 'Thêm mô hình đầu tiên',
     deleteConfirm: 'Xác nhận xóa',
@@ -296,6 +408,198 @@ export default {
       latency: 'Độ trễ: {latency}ms',
       close: 'Đóng',
     },
+  },
+
+  // ========== 模型管理 - 语音 ==========
+  modelVoice: {
+    subtitle: 'Cấu hình mô hình giọng nói để nhận dạng giọng nói; hỗ trợ LLM từ xa và mô hình Whisper cục bộ.',
+    cloudComingSoon: 'Mô hình giọng nói Diting Cloud sẽ sớm ra mắt',
+
+    // 远程模型区域
+    remote: {
+      title: 'Mô hình giọng nói từ xa',
+      subtitle: 'Xử lý nhận dạng giọng nói qua mô hình ngôn ngữ lớn, cần cấu hình API',
+      addCloud: 'Mô hình Diting Cloud',
+      addOfficial: 'Thêm mô hình chính thức',
+      loading: 'Đang tải…',
+      enabled: 'Đang bật',
+      notEnabledBadge: 'Chưa bật',
+      enable: 'Đang bật',
+      disable: 'Vô hiệu hóa',
+      delete: 'Xóa',
+      empty: 'Chưa cấu hình mô hình giọng nói từ xa nào',
+      addFirst: 'Thêm mô hình đầu tiên',
+      deleteConfirm: 'Xác nhận xóa',
+      deleteConfirmText: 'Xóa mô hình "{name}"? Thao tác này không thể hoàn tác.',
+      deleteSuccess: 'Đã xóa thành công',
+      deleteFailed: 'Xóa không thành công',
+      enableSuccess: 'Đã bật: {name}',
+      enableFailed: 'Bật không thành công',
+      disableSuccess: 'Đã vô hiệu hóa: {name}',
+      disableFailed: 'Vô hiệu hóa không thành công',
+      listFailed: 'Không thể lấy danh sách mô hình',
+      currentEnabled: 'Đang hoạt động',
+      notEnabled: 'Chưa bật',
+      notEnabledHint: 'Hiện chưa có mô hình giọng nói từ xa nào được bật',
+
+      // 编辑/添加弹窗
+      addTitle: 'Thêm mô hình giọng nói từ xa',
+      editTitle: 'Chỉnh sửa mô hình giọng nói từ xa',
+      volcSubtitle: 'Cấu hình dịch vụ nhận dạng giọng nói Volcengine',
+      provider: 'Nhà cung cấp',
+      selectProvider: 'Chọn nhà cung cấp',
+      modelAlias: 'Bí danh mô hình',
+      modelAliasPlaceholder: 'ví dụ: Volc-Production',
+      modelName: 'Tên mô hình',
+      modelNamePlaceholder: 'ví dụ: volc-asr',
+      modelNameHint: 'Dùng để nhận dạng mô hình này, có thể tùy chỉnh',
+      baseUrl: 'Địa chỉ API (Base URL)',
+      baseUrlHint: 'Không bao gồm hậu tố /chat/completions',
+      apiKey: 'Khóa API',
+      remark: 'Ghi chú',
+      remarkPlaceholder: 'Tùy chọn, ví dụ: để phiên âm thời gian thực',
+      add: 'Thêm',
+      addSuccess: 'Đã thêm thành công',
+      submitting: 'Đang gửi…',
+      inputAlias: 'Vui lòng nhập bí danh mô hình',
+      inputModelName: 'Vui lòng nhập tên mô hình',
+      operationFailed: 'Thao tác không thành công',
+
+      // 火山引擎专属
+      volcConfigTitle: 'Cấu hình Volcengine',
+      volcBaseUrl: 'Địa chỉ kết nối',
+      volcBaseUrlHint: 'Địa chỉ WebSocket cố định cho nhận dạng giọng nói Volcengine, không cần thay đổi',
+volcApiKeyPlaceholder: 'Khóa API Volcengine',
+volcApiKeyHint: 'Tự động mã hóa khi lưu, tương ứng với X-Api-Key',
+volcApiKeyEditHint: 'Đã lưu, để trống nếu không muốn thay đổi',
+volcApiKeyRequired: 'Vui lòng nhập khóa API Volcengine',
+      volcResourceIdPlaceholder: 'Chọn Resource ID',
+      volcResourceIdHint: 'duration=mô hình độ dài (cho âm thanh dài), concurrent=mô hình đồng thời (cho âm thanh ngắn thời gian thực)',
+      volcResourceIdRequired: 'Vui lòng chọn Resource ID',
+      default: 'Mặc định',
+    },
+
+    // 本地 Whisper 模型区域
+    local: {
+      title: 'Mô hình giọng nói cục bộ',
+      subtitle: 'Nhận dạng giọng nói cục bộ bằng Whisper hoặc FunASR, không cần kết nối mạng',
+      modeLocal: 'Chế độ cục bộ',
+      modeLocalHint: 'Khi bật sẽ dùng mô hình giọng nói cục bộ, không dùng cùng lúc với mô hình từ xa',
+      modelPath: 'Đường dẫn lưu mô hình',
+      modelPathHint: 'Tệp mô hình được lưu trong thư mục ~/.diting/model/voice',
+      openFolder: 'Mở thư mục',
+      selectModel: 'Chọn mô hình',
+      selectModelHint: 'Chọn mô hình đã tải để nhận dạng giọng nói',
+      noModelSelected: 'Chưa chọn mô hình',
+      downloadModel: 'Tải mô hình',
+      selectToDownload: 'Chọn mô hình cần tải',
+      download: 'Tải xuống',
+      cancelDownload: 'Hủy',
+      downloading: 'Đang tải xuống…',
+      downloaded: 'Đã tải',
+      notDownloaded: 'Chưa tải',
+      downloadSuccess: 'Tải mô hình hoàn tất: {name}',
+      downloadFailed: 'Tải không thành công: {msg}',
+      deleteModel: 'Xóa tệp mô hình',
+      deleteModelConfirm: 'Xóa tệp mô hình "{name}"? Thao tác này không thể hoàn tác.',
+      deleteModelSuccess: 'Đã xóa tệp mô hình',
+      deleteModelFailed: 'Xóa tệp mô hình không thành công',
+      selectModelSuccess: 'Đã chọn mô hình cục bộ: {name}',
+      selectModelFailed: 'Chọn mô hình không thành công',
+      micPermission: 'Quyền microphone',
+      micGranted: 'Đã được cấp quyền, nhập liệu bằng giọng nói đã sẵn sàng',
+      micDenied: 'Bị hệ thống chặn, vui lòng cho phép ứng dụng truy cập microphone trong cài đặt hệ thống',
+      notDetermined: 'Chưa được cấp quyền, hãy cấp quyền trước khi dùng nhập liệu bằng giọng nói',
+      unsupported: 'Hệ thống hiện tại không hỗ trợ kiểm tra trước; yêu cầu quyền sẽ tự động xuất hiện khi ghi âm',
+      requestPermission: 'Cho phép truy cập microphone',
+      requestAgain: 'Yêu cầu lại',
+      checking: 'Đang kiểm tra…',
+      modelSize: 'Kích thước',
+      modelLang: 'Đa ngôn ngữ',
+      modelLangEn: 'Chỉ tiếng Anh',
+      modelLangDesc: 'Hỗ trợ nhận dạng đa ngôn ngữ (bao gồm tiếng Trung)',
+      modelLangEnDesc: 'Chỉ nhận dạng tiếng Anh, độ chính xác cao hơn',
+      loadingModels: 'Đang tải danh sách mô hình…',
+      loadModelsFailed: 'Tải danh sách mô hình không thành công',
+      noModelsAvailable: 'Không có mô hình khả dụng',
+      downloadSource: 'Nguồn tải xuống',
+      sourceAuto: 'Tự động',
+      sourceMirror: 'Mirror trong nước',
+      sourceOfficial: 'Chính thức',
+    },
+  },
+
+  // ========== 模型管理 - OCR ==========
+  modelOcr: {
+    subtitle: 'Tải và quản lý mô hình OCR cục bộ để nhận dạng văn bản trên hóa đơn và hình ảnh. Mô hình đến từ cài đặt sẵn của PaddlePaddle PP-OCRv6.',
+    modelPath: 'Đường dẫn lưu mô hình',
+    openFolder: 'Mở thư mục',
+    loadingModels: 'Đang tải danh sách mô hình…',
+    loadModelsFailed: 'Tải danh sách mô hình không thành công',
+    downloadSource: 'Nguồn tải xuống',
+    sourceAuto: 'Tự động',
+    sourceMirror: 'Mirror trong nước',
+    sourceOfficial: 'Chính thức',
+    downloadModel: 'Tải mô hình',
+    selectToDownload: 'Chọn mô hình cần tải',
+    download: 'Tải xuống',
+    cancelDownload: 'Hủy',
+    downloaded: 'Đã tải',
+    downloadSuccess: 'Tải mô hình hoàn tất: {name}',
+    downloadFailed: 'Tải không thành công: {msg}',
+    deleteConfirm: 'Xác nhận xóa',
+    deleteConfirmText: 'Xóa mô hình "{name}"? Thao tác này không thể hoàn tác.',
+    deleteModelSuccess: 'Đã xóa tệp mô hình',
+    deleteModelFailed: 'Xóa tệp mô hình không thành công',
+    selectModel: 'Chọn mô hình',
+    selectModelHint: 'Chọn mô hình đã tải để nhận dạng OCR',
+    noModelSelected: 'Chưa chọn mô hình',
+    selectModelSuccess: 'Đã chọn mô hình OCR: {name}',
+    selectModelFailed: 'Chọn mô hình không thành công',
+  },
+
+  // ========== 模型管理 - 向量 ==========
+  modelVector: {
+    subtitle: 'Tải và quản lý mô hình nhúng vector cục bộ để tìm kiếm ngữ nghĩa tài liệu và cơ sở tri thức RAG. Mô hình đến từ cài đặt sẵn của kreuzberg/node.',
+    modelPath: 'Đường dẫn lưu mô hình',
+    openFolder: 'Mở thư mục',
+    loadingModels: 'Đang tải danh sách mô hình…',
+    loadModelsFailed: 'Tải danh sách mô hình không thành công',
+    downloadSource: 'Nguồn tải xuống',
+    sourceAuto: 'Tự động',
+    sourceMirror: 'Mirror trong nước',
+    sourceOfficial: 'Chính thức',
+    downloadModel: 'Tải mô hình',
+    selectToDownload: 'Chọn mô hình cần tải',
+    download: 'Tải xuống',
+    cancelDownload: 'Hủy',
+    downloaded: 'Đã tải',
+    downloadSuccess: 'Tải mô hình hoàn tất: {name}',
+    downloadFailed: 'Tải không thành công: {msg}',
+    deleteConfirm: 'Xác nhận xóa',
+    deleteConfirmText: 'Xóa mô hình "{name}"? Thao tác này không thể hoàn tác.',
+    deleteModelSuccess: 'Đã xóa tệp mô hình',
+    deleteModelFailed: 'Xóa tệp mô hình không thành công',
+    selectModel: 'Chọn mô hình',
+    selectModelHint: 'Chọn mô hình bên trái, đặt số chiều vector ở giữa, nhấp xác nhận để áp dụng',
+    noModelSelected: 'Chưa chọn mô hình',
+    selectModelSuccess: 'Đã chọn mô hình vector: {name}',
+    selectModelFailed: 'Chọn mô hình không thành công',
+    dimensions: 'Số chiều',
+    dimensionsUnit: 'dims',
+    confirmSelect: 'Xác nhận',
+verifying: 'Đang xác minh…',
+    marketTitle: 'Chợ mô hình',
+    marketHint: 'Nhập địa chỉ mô hình HuggingFace (ví dụ Qwen3 Embedding ONNX):',
+    marketHintDomestic: '国内下载：https:  //hf-mirror.com/onnx-community/Qwen3-Embedding-0.6B-ONNX',
+    marketHintInternational: '国际下载：https:  //huggingface.co/onnx-community/Qwen3-Embedding-0.6B-ONNX',
+    marketConfirm: 'Xác nhận tải xuống',
+    urlPlaceholder: 'Địa chỉ mô hình HuggingFace',
+    switchWarningTitle: 'Các mô hình vector không thể thay thế cho nhau',
+    switchWarningText: 'Các mô hình vector khác nhau tạo ra vector với số chiều và không gian khác nhau, không thể dùng lẫn. Sau khi đổi mô hình, tất cả chỉ mục vector và chỉ mục từ khóa hiện có sẽ bị xóa, trạng thái tệp sẽ được đặt lại thành "chờ xử lý" và cần vector hóa lại. Bạn có chắc muốn đổi không?',
+    switchWarningConfirm: 'Xác nhận đổi và xây dựng lại',
+    resetSuccess: 'Dữ liệu vector đã được đặt lại. Các tệp sẽ được vector hóa lại bằng mô hình mới ở lần xử lý tiếp theo.',
+    resetFailed: 'Đặt lại dữ liệu vector không thành công',
   },
 
   // ========== Skills 管理 ==========
@@ -404,13 +708,13 @@ export default {
       loading: 'Đang tải…',
       start: 'Bắt đầu',
       stop: 'Dừng',
-      edit: 'undefined',
+      edit: '编辑',
       delete: 'Xóa',
       scanCreate: 'Tạo bằng cách quét mã',
       manualAdd: 'Thêm thủ công',
 
       status: {
-        disconnected: 'Mất kết nối',
+        disconnected: 'Chưa kết nối',
         connecting: 'Đang kết nối…',
         connected: 'Đã kết nối',
         error: 'Lỗi',
@@ -455,7 +759,7 @@ export default {
         openInBrowser: 'Hoặc mở liên kết trong trình duyệt',
         success: 'Tạo bằng cách quét mã thành công!',
         autoSaving: 'Đang tự động lưu và khởi động bot...',
-        failed: 'Đăng ký thất bại',
+        failed: 'Đăng ký không thành công',
         retry: 'Thử lại',
         cancelScan: 'Hủy quét mã',
         close: 'Đóng',
@@ -512,7 +816,7 @@ export default {
       helpText: 'Nhấp «Đăng nhập quét mã», dùng WeChat quét mã QR để kết nối. Sau khi kết nối, gửi tin trong WeChat để tương tác với Diting Agent. Thông tin xác thực được lưu an toàn cục bộ, lần khởi động sau có thể kết nối trực tiếp.',
 
       status: {
-        disconnected: 'Mất kết nối',
+        disconnected: 'Chưa kết nối',
         waitingScan: 'Đang chờ quét mã...',
         scanned: 'Đã quét mã, đang xác nhận...',
         connecting: 'Đang kết nối...',
@@ -523,7 +827,7 @@ export default {
       messages: {
         loadFailed: 'Tải cấu hình WeChat thất bại',
         scanFailed: 'Đăng nhập bằng cách quét mã thất bại',
-        loginFailed: 'Đăng nhập thất bại',
+        loginFailed: 'Đăng nhập không thành công',
         startFailed: 'Khởi động thất bại',
         started: 'Đã khởi động WeChat Bridge',
         stopFailed: 'Dừng thất bại',
@@ -537,12 +841,12 @@ export default {
       loading: 'Đang tải…',
       start: 'Bắt đầu',
       stop: 'Dừng',
-      edit: 'undefined',
+      edit: '编辑',
       delete: 'Xóa',
       addBot: 'Thêm bot DingTalk',
 
       status: {
-        disconnected: 'Mất kết nối',
+        disconnected: 'Chưa kết nối',
         connecting: 'Đang kết nối…',
         connected: 'Đã kết nối',
         error: 'Lỗi',
@@ -621,6 +925,9 @@ export default {
     running: 'Đang chạy',
     expandFilePanel: 'Mở rộng bảng tệp',
     collapseFilePanel: 'Thu gọn bảng tệp',
+    swapPanels: 'Đổi bảng điều khiển trái/phải',
+    showCodeEditor: 'Hiện trình soạn thảo mã',
+    hideCodeEditor: 'Ẩn trình soạn thảo mã',
     inputPlaceholder: 'Nhập lệnh... ({\'@\'} tham chiếu tệp, / gọi Skill, # dùng MCP, & tham chiếu hội thoại, nhấn Enter để gửi)',
     selectProject: 'Vui lòng chọn một dự án Agent trước',
     noActiveSession: 'Hiện không có cuộc hội thoại hoạt động',
@@ -630,9 +937,31 @@ export default {
     detachFolderFailed: 'Xóa thư mục đính kèm thất bại',
     folderAttached: 'Đã đính kèm thư mục: {name}',
     folderDetached: 'Đã xóa thư mục đính kèm',
+    gitStatusRefreshed: 'Đã làm mới trạng thái Git',
     respondPermissionFailed: 'Phản hồi yêu cầu quyền thất bại',
     submitAnswerFailed: 'Gửi câu trả lời thất bại',
+    openChangedFileFailed: 'Mở tệp đã thay đổi không thành công',
     file: 'Tệp',
+  },
+
+  // ========== Agent 代码编辑器 ==========
+  agentCodeEditor: {
+    noFileOpened: 'Chưa mở tệp nào',
+    emptyHint: 'Nhấp vào một tệp trong bảng tệp để xem trước và chỉnh sửa tại đây',
+    binaryNotSupported: 'Tệp nhị phân không được hỗ trợ xem trước trong trình soạn thảo',
+    openFailed: 'Mở tệp không thành công',
+    closeAllAndHide: 'Đóng tất cả tệp và ẩn trình soạn thảo',
+  },
+
+  // ========== Agent 终端面板 ==========
+  agentTerminal: {
+    newTerminal: 'Terminal mới',
+    noTerminal: 'Không có terminal',
+    emptyHint: 'Nhấp nút "Mới" để tạo một terminal',
+    showPanel: 'Hiện bảng terminal',
+    hidePanel: 'Ẩn bảng terminal',
+    createFailed: 'Tạo terminal không thành công',
+    processExited: 'Tiến trình terminal đã thoát (mã thoát {code})',
   },
 
   // ========== RAG 知识库 ==========
@@ -712,9 +1041,10 @@ export default {
   },
 
   // ========== 文件模块 ==========
-  fileModule: {
-    fileList: 'Danh sách tệp',
-    refresh: 'Làm mới',
+fileModule: {
+fileList: 'Danh sách tệp',
+refresh: 'Làm mới',
+refreshFailed: 'Làm mới không thành công',
     newFile: 'Tạo tệp mới',
     doc: 'Tài liệu',
     sheet: 'Bảng',
@@ -731,6 +1061,17 @@ export default {
     newSheet: 'Tạo bảng mới',
     ragProcessing: 'Đang vector hóa... còn {count}',
     ragQueue: 'Hàng đợi {count}',
+    createMarkdown: 'Tạo tệp Markdown',
+    analyzeLink: 'Phân tích liên kết',
+    analyzeLinkTitle: 'Phân tích liên kết',
+    analyzeLinkDesc: 'Nhập một URL; Agent sẽ phân tích nội dung liên kết và sắp xếp thành tài liệu Markdown lưu vào thư mục hiện tại',
+    linkUrlPlaceholder: '请输入网址，例如 https:  //example.com',
+    analyzeAndOrganize: 'Phân tích và sắp xếp',
+    cancel: 'Hủy',
+    createProjectFailed: 'Tạo dự án không thành công',
+    createSessionFailed: 'Tạo phiên không thành công',
+    analyzeLinkStarted: 'Đã bắt đầu phân tích liên kết bởi Agent',
+    analyzeLinkFailed: 'Phân tích liên kết không thành công',
 
     status: {
       unsupported: 'Không được hỗ trợ',
@@ -739,7 +1080,7 @@ export default {
       processing: 'Đang xử lý',
       ready: 'Sẵn sàng',
       failed: 'Thất bại',
-      unknown: 'Không rõ',
+      unknown: 'Không xác định',
     },
 
     info: {
@@ -763,6 +1104,83 @@ export default {
     viewer: {
       title: 'Xem tệp',
     },
+  },
+
+  // ========== 添加文件夹弹窗 ==========
+  addFolder: {
+    title: 'Thêm thư mục',
+    subtitle: 'Chọn thư mục cục bộ hoặc kết nối qua giao thức mạng',
+    protocolType: 'Loại giao thức',
+    protocols: {
+      local: 'Cục bộ',
+      ftp: 'FTP',
+      ftps: 'FTPS',
+      sftp: 'SFTP',
+      smb: 'SMB',
+      webdav: 'WebDAV',
+      s3: 'S3',
+    },
+    // 本地文件夹
+    localPath: 'Đường dẫn thư mục',
+    localPathPlaceholder: 'Nhấp nút để chọn thư mục',
+    // 通用网络协议
+    host: 'Địa chỉ máy chủ',
+    port: 'Cổng',
+    remotePath: 'Đường dẫn từ xa',
+    username: 'Tên người dùng',
+    password: 'Mật khẩu',
+    showPassword: 'Hiện mật khẩu',
+    hidePassword: 'Ẩn mật khẩu',
+    // SFTP
+    privateKeyPath: 'Đường dẫn khóa riêng tư',
+    privateKeyHint: 'Điền khi dùng xác thực bằng khóa; để trống nếu dùng mật khẩu',
+    // SMB
+    shareName: 'Tên chia sẻ',
+    shareNameHint: 'Tên chia sẻ SMB, ví dụ shared, public',
+    domain: 'Miền/Nhóm làm việc',
+    // WebDAV
+    serverUrl: 'Địa chỉ máy chủ',
+    serverUrlHint: 'URL đầy đủ của dịch vụ WebDAV',
+    // S3
+    endpoint: 'Endpoint',
+    region: 'Vùng',
+    bucket: 'Bucket',
+    prefix: 'Tiền tố',
+    accessKey: 'Access Key',
+    secretKey: 'Secret Key',
+    forcePathStyle: 'Path Style',
+    forcePathStyleHint: 'Bắt buộc đối với MinIO và các dịch vụ tương thích',
+    // 通用
+    folderAlias: 'Bí danh thư mục',
+    folderAliasPlaceholder: 'Tùy chọn, mặc định dùng phần cuối của đường dẫn',
+    folderAliasHint: 'Tên hiển thị trong danh sách tệp',
+    // 编辑
+    edit: 'Chỉnh sửa cấu hình',
+    editTitle: 'Chỉnh sửa cấu hình thư mục',
+    editSuccess: 'Đã cập nhật cấu hình',
+    editFailed: 'Cập nhật cấu hình không thành công',
+    // 测试与提交
+    testConnection: 'Kiểm tra kết nối',
+    testing: 'Đang kiểm tra…',
+    testSuccess: 'Kết nối thành công',
+    testFailed: 'Kết nối không thành công',
+    fillRequiredFields: 'Vui lòng điền các trường bắt buộc trước',
+    selectFolderFailed: 'Chọn thư mục không thành công',
+    addSuccess: 'Đã thêm thư mục thành công',
+    addFailed: 'Thêm thư mục không thành công',
+    // 远程扫描状态
+    scanning: 'Đã thêm thư mục, đang quét thư mục từ xa ở chế độ nền…',
+    scanDone: 'Quét từ xa hoàn tất, tìm thấy {count} mục',
+    scanFailed: 'Quét từ xa không thành công',
+    // 远程路径浏览
+    browsePath: 'Duyệt',
+    browseTitle: 'Chọn thư mục từ xa',
+    browseLoading: 'Đang tải…',
+    browseEmpty: 'Thư mục trống',
+    browseFailed: 'Tải thư mục không thành công',
+    browseUp: 'Lên một cấp',
+    browseSelect: 'Chọn thư mục này',
+    browseHint: 'Vui lòng điền địa chỉ máy chủ, cổng, tên người dùng và mật khẩu (hoặc đường dẫn khóa riêng tư) trước',
   },
 
   // ========== OCR 录入识读 ==========
@@ -1076,7 +1494,11 @@ export default {
     addFileToSession: 'Thêm tệp vào cuộc hội thoại',
     addFile: 'Thêm tệp',
     attachFolder: 'Thư mục đính kèm',
-  },
+    attached: 'Đính kèm',
+refreshGitStatus: 'Làm mới trạng thái Git',
+changedFiles: 'Đã thay đổi',
+noChangedFiles: 'Không có tệp thay đổi',
+},
 
   // ========== 浏览器组件 ==========
   browser: {
@@ -1108,6 +1530,8 @@ export default {
   agentPopup: {
     askUserTitle: 'Agent cần câu trả lời của bạn',
     submitAnswer: 'Gửi câu trả lời',
+    cancel: 'Hủy',
+    inputPlaceholder: 'Hoặc nhập tại đây...',
     permissionRequest: 'Yêu cầu thực hiện thao tác',
     reject: 'Từ chối',
     allowAlways: 'Luôn cho phép',
@@ -1129,7 +1553,7 @@ export default {
     label: 'Độ sâu suy nghĩ',
     off: 'Tắt',
     low: 'Thấp',
-    medium: 'Vừa',
+    medium: 'Trung bình',
     high: 'Cao',
     xhigh: 'Rất cao',
     max: 'Tối đa',
@@ -1326,6 +1750,20 @@ export default {
     placeholder: 'Bản ghi tạm, ý tưởng, ghi chú...',
   },
 
+  // ========== 语音输入 ==========
+voiceInput: {
+clickToSpeak: 'Nhấp để nói',
+    recording: 'Đang ghi âm…',
+    correcting: 'Đang sửa…',
+loadingModel: 'Đang tải mô hình…',
+micDenied: 'Quyền microphone bị từ chối. Vui lòng cấp quyền trong cài đặt hệ thống.',
+micStartFailed: 'Khởi động microphone không thành công',
+modelLoadFailed: 'Tải mô hình không thành công',
+noAudioCaptured: 'Không ghi nhận được âm thanh',
+transcribeSuccess: 'Phiên âm giọng nói hoàn tất',
+transcribeFailed: 'Phiên âm không thành công',
+},
+
   fileViewerTab: {
     loading: 'Đang tải tệp...',
     loadFailed: 'Tải tệp thất bại',
@@ -1351,7 +1789,7 @@ export default {
 
   // ========== DateTimePicker ==========
   dateTimePicker: {
-    placeholder: 'undefined',
+    placeholder: '选择日期时间',
   },
 
   // ========== TodoWorkspace ==========
@@ -1525,7 +1963,7 @@ export default {
     confidence: 'Độ tin cậy',
     aiSteps: 'Bước 1: Phân loại tài liệu → Bước 2: Trích xuất có cấu trúc',
     reExtract: 'Trích xuất lại',
-    unknown: 'Không rõ',
+    unknown: 'Không xác định',
     needsReview: 'Cần xem xét lại',
     confirmed: 'Đã xác nhận',
     typeCode: 'Mã loại',
@@ -1568,7 +2006,7 @@ export default {
     action: 'Thao tác',
     selectProvider: 'Chọn loại nhà cung cấp',
     namePlaceholder: 'Ví dụ: GPT-4o của tôi, môi trường sản xuất DeepSeek',
-    baseUrlPlaceholder: 'Ví dụ: https://api.openai.com/v1',
+    baseUrlPlaceholder: '如：https:  //api.openai.com/v1',
     apiKeyPlaceholder: 'sk-...',
     modelNamePlaceholder: 'Ví dụ: gpt-4o, deepseek-chat, claude-3-5-sonnet-20241022',
     remarkPlaceholder: 'Tùy chọn, ví dụ: dùng tạo mã / dùng tóm tắt tài liệu',

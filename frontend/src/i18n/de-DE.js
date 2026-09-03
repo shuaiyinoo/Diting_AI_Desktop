@@ -65,7 +65,17 @@ export default {
     noRemote: 'Kein Remote',
     addRemote: 'Remote-Adresse hinzufügen',
     configRemote: 'Remote-Adresse konfigurieren',
-    remotePlaceholder: 'Bitte Remote-Service-Adresse eingeben, z. B. http://192.168.1.100:9527',
+    remotePlaceholder: '请输入远程服务地址，如 http:  //192.168.1.100:9527',
+    // 登录/连接状态
+    notLoggedIn: 'Nicht angemeldet',
+    loggedIn: 'Angemeldet',
+    remoteControlling: 'Fernsteuerung aktiv',
+    notControlled: 'Nicht gesteuert',
+    connDisconnected: 'Nicht verbunden',
+    connConnecting: 'Verbinden…',
+    connConnected: 'Verbunden',
+    connError: 'Verbindungsfehler',
+    connUnknown: 'Unbekannt',
   },
 
   // ========== 路由标题（routerMap props.title） ==========
@@ -96,7 +106,7 @@ export default {
     window: 'Fenster',
     notification: 'Desktop-Benachrichtigung',
     picture: 'Bild',
-    login: 'Anmeldung',
+    login: 'Anmelden',
     goService: 'Go-Dienst',
     javaService: 'Java-Dienst',
     pythonService: 'Python-Dienst',
@@ -114,6 +124,9 @@ export default {
 
     tabs: {
       model: 'Modelle',
+      modelVoice: 'Sprachmodell-Konfiguration',
+      modelOcr: 'OCR-Modellkonfiguration',
+      modelVector: 'Vektormodell-Konfiguration',
       skills: 'Fähigkeiten',
       mcp: 'MCP-Tools',
       tools: 'Werkzeuge',
@@ -142,6 +155,13 @@ export default {
       light: 'Hell',
       dark: 'Dunkel',
       system: 'System folgen',
+    },
+
+    uiStyle: {
+      label: 'Oberflächenstil',
+      description: 'Visueller Stil des Menüpanels',
+      classic: 'Klassisch',
+      modern: 'Modern',
     },
 
     markdownFontSize: {
@@ -187,8 +207,100 @@ export default {
   // ========== 常规设置 ==========
   general: {
     title: 'Allgemein',
+    appInfo: 'App-Informationen',
     appName: 'App-Name',
     version: 'Version',
+
+    cloud: {
+      title: 'Diting Cloud-Konto',
+      subtitle: 'Nach der Anmeldung Cloud-Modelle und geräteübergreifende Verwaltung nutzen',
+      loggedIn: 'Angemeldet',
+      login: 'Anmelden',
+      register: 'Registrieren',
+      logout: 'Abmelden',
+
+      // 远程控制
+      remote: {
+        title: 'Fernsteuerung',
+        subtitle: 'Erlauben Sie Mobilgeräten, diesen Computer aus der Ferne anzuzeigen und zu steuern',
+        serverConn: 'Serververbindung',
+        mirror: 'Remote-Spiegelung',
+        mirrorPeerJoined: 'Steuerungsgerät verbunden',
+        mirrorIdle: 'Nach dem Aktivieren wird ein 6-stelliger Verbindungscode erzeugt',
+        sessionCodeHint: 'Geben Sie diesen Code auf Ihrem Mobilgerät ein',
+        copy: 'Kopieren',
+        openPermSettings: 'Systemberechtigungen öffnen',
+      },
+
+      // 登录/注册表单
+      auth: {
+        loginTitle: 'Anmelden',
+        registerTitle: 'Registrieren',
+        email: 'E-Mail',
+        password: 'Passwort',
+        username: 'Benutzername',
+        confirmPassword: 'Passwort bestätigen',
+        usernamePlaceholder: '2–30 Zeichen',
+        passwordPlaceholder: 'Mindestens 8 Zeichen, mit Groß-/Kleinschreibung und Ziffer',
+        confirmPasswordPlaceholder: 'Passwort erneut eingeben',
+        agreePrefix: 'Ich habe gelesen und stimme zu',
+        terms: 'Nutzungsbedingungen',
+        and: 'und',
+        privacy: 'Datenschutzerklärung',
+        loginBtn: 'Anmelden',
+        loginLoading: 'Anmeldung läuft...',
+        registerBtn: 'Registrieren',
+        registerLoading: 'Registrierung läuft...',
+        cancel: 'Abbrechen',
+        noAccount: 'Noch kein Konto?',
+        registerNow: 'Jetzt registrieren',
+        hasAccount: 'Bereits ein Konto?',
+        backToLogin: 'Zurück zur Anmeldung',
+        // 验证错误
+        errAgree: 'Bitte stimmen Sie zuerst den Nutzungsbedingungen und der Datenschutzerklärung zu',
+        errEmailPwd: 'Bitte geben Sie E-Mail und Passwort ein',
+        errFillAll: 'Bitte füllen Sie alle Pflichtfelder aus',
+        errPwdMismatch: 'Die beiden Passwörter stimmen nicht überein',
+        errPwdTooShort: 'Das Passwort muss mindestens 8 Zeichen lang sein',
+        errPwdNoLower: 'Das Passwort muss einen Kleinbuchstaben enthalten',
+        errPwdNoUpper: 'Das Passwort muss einen Großbuchstaben enthalten',
+        errPwdNoDigit: 'Das Passwort muss eine Ziffer enthalten',
+        errLoginFailed: 'Anmeldung fehlgeschlagen',
+        errRegisterFailed: 'Registrierung fehlgeschlagen',
+        // 密码强度
+        strengthWeak: 'Schwach',
+        strengthMedium: 'Mittel',
+        strengthStrong: 'Stark',
+        strengthVeryStrong: 'Sehr stark',
+      },
+
+      features: {
+        llm: {
+          title: 'Offizielle LLM-Modelle',
+          desc: 'Gängige LLMs ohne Konfiguration nutzen',
+        },
+        voice: {
+          title: 'Offizielle Sprachmodelle',
+          desc: 'Online-Spracherkennung, kein lokaler Download',
+        },
+        ocr: {
+          title: 'Offizielle OCR-Modelle',
+          desc: 'Cloud-OCR-Erkennung, keine lokalen Modelle',
+        },
+        vector: {
+          title: 'Offizielle Vektormodelle',
+          desc: 'Cloud-Vektorisierung für bessere RAG-Ergebnisse',
+        },
+        mobile: {
+          title: 'Mobile Verwaltung',
+          desc: 'Verwalten Sie Ihre Agenten jederzeit auf dem Smartphone',
+        },
+        sync: {
+          title: 'Geräteübergreifende Synchronisierung',
+          desc: 'Sitzungen und Einstellungen geräteübergreifend synchronisieren',
+        },
+      },
+    },
   },
 
   // ========== 关于/更新 ==========
@@ -250,7 +362,7 @@ export default {
     disable: 'Deaktivieren',
     delete: 'Löschen',
     testing: 'Test läuft',
-    test: 'undefined',
+    testBtn: 'Test',
     empty: 'Noch kein Modell konfiguriert',
     addFirst: 'Erstes Modell hinzufügen',
     deleteConfirm: 'Löschen bestätigen',
@@ -296,6 +408,198 @@ export default {
       latency: 'Latenz: {latency} ms',
       close: 'Schließen',
     },
+  },
+
+  // ========== 模型管理 - 语音 ==========
+  modelVoice: {
+    subtitle: 'Konfigurieren Sie Sprachmodelle für die Spracherkennung; Remote-LLM und lokale Whisper-Modelle werden unterstützt.',
+    cloudComingSoon: 'Diting Cloud-Sprachmodelle demnächst verfügbar',
+
+    // 远程模型区域
+    remote: {
+      title: 'Remote-Sprachmodelle',
+      subtitle: 'Spracherkennung über LLM, erfordert API-Konfiguration',
+      addCloud: 'Diting Cloud-Modelle',
+      addOfficial: 'Offizielles Modell hinzufügen',
+      loading: 'Wird geladen…',
+      enabled: 'Aktiv',
+      notEnabledBadge: 'Inaktiv',
+      enable: 'Aktiv',
+      disable: 'Deaktivieren',
+      delete: 'Löschen',
+      empty: 'Noch keine Remote-Sprachmodelle konfiguriert',
+      addFirst: 'Erstes Modell hinzufügen',
+      deleteConfirm: 'Löschen bestätigen',
+      deleteConfirmText: 'Modell „{name}" wirklich löschen? Dieser Vorgang kann nicht rückgängig gemacht werden.',
+      deleteSuccess: 'Erfolgreich gelöscht',
+      deleteFailed: 'Löschen fehlgeschlagen',
+      enableSuccess: 'Aktiviert: {name}',
+      enableFailed: 'Aktivierung fehlgeschlagen',
+      disableSuccess: 'Deaktiviert: {name}',
+      disableFailed: 'Deaktivierung fehlgeschlagen',
+      listFailed: 'Modellliste konnte nicht abgerufen werden',
+      currentEnabled: 'Aktiv',
+      notEnabled: 'Inaktiv',
+      notEnabledHint: 'Derzeit ist kein Remote-Sprachmodell aktiv',
+
+      // 编辑/添加弹窗
+      addTitle: 'Remote-Sprachmodell hinzufügen',
+      editTitle: 'Remote-Sprachmodell bearbeiten',
+      volcSubtitle: 'Volcengine-Spracherkennung konfigurieren',
+      provider: 'Anbieter',
+      selectProvider: 'Anbieter auswählen',
+      modelAlias: 'Modellalias',
+      modelAliasPlaceholder: 'z. B. Volc-Production',
+      modelName: 'Modellname',
+      modelNamePlaceholder: 'z. B. volc-asr',
+      modelNameHint: 'Dient zur Identifizierung des Modells, anpassbar',
+      baseUrl: 'API-Adresse (Base URL)',
+      baseUrlHint: 'Ohne das Suffix /chat/completions',
+      apiKey: 'API-Schlüssel',
+      remark: 'Bemerkung',
+      remarkPlaceholder: 'Optional, z. B. für Echtzeit-Transkription',
+      add: 'Hinzufügen',
+      addSuccess: 'Erfolgreich hinzugefügt',
+      submitting: 'Wird gesendet…',
+      inputAlias: 'Bitte Modellalias eingeben',
+      inputModelName: 'Bitte Modellnamen eingeben',
+      operationFailed: 'Vorgang fehlgeschlagen',
+
+      // 火山引擎专属
+      volcConfigTitle: 'Volcengine-Konfiguration',
+      volcBaseUrl: 'Verbindungsadresse',
+      volcBaseUrlHint: 'Feste WebSocket-Adresse der Volcengine-Spracherkennung, keine Änderung nötig',
+volcApiKeyPlaceholder: 'Volcengine API-Schlüssel',
+volcApiKeyHint: 'Beim Speichern automatisch verschlüsselt, entspricht X-Api-Key',
+volcApiKeyEditHint: 'Bereits gespeichert, leer lassen, um beizubehalten',
+volcApiKeyRequired: 'Bitte Volcengine API-Schlüssel eingeben',
+      volcResourceIdPlaceholder: 'Ressourcen-ID auswählen',
+      volcResourceIdHint: 'duration=Dauermodell (für lange Audio), concurrent=Parallelmodell (für kurze Echtzeit-Audio)',
+      volcResourceIdRequired: 'Bitte Ressourcen-ID auswählen',
+      default: 'Standard',
+    },
+
+    // 本地 Whisper 模型区域
+    local: {
+      title: 'Lokales Sprachmodell',
+      subtitle: 'Lokale Spracherkennung mit Whisper oder FunASR, keine Netzwerkverbindung erforderlich',
+      modeLocal: 'Lokaler Modus',
+      modeLocalHint: 'Nach der Aktivierung wird das lokale Sprachmodell verwendet; schließt Remote-Sprachmodelle aus',
+      modelPath: 'Modellspeicherpfad',
+      modelPathHint: 'Modelldateien werden im Verzeichnis ~/.diting/model/voice gespeichert',
+      openFolder: 'Ordner öffnen',
+      selectModel: 'Modell auswählen',
+      selectModelHint: 'Heruntergeladenes Modell für die Spracherkennung auswählen',
+      noModelSelected: 'Kein Modell ausgewählt',
+      downloadModel: 'Modell herunterladen',
+      selectToDownload: 'Herunterzuladendes Modell auswählen',
+      download: 'Herunterladen',
+      cancelDownload: 'Abbrechen',
+      downloading: 'Wird heruntergeladen…',
+      downloaded: 'Heruntergeladen',
+      notDownloaded: 'Nicht heruntergeladen',
+      downloadSuccess: 'Modell-Download abgeschlossen: {name}',
+      downloadFailed: 'Download fehlgeschlagen: {msg}',
+      deleteModel: 'Modelldatei löschen',
+      deleteModelConfirm: 'Modelldatei „{name}" wirklich löschen? Dieser Vorgang kann nicht rückgängig gemacht werden.',
+      deleteModelSuccess: 'Modelldatei gelöscht',
+      deleteModelFailed: 'Löschen der Modelldatei fehlgeschlagen',
+      selectModelSuccess: 'Lokales Modell ausgewählt: {name}',
+      selectModelFailed: 'Modellauswahl fehlgeschlagen',
+      micPermission: 'Mikrofonberechtigung',
+      micGranted: 'Erteilt, Spracheingabe ist einsatzbereit',
+      micDenied: 'Vom System blockiert; erlauben Sie der App den Mikrofonzugriff in den Systemeinstellungen',
+      notDetermined: 'Nicht berechtigt; Berechtigung vor der Spracheingabe erteilen',
+      unsupported: 'Vorabprüfung nicht unterstützt; die Berechtigungsabfrage erscheint automatisch bei der Aufnahme',
+      requestPermission: 'Mikrofonzugriff erlauben',
+      requestAgain: 'Erneut anfordern',
+      checking: 'Wird geprüft…',
+      modelSize: 'Größe',
+      modelLang: 'Mehrsprachig',
+      modelLangEn: 'Nur Englisch',
+      modelLangDesc: 'Unterstützt mehrsprachige Erkennung (inkl. Chinesisch)',
+      modelLangEnDesc: 'Nur englische Erkennung, höhere Genauigkeit',
+      loadingModels: 'Modellliste wird geladen…',
+      loadModelsFailed: 'Modellliste konnte nicht geladen werden',
+      noModelsAvailable: 'Keine Modelle verfügbar',
+      downloadSource: 'Downloadquelle',
+      sourceAuto: 'Automatisch',
+      sourceMirror: 'Inlands-Spiegel',
+      sourceOfficial: 'Offiziell',
+    },
+  },
+
+  // ========== 模型管理 - OCR ==========
+  modelOcr: {
+    subtitle: 'Lokale OCR-Modelle für die Texterkennung in Belegen und Bildern herunterladen und verwalten. Modelle stammen aus den PaddlePaddle PP-OCRv6-Voreinstellungen.',
+    modelPath: 'Modellspeicherpfad',
+    openFolder: 'Ordner öffnen',
+    loadingModels: 'Modellliste wird geladen…',
+    loadModelsFailed: 'Modellliste konnte nicht geladen werden',
+    downloadSource: 'Downloadquelle',
+    sourceAuto: 'Automatisch',
+    sourceMirror: 'Inlands-Spiegel',
+    sourceOfficial: 'Offiziell',
+    downloadModel: 'Modell herunterladen',
+    selectToDownload: 'Herunterzuladendes Modell auswählen',
+    download: 'Herunterladen',
+    cancelDownload: 'Abbrechen',
+    downloaded: 'Heruntergeladen',
+    downloadSuccess: 'Modell-Download abgeschlossen: {name}',
+    downloadFailed: 'Download fehlgeschlagen: {msg}',
+    deleteConfirm: 'Löschen bestätigen',
+    deleteConfirmText: 'Modell „{name}" wirklich löschen? Dieser Vorgang kann nicht rückgängig gemacht werden.',
+    deleteModelSuccess: 'Modelldatei gelöscht',
+    deleteModelFailed: 'Löschen der Modelldatei fehlgeschlagen',
+    selectModel: 'Modell auswählen',
+    selectModelHint: 'Heruntergeladenes Modell für die OCR-Erkennung auswählen',
+    noModelSelected: 'Kein Modell ausgewählt',
+    selectModelSuccess: 'OCR-Modell ausgewählt: {name}',
+    selectModelFailed: 'Modellauswahl fehlgeschlagen',
+  },
+
+  // ========== 模型管理 - 向量 ==========
+  modelVector: {
+    subtitle: 'Lokale Vektor-Einbettungsmodelle für die semantische Dokumentensuche und die RAG-Wissensdatenbank herunterladen und verwalten. Modelle stammen aus den kreuzberg/node-Voreinstellungen.',
+    modelPath: 'Modellspeicherpfad',
+    openFolder: 'Ordner öffnen',
+    loadingModels: 'Modellliste wird geladen…',
+    loadModelsFailed: 'Modellliste konnte nicht geladen werden',
+    downloadSource: 'Downloadquelle',
+    sourceAuto: 'Automatisch',
+    sourceMirror: 'Inlands-Spiegel',
+    sourceOfficial: 'Offiziell',
+    downloadModel: 'Modell herunterladen',
+    selectToDownload: 'Herunterzuladendes Modell auswählen',
+    download: 'Herunterladen',
+    cancelDownload: 'Abbrechen',
+    downloaded: 'Heruntergeladen',
+    downloadSuccess: 'Modell-Download abgeschlossen: {name}',
+    downloadFailed: 'Download fehlgeschlagen: {msg}',
+    deleteConfirm: 'Löschen bestätigen',
+    deleteConfirmText: 'Modell „{name}" wirklich löschen? Dieser Vorgang kann nicht rückgängig gemacht werden.',
+    deleteModelSuccess: 'Modelldatei gelöscht',
+    deleteModelFailed: 'Löschen der Modelldatei fehlgeschlagen',
+    selectModel: 'Modell auswählen',
+    selectModelHint: 'Links Modell auswählen, in der Mitte Vektordimensionen festlegen, zum Übernehmen auf Bestätigen klicken',
+    noModelSelected: 'Kein Modell ausgewählt',
+    selectModelSuccess: 'Vektormodell ausgewählt: {name}',
+    selectModelFailed: 'Modellauswahl fehlgeschlagen',
+    dimensions: 'Dimensionen',
+    dimensionsUnit: 'dims',
+    confirmSelect: 'Bestätigen',
+verifying: 'Wird überprüft…',
+    marketTitle: 'Modellmarkt',
+    marketHint: 'HuggingFace-Modelladresse eingeben (Beispiel Qwen3 Embedding ONNX):',
+    marketHintDomestic: '国内下载：https:  //hf-mirror.com/onnx-community/Qwen3-Embedding-0.6B-ONNX',
+    marketHintInternational: '国际下载：https:  //huggingface.co/onnx-community/Qwen3-Embedding-0.6B-ONNX',
+    marketConfirm: 'Herunterladen',
+    urlPlaceholder: 'HuggingFace-Modelladresse',
+    switchWarningTitle: 'Vektormodelle sind nicht austauschbar',
+    switchWarningText: 'Verschiedene Vektormodelle erzeugen Vektoren mit unterschiedlichen Dimensionen und Räumen, die nicht gemischt werden können. Beim Wechsel werden alle erstellten Vektor- und Schlüsselwortindizes gelöscht, der Dateistatus wird auf „Ausstehend" zurückgesetzt und die Vektorisierung muss erneut durchgeführt werden. Möchten Sie wirklich wechseln?',
+    switchWarningConfirm: 'Wechsel bestätigen & neu aufbauen',
+    resetSuccess: 'Vektordaten wurden zurückgesetzt. Dateien werden bei der nächsten Verarbeitung mit dem neuen Modell neu vektorisiert.',
+    resetFailed: 'Zurücksetzen der Vektordaten fehlgeschlagen',
   },
 
   // ========== Skills 管理 ==========
@@ -404,13 +708,13 @@ export default {
       loading: 'Laden…',
       start: 'Starten',
       stop: 'Stopp',
-      edit: 'undefined',
+      edit: '编辑',
       delete: 'Löschen',
       scanCreate: 'Per QR-Code erstellen',
       manualAdd: 'Manuell hinzufügen',
 
       status: {
-        disconnected: 'Getrennt',
+        disconnected: 'Nicht verbunden',
         connecting: 'Verbinden…',
         connected: 'Verbunden',
         error: 'Fehler',
@@ -512,7 +816,7 @@ export default {
       helpText: 'Klicken Sie auf „Anmelden per QR-Code" und scannen Sie den QR-Code mit WeChat, um eine Verbindung herzustellen. Nach der Verbindung können Sie in WeChat Nachrichten senden, um mit dem Diting-Agent zu interagieren. Die Anmeldedaten werden sicher lokal gespeichert, beim nächsten Start ist eine direkte Verbindung möglich.',
 
       status: {
-        disconnected: 'Getrennt',
+        disconnected: 'Nicht verbunden',
         waitingScan: 'Warten auf Scan...',
         scanned: 'Gescannt, wird bestätigt...',
         connecting: 'Verbindung wird hergestellt...',
@@ -537,12 +841,12 @@ export default {
       loading: 'Laden…',
       start: 'Starten',
       stop: 'Stopp',
-      edit: 'undefined',
+      edit: '编辑',
       delete: 'Löschen',
       addBot: 'DingTalk-Bot hinzufügen',
 
       status: {
-        disconnected: 'Getrennt',
+        disconnected: 'Nicht verbunden',
         connecting: 'Verbinden…',
         connected: 'Verbunden',
         error: 'Fehler',
@@ -621,6 +925,9 @@ export default {
     running: 'Wird ausgeführt',
     expandFilePanel: 'Dateipanel erweitern',
     collapseFilePanel: 'Dateipanel einklappen',
+    swapPanels: 'Panels links/rechts tauschen',
+    showCodeEditor: 'Code-Editor anzeigen',
+    hideCodeEditor: 'Code-Editor ausblenden',
     inputPlaceholder: 'Befehl eingeben... ({\'@\'} Datei referenzieren, / Skill aufrufen, # MCP verwenden, & Sitzung referenzieren, Enter zum Senden)',
     selectProject: 'Bitte wählen Sie zuerst ein Agent-Projekt aus',
     noActiveSession: 'Derzeit keine aktive Sitzung',
@@ -630,9 +937,31 @@ export default {
     detachFolderFailed: 'Entfernen des angehängten Ordners fehlgeschlagen',
     folderAttached: 'Ordner angehängt: {name}',
     folderDetached: 'Angehängter Ordner entfernt',
+    gitStatusRefreshed: 'Git-Status aktualisiert',
     respondPermissionFailed: 'Beantworten der Berechtigungsanfrage fehlgeschlagen',
     submitAnswerFailed: 'Übermitteln der Antwort fehlgeschlagen',
+    openChangedFileFailed: 'Geänderte Datei konnte nicht geöffnet werden',
     file: 'Datei',
+  },
+
+  // ========== Agent 代码编辑器 ==========
+  agentCodeEditor: {
+    noFileOpened: 'Keine Datei geöffnet',
+    emptyHint: 'Klicken Sie im Dateipanel auf eine Datei, um sie hier anzuzeigen und zu bearbeiten',
+    binaryNotSupported: 'Binärdateien können im Editor nicht angezeigt werden',
+    openFailed: 'Datei konnte nicht geöffnet werden',
+    closeAllAndHide: 'Alle Dateien schließen und Editor ausblenden',
+  },
+
+  // ========== Agent 终端面板 ==========
+  agentTerminal: {
+    newTerminal: 'Neues Terminal',
+    noTerminal: 'Kein Terminal',
+    emptyHint: 'Klicken Sie auf „Neu", um ein Terminal zu erstellen',
+    showPanel: 'Terminal-Panel anzeigen',
+    hidePanel: 'Terminal-Panel ausblenden',
+    createFailed: 'Terminal konnte nicht erstellt werden',
+    processExited: 'Terminal-Prozess beendet (Exit-Code {code})',
   },
 
   // ========== RAG 知识库 ==========
@@ -712,9 +1041,10 @@ export default {
   },
 
   // ========== 文件模块 ==========
-  fileModule: {
-    fileList: 'Dateiliste',
-    refresh: 'Aktualisieren',
+fileModule: {
+fileList: 'Dateiliste',
+refresh: 'Aktualisieren',
+refreshFailed: 'Aktualisierung fehlgeschlagen',
     newFile: 'Neue Datei',
     doc: 'Dokument',
     sheet: 'Tabelle',
@@ -731,6 +1061,17 @@ export default {
     newSheet: 'Neue Tabelle',
     ragProcessing: 'Wird vektorisiert... {count} übrig',
     ragQueue: 'Warteschlange {count}',
+    createMarkdown: 'Markdown-Datei erstellen',
+    analyzeLink: 'Link analysieren',
+    analyzeLinkTitle: 'Link analysieren',
+    analyzeLinkDesc: 'Geben Sie eine URL ein; der Agent analysiert den Inhalt und speichert ihn als Markdown-Dokument im aktuellen Ordner',
+    linkUrlPlaceholder: '请输入网址，例如 https:  //example.com',
+    analyzeAndOrganize: 'Analysieren & aufbereiten',
+    cancel: 'Abbrechen',
+    createProjectFailed: 'Projekt konnte nicht erstellt werden',
+    createSessionFailed: 'Sitzung konnte nicht erstellt werden',
+    analyzeLinkStarted: 'Agent-Linkanalyse gestartet',
+    analyzeLinkFailed: 'Linkanalyse fehlgeschlagen',
 
     status: {
       unsupported: 'Nicht unterstützt',
@@ -763,6 +1104,83 @@ export default {
     viewer: {
       title: 'Dateianzeige',
     },
+  },
+
+  // ========== 添加文件夹弹窗 ==========
+  addFolder: {
+    title: 'Ordner hinzufügen',
+    subtitle: 'Lokalen Ordner oder Netzwerkprotokoll auswählen',
+    protocolType: 'Protokolltyp',
+    protocols: {
+      local: 'Lokal',
+      ftp: 'FTP',
+      ftps: 'FTPS',
+      sftp: 'SFTP',
+      smb: 'SMB',
+      webdav: 'WebDAV',
+      s3: 'S3',
+    },
+    // 本地文件夹
+    localPath: 'Ordnerpfad',
+    localPathPlaceholder: 'Bitte klicken Sie rechts auf die Schaltfläche, um einen Ordner auszuwählen',
+    // 通用网络协议
+    host: 'Host-Adresse',
+    port: 'Port',
+    remotePath: 'Remote-Pfad',
+    username: 'Benutzername',
+    password: 'Passwort',
+    showPassword: 'Passwort anzeigen',
+    hidePassword: 'Passwort ausblenden',
+    // SFTP
+    privateKeyPath: 'Pfad zum privaten Schlüssel',
+    privateKeyHint: 'Für die Schlüsselauthentifizierung ausfüllen, leer lassen für Passwort',
+    // SMB
+    shareName: 'Freigabename',
+    shareNameHint: 'Name der SMB-Freigabe, z. B. shared, public',
+    domain: 'Domäne/Arbeitsgruppe',
+    // WebDAV
+    serverUrl: 'Serveradresse',
+    serverUrlHint: 'Vollständige WebDAV-Dienst-URL',
+    // S3
+    endpoint: 'Endpoint',
+    region: 'Region',
+    bucket: 'Bucket',
+    prefix: 'Präfix',
+    accessKey: 'Access Key',
+    secretKey: 'Secret Key',
+    forcePathStyle: 'Path Style',
+    forcePathStyleHint: 'Für MinIO und kompatible Dienste erforderlich',
+    // 通用
+    folderAlias: 'Ordneralias',
+    folderAliasPlaceholder: 'Optional, standardmäßig das letzte Pfadsegment',
+    folderAliasHint: 'Anzeigename in der Dateiliste',
+    // 编辑
+    edit: 'Konfiguration bearbeiten',
+    editTitle: 'Ordnerkonfiguration bearbeiten',
+    editSuccess: 'Konfiguration aktualisiert',
+    editFailed: 'Konfiguration konnte nicht aktualisiert werden',
+    // 测试与提交
+    testConnection: 'Verbindung testen',
+    testing: 'Wird getestet…',
+    testSuccess: 'Verbindung erfolgreich',
+    testFailed: 'Verbindung fehlgeschlagen',
+    fillRequiredFields: 'Bitte füllen Sie zuerst die Pflichtfelder aus',
+    selectFolderFailed: 'Ordnerauswahl fehlgeschlagen',
+    addSuccess: 'Ordner erfolgreich hinzugefügt',
+    addFailed: 'Ordner konnte nicht hinzugefügt werden',
+    // 远程扫描状态
+    scanning: 'Ordner hinzugefügt, Remote-Verzeichnis wird im Hintergrund gescannt…',
+    scanDone: 'Remote-Scan abgeschlossen, {count} Einträge gefunden',
+    scanFailed: 'Remote-Scan fehlgeschlagen',
+    // 远程路径浏览
+    browsePath: 'Durchsuchen',
+    browseTitle: 'Remote-Verzeichnis auswählen',
+    browseLoading: 'Wird geladen…',
+    browseEmpty: 'Verzeichnis ist leer',
+    browseFailed: 'Verzeichnis konnte nicht geladen werden',
+    browseUp: 'Nach oben',
+    browseSelect: 'Dieses Verzeichnis auswählen',
+    browseHint: 'Bitte füllen Sie zuerst Host, Port, Benutzername und Passwort (oder Pfad zum privaten Schlüssel) aus',
   },
 
   // ========== OCR 录入识读 ==========
@@ -1051,7 +1469,7 @@ export default {
     resourceFiles: 'Ressourcendateien',
     noBody: 'Noch keine Beschreibung',
     noBodyHint: 'Dieser Skill enthält möglicherweise keine SKILL.md-Datei',
-    noResourceFiles: 'No other resource files for this Skill',
+    noResourceFiles: 'Für diesen Skill sind keine weiteren Ressourcendateien vorhanden',
     selectFileLeft: 'Wählen Sie links eine Datei aus, um den Inhalt anzuzeigen',
     installHint: '💡 Nach der Installation im Agent verfügbar über',
     installCommand: 'Befehlsaufruf',
@@ -1076,7 +1494,11 @@ export default {
     addFileToSession: 'Datei zur Sitzung hinzufügen',
     addFile: 'Datei hinzufügen',
     attachFolder: 'Ordner anhängen',
-  },
+    attached: 'Angehängt',
+refreshGitStatus: 'Git-Status aktualisieren',
+changedFiles: 'Geändert',
+noChangedFiles: 'Keine geänderten Dateien',
+},
 
   // ========== 浏览器组件 ==========
   browser: {
@@ -1108,6 +1530,8 @@ export default {
   agentPopup: {
     askUserTitle: 'Der Agent benötigt Ihre Antwort',
     submitAnswer: 'Antwort senden',
+    cancel: 'Abbrechen',
+    inputPlaceholder: 'Oder hier eingeben...',
     permissionRequest: 'Ausführung einer Aktion anfordern',
     reject: 'Ablehnen',
     allowAlways: 'Immer erlauben',
@@ -1326,6 +1750,20 @@ export default {
     placeholder: 'Temporäre Notizen, Ideen, Erinnerungen...',
   },
 
+  // ========== 语音输入 ==========
+voiceInput: {
+clickToSpeak: 'Zum Sprechen klicken',
+    recording: 'Aufnahme läuft…',
+    correcting: 'Wird korrigiert…',
+loadingModel: 'Modell wird geladen…',
+micDenied: 'Mikrofonberechtigung verweigert. Bitte erteilen Sie die Berechtigung in den Systemeinstellungen.',
+micStartFailed: 'Mikrofon konnte nicht gestartet werden',
+modelLoadFailed: 'Modell konnte nicht geladen werden',
+noAudioCaptured: 'Keine Audioaufnahme erfasst',
+transcribeSuccess: 'Sprachtranskription abgeschlossen',
+transcribeFailed: 'Transkription fehlgeschlagen',
+},
+
   fileViewerTab: {
     loading: 'Datei wird geladen...',
     loadFailed: 'Laden der Datei fehlgeschlagen',
@@ -1351,7 +1789,7 @@ export default {
 
   // ========== DateTimePicker ==========
   dateTimePicker: {
-    placeholder: 'undefined',
+    placeholder: '选择日期时间',
   },
 
   // ========== TodoWorkspace ==========
@@ -1568,7 +2006,7 @@ export default {
     action: 'Aktion',
     selectProvider: 'Anbietertyp auswählen',
     namePlaceholder: 'z. B. Mein GPT-4o, DeepSeek-Produktionsumgebung',
-    baseUrlPlaceholder: 'z. B. https://api.openai.com/v1',
+    baseUrlPlaceholder: '如：https:  //api.openai.com/v1',
     apiKeyPlaceholder: 'sk-...',
     modelNamePlaceholder: 'z. B. gpt-4o, deepseek-chat, claude-3-5-sonnet-20241022',
     remarkPlaceholder: 'Optional, z. B. für Code-Generierung / für Dokumentenzusammenfassung',

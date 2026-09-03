@@ -65,7 +65,17 @@ export default {
     noRemote: 'Uzak yok',
     addRemote: 'Uzak adres ekle',
     configRemote: 'Uzak adresi yapılandır',
-    remotePlaceholder: 'Uzak servis adresi girin, örn.: http://192.168.1.100:9527',
+    remotePlaceholder: '请输入远程服务地址，如 http:  //192.168.1.100:9527',
+    // 登录/连接状态
+    notLoggedIn: 'Oturum açılmadı',
+    loggedIn: 'Oturum açıldı',
+    remoteControlling: 'Uzaktan kontrol ediliyor',
+    notControlled: 'Kontrol edilmiyor',
+    connDisconnected: 'Bağlı değil',
+    connConnecting: 'Bağlanıyor…',
+    connConnected: 'Bağlandı',
+    connError: 'Bağlantı hatası',
+    connUnknown: 'Bilinmiyor',
   },
 
   // ========== 路由标题（routerMap props.title） ==========
@@ -96,7 +106,7 @@ export default {
     window: 'Pencere',
     notification: 'Masaüstü bildirimi',
     picture: 'Görsel',
-    login: 'Giriş yap',
+    login: 'Oturum aç',
     goService: 'go servisi',
     javaService: 'java servisi',
     pythonService: 'python servisi',
@@ -114,6 +124,9 @@ export default {
 
     tabs: {
       model: 'Modeller',
+      modelVoice: 'Ses Modeli Yapılandırması',
+      modelOcr: 'OCR Modeli Yapılandırması',
+      modelVector: 'Vektör Modeli Yapılandırması',
       skills: 'Beceriler',
       mcp: 'MCP aracı',
       tools: 'Araçlar',
@@ -142,6 +155,13 @@ export default {
       light: 'Açık',
       dark: 'Koyu',
       system: 'Sistem',
+    },
+
+    uiStyle: {
+      label: 'Arayüz Stili',
+      description: 'Menü panelinin görsel stili',
+      classic: 'Klasik',
+      modern: 'Modern',
     },
 
     markdownFontSize: {
@@ -187,8 +207,100 @@ export default {
   // ========== 常规设置 ==========
   general: {
     title: 'Genel',
+    appInfo: 'Uygulama Bilgileri',
     appName: 'Uygulama adı',
     version: 'Sürüm',
+
+    cloud: {
+      title: 'Diting Cloud Hesabı',
+      subtitle: 'Bulut modellerine ve cihazlar arası yönetime erişmek için oturum açın',
+      loggedIn: 'Oturum açıldı',
+      login: 'Oturum aç',
+      register: 'Kaydol',
+      logout: 'Oturumu kapat',
+
+      // 远程控制
+      remote: {
+        title: 'Uzaktan Kontrol',
+        subtitle: 'Mobil cihazların bu bilgisayarı uzaktan görüntülemesine ve kontrol etmesine izin ver',
+        serverConn: 'Sunucu bağlantısı',
+        mirror: 'Uzaktan yansıtma',
+        mirrorPeerJoined: 'Kontrol cihazı bağlandı',
+        mirrorIdle: 'Etkinleştirildiğinde 6 haneli bağlantı kodu oluşturulur',
+        sessionCodeHint: 'Bu kodu mobil cihazınıza girin',
+        copy: 'Kopyala',
+        openPermSettings: 'Sistem izin ayarlarını aç',
+      },
+
+      // 登录/注册表单
+      auth: {
+        loginTitle: 'Oturum aç',
+        registerTitle: 'Kaydol',
+        email: 'E-posta',
+        password: 'Şifre',
+        username: 'Kullanıcı adı',
+        confirmPassword: 'Şifreyi onayla',
+        usernamePlaceholder: '2-30 karakter',
+        passwordPlaceholder: 'En az 8 karakter, büyük/küçük harf ve rakam içermeli',
+        confirmPasswordPlaceholder: 'Şifreyi yeniden girin',
+        agreePrefix: 'Okudum ve kabul ediyorum',
+        terms: 'Hizmet Şartları',
+        and: 've',
+        privacy: 'Gizlilik Politikası',
+        loginBtn: 'Oturum aç',
+        loginLoading: 'Oturum açılıyor...',
+        registerBtn: 'Kaydol',
+        registerLoading: 'Kaydediliyor...',
+        cancel: 'İptal',
+        noAccount: 'Hesabınız yok mu?',
+        registerNow: 'Hemen kaydolun',
+        hasAccount: 'Zaten hesabınız var mı?',
+        backToLogin: 'Oturum açmaya dön',
+        // 验证错误
+        errAgree: 'Önce Hizmet Şartları\'nı ve Gizlilik Politikası\'nı kabul edin',
+        errEmailPwd: 'Lütfen e-posta ve şifre girin',
+        errFillAll: 'Lütfen tüm zorunlu alanları doldurun',
+        errPwdMismatch: 'İki şifre uyuşmuyor',
+        errPwdTooShort: 'Şifre en az 8 karakter olmalıdır',
+        errPwdNoLower: 'Şifre küçük harf içermelidir',
+        errPwdNoUpper: 'Şifre büyük harf içermelidir',
+        errPwdNoDigit: 'Şifre rakam içermelidir',
+        errLoginFailed: 'Oturum açılamadı',
+        errRegisterFailed: 'Kayıt başarısız',
+        // 密码强度
+        strengthWeak: 'Zayıf',
+        strengthMedium: 'Orta',
+        strengthStrong: 'Güçlü',
+        strengthVeryStrong: 'Çok güçlü',
+      },
+
+      features: {
+        llm: {
+          title: 'Resmî LLM Modelleri',
+          desc: 'Yapılandırma olmadan önde gelen büyük dil modellerini kullanın',
+        },
+        voice: {
+          title: 'Resmî Ses Modelleri',
+          desc: 'Çevrimiçi ses tanıma, yerel indirme gerekmez',
+        },
+        ocr: {
+          title: 'Resmî OCR Modelleri',
+          desc: 'Bulutta OCR tanıma, yerel model gerekmez',
+        },
+        vector: {
+          title: 'Resmî Vektör Modelleri',
+          desc: 'Daha iyi RAG için bulutta vektörleştirme',
+        },
+        mobile: {
+          title: 'Mobil Yönetim',
+          desc: 'Agent\'larınızı telefonunuzdan istediğiniz zaman yönetin',
+        },
+        sync: {
+          title: 'Çoklu Cihaz Senkronizasyonu',
+          desc: 'Oturumları ve ayarları tüm cihazlarda senkronize edin',
+        },
+      },
+    },
   },
 
   // ========== 关于/更新 ==========
@@ -250,7 +362,7 @@ export default {
     disable: 'Devre dışı bırak',
     delete: 'Sil',
     testing: 'Test ediliyor',
-    test: 'undefined',
+    testBtn: 'Test',
     empty: 'Henüz hiç model yapılandırılmadı',
     addFirst: 'İlk modeli ekle',
     deleteConfirm: 'Silmeyi onayla',
@@ -296,6 +408,198 @@ export default {
       latency: 'Gecikme: {latency}ms',
       close: 'Kapat',
     },
+  },
+
+  // ========== 模型管理 - 语音 ==========
+  modelVoice: {
+    subtitle: 'Ses tanıma için ses modellerini yapılandırın; uzak LLM\'ler ve yerel Whisper modelleri desteklenir.',
+    cloudComingSoon: 'Diting Cloud ses modelleri yakında kullanıma sunulacak',
+
+    // 远程模型区域
+    remote: {
+      title: 'Uzak Ses Modelleri',
+      subtitle: 'Büyük dil modeli üzerinden ses tanıma işlenir, API yapılandırması gerekir',
+      addCloud: 'Diting Cloud Modelleri',
+      addOfficial: 'Resmî model ekle',
+      loading: 'Yükleniyor…',
+      enabled: 'Etkin',
+      notEnabledBadge: 'Etkin değil',
+      enable: 'Etkin',
+      disable: 'Devre dışı bırak',
+      delete: 'Sil',
+      empty: 'Henüz uzak ses modeli yapılandırılmadı',
+      addFirst: 'İlk modelinizi ekleyin',
+      deleteConfirm: 'Silmeyi Onayla',
+      deleteConfirmText: '"{name}" modeli silinsin mi? Bu işlem geri alınamaz.',
+      deleteSuccess: 'Başarıyla silindi',
+      deleteFailed: 'Silme başarısız',
+      enableSuccess: 'Etkinleştirildi: {name}',
+      enableFailed: 'Etkinleştirme başarısız',
+      disableSuccess: 'Devre dışı bırakıldı: {name}',
+      disableFailed: 'Devre dışı bırakma başarısız',
+      listFailed: 'Model listesi alınamadı',
+      currentEnabled: 'Şu anda etkin',
+      notEnabled: 'Etkin değil',
+      notEnabledHint: 'Şu anda etkin uzak ses modeli yok',
+
+      // 编辑/添加弹窗
+      addTitle: 'Uzak ses modeli ekle',
+      editTitle: 'Uzak ses modelini düzenle',
+      volcSubtitle: 'Volcengine ses tanıma hizmetini yapılandırın',
+      provider: 'Sağlayıcı',
+      selectProvider: 'Sağlayıcı seçin',
+      modelAlias: 'Model Takma Adı',
+      modelAliasPlaceholder: 'örn. Volc-Production',
+      modelName: 'Model Adı',
+      modelNamePlaceholder: 'örn. volc-asr',
+      modelNameHint: 'Bu modeli tanımlamak için kullanılır, özelleştirilebilir',
+      baseUrl: 'API Adresi (Base URL)',
+      baseUrlHint: '/chat/completions son eki olmadan',
+      apiKey: 'API Anahtarı',
+      remark: 'Açıklama',
+      remarkPlaceholder: 'İsteğe bağlı, örn. gerçek zamanlı transkripsiyon için',
+      add: 'Ekle',
+      addSuccess: 'Başarıyla eklendi',
+      submitting: 'Gönderiliyor…',
+      inputAlias: 'Lütfen bir model takma adı girin',
+      inputModelName: 'Lütfen model adını girin',
+      operationFailed: 'İşlem başarısız',
+
+      // 火山引擎专属
+      volcConfigTitle: 'Volcengine Yapılandırması',
+      volcBaseUrl: 'Bağlantı Adresi',
+      volcBaseUrlHint: 'Volcengine ses tanıma için sabit WebSocket adresi, değiştirilmesi gerekmez',
+volcApiKeyPlaceholder: 'Volcengine API Anahtarı',
+volcApiKeyHint: 'Kaydedilirken otomatik olarak şifrelenir, X-Api-Key\'e karşılık gelir',
+volcApiKeyEditHint: 'Zaten kaydedildi, değiştirmemek için boş bırakın',
+volcApiKeyRequired: 'Lütfen Volcengine API anahtarını girin',
+      volcResourceIdPlaceholder: 'Resource ID seçin',
+      volcResourceIdHint: 'duration=süre modeli (uzun ses için), concurrent=eşzamanlı model (gerçek zamanlı kısa ses için)',
+      volcResourceIdRequired: 'Lütfen bir Resource ID seçin',
+      default: 'Varsayılan',
+    },
+
+    // 本地 Whisper 模型区域
+    local: {
+      title: 'Yerel Ses Modeli',
+      subtitle: 'Whisper veya FunASR ile yerel ses tanıma, ağ bağlantısı gerekmez',
+      modeLocal: 'Yerel mod',
+      modeLocalHint: 'Etkinleştirildiğinde yerel ses modeli kullanılır ve uzak ses modelleriyle birlikte kullanılamaz',
+      modelPath: 'Model depolama yolu',
+      modelPathHint: 'Model dosyaları ~/.diting/model/voice dizininde saklanır',
+      openFolder: 'Klasörü aç',
+      selectModel: 'Model seç',
+      selectModelHint: 'Ses tanıma için indirilmiş bir model seçin',
+      noModelSelected: 'Model seçilmedi',
+      downloadModel: 'Model indir',
+      selectToDownload: 'İndirilecek modeli seçin',
+      download: 'İndir',
+      cancelDownload: 'İptal',
+      downloading: 'İndiriliyor…',
+      downloaded: 'İndirildi',
+      notDownloaded: 'İndirilmedi',
+      downloadSuccess: 'Model indirme tamamlandı: {name}',
+      downloadFailed: 'İndirme başarısız: {msg}',
+      deleteModel: 'Model dosyasını sil',
+      deleteModelConfirm: '"{name}" model dosyası silinsin mi? Bu işlem geri alınamaz.',
+      deleteModelSuccess: 'Model dosyası silindi',
+      deleteModelFailed: 'Model dosyası silinemedi',
+      selectModelSuccess: 'Yerel model seçildi: {name}',
+      selectModelFailed: 'Model seçilemedi',
+      micPermission: 'Mikrofon izni',
+      micGranted: 'Verildi, sesli giriş kullanıma hazır',
+      micDenied: 'Sistem tarafından engellendi; lütfen sistem ayarlarından uygulamaya mikrofon erişimi verin',
+      notDetermined: 'Yetki verilmedi; sesli girişi kullanmadan önce izin verin',
+      unsupported: 'Mevcut sistem ön kontrolü desteklemiyor; kayıt sırasında izin istemi otomatik olarak görünecek',
+      requestPermission: 'Mikrofon erişimine izin ver',
+      requestAgain: 'Yeniden iste',
+      checking: 'Kontrol ediliyor…',
+      modelSize: 'Boyut',
+      modelLang: 'Çok dilli',
+      modelLangEn: 'Yalnızca İngilizce',
+      modelLangDesc: 'Çok dilli tanıma desteklenir (Çince dahil)',
+      modelLangEnDesc: 'Yalnızca İngilizce tanıma, daha yüksek doğruluk',
+      loadingModels: 'Model listesi yükleniyor…',
+      loadModelsFailed: 'Model listesi yüklenemedi',
+      noModelsAvailable: 'Kullanılabilir model yok',
+      downloadSource: 'İndirme kaynağı',
+      sourceAuto: 'Otomatik',
+      sourceMirror: 'Yurt içi yansı',
+      sourceOfficial: 'Resmî',
+    },
+  },
+
+  // ========== 模型管理 - OCR ==========
+  modelOcr: {
+    subtitle: 'Fiş ve görsel metin tanıma için yerel OCR modellerini indirin ve yönetin. Modeller PaddlePaddle PP-OCRv6 ön ayarlarından gelir.',
+    modelPath: 'Model depolama yolu',
+    openFolder: 'Klasörü aç',
+    loadingModels: 'Model listesi yükleniyor…',
+    loadModelsFailed: 'Model listesi yüklenemedi',
+    downloadSource: 'İndirme kaynağı',
+    sourceAuto: 'Otomatik',
+    sourceMirror: 'Yurt içi yansı',
+    sourceOfficial: 'Resmî',
+    downloadModel: 'Model indir',
+    selectToDownload: 'İndirilecek modeli seçin',
+    download: 'İndir',
+    cancelDownload: 'İptal',
+    downloaded: 'İndirildi',
+    downloadSuccess: 'Model indirme tamamlandı: {name}',
+    downloadFailed: 'İndirme başarısız: {msg}',
+    deleteConfirm: 'Silmeyi Onayla',
+    deleteConfirmText: '"{name}" modeli silinsin mi? Bu işlem geri alınamaz.',
+    deleteModelSuccess: 'Model dosyası silindi',
+    deleteModelFailed: 'Model dosyası silinemedi',
+    selectModel: 'Model seç',
+    selectModelHint: 'OCR tanıma için indirilmiş bir model seçin',
+    noModelSelected: 'Model seçilmedi',
+    selectModelSuccess: 'OCR modeli seçildi: {name}',
+    selectModelFailed: 'Model seçilemedi',
+  },
+
+  // ========== 模型管理 - 向量 ==========
+  modelVector: {
+    subtitle: 'Belge anlamsal araması ve RAG bilgi tabanı için yerel vektör gömme modellerini indirin ve yönetin. Modeller kreuzberg/node ön ayarlarından gelir.',
+    modelPath: 'Model depolama yolu',
+    openFolder: 'Klasörü aç',
+    loadingModels: 'Model listesi yükleniyor…',
+    loadModelsFailed: 'Model listesi yüklenemedi',
+    downloadSource: 'İndirme kaynağı',
+    sourceAuto: 'Otomatik',
+    sourceMirror: 'Yurt içi yansı',
+    sourceOfficial: 'Resmî',
+    downloadModel: 'Model indir',
+    selectToDownload: 'İndirilecek modeli seçin',
+    download: 'İndir',
+    cancelDownload: 'İptal',
+    downloaded: 'İndirildi',
+    downloadSuccess: 'Model indirme tamamlandı: {name}',
+    downloadFailed: 'İndirme başarısız: {msg}',
+    deleteConfirm: 'Silmeyi Onayla',
+    deleteConfirmText: '"{name}" modeli silinsin mi? Bu işlem geri alınamaz.',
+    deleteModelSuccess: 'Model dosyası silindi',
+    deleteModelFailed: 'Model dosyası silinemedi',
+    selectModel: 'Model seç',
+    selectModelHint: 'Solda modeli seçin, ortada vektör boyutunu ayarlayın, uygulamak için onaya tıklayın',
+    noModelSelected: 'Model seçilmedi',
+    selectModelSuccess: 'Vektör modeli seçildi: {name}',
+    selectModelFailed: 'Model seçilemedi',
+    dimensions: 'Boyutlar',
+    dimensionsUnit: 'dims',
+    confirmSelect: 'Onayla',
+verifying: 'Doğrulanıyor…',
+    marketTitle: 'Model Pazarı',
+    marketHint: 'HuggingFace model adresini girin (Qwen3 Embedding ONNX örneği):',
+    marketHintDomestic: '国内下载：https:  //hf-mirror.com/onnx-community/Qwen3-Embedding-0.6B-ONNX',
+    marketHintInternational: '国际下载：https:  //huggingface.co/onnx-community/Qwen3-Embedding-0.6B-ONNX',
+    marketConfirm: 'İndirmeyi onayla',
+    urlPlaceholder: 'HuggingFace model adresi',
+    switchWarningTitle: 'Vektör modelleri birbirinin yerine kullanılamaz',
+    switchWarningText: 'Farklı vektör modelleri farklı boyut ve uzaylara sahip vektörler üretir ve bunlar karıştırılamaz. Model değiştirildiğinde mevcut tüm vektör ve anahtar kelime dizinleri silinir, dosya durumları "beklemede" olarak sıfırlanır ve yeniden vektörleştirme gerekir. Değiştirmek istediğinizden emin misiniz?',
+    switchWarningConfirm: 'Değişikliği onayla ve yeniden oluştur',
+    resetSuccess: 'Vektör verileri sıfırlandı. Dosyalar bir sonraki işlemde yeni modelle yeniden vektörleştirilecek.',
+    resetFailed: 'Vektör verileri sıfırlanamadı',
   },
 
   // ========== Skills 管理 ==========
@@ -404,15 +708,15 @@ export default {
       loading: 'Yükleniyor…',
       start: 'Başlat',
       stop: 'Durdur',
-      edit: 'undefined',
+      edit: '编辑',
       delete: 'Sil',
       scanCreate: 'QR ile oluştur',
       manualAdd: 'Elle ekle',
 
       status: {
-        disconnected: 'Bağlantı kesildi',
+        disconnected: 'Bağlı değil',
         connecting: 'Bağlanıyor…',
-        connected: 'Bağlı',
+        connected: 'Bağlandı',
         error: 'Hata',
       },
 
@@ -512,18 +816,18 @@ export default {
       helpText: '"QR ile Giriş"e tıklayın ve bağlanmak için WeChat ile QR kodunu tarayın. Bağlandıktan sonra, Diting Agent ile etkileşim için WeChat\'te mesaj gönderin. Kimlik bilgileri yerelde güvenle saklanır, bir sonraki başlatmada doğrudan bağlanabilir.',
 
       status: {
-        disconnected: 'Bağlantı kesildi',
+        disconnected: 'Bağlı değil',
         waitingScan: 'QR taraması bekleniyor...',
         scanned: 'QR tarandı, onaylanıyor...',
         connecting: 'Bağlanıyor...',
-        connected: 'Bağlı',
+        connected: 'Bağlandı',
         error: 'Bağlantı hatası',
       },
 
       messages: {
         loadFailed: 'WeChat yapılandırması yükleme başarısız',
         scanFailed: 'QR ile giriş başarısız',
-        loginFailed: 'Giriş yapma başarısız',
+        loginFailed: 'Oturum açılamadı',
         startFailed: 'Başlatma başarısız',
         started: 'WeChat Bridge başlatıldı',
         stopFailed: 'Durdurma başarısız',
@@ -537,14 +841,14 @@ export default {
       loading: 'Yükleniyor…',
       start: 'Başlat',
       stop: 'Durdur',
-      edit: 'undefined',
+      edit: '编辑',
       delete: 'Sil',
       addBot: 'DingTalk Botu ekle',
 
       status: {
-        disconnected: 'Bağlantı kesildi',
+        disconnected: 'Bağlı değil',
         connecting: 'Bağlanıyor…',
-        connected: 'Bağlı',
+        connected: 'Bağlandı',
         error: 'Hata',
       },
 
@@ -621,6 +925,9 @@ export default {
     running: 'Çalışıyor',
     expandFilePanel: 'Dosya panelini genişlet',
     collapseFilePanel: 'Dosya panelini daralt',
+    swapPanels: 'Panelleri sol/sağ değiştir',
+    showCodeEditor: 'Kod düzenleyiciyi göster',
+    hideCodeEditor: 'Kod düzenleyiciyi gizle',
     inputPlaceholder: 'Komut girin... ({\'@\'} dosyaya referans, / Skill çağır, # MCP kullan, & sohbete referans, Enter gönder)',
     selectProject: 'Önce bir Agent projesi seçin',
     noActiveSession: 'Şu anda aktif oturum yok',
@@ -630,9 +937,31 @@ export default {
     detachFolderFailed: 'Ek klasör kaldırma başarısız',
     folderAttached: 'Ek klasör eklendi: {name}',
     folderDetached: 'Ek klasör kaldırıldı',
+    gitStatusRefreshed: 'Git durumu yenilendi',
     respondPermissionFailed: 'İzin isteğine yanıt verme başarısız',
     submitAnswerFailed: 'Yanıt gönderme başarısız',
+    openChangedFileFailed: 'Değiştirilen dosya açılamadı',
     file: 'Dosya',
+  },
+
+  // ========== Agent 代码编辑器 ==========
+  agentCodeEditor: {
+    noFileOpened: 'Dosya açılmadı',
+    emptyHint: 'Burada önizlemek ve düzenlemek için dosya panelinden bir dosyaya tıklayın',
+    binaryNotSupported: 'İkili dosyalar düzenleyicide önizlenemez',
+    openFailed: 'Dosya açılamadı',
+    closeAllAndHide: 'Tüm dosyaları kapat ve düzenleyiciyi gizle',
+  },
+
+  // ========== Agent 终端面板 ==========
+  agentTerminal: {
+    newTerminal: 'Yeni Terminal',
+    noTerminal: 'Terminal yok',
+    emptyHint: 'Terminal oluşturmak için "Yeni" düğmesine tıklayın',
+    showPanel: 'Terminal panelini göster',
+    hidePanel: 'Terminal panelini gizle',
+    createFailed: 'Terminal oluşturulamadı',
+    processExited: 'Terminal süreci sonlandı (çıkış kodu {code})',
   },
 
   // ========== RAG 知识库 ==========
@@ -712,9 +1041,10 @@ export default {
   },
 
   // ========== 文件模块 ==========
-  fileModule: {
-    fileList: 'Dosya listesi',
-    refresh: 'Yenile',
+fileModule: {
+fileList: 'Dosya listesi',
+refresh: 'Yenile',
+refreshFailed: 'Yenileme başarısız',
     newFile: 'Yeni dosya',
     doc: 'Belge',
     sheet: 'Tablo',
@@ -731,6 +1061,17 @@ export default {
     newSheet: 'Yeni tablo',
     ragProcessing: 'Vektörleştiriliyor... kalan {count}',
     ragQueue: 'Kuyruk {count}',
+    createMarkdown: 'Markdown Dosyası Oluştur',
+    analyzeLink: 'Bağlantıyı Analiz Et',
+    analyzeLinkTitle: 'Bağlantıyı Analiz Et',
+    analyzeLinkDesc: 'Bir URL girin; Agent bağlantı içeriğini analiz edip Markdown belgesi olarak geçerli klasöre kaydeder',
+    linkUrlPlaceholder: '请输入网址，例如 https:  //example.com',
+    analyzeAndOrganize: 'Analiz et ve düzenle',
+    cancel: 'İptal',
+    createProjectFailed: 'Proje oluşturulamadı',
+    createSessionFailed: 'Oturum oluşturulamadı',
+    analyzeLinkStarted: 'Agent bağlantı analizi başlatıldı',
+    analyzeLinkFailed: 'Bağlantı analiz edilemedi',
 
     status: {
       unsupported: 'Desteklenmiyor',
@@ -763,6 +1104,83 @@ export default {
     viewer: {
       title: 'Dosya görüntüleme',
     },
+  },
+
+  // ========== 添加文件夹弹窗 ==========
+  addFolder: {
+    title: 'Klasör Ekle',
+    subtitle: 'Yerel bir klasör veya ağ protokolü bağlantısı seçin',
+    protocolType: 'Protokol Türü',
+    protocols: {
+      local: 'Yerel',
+      ftp: 'FTP',
+      ftps: 'FTPS',
+      sftp: 'SFTP',
+      smb: 'SMB',
+      webdav: 'WebDAV',
+      s3: 'S3',
+    },
+    // 本地文件夹
+    localPath: 'Klasör Yolu',
+    localPathPlaceholder: 'Klasör seçmek için düğmeye tıklayın',
+    // 通用网络协议
+    host: 'Sunucu Adresi',
+    port: 'Bağlantı Noktası',
+    remotePath: 'Uzak Yol',
+    username: 'Kullanıcı adı',
+    password: 'Şifre',
+    showPassword: 'Şifreyi göster',
+    hidePassword: 'Şifreyi gizle',
+    // SFTP
+    privateKeyPath: 'Özel Anahtar Yolu',
+    privateKeyHint: 'Anahtar tabanlı kimlik doğrulama için doldurun, şifre kullanmak için boş bırakın',
+    // SMB
+    shareName: 'Paylaşım Adı',
+    shareNameHint: 'SMB paylaşım adı, örn. shared, public',
+    domain: 'Etki Alanı/Çalışma Grubu',
+    // WebDAV
+    serverUrl: 'Sunucu Adresi',
+    serverUrlHint: 'Tam WebDAV hizmet URL\'si',
+    // S3
+    endpoint: 'Endpoint',
+    region: 'Bölge',
+    bucket: 'Bucket',
+    prefix: 'Ön Ek',
+    accessKey: 'Access Key',
+    secretKey: 'Secret Key',
+    forcePathStyle: 'Path Style',
+    forcePathStyleHint: 'MinIO ve uyumlu hizmetler için gereklidir',
+    // 通用
+    folderAlias: 'Klasör Takma Adı',
+    folderAliasPlaceholder: 'İsteğe bağlı, varsayılan olarak yolun son bölümü kullanılır',
+    folderAliasHint: 'Dosya listesinde görünen ad',
+    // 编辑
+    edit: 'Yapılandırmayı Düzenle',
+    editTitle: 'Klasör yapılandırmasını düzenle',
+    editSuccess: 'Yapılandırma güncellendi',
+    editFailed: 'Yapılandırma güncellenemedi',
+    // 测试与提交
+    testConnection: 'Bağlantıyı Test Et',
+    testing: 'Test ediliyor…',
+    testSuccess: 'Bağlantı Başarılı',
+    testFailed: 'Bağlantı Başarısız',
+    fillRequiredFields: 'Lütfen önce zorunlu alanları doldurun',
+    selectFolderFailed: 'Klasör seçilemedi',
+    addSuccess: 'Klasör başarıyla eklendi',
+    addFailed: 'Klasör eklenemedi',
+    // 远程扫描状态
+    scanning: 'Klasör eklendi, uzak dizin arka planda taranıyor…',
+    scanDone: 'Uzak tarama tamamlandı, {count} öğe bulundu',
+    scanFailed: 'Uzak tarama başarısız',
+    // 远程路径浏览
+    browsePath: 'Gözat',
+    browseTitle: 'Uzak Dizin Seç',
+    browseLoading: 'Yükleniyor…',
+    browseEmpty: 'Dizin boş',
+    browseFailed: 'Dizin yüklenemedi',
+    browseUp: 'Üst Dizine Git',
+    browseSelect: 'Bu Dizini Seç',
+    browseHint: 'Lütfen önce sunucu adresi, bağlantı noktası, kullanıcı adı ve şifreyi (veya özel anahtar yolunu) doldurun',
   },
 
   // ========== OCR 录入识读 ==========
@@ -1076,7 +1494,11 @@ export default {
     addFileToSession: 'Dosyayı sohbete ekle',
     addFile: 'Dosya ekle',
     attachFolder: 'Ek klasör',
-  },
+    attached: 'Ekli',
+refreshGitStatus: 'Git durumunu yenile',
+changedFiles: 'Değiştirildi',
+noChangedFiles: 'Değiştirilmiş dosya yok',
+},
 
   // ========== 浏览器组件 ==========
   browser: {
@@ -1108,6 +1530,8 @@ export default {
   agentPopup: {
     askUserTitle: 'Agent sizin yanıtınıza ihtiyaç duyuyor',
     submitAnswer: 'Yanıtı gönder',
+    cancel: 'İptal',
+    inputPlaceholder: 'Veya buraya yazın...',
     permissionRequest: 'İşlemi yürütme iste',
     reject: 'Reddet',
     allowAlways: 'Her zaman izin ver',
@@ -1326,6 +1750,20 @@ export default {
     placeholder: 'Geçici kayıtlar, fikirler, notlar...',
   },
 
+  // ========== 语音输入 ==========
+voiceInput: {
+clickToSpeak: 'Konuşmak için tıklayın',
+    recording: 'Kaydediliyor…',
+    correcting: 'Düzeltiliyor…',
+loadingModel: 'Model yükleniyor…',
+micDenied: 'Mikrofon izni reddedildi. Lütfen sistem ayarlarından izin verin.',
+micStartFailed: 'Mikrofon başlatılamadı',
+modelLoadFailed: 'Model yüklenemedi',
+noAudioCaptured: 'Ses kaydedilmedi',
+transcribeSuccess: 'Ses transkripsiyonu tamamlandı',
+transcribeFailed: 'Transkripsiyon başarısız',
+},
+
   fileViewerTab: {
     loading: 'Dosya yükleniyor...',
     loadFailed: 'Dosya yükleme başarısız',
@@ -1351,7 +1789,7 @@ export default {
 
   // ========== DateTimePicker ==========
   dateTimePicker: {
-    placeholder: 'undefined',
+    placeholder: '选择日期时间',
   },
 
   // ========== TodoWorkspace ==========
@@ -1568,7 +2006,7 @@ export default {
     action: 'İşlem',
     selectProvider: 'Sağlayıcı türü seçin',
     namePlaceholder: 'Örn.: benim GPT-4o\'m, DeepSeek üretim ortamı',
-    baseUrlPlaceholder: 'Örn.: https://api.openai.com/v1',
+    baseUrlPlaceholder: '如：https:  //api.openai.com/v1',
     apiKeyPlaceholder: 'sk-...',
     modelNamePlaceholder: 'Örn.: gpt-4o, deepseek-chat, claude-3-5-sonnet-20241022',
     remarkPlaceholder: 'İsteğe bağlı, örn.: kod üretimi için / belge özetleme için',

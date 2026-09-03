@@ -71,6 +71,16 @@ watch(
     } else if (tab.type === 'agent') {
       ws.setActiveModule('agent')
       ws.setAppMode('agent')
+    } else if (tab.type === 'file-manager') {
+      ws.setActiveModule('file')
+    } else if (tab.type === 'ocr-recognize' || tab.type === 'ocr-archive') {
+      ws.setActiveModule('invoice')
+    } else if (tab.type === 'planning') {
+      ws.setActiveModule('planning')
+    } else if (tab.type === 'skills') {
+      ws.setActiveModule('skills')
+    } else if (tab.type === 'setting') {
+      ws.setActiveModule('setting')
     }
   },
   { immediate: true },

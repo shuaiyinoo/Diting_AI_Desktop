@@ -65,7 +65,17 @@ export default {
     noRemote: 'Нет удалённого',
     addRemote: 'Добавить удалённый адрес',
     configRemote: 'Настроить удалённый адрес',
-    remotePlaceholder: 'Введите адрес удалённого сервиса, напр. http://192.168.1.100:9527',
+    remotePlaceholder: '请输入远程服务地址，如 http:  //192.168.1.100:9527',
+    // 登录/连接状态
+    notLoggedIn: 'Не выполнен вход',
+    loggedIn: 'Вход выполнен',
+    remoteControlling: 'Удалённое управление',
+    notControlled: 'Не управляется',
+    connDisconnected: 'Не подключено',
+    connConnecting: 'Подключение…',
+    connConnected: 'Подключено',
+    connError: 'Ошибка подключения',
+    connUnknown: 'Неизвестно',
   },
 
   // ========== 路由标题（routerMap props.title） ==========
@@ -114,6 +124,9 @@ export default {
 
     tabs: {
       model: 'Модели',
+      modelVoice: 'Настройка голосовой модели',
+      modelOcr: 'Настройка OCR-модели',
+      modelVector: 'Настройка векторной модели',
       skills: 'Навыки',
       mcp: 'Инструменты MCP',
       tools: 'Инструменты',
@@ -142,6 +155,13 @@ export default {
       light: 'Светлая',
       dark: 'Тёмная',
       system: 'Система',
+    },
+
+    uiStyle: {
+      label: 'Стиль интерфейса',
+      description: 'Визуальный стиль панели меню',
+      classic: 'Классический',
+      modern: 'Современный',
     },
 
     markdownFontSize: {
@@ -174,7 +194,7 @@ export default {
       description: 'Опасно',
       none: 'Нет',
       small: 'Маленький',
-      default: 'Средн',
+      default: 'Средний',
       large: 'Большой',
     },
 
@@ -187,8 +207,100 @@ export default {
   // ========== 常规设置 ==========
   general: {
     title: 'Общие',
+    appInfo: 'О приложении',
     appName: 'Название приложения',
     version: 'Версия',
+
+    cloud: {
+      title: 'Аккаунт Diting Cloud',
+      subtitle: 'Войдите, чтобы использовать облачные модели и управление на разных устройствах',
+      loggedIn: 'Вход выполнен',
+      login: 'Войти',
+      register: 'Регистрация',
+      logout: 'Выйти',
+
+      // 远程控制
+      remote: {
+        title: 'Удалённое управление',
+        subtitle: 'Разрешить мобильным устройствам удалённо просматривать этот компьютер и управлять им',
+        serverConn: 'Подключение к серверу',
+        mirror: 'Удалённое зеркалирование',
+        mirrorPeerJoined: 'Устройство управления подключено',
+        mirrorIdle: 'После включения будет создан 6-значный код подключения',
+        sessionCodeHint: 'Введите этот код на мобильном устройстве',
+        copy: 'Копировать',
+        openPermSettings: 'Открыть настройки разрешений системы',
+      },
+
+      // 登录/注册表单
+      auth: {
+        loginTitle: 'Войти',
+        registerTitle: 'Регистрация',
+        email: 'Электронная почта',
+        password: 'Пароль',
+        username: 'Имя пользователя',
+        confirmPassword: 'Подтверждение пароля',
+        usernamePlaceholder: '2–30 символов',
+        passwordPlaceholder: 'Не менее 8 символов: строчные и прописные буквы и цифры',
+        confirmPasswordPlaceholder: 'Введите пароль ещё раз',
+        agreePrefix: 'Я прочитал(а) и принимаю',
+        terms: 'Условия использования',
+        and: 'и',
+        privacy: 'Политика конфиденциальности',
+        loginBtn: 'Войти',
+        loginLoading: 'Вход...',
+        registerBtn: 'Регистрация',
+        registerLoading: 'Регистрация...',
+        cancel: 'Отмена',
+        noAccount: 'Нет учётной записи?',
+        registerNow: 'Зарегистрируйтесь',
+        hasAccount: 'Уже есть учётная запись?',
+        backToLogin: 'Вернуться ко входу',
+        // 验证错误
+        errAgree: 'Сначала примите Условия использования и Политику конфиденциальности',
+        errEmailPwd: 'Введите электронную почту и пароль',
+        errFillAll: 'Заполните все обязательные поля',
+        errPwdMismatch: 'Пароли не совпадают',
+        errPwdTooShort: 'Пароль должен содержать не менее 8 символов',
+        errPwdNoLower: 'Пароль должен содержать строчную букву',
+        errPwdNoUpper: 'Пароль должен содержать прописную букву',
+        errPwdNoDigit: 'Пароль должен содержать цифру',
+        errLoginFailed: 'Не удалось войти',
+        errRegisterFailed: 'Регистрация не удалась',
+        // 密码强度
+        strengthWeak: 'Слабый',
+        strengthMedium: 'Средний',
+        strengthStrong: 'Надёжный',
+        strengthVeryStrong: 'Очень надёжный',
+      },
+
+      features: {
+        llm: {
+          title: 'Официальные LLM-модели',
+          desc: 'Используйте популярные языковые модели без настройки',
+        },
+        voice: {
+          title: 'Официальные голосовые модели',
+          desc: 'Онлайн-распознавание речи, без локальной загрузки',
+        },
+        ocr: {
+          title: 'Официальные OCR-модели',
+          desc: 'Облачное OCR-распознавание, без локальных моделей',
+        },
+        vector: {
+          title: 'Официальные векторные модели',
+          desc: 'Облачная векторизация для улучшения RAG',
+        },
+        mobile: {
+          title: 'Управление с телефона',
+          desc: 'Управляйте своими Agent с телефона в любое время',
+        },
+        sync: {
+          title: 'Синхронизация между устройствами',
+          desc: 'Синхронизация сессий и настроек на всех устройствах',
+        },
+      },
+    },
   },
 
   // ========== 关于/更新 ==========
@@ -250,7 +362,7 @@ export default {
     disable: 'Отключить',
     delete: 'Удалить',
     testing: 'Тестирование',
-    test: 'undefined',
+    testBtn: 'Тест',
     empty: 'Модель не настроена',
     addFirst: 'Добавить первую модель',
     deleteConfirm: 'Подтвердить удаление',
@@ -296,6 +408,198 @@ export default {
       latency: 'Задержка: {latency}мс',
       close: 'Закрыть',
     },
+  },
+
+  // ========== 模型管理 - 语音 ==========
+  modelVoice: {
+    subtitle: 'Настройте голосовые модели для распознавания речи; поддерживаются удалённые LLM и локальные модели Whisper.',
+    cloudComingSoon: 'Голосовые модели Diting Cloud скоро появятся',
+
+    // 远程模型区域
+    remote: {
+      title: 'Удалённые голосовые модели',
+      subtitle: 'Распознавание речи через большую языковую модель, требуется настройка API',
+      addCloud: 'Модели Diting Cloud',
+      addOfficial: 'Добавить официальную модель',
+      loading: 'Загрузка…',
+      enabled: 'Активно',
+      notEnabledBadge: 'Неактивно',
+      enable: 'Активно',
+      disable: 'Отключить',
+      delete: 'Удалить',
+      empty: 'Удалённые голосовые модели ещё не настроены',
+      addFirst: 'Добавьте первую модель',
+      deleteConfirm: 'Подтвердить удаление',
+      deleteConfirmText: 'Удалить модель «{name}»? Это действие нельзя отменить.',
+      deleteSuccess: 'Удалено успешно',
+      deleteFailed: 'Не удалось удалить',
+      enableSuccess: 'Включено: {name}',
+      enableFailed: 'Не удалось включить',
+      disableSuccess: 'Отключено: {name}',
+      disableFailed: 'Не удалось отключить',
+      listFailed: 'Не удалось получить список моделей',
+      currentEnabled: 'Активно сейчас',
+      notEnabled: 'Неактивно',
+      notEnabledHint: 'Сейчас нет активных удалённых голосовых моделей',
+
+      // 编辑/添加弹窗
+      addTitle: 'Добавить удалённую голосовую модель',
+      editTitle: 'Изменить удалённую голосовую модель',
+      volcSubtitle: 'Настроить сервис распознавания речи Volcengine',
+      provider: 'Поставщик',
+      selectProvider: 'Выберите поставщика',
+      modelAlias: 'Псевдоним модели',
+      modelAliasPlaceholder: 'например: Volc-Production',
+      modelName: 'Название модели',
+      modelNamePlaceholder: 'например: volc-asr',
+      modelNameHint: 'Используется для идентификации модели, можно изменить',
+      baseUrl: 'Адрес API (Base URL)',
+      baseUrlHint: 'Без суффикса /chat/completions',
+      apiKey: 'API-ключ',
+      remark: 'Примечание',
+      remarkPlaceholder: 'Необязательно, например: для транскрипции в реальном времени',
+      add: 'Добавить',
+      addSuccess: 'Успешно добавлено',
+      submitting: 'Отправка…',
+      inputAlias: 'Введите псевдоним модели',
+      inputModelName: 'Введите название модели',
+      operationFailed: 'Ошибка операции',
+
+      // 火山引擎专属
+      volcConfigTitle: 'Настройка Volcengine',
+      volcBaseUrl: 'Адрес подключения',
+      volcBaseUrlHint: 'Фиксированный WebSocket-адрес распознавания речи Volcengine, изменять не нужно',
+volcApiKeyPlaceholder: 'API-ключ Volcengine',
+volcApiKeyHint: 'При сохранении автоматически шифруется, соответствует X-Api-Key',
+volcApiKeyEditHint: 'Уже сохранено, оставьте пустым, чтобы не изменять',
+volcApiKeyRequired: 'Введите API-ключ Volcengine',
+      volcResourceIdPlaceholder: 'Выберите Resource ID',
+      volcResourceIdHint: 'duration=модель длительности (для длинных аудио), concurrent=модель параллелизма (для коротких аудио в реальном времени)',
+      volcResourceIdRequired: 'Выберите Resource ID',
+      default: 'По умолчанию',
+    },
+
+    // 本地 Whisper 模型区域
+    local: {
+      title: 'Локальная голосовая модель',
+      subtitle: 'Локальное распознавание речи с помощью Whisper или FunASR, без подключения к сети',
+      modeLocal: 'Локальный режим',
+      modeLocalHint: 'При включении используется локальная голосовая модель, несовместимо с удалёнными моделями',
+      modelPath: 'Путь хранения моделей',
+      modelPathHint: 'Файлы моделей хранятся в каталоге ~/.diting/model/voice',
+      openFolder: 'Открыть папку',
+      selectModel: 'Выбрать модель',
+      selectModelHint: 'Выберите загруженную модель для распознавания речи',
+      noModelSelected: 'Модель не выбрана',
+      downloadModel: 'Загрузить модель',
+      selectToDownload: 'Выберите модель для загрузки',
+      download: 'Загрузить',
+      cancelDownload: 'Отмена',
+      downloading: 'Загрузка…',
+      downloaded: 'Загружено',
+      notDownloaded: 'Не загружено',
+      downloadSuccess: 'Загрузка модели завершена: {name}',
+      downloadFailed: 'Ошибка загрузки: {msg}',
+      deleteModel: 'Удалить файл модели',
+      deleteModelConfirm: 'Удалить файл модели «{name}»? Это действие нельзя отменить.',
+      deleteModelSuccess: 'Файл модели удалён',
+      deleteModelFailed: 'Не удалось удалить файл модели',
+      selectModelSuccess: 'Выбрана локальная модель: {name}',
+      selectModelFailed: 'Не удалось выбрать модель',
+      micPermission: 'Доступ к микрофону',
+      micGranted: 'Разрешение получено, голосовой ввод готов',
+      micDenied: 'Заблокировано системой, разрешите приложению доступ к микрофону в настройках системы',
+      notDetermined: 'Разрешение не получено, предоставьте его перед использованием голосового ввода',
+      unsupported: 'Текущая система не поддерживает предварительную проверку; запрос разрешения появится при записи',
+      requestPermission: 'Разрешить доступ к микрофону',
+      requestAgain: 'Запросить снова',
+      checking: 'Проверка…',
+      modelSize: 'Размер',
+      modelLang: 'Многоязычный',
+      modelLangEn: 'Только английский',
+      modelLangDesc: 'Поддерживает многоязычное распознавание (включая китайский)',
+      modelLangEnDesc: 'Только английский, более высокая точность',
+      loadingModels: 'Загрузка списка моделей…',
+      loadModelsFailed: 'Не удалось загрузить список моделей',
+      noModelsAvailable: 'Нет доступных моделей',
+      downloadSource: 'Источник загрузки',
+      sourceAuto: 'Автоматически',
+      sourceMirror: 'Внутреннее зеркало',
+      sourceOfficial: 'Официальный',
+    },
+  },
+
+  // ========== 模型管理 - OCR ==========
+  modelOcr: {
+    subtitle: 'Загружайте и управляйте локальными OCR-моделями для распознавания текста на чеках и изображениях. Модели из предустановок PaddlePaddle PP-OCRv6.',
+    modelPath: 'Путь хранения моделей',
+    openFolder: 'Открыть папку',
+    loadingModels: 'Загрузка списка моделей…',
+    loadModelsFailed: 'Не удалось загрузить список моделей',
+    downloadSource: 'Источник загрузки',
+    sourceAuto: 'Автоматически',
+    sourceMirror: 'Внутреннее зеркало',
+    sourceOfficial: 'Официальный',
+    downloadModel: 'Загрузить модель',
+    selectToDownload: 'Выберите модель для загрузки',
+    download: 'Загрузить',
+    cancelDownload: 'Отмена',
+    downloaded: 'Загружено',
+    downloadSuccess: 'Загрузка модели завершена: {name}',
+    downloadFailed: 'Ошибка загрузки: {msg}',
+    deleteConfirm: 'Подтвердить удаление',
+    deleteConfirmText: 'Удалить модель «{name}»? Это действие нельзя отменить.',
+    deleteModelSuccess: 'Файл модели удалён',
+    deleteModelFailed: 'Не удалось удалить файл модели',
+    selectModel: 'Выбрать модель',
+    selectModelHint: 'Выберите загруженную модель для OCR-распознавания',
+    noModelSelected: 'Модель не выбрана',
+    selectModelSuccess: 'Выбрана OCR-модель: {name}',
+    selectModelFailed: 'Не удалось выбрать модель',
+  },
+
+  // ========== 模型管理 - 向量 ==========
+  modelVector: {
+    subtitle: 'Загружайте и управляйте локальными моделями векторных вложений для семантического поиска по документам и базы знаний RAG. Модели из предустановок kreuzberg/node.',
+    modelPath: 'Путь хранения моделей',
+    openFolder: 'Открыть папку',
+    loadingModels: 'Загрузка списка моделей…',
+    loadModelsFailed: 'Не удалось загрузить список моделей',
+    downloadSource: 'Источник загрузки',
+    sourceAuto: 'Автоматически',
+    sourceMirror: 'Внутреннее зеркало',
+    sourceOfficial: 'Официальный',
+    downloadModel: 'Загрузить модель',
+    selectToDownload: 'Выберите модель для загрузки',
+    download: 'Загрузить',
+    cancelDownload: 'Отмена',
+    downloaded: 'Загружено',
+    downloadSuccess: 'Загрузка модели завершена: {name}',
+    downloadFailed: 'Ошибка загрузки: {msg}',
+    deleteConfirm: 'Подтвердить удаление',
+    deleteConfirmText: 'Удалить модель «{name}»? Это действие нельзя отменить.',
+    deleteModelSuccess: 'Файл модели удалён',
+    deleteModelFailed: 'Не удалось удалить файл модели',
+    selectModel: 'Выбрать модель',
+    selectModelHint: 'Выберите модель слева, задайте размерность векторов посередине и нажмите «Подтвердить»',
+    noModelSelected: 'Модель не выбрана',
+    selectModelSuccess: 'Выбрана векторная модель: {name}',
+    selectModelFailed: 'Не удалось выбрать модель',
+    dimensions: 'Размерность',
+    dimensionsUnit: 'dims',
+    confirmSelect: 'Подтвердить',
+verifying: 'Проверка…',
+    marketTitle: 'Магазин моделей',
+    marketHint: 'Введите адрес модели HuggingFace (пример Qwen3 Embedding ONNX):',
+    marketHintDomestic: '国内下载：https:  //hf-mirror.com/onnx-community/Qwen3-Embedding-0.6B-ONNX',
+    marketHintInternational: '国际下载：https:  //huggingface.co/onnx-community/Qwen3-Embedding-0.6B-ONNX',
+    marketConfirm: 'Подтвердить загрузку',
+    urlPlaceholder: 'Адрес модели HuggingFace',
+    switchWarningTitle: 'Векторные модели несовместимы',
+    switchWarningText: 'Разные векторные модели создают векторы с разной размерностью и пространством, которые нельзя смешивать. После смены модели все созданные векторные и ключевые индексы будут удалены, статус файлов сбросится на «ожидает обработки» и потребуется повторная векторизация. Вы действительно хотите сменить модель?',
+    switchWarningConfirm: 'Подтвердить смену и пересоздать',
+    resetSuccess: 'Векторные данные сброшены. При следующей обработке файлы будут векторизованы заново с новой моделью.',
+    resetFailed: 'Не удалось сбросить векторные данные',
   },
 
   // ========== Skills 管理 ==========
@@ -404,13 +708,13 @@ export default {
       loading: 'Загрузка…',
       start: 'Запуск',
       stop: 'Стоп',
-      edit: 'undefined',
+      edit: '编辑',
       delete: 'Удалить',
       scanCreate: 'Создать сканированием',
       manualAdd: 'Добавить вручную',
 
       status: {
-        disconnected: 'Отключено',
+        disconnected: 'Не подключено',
         connecting: 'Подключение…',
         connected: 'Подключено',
         error: 'Ошибка',
@@ -455,7 +759,7 @@ export default {
         openInBrowser: 'Или откройте ссылку в браузере',
         success: 'Создание сканированием успешно!',
         autoSaving: 'Автосохранение и запуск бота...',
-        failed: 'Ошибка регистрации',
+        failed: 'Регистрация не удалась',
         retry: 'Повторить',
         cancelScan: 'Отменить сканирование',
         close: 'Закрыть',
@@ -512,7 +816,7 @@ export default {
       helpText: 'Нажмите «Вход сканированием» и отсканируйте QR-код через WeChat, чтобы подключиться. После подключения отправляйте сообщения в WeChat для взаимодействия с Diting Agent. Учётные данные безопасно сохраняются локально, при следующем запуске подключение устанавливается напрямую.',
 
       status: {
-        disconnected: 'Отключено',
+        disconnected: 'Не подключено',
         waitingScan: 'Ожидание сканирования...',
         scanned: 'Отсканировано, подтверждение...',
         connecting: 'Подключение...',
@@ -523,7 +827,7 @@ export default {
       messages: {
         loadFailed: 'Ошибка загрузки списка файлов',
         scanFailed: 'Ошибка входа сканированием',
-        loginFailed: 'Ошибка входа',
+        loginFailed: 'Не удалось войти',
         startFailed: 'Ошибка запуска',
         started: 'Мост WeChat запущен',
         stopFailed: 'Ошибка остановки',
@@ -537,12 +841,12 @@ export default {
       loading: 'Загрузка…',
       start: 'Запуск',
       stop: 'Стоп',
-      edit: 'undefined',
+      edit: '编辑',
       delete: 'Удалить',
       addBot: 'Добавить бота DingTalk',
 
       status: {
-        disconnected: 'Отключено',
+        disconnected: 'Не подключено',
         connecting: 'Подключение…',
         connected: 'Подключено',
         error: 'Ошибка',
@@ -621,6 +925,9 @@ export default {
     running: 'Выполняется',
     expandFilePanel: 'Развернуть панель файлов',
     collapseFilePanel: 'Свернуть панель файлов',
+    swapPanels: 'Поменять панели местами',
+    showCodeEditor: 'Показать редактор кода',
+    hideCodeEditor: 'Скрыть редактор кода',
     inputPlaceholder: 'Введите команду... ({\'@\'} ссылка на файл, / вызов Skill, # использование MCP, & ссылка на сессию, Enter для отправки)',
     selectProject: 'Сначала выберите проект Agent',
     noActiveSession: 'Нет активных сессий',
@@ -630,9 +937,31 @@ export default {
     detachFolderFailed: 'Ошибка удаления дополнительной папки',
     folderAttached: 'Папка добавлена: {name}',
     folderDetached: 'Дополнительная папка удалена',
+    gitStatusRefreshed: 'Статус Git обновлён',
     respondPermissionFailed: 'Ошибка ответа на запрос прав',
     submitAnswerFailed: 'Ошибка отправки ответа',
+    openChangedFileFailed: 'Не удалось открыть изменённый файл',
     file: 'Файл',
+  },
+
+  // ========== Agent 代码编辑器 ==========
+  agentCodeEditor: {
+    noFileOpened: 'Файл не открыт',
+    emptyHint: 'Нажмите файл на панели файлов, чтобы просмотреть и изменить его здесь',
+    binaryNotSupported: 'Двоичные файлы нельзя просмотреть в редакторе',
+    openFailed: 'Не удалось открыть файл',
+    closeAllAndHide: 'Закрыть все файлы и скрыть редактор',
+  },
+
+  // ========== Agent 终端面板 ==========
+  agentTerminal: {
+    newTerminal: 'Новый терминал',
+    noTerminal: 'Нет терминала',
+    emptyHint: 'Нажмите кнопку «Создать», чтобы открыть терминал',
+    showPanel: 'Показать панель терминала',
+    hidePanel: 'Скрыть панель терминала',
+    createFailed: 'Не удалось создать терминал',
+    processExited: 'Процесс терминала завершён (код выхода {code})',
   },
 
   // ========== RAG 知识库 ==========
@@ -712,9 +1041,10 @@ export default {
   },
 
   // ========== 文件模块 ==========
-  fileModule: {
-    fileList: 'Список файлов',
-    refresh: 'Обновить',
+fileModule: {
+fileList: 'Список файлов',
+refresh: 'Обновить',
+refreshFailed: 'Не удалось обновить',
     newFile: 'Новый файл',
     doc: 'Документ',
     sheet: 'Таблица',
@@ -731,6 +1061,17 @@ export default {
     newSheet: 'Новая таблица',
     ragProcessing: 'Векторизация... осталось {count}',
     ragQueue: 'Очередь {count}',
+    createMarkdown: 'Создать файл Markdown',
+    analyzeLink: 'Анализировать ссылку',
+    analyzeLinkTitle: 'Анализировать ссылку',
+    analyzeLinkDesc: 'Введите URL — Agent проанализирует содержимое ссылки и сохранит его как Markdown-документ в текущей папке',
+    linkUrlPlaceholder: '请输入网址，例如 https:  //example.com',
+    analyzeAndOrganize: 'Анализировать и упорядочить',
+    cancel: 'Отмена',
+    createProjectFailed: 'Не удалось создать проект',
+    createSessionFailed: 'Не удалось создать сессию',
+    analyzeLinkStarted: 'Анализ ссылки Agent запущен',
+    analyzeLinkFailed: 'Не удалось проанализировать ссылку',
 
     status: {
       unsupported: 'Не поддерживается',
@@ -763,6 +1104,83 @@ export default {
     viewer: {
       title: 'Просмотр файла',
     },
+  },
+
+  // ========== 添加文件夹弹窗 ==========
+  addFolder: {
+    title: 'Добавить папку',
+    subtitle: 'Выберите локальную папку или сетевое подключение',
+    protocolType: 'Тип протокола',
+    protocols: {
+      local: 'Локальный',
+      ftp: 'FTP',
+      ftps: 'FTPS',
+      sftp: 'SFTP',
+      smb: 'SMB',
+      webdav: 'WebDAV',
+      s3: 'S3',
+    },
+    // 本地文件夹
+    localPath: 'Путь к папке',
+    localPathPlaceholder: 'Нажмите кнопку, чтобы выбрать папку',
+    // 通用网络协议
+    host: 'Адрес хоста',
+    port: 'Порт',
+    remotePath: 'Удалённый путь',
+    username: 'Имя пользователя',
+    password: 'Пароль',
+    showPassword: 'Показать пароль',
+    hidePassword: 'Скрыть пароль',
+    // SFTP
+    privateKeyPath: 'Путь к закрытому ключу',
+    privateKeyHint: 'Заполните при аутентификации по ключу, оставьте пустым для пароля',
+    // SMB
+    shareName: 'Имя общего ресурса',
+    shareNameHint: 'Имя общего ресурса SMB, например shared, public',
+    domain: 'Домен/Рабочая группа',
+    // WebDAV
+    serverUrl: 'Адрес сервера',
+    serverUrlHint: 'Полный URL сервиса WebDAV',
+    // S3
+    endpoint: 'Endpoint',
+    region: 'Регион',
+    bucket: 'Bucket',
+    prefix: 'Префикс',
+    accessKey: 'Access Key',
+    secretKey: 'Secret Key',
+    forcePathStyle: 'Path Style',
+    forcePathStyleHint: 'Требуется для MinIO и совместимых сервисов',
+    // 通用
+    folderAlias: 'Псевдоним папки',
+    folderAliasPlaceholder: 'Необязательно, по умолчанию — последний сегмент пути',
+    folderAliasHint: 'Отображаемое имя в списке файлов',
+    // 编辑
+    edit: 'Изменить настройки',
+    editTitle: 'Изменить настройки папки',
+    editSuccess: 'Настройки обновлены',
+    editFailed: 'Не удалось обновить настройки',
+    // 测试与提交
+    testConnection: 'Проверить подключение',
+    testing: 'Проверка…',
+    testSuccess: 'Подключение выполнено',
+    testFailed: 'Ошибка подключения',
+    fillRequiredFields: 'Сначала заполните обязательные поля',
+    selectFolderFailed: 'Не удалось выбрать папку',
+    addSuccess: 'Папка успешно добавлена',
+    addFailed: 'Не удалось добавить папку',
+    // 远程扫描状态
+    scanning: 'Папка добавлена, идёт фоновое сканирование удалённого каталога…',
+    scanDone: 'Удалённое сканирование завершено, найдено элементов: {count}',
+    scanFailed: 'Ошибка удалённого сканирования',
+    // 远程路径浏览
+    browsePath: 'Обзор',
+    browseTitle: 'Выберите удалённый каталог',
+    browseLoading: 'Загрузка…',
+    browseEmpty: 'Каталог пуст',
+    browseFailed: 'Не удалось загрузить каталог',
+    browseUp: 'На уровень выше',
+    browseSelect: 'Выбрать этот каталог',
+    browseHint: 'Сначала заполните адрес хоста, порт, имя пользователя и пароль (или путь к закрытому ключу)',
   },
 
   // ========== OCR 录入识读 ==========
@@ -1076,7 +1494,11 @@ export default {
     addFileToSession: 'Добавить файл в сессию',
     addFile: 'Добавить файл',
     attachFolder: 'Дополнительная папка',
-  },
+    attached: 'Вложено',
+refreshGitStatus: 'Обновить статус Git',
+changedFiles: 'Изменённые',
+noChangedFiles: 'Нет изменённых файлов',
+},
 
   // ========== 浏览器组件 ==========
   browser: {
@@ -1108,6 +1530,8 @@ export default {
   agentPopup: {
     askUserTitle: 'Agent ожидает вашего ответа',
     submitAnswer: 'Отправить ответ',
+    cancel: 'Отмена',
+    inputPlaceholder: 'Или введите здесь...',
     permissionRequest: 'Запросить выполнение действия',
     reject: 'Отклонить',
     allowAlways: 'Всегда разрешать',
@@ -1326,6 +1750,20 @@ export default {
     placeholder: 'Временные записи, идеи, заметки...',
   },
 
+  // ========== 语音输入 ==========
+voiceInput: {
+clickToSpeak: 'Нажмите, чтобы говорить',
+    recording: 'Запись…',
+    correcting: 'Исправление…',
+loadingModel: 'Загрузка модели…',
+micDenied: 'Доступ к микрофону отклонён. Разрешите его в настройках системы.',
+micStartFailed: 'Не удалось запустить микрофон',
+modelLoadFailed: 'Не удалось загрузить модель',
+noAudioCaptured: 'Аудио не записано',
+transcribeSuccess: 'Транскрипция речи завершена',
+transcribeFailed: 'Ошибка транскрипции',
+},
+
   fileViewerTab: {
     loading: 'Загрузка файла...',
     loadFailed: 'Ошибка загрузки списка папок',
@@ -1351,7 +1789,7 @@ export default {
 
   // ========== DateTimePicker ==========
   dateTimePicker: {
-    placeholder: 'undefined',
+    placeholder: '选择日期时间',
   },
 
   // ========== TodoWorkspace ==========
@@ -1568,7 +2006,7 @@ export default {
     action: 'Действие',
     selectProvider: 'Выбрать тип провайдера',
     namePlaceholder: 'Напр.: мойGPT-4o, DeepSeekпродакшен-среда',
-    baseUrlPlaceholder: 'Напр.: https://api.openai.com/v1',
+    baseUrlPlaceholder: '如：https:  //api.openai.com/v1',
     apiKeyPlaceholder: 'sk-...',
     modelNamePlaceholder: 'Напр.: gpt-4o, deepseek-chat, claude-3-5-sonnet-20241022',
     remarkPlaceholder: 'Необязательно, напр.: для генерации кода / для summarизации документов',
