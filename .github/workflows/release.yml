@@ -137,10 +137,10 @@ jobs:
       - name: 验证构建产物
         run: |
           if [ ! -f public/dist/index.html ]; then
-            echo "❌ 前端构建失败：public/dist/index.html 不存在"
+            echo "[FAIL] 前端构建失败：public/dist/index.html 不存在"
             exit 1
           fi
-          echo "✅ 前端构建产物验证通过"
+          echo "[OK] 前端构建产物验证通过"
           ls -la public/dist/index.html
 
       # 上传前端 + Electron 产物供各平台 Job 下载
@@ -239,7 +239,7 @@ jobs:
         run: |
           ZIP=$(ls out/*.zip 2>/dev/null | head -1)
           if [ -z "$ZIP" ]; then
-            echo "❌ 未找到 zip 产物"
+            echo "[FAIL] 未找到 zip 产物"
             exit 1
           fi
           BASENAME=$(basename "$ZIP")
@@ -248,7 +248,7 @@ jobs:
           echo "zip_name=$BASENAME" >> $GITHUB_OUTPUT
           echo "sha512=$SHA512" >> $GITHUB_OUTPUT
           echo "size=$SIZE" >> $GITHUB_OUTPUT
-          echo "✅ ARM64: $BASENAME size=$SIZE"
+          echo "[OK] ARM64: $BASENAME size=$SIZE"
 
       # 上传 SHA 信息作为 artifact
       - name: 上传 SHA 信息
@@ -275,19 +275,21 @@ jobs:
                   print(r['id']); break
           ")
           if [ -z "$RELEASE_ID" ]; then
-            echo "❌ 未找到 Release"
+            echo "[FAIL] 未找到 Release"
             exit 1
           fi
           ZIP=$(ls out/*.zip | head -1)
           BASENAME=$(basename "$ZIP")
           echo "上传 $BASENAME 到 Release $RELEASE_ID..."
           for i in 1 2 3; do
-            if curl -sL -X POST \
+            HTTP_CODE=$(curl -sL -o /tmp/upload_resp.txt -w "%{http_code}" -X POST \
               -H "Authorization: token ${GH_TOKEN}" \
               -H "Content-Type: application/zip" \
               --data-binary @"$ZIP" \
-              "https://uploads.github.com/repos/${REPO}/releases/${RELEASE_ID}/assets?name=${BASENAME}" \
-              | python3 -c "import json,sys; d=json.load(sys.stdin); print(f'✅ Uploaded: {d.get(\"name\")}')"; then
+              "https://uploads.github.com/repos/${REPO}/releases/${RELEASE_ID}/assets?name=${BASENAME}")
+            if echo "$HTTP_CODE" | grep -qE '^(20[0-9])$'; then
+              UPLOADED_NAME=$(python3 -c "import json; d=json.load(open('/tmp/upload_resp.txt')); print(d.get('name','?'))" 2>/dev/null || echo "$BASENAME")
+              echo "[OK] Uploaded: $UPLOADED_NAME"
               # 同时上传 blockmap（如果存在）
               BLOCKMAP="${ZIP%.zip}.blockmap"
               if [ -f "$BLOCKMAP" ]; then
@@ -299,10 +301,10 @@ jobs:
               fi
               exit 0
             fi
-            echo "上传重试 $i..."
+            echo "上传重试 $i... (HTTP $HTTP_CODE)"
             sleep 5
           done
-          echo "❌ 上传失败"
+          echo "[FAIL] 上传失败"
           exit 1
 
   # ============================================================
@@ -383,7 +385,7 @@ jobs:
         run: |
           ZIP=$(ls out/*.zip 2>/dev/null | head -1)
           if [ -z "$ZIP" ]; then
-            echo "❌ 未找到 zip 产物"
+            echo "[FAIL] 未找到 zip 产物"
             exit 1
           fi
           BASENAME=$(basename "$ZIP")
@@ -392,7 +394,7 @@ jobs:
           echo "zip_name=$BASENAME" >> $GITHUB_OUTPUT
           echo "sha512=$SHA512" >> $GITHUB_OUTPUT
           echo "size=$SIZE" >> $GITHUB_OUTPUT
-          echo "✅ X64: $BASENAME size=$SIZE"
+          echo "[OK] X64: $BASENAME size=$SIZE"
 
       - name: 上传 SHA 信息
         uses: actions/upload-artifact@v4
@@ -416,19 +418,21 @@ jobs:
                   print(r['id']); break
           ")
           if [ -z "$RELEASE_ID" ]; then
-            echo "❌ 未找到 Release"
+            echo "[FAIL] 未找到 Release"
             exit 1
           fi
           ZIP=$(ls out/*.zip | head -1)
           BASENAME=$(basename "$ZIP")
           echo "上传 $BASENAME 到 Release $RELEASE_ID..."
           for i in 1 2 3; do
-            if curl -sL -X POST \
+            HTTP_CODE=$(curl -sL -o /tmp/upload_resp.txt -w "%{http_code}" -X POST \
               -H "Authorization: token ${GH_TOKEN}" \
               -H "Content-Type: application/zip" \
               --data-binary @"$ZIP" \
-              "https://uploads.github.com/repos/${REPO}/releases/${RELEASE_ID}/assets?name=${BASENAME}" \
-              | python3 -c "import json,sys; d=json.load(sys.stdin); print(f'✅ Uploaded: {d.get(\"name\")}')"; then
+              "https://uploads.github.com/repos/${REPO}/releases/${RELEASE_ID}/assets?name=${BASENAME}")
+            if echo "$HTTP_CODE" | grep -qE '^(20[0-9])$'; then
+              UPLOADED_NAME=$(python3 -c "import json; d=json.load(open('/tmp/upload_resp.txt')); print(d.get('name','?'))" 2>/dev/null || echo "$BASENAME")
+              echo "[OK] Uploaded: $UPLOADED_NAME"
               BLOCKMAP="${ZIP%.zip}.blockmap"
               if [ -f "$BLOCKMAP" ]; then
                 curl -sL -X POST \
@@ -439,10 +443,10 @@ jobs:
               fi
               exit 0
             fi
-            echo "上传重试 $i..."
+            echo "上传重试 $i... (HTTP $HTTP_CODE)"
             sleep 5
           done
-          echo "❌ 上传失败"
+          echo "[FAIL] 上传失败"
           exit 1
 
   # ============================================================
@@ -487,7 +491,7 @@ jobs:
           X64_ZIP=$(ls mac-x64/*.zip 2>/dev/null | head -1)
 
           if [ -z "$ARM64_ZIP" ] || [ -z "$X64_ZIP" ]; then
-            echo "❌ 缺少 macOS zip 产物"
+            echo "[FAIL] 缺少 macOS zip 产物"
             exit 1
           fi
 
@@ -535,7 +539,7 @@ jobs:
           ")
 
           if [ -z "$RELEASE_ID" ]; then
-            echo "❌ 未找到 Release for tag ${TAG}"
+            echo "[FAIL] 未找到 Release for tag ${TAG}"
             exit 1
           fi
 
@@ -563,8 +567,8 @@ jobs:
             --data-binary @latest-mac.yml \
             "https://uploads.github.com/repos/${REPO}/releases/${RELEASE_ID}/assets?name=latest-mac.yml")
 
-          echo "$UPLOAD_RESULT" | python3 -c "import json,sys; d=json.load(sys.stdin); print(f'Uploaded: {d.get(\"name\")} ({d.get(\"size\")} bytes)')"
-          echo "✅ latest-mac.yml merged and uploaded"
+          echo "$UPLOAD_RESULT" | python3 -c "import json,sys; d=json.load(sys.stdin); print(f'Uploaded: {d.get(\"name\",\"?\")} ({d.get(\"size\",\"?\")} bytes)')"
+          echo "[OK] latest-mac.yml merged and uploaded"
 
   # ============================================================
   # Job 5: Linux x64
@@ -638,7 +642,7 @@ jobs:
                   print(r['id']); break
           ")
           if [ -z "$RELEASE_ID" ]; then
-            echo "❌ 未找到 Release"
+            echo "[FAIL] 未找到 Release"
             exit 1
           fi
           for i in 1 2 3; do
@@ -647,12 +651,16 @@ jobs:
               [ -f "$FILE" ] || continue
               BASENAME=$(basename "$FILE")
               echo "上传 $BASENAME..."
-              if ! curl -sL -X POST \
+              HTTP_CODE=$(curl -sL -o /tmp/upload_resp.txt -w "%{http_code}" -X POST \
                 -H "Authorization: token ${GH_TOKEN}" \
                 -H "Content-Type: application/vnd.debian.binary-package" \
                 --data-binary @"$FILE" \
-                "https://uploads.github.com/repos/${REPO}/releases/${RELEASE_ID}/assets?name=${BASENAME}" \
-                | python3 -c "import json,sys; d=json.load(sys.stdin); print(f'✅ Uploaded: {d.get(\"name\")}')"; then
+                "https://uploads.github.com/repos/${REPO}/releases/${RELEASE_ID}/assets?name=${BASENAME}")
+              if echo "$HTTP_CODE" | grep -qE '^(20[0-9])$'; then
+                UPLOADED_NAME=$(python3 -c "import json; d=json.load(open('/tmp/upload_resp.txt')); print(d.get('name','?'))" 2>/dev/null || echo "$BASENAME")
+                echo "[OK] Uploaded: $UPLOADED_NAME"
+              else
+                echo "[FAIL] HTTP $HTTP_CODE"
                 SUCCESS=false
               fi
             done
@@ -660,7 +668,7 @@ jobs:
             echo "上传重试 $i..."
             sleep 5
           done
-          echo "❌ 上传失败"
+          echo "[FAIL] 上传失败"
           exit 1
 
   # ============================================================
@@ -730,7 +738,7 @@ jobs:
                   print(r['id']); break
           ")
           if [ -z "$RELEASE_ID" ]; then
-            echo "❌ 未找到 Release"
+            echo "[FAIL] 未找到 Release"
             exit 1
           fi
           for i in 1 2 3; do
@@ -739,12 +747,16 @@ jobs:
               [ -f "$FILE" ] || continue
               BASENAME=$(basename "$FILE")
               echo "上传 $BASENAME..."
-              if ! curl -sL -X POST \
+              HTTP_CODE=$(curl -sL -o /tmp/upload_resp.txt -w "%{http_code}" -X POST \
                 -H "Authorization: token ${GH_TOKEN}" \
                 -H "Content-Type: application/vnd.microsoft.portable-executable" \
                 --data-binary @"$FILE" \
-                "https://uploads.github.com/repos/${REPO}/releases/${RELEASE_ID}/assets?name=${BASENAME}" \
-                | python3 -c "import json,sys; d=json.load(sys.stdin); print(f'✅ Uploaded: {d.get(\"name\")}')"; then
+                "https://uploads.github.com/repos/${REPO}/releases/${RELEASE_ID}/assets?name=${BASENAME}")
+              if echo "$HTTP_CODE" | grep -qE '^(20[0-9])$'; then
+                UPLOADED_NAME=$(python3 -c "import json; d=json.load(open('/tmp/upload_resp.txt')); print(d.get('name','?'))" 2>/dev/null || echo "$BASENAME")
+                echo "[OK] Uploaded: $UPLOADED_NAME"
+              else
+                echo "[FAIL] HTTP $HTTP_CODE"
                 SUCCESS=false
               fi
             done
@@ -752,7 +764,7 @@ jobs:
             echo "上传重试 $i..."
             sleep 5
           done
-          echo "❌ 上传失败"
+          echo "[FAIL] 上传失败"
           exit 1
 
   # ============================================================
@@ -801,8 +813,8 @@ jobs:
               print(json.dumps(f.read()))
           ")
           else
-            echo "⚠️ No release notes file found at ${NOTES_FILE}, using default"
-            BODY=$(python3 -c "import json; print(json.dumps('Release ${TAG}'))")
+          echo "[WARN] No release notes file found at ${NOTES_FILE}, using default"
+          BODY=$(python3 -c "import json; print(json.dumps('Release ${TAG}'))")
           fi
 
           # 更新 Release body 并发布（draft: false）
@@ -811,4 +823,4 @@ jobs:
             -H "Content-Type: application/json" \
             -d "{\"body\": ${BODY}, \"draft\": false}" \
             "https://api.github.com/repos/${REPO}/releases/${RELEASE_ID}" \
-            | python3 -c "import json,sys; r=json.load(sys.stdin); print(f'✅ Release published: {r.get(\"tag_name\",\"?\")} (draft={r.get(\"draft\",\"?\")})')"
+            | python3 -c "import json,sys; r=json.load(sys.stdin); print(f'[OK] Release published: {r.get(\"tag_name\",\"?\")} (draft={r.get(\"draft\",\"?\")})')"
