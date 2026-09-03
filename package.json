@@ -1,6 +1,6 @@
 {
   "name": "ee",
-  "version": "5.1.2",
+  "version": "5.1.3",
   "description": "A fast, desktop software development framework",
   "main": "./public/electron/main.js",
   "scripts": {

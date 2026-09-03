@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- 启用 hardened runtime 后必须允许加载未签名的动态库（better-sqlite3, canvas, node-pty 等 native 模块） -->
+    <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+    <true/>
+
+    <!-- 允许加载未签名的动态库（DYLD_LIBRARY_PATH 等场景） -->
+    <key>com.apple.security.cs.allow-dyld-environment-variables</key>
+    <true/>
+
+    <!-- 允许 JIT，Electron 渲染进程 V8 需要 -->
+    <key>com.apple.security.cs.allow-jit</key>
+    <true/>
+
+    <!-- 允许使用 node-pty 创建伪终端和子进程 -->
+    <key>com.apple.security.cs.disable-library-validation</key>
+    <true/>
+
+    <!-- 允许调试器附加（开发阶段可选，正式发布可移除） -->
+    <key>com.apple.security.get-task-allow</key>
+    <false/>
+
+    <!-- 允许使用 Apple Events 控制其他应用（浏览器自动化等场景） -->
+    <key>com.apple.security.automation.apple-events</key>
+    <true/>
+
+    <!-- 网络访问 -->
+    <key>com.apple.security.network.client</key>
+    <true/>
+    <key>com.apple.security.network.server</key>
+    <true/>
+
+    <!-- 文件访问（用户选择的文件） -->
+    <key>com.apple.security.files.user-selected.read-write</key>
+    <true/>
+</dict>
+</plist>

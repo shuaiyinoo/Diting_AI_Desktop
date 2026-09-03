@@ -155,7 +155,7 @@ Download the installer for your platform from [GitHub Releases](https://github.c
 
 #### macOS Installation Note
 
-Since the app is not Apple code-signed and notarized, macOS may show "Diting is damaged and can't be opened." This is due to macOS Gatekeeper. Fix it with:
+The app is Apple code-signed and notarized. It should open normally. If macOS still shows "Diting is damaged and can't be opened" due to Gatekeeper caching, fix it with:
 
 **Method 1 (Recommended): Terminal command**
 

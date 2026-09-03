@@ -43,6 +43,10 @@
     "icon": "build/icons/icon.icns",
     "artifactName": "${productName}-${os}-${version}-${arch}.${ext}",
     "darkModeSupport": true,
-    "hardenedRuntime": false
+    "hardenedRuntime": true,
+    "gatekeeperAssess": false,
+    "entitlements": "build/entitlements.mac.plist",
+    "entitlementsInherit": "build/entitlements.mac.plist",
+    "afterSign": "build/notarize.js"
   }
 }
